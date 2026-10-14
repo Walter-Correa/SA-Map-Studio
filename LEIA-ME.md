@@ -68,8 +68,9 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Paleta com todas as 256 cores de veículos do SA-MP/open.mp (incluindo cores novas a partir do ID 128).
   - Tuning de componentes (`AddVehicleComponent`) e paintjobs aplicados e visualizados no 3D em tempo real.
 - **Actors e Dinâmicos**:
-  - Inserção de Actors diretamente no catálogo por ID de Skin com biblioteca de animações.
+  - Inserção de Actors diretamente no catálogo com troca de skin em tempo real no menu lateral direito.
   - Actors surgem perfeitamente eretos/em pé e apoiados com os pés na superfície.
+  - **Seletor de Animações com Split View**: painel dividido com player de vídeo dinâmico transmitido do open.mp, cache local automático e botão de download do pacote offline (~320 MB).
   - Suporte a `MoveObject` com parâmetros e teste de movimentação no mundo executando 1 ciclo limpo.
   - Suporte a `AttachObjectToObject` com edição visual da posição do objeto filho no próprio mundo 3D.
 - **Objetos e Transformações**:
@@ -82,8 +83,15 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Substituição de textura (`SetObjectMaterial`), paleta de cores (`materialcolor` com transparência) e texto (`SetObjectMaterialText` com alinhamento, fonte, tamanho e prévia).
 - **Câmeras cinematográficas**:
   - Pontos fixos (`SetPlayerCameraPos` + `SetPlayerCameraLookAt`) e movimentos (`InterpolateCameraPos` + `InterpolateCameraLookAt`) com prévia e código pronto.
+- **Teleporte e Interiores**:
+  - Menu "Ir para" com abas "Locais no mundo" e "Interiores", com lista de mais de 140 interiores mapeados com coordenadas exatas e ativação automática do modo interior.
+- **Clima, Horário e Céu Dinâmico**:
+  - Controle de clima (0 a 45) e horário com minutos no menu Visão e no modo de teste, com reflexo imediato no céu, luz do sol, sombras e névoa da viewport 3D.
 - **Testar no jogo**:
   - Sobe o servidor de teste local integrado (`omp-server.exe` com componentes e DLLs open.mp) e abre o SA-MP já conectado, com sincronização em tempo real das alterações do mapa.
+  - Comandos no servidor: `/fly` ou `/voar` (voo livre da câmera estilo noclip), `/map` ou `/mapa` (teleporte ao centro do mapa), `/w [0-45]` (altera clima), `/t [0-23] [minutos]` (altera horário), `/anim`, `/v [modelo]`, `/jetpack`, `/spawn`, `/pos` e `/ajuda`.
+- **Logs e Diagnóstico**:
+  - Registro de erros em tempo real com botão dedicado na barra superior e janela para consultar e copiar os registros para suporte rápido.
 
 Aperte `?` dentro do programa para ver todos os atalhos.
 

@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-2.1.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-2.8.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -188,6 +188,58 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 2.8.0 — 14/10/2026
+- Novo seletor de animações com painel dividido (Split View) e player de vídeo dinâmico integrado para demonstração ao vivo da animação.
+- Sistema de cache local e streaming WebM de alto desempenho em `Dados/cache/animacoes/`.
+- Download do pacote offline completo (~320 MB) em segundo plano com acompanhamento de progresso e opção de pausa.
+- Seleção estável e fixada exclusivamente no clique do mouse sem alteração indesejada por movimento do cursor.
+- Novos comandos `/w [clima]` (0-45) e `/t [horário]` (0-23 horas e minutos) no servidor de teste com sincronização global entre todos os jogadores.
+- Novo comando `/ajuda` no servidor de teste listando todos os atalhos e comandos disponíveis.
+
+### 2.7.0 — 14/10/2026
+- Catálogo completo de animações do open.mp: 1.812 presets organizados por biblioteca com campo de busca em tempo real.
+- Posicionamento e centralização inteligente da janela na tela, adaptando-se à área útil do monitor.
+- Esclarecimento da orientação dos eixos do manipulador ("Eixos: Mundo" vs "Eixos: Objeto").
+- Opção "Trocar pasta do GTA" integrada ao diálogo "Testar no jogo".
+- Novo Sistema de Logs e Diagnóstico: captura automática de erros JS/console e diálogo com botão de cópia rápida.
+
+### 2.6.0 — 14/10/2026
+- Menu "Ir para" reestruturado em abas: "Locais no mundo" e "Interiores", com lista de mais de 140 interiores do GTA SA e SA-MP/open.mp.
+- Configuração de clima (0 a 45) e horário com minutos no "Testar no jogo" e no menu Visão, sincronizados em tempo real no 3D do editor (céu dinâmico, ciclo dia/noite e iluminação).
+- Comandos `/fly` e `/voar` no servidor de teste para alternar o voo livre da câmera com retorno suave ao ponto de origem.
+- Comandos `/map` e `/mapa` para teleporte imediato ao centro do mapa em teste.
+- Catálogo unificado de Actors: troca e pré-visualização de skins em tempo real no menu direito, com apoio sobre superfícies e correção de orientação.
+
+### 2.5.0 — 14/10/2026
+- Limite de distância de visão expandido até 2500 metros no menu Visão.
+- Atalho F10 e botão na barra superior para recolher e restaurar menus laterais em tela cheia.
+- Modo opcional de recolhimento automático dos menus durante movimentação da câmera.
+- Campo de coordenadas do clique do mouse no topo do menu lateral com cópia em um clique.
+- Desfazer e Refazer (Undo/Redo) com suporte global inteligente.
+- Novo ícone oficial estilizado com o forno clássico `mkwalloven1` (ID 19933).
+
+### 2.4.1 — 14/10/2026
+- Coexistência de múltiplos projetos com modo Editável ou Não editável.
+- Importação fiel de mapas Pawn (`.pwn`) preservando 100% de comentários, anotações, includes e cores hexadecimais.
+- Servidor de teste open.mp com omp-server.exe, DLLs e componentes empacotados na raiz da distribuição.
+
+### 2.4.0 — 14/10/2026
+- Redução e otimização profunda do consumo de memória RAM do WebView2.
+- Paleta completa de cores de veículos do SA-MP (0 a 255) e visualização de tuning/paintjobs em tempo real no 3D.
+- Categorias de texturizações e textos separadas no painel Projeto.
+- Inversão da ordem de objetos e botão de segurança "Apagar tudo".
+- Suporte a MoveObject com teste de movimentação no mundo e AttachObjectToObject com edição visual.
+- Exportação de coordenadas em formato de Array e edição manual do script Pawn.
+
+### 2.3.0 — 13/10/2026
+- Velocidades de movimento e rotação configuráveis no menu lateral (0.001x a 10.0x).
+- Rotação em grupo com múltiplos objetos selecionados.
+
+### 2.2.0 — 13/10/2026
+- Destaque visual em tons de vermelho nos objetos do mundo selecionados para remoção.
+- Remoção simultânea com RemoveBuildingForPlayer e miniaturas ampliadas no catálogo.
+- Apelidos personalizados para favoritos e renomeação padronizada de propriedades de stream.
 
 ### 2.1.0 — 13/10/2026
 - Textura trocada cobre a parte do objeto por igual no editor, sem as sombras pintadas no modelo original (igual ao jogo).

@@ -6,6 +6,17 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '2.8.0', date: '14/10/2026', items: [
+      'Novo Seletor de Animações com Split View: painel dividido interativo com player de vídeo integrado para visualização imediata da animação em execução.',
+      'Transmissão e Cache Local de Vídeos: streaming dinâmico direto do open.mp em formato WebM leve com armazenamento local automático em cache para acesso offline instantâneo.',
+      'Recurso Baixar Pacote Offline: download em lote em segundo plano de todas as animações (~320 MB) com progresso em tempo real, percentual e opção de pausar.',
+      'Categorização Inteligente de Animações: abas por contexto ("Populares", "Conversas & Gestos", "Sentado & Deitado", "Danças", "Polícia & Segurança", "Combate & Armas", "Esportes & Academia", "Bar, Fumo & Lazer", "Todas") com busca rápida.',
+      'Seleção Firme e Fixada: seleção estável ao clicar nos cards sem interferência do movimento do cursor do mouse, com aplicação direta ou por duplo clique.',
+      'Novos Comandos no Servidor de Teste (/w e /t): comando /w (ou /weather, /clima) para definir o clima (0 a 45) e comando /t (ou /time, /hora) para definir horário e minutos (ex: /t 12 ou /t 22:30) com sincronização em tempo real para todos os jogadores.',
+      'Comando /ajuda no Servidor de Teste: listagem completa de comandos disponíveis (/fly, /map, /w, /t, /v, /anim, /jetpack, /spawn, /pos).'
+    ],
+  },
+  {
     version: '2.7.0', date: '14/10/2026', items: [
       'Catálogo completo de animações do open.mp: 1.812 presets organizados por biblioteca com campo de busca em tempo real (nome, lib e ação) no painel de Actors.',
       'Posicionamento e centralização inteligente da janela na tela: dimensionamento dinâmico que se adapta à área útil de trabalho (work area), evitando cortes ou bordas ocultas em qualquer monitor.',
