@@ -1,0 +1,28 @@
+# Programa compilado e arquivos gerados
+dist/
+dist-limpo/
+build/
+build-info.json
+*.spec
+*.rar
+*.zip
+*.7z
+
+# Ambiente Python
+.venv-build/
+__pycache__/
+*.pyc
+
+# Dados de quem usa o editor (nunca vão para o repositório)
+Dados/
+Projetos/
+Exportados/
+projetos/
+exportados/
+Servidor de Teste/
+config.json
+sa-map-studio.log
+dados-da-janela/
+cache/
+scratch/
+scratch_*.png

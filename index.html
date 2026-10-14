@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SA Map Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">
+{ "imports": { "three": "./js/vendor/three.module.js", "three/addons/": "./js/vendor/" } }
+</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+    <symbol id="i-magnet" viewBox="0 0 24 24"><path d="M6 3v8a6 6 0 0 0 12 0V3"/><path d="M6 7h4M14 7h4"/><path d="M10 3v8a2 2 0 0 0 4 0V3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 17v3h16v-3"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V4H4v12h4"/></symbol>
+    <symbol id="i-ground" viewBox="0 0 24 24"><path d="M12 3v11M8 10l4 4 4-4"/><path d="M3 18h18M5 21h14"/></symbol>
+    <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.2v.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-restore" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></symbol>
+    <symbol id="i-demolish" viewBox="0 0 24 24"><path d="M4 21V9l6-4v16M10 21h10V12l-5-3"/><path d="M3 3l18 18"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24"><path d="M14 4l6 6-8.5 8.5a3 3 0 0 1-2 .9H6v-3.5a3 3 0 0 1 .9-2z"/><path d="M12 6l6 6"/><path d="M4 20l2-2"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
+    <symbol id="i-dropper" viewBox="0 0 24 24"><path d="M14 4l6 6M17 7l-9.5 9.5L5 19l2.5-2.5L17 7z"/><path d="M14 10l-4-4"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+    <symbol id="i-gamepad" viewBox="0 0 24 24"><path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/></symbol>
+    <symbol id="i-path" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 16v-4l2-5h14l2 5v4z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/></symbol>
+    <symbol id="i-actor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.9 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-rewind" viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></symbol>
+    <symbol id="i-panels" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 4v16M15 4v16" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 12 4 7"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
+    <symbol id="i-brand-logo" viewBox="0 0 32 32">
+      <defs>
+        <radialGradient id="ovenGlowSym" cx="50%" cy="55%" r="60%">
+          <stop offset="0%" stop-color="#ff9900" stop-opacity="0.95"/>
+          <stop offset="45%" stop-color="#e65100" stop-opacity="0.8"/>
+          <stop offset="85%" stop-color="#2d1305" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#140802"/>
+        </radialGradient>
+      </defs>
+      <rect x="1" y="1" width="30" height="30" rx="7" fill="#181c24" stroke="#f39c12" stroke-width="1.2"/>
+      <rect x="4.5" y="4.5" width="23.0" height="23.0" rx="2.0" fill="#b9c1cc" stroke="#475569" stroke-width="0.5"/>
+      <rect x="5.5" y="5.5" width="21.0" height="4.6" rx="0.8" fill="#1c2028"/>
+      <line x1="5.5" y1="10.1" x2="26.5" y2="10.1" stroke="#333c4d" stroke-width="0.3"/>
+      <circle cx="7.7" cy="7.8" r="1.1" fill="#505c6c" stroke="#94a3b8" stroke-width="0.25"/>
+      <line x1="7.7" y1="6.9" x2="7.7" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
+      <circle cx="10.5" cy="7.8" r="1.1" fill="#505c6c" stroke="#94a3b8" stroke-width="0.25"/>
+      <line x1="10.5" y1="6.9" x2="10.5" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
+      <rect x="13.0" y="6.5" width="6.0" height="2.6" rx="0.5" fill="#090d14" stroke="#334155" stroke-width="0.3"/>
+      <text x="16.0" y="8.5" font-size="1.9" font-family="monospace" font-weight="bold" fill="#38bdf8" text-anchor="middle" letter-spacing="0.2">12:00</text>
+      <circle cx="21.5" cy="7.8" r="1.1" fill="#505c6c" stroke="#94a3b8" stroke-width="0.25"/>
+      <line x1="21.5" y1="6.9" x2="21.5" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
+      <circle cx="24.3" cy="7.8" r="1.1" fill="#505c6c" stroke="#94a3b8" stroke-width="0.25"/>
+      <line x1="24.3" y1="6.9" x2="24.3" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
+      <rect x="6.8" y="11.0" width="1.0" height="1.6" rx="0.3" fill="#64748b"/>
+      <rect x="24.2" y="11.0" width="1.0" height="1.6" rx="0.3" fill="#64748b"/>
+      <rect x="6.2" y="11.1" width="19.6" height="1.4" rx="0.7" fill="#e2e8f0" stroke="#475569" stroke-width="0.25"/>
+      <line x1="7.0" y1="11.4" x2="25.0" y2="11.4" stroke="#ffffff" stroke-width="0.3" stroke-linecap="round" opacity="0.8"/>
+      <rect x="6.8" y="13.2" width="18.4" height="9.0" rx="1.0" fill="#14181f" stroke="#334155" stroke-width="0.4"/>
+      <rect x="7.6" y="14.0" width="16.8" height="7.4" rx="0.6" fill="url(#ovenGlowSym)"/>
+      <line x1="8.2" y1="16.2" x2="23.8" y2="16.2" stroke="#fed7aa" stroke-width="0.45" stroke-linecap="round"/>
+      <line x1="8.2" y1="18.8" x2="23.8" y2="18.8" stroke="#fed7aa" stroke-width="0.45" stroke-linecap="round"/>
+      <line x1="11.0" y1="15.8" x2="11.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="14.0" y1="15.8" x2="14.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="18.0" y1="15.8" x2="18.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="21.0" y1="15.8" x2="21.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="11.0" y1="18.4" x2="11.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="14.0" y1="18.4" x2="14.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="18.0" y1="18.4" x2="18.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
+      <line x1="21.0" y1="18.4" x2="21.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
+      <polygon points="8.0,14.2 11.5,14.2 8.0,19.5" fill="#ffffff" opacity="0.12"/>
+      <polygon points="12.5,14.2 16.0,14.2 9.5,21.2 8.0,21.2" fill="#ffffff" opacity="0.08"/>
+      <line x1="5.5" y1="23.2" x2="26.5" y2="23.2" stroke="#334155" stroke-width="0.4"/>
+      <rect x="5.5" y="23.5" width="21.0" height="3.4" rx="0.6" fill="#1c2028"/>
+      <rect x="11.0" y="24.7" width="10.0" height="1.0" rx="0.5" fill="#cbd5e1" stroke="#475569" stroke-width="0.2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#i-brand-logo"/></svg>
+      <span>SA Map Studio</span>
+    </div>
+    <div class="project-box">
+      <input id="projectName" class="project-name" aria-label="Nome do projeto" spellcheck="false">
+      <span id="saveState" class="save-state" aria-live="polite">Salvo</span>
+      <button id="btnProjects" class="btn ghost" title="Abrir, criar ou apagar projetos"><svg><use href="#i-folder"/></svg><span class="lbl">Projetos</span></button>
+    </div>
+    <div class="tools" role="toolbar" aria-label="Ferramentas">
+      <div class="seg" role="group" aria-label="Ferramenta do gizmo">
+        <button class="btn seg-btn" data-mode="translate" title="Mover (G)"><svg><use href="#i-move"/></svg>Mover</button>
+        <button class="btn seg-btn" data-mode="rotate" title="Girar (R)"><svg><use href="#i-rotate"/></svg>Girar</button>
+        <button class="btn seg-btn" data-mode="texture" title="Textura: clique numa face para escolher o pedaço (T)"><svg><use href="#i-brush"/></svg>Textura</button>
+      </div>
+      <button id="btnSpace" class="btn ghost" title="Sistema de coordenadas: Mundo (eixos globais X/Y/Z) ou Objeto (eixos locais da rotação do objeto) [Tecla L]"><svg><use href="#i-globe"/></svg><span class="lbl-keep">Eixos: Mundo</span></button>
+      <div class="pop-anchor">
+        <button id="btnSnap" class="btn ghost" aria-pressed="false" title="Encaixe em grade"><svg><use href="#i-magnet"/></svg><span class="lbl">Encaixe</span></button>
+        <div class="popover" id="popSnap" hidden>
+          <div class="pop-title" style="margin-top:0">Grade e Passos</div>
+          <label class="check"><input type="checkbox" id="snapOn"> Encaixar na grade ao mover e girar</label>
+          <label class="field-row">Passo de posição (m) <input type="number" id="snapMove" step="0.05" min="0.01" value="0.5"></label>
+          <label class="field-row">Passo de rotação (°) <input type="number" id="snapRot" step="1" min="1" value="15"></label>
+          <div class="pop-title">Encaixe Magnético (Bordas)</div>
+          <label class="check"><input type="checkbox" id="snapMagnetic" checked> Encaixe automático em objetos próximos</label>
+          <label class="field-row">Distância do ímã (m) <input type="number" id="snapMagDist" step="0.05" min="0.05" max="5.0" value="0.8"></label>
+        </div>
+      </div>
+      <span class="divider"></span>
+      <button id="btnUndo" class="btn icon" title="Desfazer (Ctrl+Z)" aria-label="Desfazer"><svg><use href="#i-undo"/></svg></button>
+      <button id="btnRedo" class="btn icon" title="Refazer (Ctrl+Y)" aria-label="Refazer"><svg><use href="#i-redo"/></svg></button>
+    </div>
+    <div class="actions">
+      <div class="pop-anchor">
+        <button id="btnGoto" class="btn ghost" title="Ir para um lugar ou coordenada (Ctrl+G)"><svg><use href="#i-pin"/></svg><span class="lbl2">Ir para</span></button>
+        <div class="popover wide-goto" id="popGoto" hidden>
+          <div class="goto-tabs">
+            <button type="button" class="goto-tab active" id="gotoTabWorld" data-tab="world"><svg><use href="#i-pin"/></svg>Locais no mundo</button>
+            <button type="button" class="goto-tab" id="gotoTabInteriors" data-tab="interiors"><svg><use href="#i-cube"/></svg>Interiores</button>
+          </div>
+          <div class="goto-search-bar">
+            <svg><use href="#i-search"/></svg>
+            <input type="search" id="gotoSearch" placeholder="Pesquisar local ou interior..." spellcheck="false" autocomplete="off">
+          </div>
+          <div class="goto-categories" id="gotoCategories"></div>
+          <div class="places" id="placesList"></div>
+          <div class="pop-title">Teleportar para uma coordenada <span class="kbd">Ctrl+G</span></div>
+          <form class="coords-form" id="gotoForm">
+            <input id="gotoInput" placeholder="2495.3, -1687.4, 13.5" aria-label="Coordenadas x, y, z" spellcheck="false">
+            <button class="btn primary small" type="submit">Ir</button>
+          </form>
+          <div class="pop-note plain">Aceita "x, y, z", "x y z" ou uma linha como <code>SetPlayerPos(playerid, x, y, z);</code>. Sem o z, a câmera fica no chão do ponto.</div>
+          <label class="check"><input type="checkbox" id="gotoBehind" checked> Ficar um pouco atrás, olhando para o ponto</label>
+        </div>
+      </div>
+      <div class="pop-anchor">
+        <button id="btnView" class="btn ghost" title="Distância de visão, câmera, água e interiores"><svg><use href="#i-eye"/></svg><span class="lbl2">Visão</span></button>
+        <div class="popover wide" id="popView" hidden>
+          <label class="field-row slider">Distância de visão <input type="range" id="viewDist" min="150" max="2500" step="50" value="600"><output id="viewDistOut">600 m</output></label>
+          <label class="field-row slider">Velocidade da câmera <input type="range" id="camSpeed" min="2" max="300" step="1" value="25"><output id="camSpeedOut">25</output></label>
+          <div class="pop-title" style="margin-top: 4px;">Ambiente no editor</div>
+          <div class="pair">
+            <label>Clima (0 a 45)<input type="number" id="viewWeather" step="1" min="0" max="45" value="10"></label>
+            <label>Horário (HH:MM)<input type="time" id="viewTime" value="10:00"></label>
+          </div>
+          <label class="check"><input type="checkbox" id="showLod" checked> Mostrar LOD ao longe</label>
+          <label class="check"><input type="checkbox" id="showWater" checked> Mostrar água</label>
+          <label class="check"><input type="checkbox" id="showInteriors"> Ver só os interiores</label>
+          <label class="check"><input type="checkbox" id="removeLod" checked> Ao remover um objeto, remover o LOD junto</label>
+          <label class="check"><input type="checkbox" id="autoCollapseSidebars"> Recolher menus laterais ao mover a câmera</label>
+        </div>
+      </div>
+      <button id="btnToggleSidebars" class="btn ghost icon" title="Recolher / Restaurar menus laterais (F10)" aria-label="Recolher menus laterais"><svg><use href="#i-panels"/></svg></button>
+      <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
+      <button id="btnExport" class="btn"><svg><use href="#i-out"/></svg>Exportar</button>
+      <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg>Testar no jogo</button>
+      <button id="btnHelp" class="btn icon" title="Atalhos (?)" aria-label="Atalhos de teclado"><svg><use href="#i-help"/></svg></button>
+      <button id="btnAbout" class="btn icon" title="Novidades e documentação" aria-label="Novidades e documentação"><svg><use href="#i-doc"/></svg></button>
+      <button id="btnLogs" class="btn ghost icon" title="Registros de erros e diagnóstico do sistema" aria-label="Registros e diagnóstico" style="position:relative;"><svg><use href="#i-terminal"/></svg><span class="log-badge" id="logBadge" hidden>0</span></button>
+    </div>
+  </header>
+
+  <aside class="sidebar left" aria-label="Biblioteca">
+    <nav class="tabs" role="tablist">
+      <button role="tab" class="tab active" data-tab="catalog" aria-selected="true">Objetos</button>
+      <button role="tab" class="tab" data-tab="textures" aria-selected="false">Texturas</button>
+      <button role="tab" class="tab" data-tab="cameras" aria-selected="false">Câmeras</button>
+      <button role="tab" class="tab" data-tab="outline" aria-selected="false">Projeto <span class="count" id="outlineCount">0</span></button>
+    </nav>
+    <section class="tab-panel" id="tab-catalog">
+      <div class="search">
+        <svg><use href="#i-search"/></svg>
+        <input id="catalogSearch" type="search" placeholder="Buscar por nome ou ID" aria-label="Buscar objetos" spellcheck="false">
+      </div>
+      <div class="filters">
+        <select id="catalogCategory" aria-label="Categoria"></select>
+        <select id="catalogRegion" aria-label="Origem"></select>
+      </div>
+      <div class="chips" id="catalogChips" role="group" aria-label="Atalhos"></div>
+      <div class="list-meta"><span id="catalogMeta"></span><button type="button" class="link-btn" id="btnThumbs" title="Gera em segundo plano as miniaturas que faltam e guarda no disco">Preparar miniaturas</button></div>
+      <div class="thumb-progress" id="thumbProgress" hidden><div class="bar"><div class="bar-fill" id="thumbBar"></div></div><span id="thumbText"></span><button type="button" class="link-btn" id="btnThumbsStop">Parar</button></div>
+      <div class="vlist" id="catalogList" tabindex="0"><div class="vlist-inner"></div></div>
+    </section>
+    <section class="tab-panel" id="tab-textures" hidden>
+      <div class="tex-status" id="texStatus">
+        <p class="tex-status-text" id="texStatusText"></p>
+        <div class="bar" id="texBar" hidden><div class="bar-fill" id="texBarFill"></div></div>
+        <div class="tex-status-actions">
+          <button class="btn primary" id="btnLoadTextures"><svg><use href="#i-image"/></svg>Carregar texturas</button>
+          <button class="btn ghost" id="btnCancelTextures" hidden>Parar</button>
+        </div>
+      </div>
+      <div class="tex-browser" id="texBrowser" hidden>
+        <div class="search">
+          <svg><use href="#i-search"/></svg>
+          <input id="texSearch" type="search" placeholder="Buscar textura ou TXD" aria-label="Buscar texturas" spellcheck="false">
+        </div>
+        <div class="filters one"><select id="texCategory" aria-label="Categoria de textura"></select></div>
+        <div class="chips" id="texChips" role="group" aria-label="Filtros de textura"></div>
+        <div class="list-meta"><span id="texMeta"></span><span class="thumb-note" id="texThumbs" hidden title="As miniaturas são feitas aos poucos, quando o mapa não está carregando, e ficam guardadas no disco"></span><button type="button" class="link-btn" id="btnTexReindex" title="Lê de novo as texturas do jogo (depois de instalar mods)">Atualizar lista</button></div>
+        <div class="tex-target" id="texTarget"></div>
+        <div class="vlist" id="texList" tabindex="0"><div class="vlist-inner"></div></div>
+      </div>
+    </section>
+    <section class="tab-panel" id="tab-cameras" hidden>
+      <div class="cam-panel" id="camPanel"></div>
+    </section>
+    <section class="tab-panel" id="tab-outline" hidden>
+      <div class="search">
+        <svg><use href="#i-search"/></svg>
+        <input id="outlineSearch" type="search" placeholder="Filtrar o projeto" aria-label="Filtrar o projeto" spellcheck="false">
+      </div>
+      <div class="outline-actions" style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px 8px; gap:6px;">
+        <button type="button" class="btn small" id="btnInvertOutline" title="Inverter ordem dos itens (mais recentes / mais antigos primeiro)" style="font-size:11px; padding:4px 8px; flex:1;">
+          <svg style="width:14px;height:14px;"><use href="#i-rotate"/></svg> Inverter ordem
+        </button>
+        <button type="button" class="btn danger small" id="btnClearProject" title="Limpar todos os elementos do projeto atual" style="font-size:11px; padding:4px 8px;">
+          <svg style="width:14px;height:14px;"><use href="#i-trash"/></svg> Apagar tudo
+        </button>
+      </div>
+      <div class="outline" id="outline"></div>
+    </section>
+  </aside>
+
+  <main class="viewport" id="viewport">
+    <button type="button" class="btn-restore-sidebars" id="btnRestoreSidebars" title="Restaurar menus laterais (F10)" hidden>
+      <svg><use href="#i-panels"/></svg> Restaurar menus
+    </button>
+    <div class="sign" id="sign" aria-live="off" title="Clique para teleportar para uma coordenada (Ctrl+G). Botão direito copia a posição.">
+      <div class="sign-area" id="signArea">San Andreas</div>
+      <div class="sign-coords" id="signCoords">0.0  0.0  0.0</div>
+    </div>
+    <div class="hud" id="hud"></div>
+    <div class="placing-hint" id="placingHint" hidden></div>
+    <div class="cam-preview-bar" id="camPreviewBar" hidden><span id="camPreviewText"></span><button type="button" class="btn small" id="camPreviewStop"><svg><use href="#i-stop"/></svg>Parar (Esc)</button></div>
+    <div class="empty-hint" id="emptyHint" hidden>
+      Escolha um objeto no catálogo e clique no mapa para posicionar.<br>
+      Clique com o botão direito e arraste para olhar. WASD para andar.
+    </div>
+  </main>
+
+  <aside class="sidebar right" aria-label="Propriedades">
+    <div class="click-coords-bar" id="clickCoordsBar">
+      <div class="click-coords-label">
+        <svg class="click-coords-icon"><use href="#i-pin"/></svg>
+        <span>Coordenadas do clique do mouse</span>
+        <button type="button" class="btn icon small click-coords-copy" id="btnCopyClickCoords" title="Copiar coordenadas do clique" aria-label="Copiar coordenadas">
+          <svg><use href="#i-copy"/></svg>
+        </button>
+      </div>
+      <div class="click-coords-value" id="clickCoordsValue" title="Clique para copiar">
+        <span class="coord-item"><b>X:</b> <span id="ccX">0.0000</span></span>
+        <span class="coord-item"><b>Y:</b> <span id="ccY">0.0000</span></span>
+        <span class="coord-item"><b>Z:</b> <span id="ccZ">0.0000</span></span>
+      </div>
+    </div>
+    <div class="inspector" id="inspector"></div>
+  </aside>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="boot">
+    <svg class="boot-mark" viewBox="0 0 32 32" aria-hidden="true"><use href="#i-brand-logo"/></svg>
+    <h1>SA Map Studio</h1>
+    <div id="bootBody">
+      <p class="boot-status" id="bootStatus">Iniciando...</p>
+      <div class="bar"><div class="bar-fill" id="bootBar"></div></div>
+      <p class="boot-rights" id="bootRights">Todos os direitos reservados · SA Map Studio</p>
+    </div>
+    <form class="setup" id="setupForm" hidden>
+      <p>Não encontrei o GTA San Andreas neste computador. Escolha a pasta onde fica o <code>gta_sa.exe</code>.</p>
+      <p class="setup-hint">O editor só lê os arquivos do seu jogo, sem alterar nada. Use o GTA San Andreas original, o mesmo que roda o SA-MP.</p>
+      <div class="setup-row">
+        <input id="setupPath" placeholder="C:\Program Files (x86)\Rockstar Games\GTA San Andreas" spellcheck="false" aria-label="Pasta do GTA San Andreas">
+        <button class="btn" type="button" id="setupBrowse"><svg><use href="#i-folder"/></svg>Procurar...</button>
+      </div>
+      <p class="error" id="setupError" hidden></p>
+      <button class="btn primary" type="submit">Usar esta pasta</button>
+    </form>
+  </div>
+</div>
+
+<dialog class="dialog" id="dlgExport">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head"><h2>Exportar mapa</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <div class="export-grid">
+      <div class="export-options">
+        <fieldset>
+          <legend>Formato</legend>
+          <label class="radio"><input type="radio" name="exFormat" value="pwn" checked> Pawn (.pwn) para SA-MP / open.mp</label>
+          <label class="radio"><input type="radio" name="exFormat" value="ipl"> IPL para o singleplayer</label>
+        </fieldset>
+        <fieldset id="pwnOptions">
+          <legend>Objetos</legend>
+          <label class="radio"><input type="radio" name="exFn" value="CreateDynamicObject" checked> CreateDynamicObject (streamer)</label>
+          <label class="radio"><input type="radio" name="exFn" value="CreateObject"> CreateObject</label>
+          <legend class="sub">Organização</legend>
+          <label class="radio"><input type="radio" name="exLayout" value="module" checked> Funções prontas para usar</label>
+          <label class="radio"><input type="radio" name="exLayout" value="lines"> Só as linhas</label>
+          <legend class="sub">Incluir</legend>
+          <label class="check"><input type="checkbox" id="exRemoved" checked> Objetos removidos</label>
+          <label class="check"><input type="checkbox" id="exVehicles" checked> Veículos</label>
+          <label class="check"><input type="checkbox" id="exCameras" checked> Câmeras (pontos e movimentos)</label>
+          <label class="check"><input type="checkbox" id="exArray"> Coordenadas no formato de array</label>
+          <label class="check"><input type="checkbox" id="exRelative"> Posições relativas ao centro do mapa</label>
+          <legend class="sub">Arquivo</legend>
+          <label class="check"><input type="checkbox" id="exAnsi" checked> Salvar em ANSI (acentos certos no pawno)</label>
+        </fieldset>
+        <div class="export-stats" id="exportStats"></div>
+      </div>
+      <textarea id="exportText" class="code" spellcheck="false" aria-label="Código gerado" placeholder="O código gerado aparecerá aqui e pode ser editado livremente antes de exportar."></textarea>
+    </div>
+    <footer class="dialog-foot">
+      <span class="foot-note" id="exportNote"></span>
+      <button type="button" class="btn ghost" id="exCopy"><svg><use href="#i-copy"/></svg>Copiar</button>
+      <button type="button" class="btn ghost" id="exDownload"><svg><use href="#i-in"/></svg>Baixar arquivo</button>
+      <button type="button" class="btn primary" id="exSave">Salvar na pasta Exportados</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="dlgImport">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head"><h2>Importar mapa</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="dialog-text">Abra <b>qualquer arquivo</b> ou cole o código: o editor descobre o formato sozinho e traz os objetos com as texturas (SetObjectMaterial), os textos (SetObjectMaterialText), veículos, objetos removidos e câmeras. Entende código Pawn do Map Construction, Texture Studio e outros, bancos SQLite, projetos .json, mapas do MTA (.map) e IPL do jogo.</p>
+    <div class="drop" id="importDrop">
+      <svg><use href="#i-in"/></svg>
+      <span>Arraste o arquivo para cá ou</span>
+      <label class="btn small file-btn">Escolher arquivo<input type="file" id="importFile" hidden></label>
+      <span class="drop-name" id="importFileName"></span>
+    </div>
+    <textarea id="importText" class="code tall" spellcheck="false" placeholder="...ou cole aqui: CreateDynamicObject(3279, 1500.0, -1700.0, 12.5, 0.0, 0.0, 90.0);"></textarea>
+    <div class="import-summary" id="importSummary"></div>
+    <footer class="dialog-foot">
+      <label class="check inline"><input type="checkbox" id="importReplace"> Substituir o projeto atual</label>
+      <label class="check"><input type="checkbox" id="importCameras" checked> Câmeras</label>
+      <button type="button" class="btn primary" id="importGo" disabled>Importar</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog narrow" id="dlgTest">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head"><h2>Testar o mapa no jogo</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="dialog-text">O editor sobe um servidor de teste só seu (no seu computador, porta <b id="testPort">7777</b>), carrega o mapa e abre o SA-MP já conectado. Você nasce no ponto escolhido, com jetpack se quiser. No jogo: <code>/fly</code> ou <code>/voar</code> (voo livre), <code>/map</code> ou <code>/mapa</code> (centro do mapa), <code>/w</code> (clima), <code>/t</code> (horário), <code>/jetpack</code>, <code>/v</code> para um carro, <code>/spawn</code> e <code>/pos</code>.</p>
+    <div class="test-grid">
+      <div class="insp-label">Jogo (GTA San Andreas)</div>
+      <div class="setup-row" style="margin-bottom: 4px;">
+        <input id="testGtaPath" placeholder="Pasta do GTA San Andreas" spellcheck="false" aria-label="Pasta do GTA" readonly>
+        <button type="button" class="btn" id="btnChangeGta"><svg><use href="#i-folder"/></svg>Trocar pasta...</button>
+      </div>
+      <div class="insp-note" id="gtaInfo" style="margin-bottom: 8px;"></div>
+      <div class="insp-label">Servidor open.mp ou SA-MP</div>
+      <div class="setup-row"><input id="testServer" placeholder="Pasta do omp-server.exe ou samp-server.exe" spellcheck="false" aria-label="Pasta do servidor"><button type="button" class="btn" id="testBrowse"><svg><use href="#i-folder"/></svg>Procurar...</button></div>
+      <div class="insp-note" id="testServerInfo"></div>
+      <div class="insp-label">Onde nascer</div>
+      <label class="radio"><input type="radio" name="testSpawn" value="camera" checked> No chão, onde a câmera está olhando</label>
+      <label class="radio"><input type="radio" name="testSpawn" value="center"> No centro do mapa</label>
+      <label class="radio"><input type="radio" name="testSpawn" value="selection"> Em cima do objeto selecionado</label>
+      <div class="pair">
+        <label>Interior<input type="number" id="testInterior" step="1" min="0" value="0"></label>
+        <label>Mundo virtual<input type="number" id="testWorld" step="1" min="0" value="0"></label>
+      </div>
+      <div class="insp-label">Ambiente no jogo</div>
+      <div class="pair">
+        <label>Clima (0 a 45)<input type="number" id="testWeather" step="1" min="0" max="45" value="10"></label>
+        <label>Horário (HH:MM)<input type="time" id="testTime" value="10:00"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="testJetpack" checked> Começar com jetpack</label>
+      <label class="check"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
+      <div class="insp-note" id="testWarn"></div>
+      <pre class="code log" id="testLog" hidden></pre>
+    </div>
+    <footer class="dialog-foot">
+      <span class="foot-note" id="testStatus"></span>
+      <button type="button" class="btn ghost" id="testStop" hidden><svg><use href="#i-stop"/></svg>Parar servidor</button>
+      <button type="button" class="btn primary" id="testGo"><svg><use href="#i-play"/></svg>Testar agora</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="dlgProjects">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head"><h2>Projetos</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <div class="new-project">
+      <input id="newProjectName" placeholder="Nome do novo projeto" aria-label="Nome do novo projeto">
+      <button type="button" class="btn primary" id="newProjectBtn"><svg><use href="#i-plus"/></svg>Criar projeto</button>
+    </div>
+    <ul class="project-list" id="projectList"></ul>
+    <p class="foot-note" id="projectsFolder"></p>
+  </form>
+</dialog>
+
+<dialog class="dialog narrow" id="dlgHelp">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head"><h2>Atalhos</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <dl class="keys">
+      <dt>Botão direito + arrastar</dt><dd>Olhar em volta</dd>
+      <dt>W A S D</dt><dd>Andar com a câmera</dd>
+      <dt>E / Q</dt><dd>Subir / descer</dd>
+      <dt>Shift / Alt</dt><dd>Mais rápido / mais devagar</dd>
+      <dt>Roda do mouse</dt><dd>Avançar e recuar (com o botão direito: velocidade)</dd>
+      <dt>Botão do meio + arrastar</dt><dd>Deslizar a câmera</dd>
+      <dt>Clique</dt><dd>Selecionar objeto ou prédio do mapa (Shift soma à seleção)</dd>
+      <dt>Duplo clique / F</dt><dd>Focar na seleção</dd>
+      <dt>G / R / T</dt><dd>Mover / girar / textura</dd>
+      <dt>Ferramenta Textura + clique</dt><dd>Escolher o índice de material (a parte do objeto) que vai receber a textura</dd>
+      <dt>Textura: Ctrl + clique</dt><dd>Somar ou tirar outro índice</dd>
+      <dt>Textura: Shift + clique</dt><dd>Somar outro objeto</dd>
+      <dt>Ctrl+G</dt><dd>Teleportar para uma coordenada</dd>
+      <dt>L</dt><dd>Alternar eixos do manipulador (Mundo global vs Objeto local)</dd>
+      <dt>X</dt><dd>Girar 90° no eixo Z</dd>
+      <dt>Ctrl+A</dt><dd>Selecionar todos os objetos do projeto</dd>
+      <dt>Page Up / Page Down</dt><dd>Subir / descer a seleção</dd>
+      <dt>End</dt><dd>Colocar na superfície</dd>
+      <dt>Ctrl+D</dt><dd>Duplicar no mesmo lugar (já com o gizmo de mover)</dd>
+      <dt>Delete</dt><dd>Apagar selecionados ou remover objetos do mapa</dd>
+      <dt>Ctrl+Z / Ctrl+Y</dt><dd>Desfazer / refazer</dd>
+      <dt>Ctrl+S</dt><dd>Salvar agora</dd>
+      <dt>Ao posicionar: R / X</dt><dd>Girar 15° / 90° antes de soltar</dd>
+      <dt>Ao posicionar: Shift + clique</dt><dd>Soltar e continuar posicionando</dd>
+      <dt>Ao posicionar: Botão direito</dt><dd>Cancelar inserção</dd>
+      <dt>Esc</dt><dd>Cancelar / limpar seleção</dd>
+    </dl>
+  </form>
+</dialog>
+
+<dialog class="dialog narrow" id="dlgPrompt">
+  <form method="dialog" class="dialog-body" id="promptForm">
+    <header class="dialog-head"><h2 id="promptTitle">Definir apelido</h2><button class="btn icon" type="button" id="promptCloseBtn" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <div style="padding: 16px; display: grid; gap: 12px;">
+      <p id="promptDesc" style="margin: 0; font-size: 13px; color: var(--paper-dim); line-height: 1.4;"></p>
+      <input id="promptInput" class="input" type="text" style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: var(--radius-s); background: var(--asphalt-700); border: 1px solid var(--line); color: var(--paper);" autocomplete="off">
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+        <button type="button" class="btn ghost" id="promptCancel">Cancelar</button>
+        <button type="submit" class="btn primary" id="promptOk">Salvar</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="dialog narrow about" id="dlgAbout">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head"><h2>Novidades e documentação</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <div class="about-body" id="aboutBody"></div>
+    <footer class="about-foot" id="aboutFoot"></footer>
+  </form>
+</dialog>
+
+<dialog class="dialog wide" id="dlgLogs">
+  <form method="dialog" class="dialog-body">
+    <header class="dialog-head">
+      <h2>Registros e Diagnóstico de Erros</h2>
+      <button type="button" class="btn icon" id="btnCloseLogsX" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
+    </header>
+    <p class="dialog-text">Histórico completo de erros de execução do editor, mensagens de console e registros do servidor local. Use o botão <b>Copiar registros</b> para enviar um relatório detalhado de suporte.</p>
+    <div class="log-viewer-container">
+      <pre class="log-viewer" id="logsViewer">Carregando registros...</pre>
+    </div>
+    <footer class="dialog-foot">
+      <button type="button" class="btn ghost danger" id="btnClearLogs"><svg><use href="#i-trash"/></svg>Limpar registros</button>
+      <button type="button" class="btn ghost" id="btnOpenLogsFolder"><svg><use href="#i-folder"/></svg>Abrir pasta de registros</button>
+      <button type="button" class="btn primary" id="btnCopyLogs"><svg><use href="#i-copy"/></svg>Copiar registros</button>
+      <button type="button" class="btn" id="btnCloseLogs" value="close">Fechar</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog wide" id="dlgAnimPicker">
+  <form method="dialog" class="dialog-body" style="height: 88vh; max-height: 88vh;">
+    <header class="dialog-head">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <h2>Selecionar Animação</h2>
+        <span id="animCacheBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--asphalt-600); color: var(--paper-dim);">Carregando status offline...</span>
+      </div>
+      <button type="button" class="btn icon" id="btnCloseAnimPickerX" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
+    </header>
+
+    <div class="anim-split-view">
+      <!-- Coluna da Esquerda: Busca, Categorias e Grade de Animações -->
+      <div class="anim-left-col">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="search" id="animPickerSearch" class="input" placeholder="Buscar animação por nome, biblioteca ou descrição (ex: dance, sit, cop, chat)..." style="flex: 1; padding: 7px 10px; font-size: 13px; border-radius: var(--radius-s); background: var(--asphalt-700); border: 1px solid var(--line); color: var(--paper);" autocomplete="off">
+        </div>
+        <div id="animPickerCategories" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;"></div>
+        <div id="animPickerList" class="anim-list-scroll"></div>
+      </div>
+
+      <!-- Coluna da Direita: Painel de Prévia em Vídeo e Detalhes da Animação -->
+      <div class="anim-preview-col" id="animPreviewCol">
+        <div class="anim-video-box" id="animVideoBox">
+          <video id="animPreviewVideo" loop muted playsinline preload="auto" style="display:none;"></video>
+          <div class="anim-video-overlay" id="animVideoOverlay">Selecione ou aponte para uma animação para ver a prévia em vídeo</div>
+        </div>
+
+        <div class="anim-preview-details" id="animPreviewDetails">
+          <div class="anim-preview-title">
+            <span id="prevAnimTitle">Nenhuma animação</span>
+            <span class="anim-preview-lib-tag" id="prevAnimLib">LIB</span>
+          </div>
+          <div class="anim-preview-code" id="prevAnimCode">ApplyActorAnimation(...)</div>
+          <div class="anim-preview-desc" id="prevAnimDesc">Passe o cursor sobre qualquer item para assistir ao vídeo da animação e ver as opções.</div>
+          <div class="anim-preview-chips" id="prevAnimChips">
+            <span class="anim-preview-chip" id="prevAnimLoop">Loop contínuo</span>
+            <span class="anim-preview-chip" id="prevAnimSpeed">Velocidade: 4.1</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn primary block" id="btnApplySelectedAnim" style="margin-top: auto; padding: 9px; font-size: 13px; font-weight: 600;" disabled>
+          <svg><use href="#i-check"/></svg>Aplicar esta animação
+        </button>
+      </div>
+    </div>
+
+    <footer class="dialog-foot" style="border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto;">
+      <button type="button" class="btn ghost danger" id="btnAnimPickerClear" style="margin-right: 8px;"><svg><use href="#i-trash"/></svg>Remover animação</button>
+      <button type="button" class="btn ghost" id="btnDownloadAllAnims" style="margin-right: auto;" title="Baixar todas as 1.812 animações em cache local para uso sem internet">
+        <svg><use href="#i-download"/></svg><span id="btnDownloadAllText">Baixar pacote offline (~320 MB)</span>
+      </button>
+      <button type="button" class="btn" id="btnCloseAnimPicker" value="close">Cancelar</button>
+    </footer>
+  </form>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
