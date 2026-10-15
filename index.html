@@ -408,6 +408,7 @@
         <label>Horário (HH:MM)<input type="time" id="testTime" value="10:00"></label>
       </div>
       <label class="check"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
+      <label class="check"><input type="checkbox" id="testStreamer"> Usar plugin Streamer (itens dinâmicos)</label>
       <label class="check"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
       <div class="insp-note" id="testWarn"></div>
       <pre class="code log" id="testLog" hidden></pre>
@@ -426,6 +427,8 @@
     <div class="new-project">
       <input id="newProjectName" placeholder="Nome do novo projeto" aria-label="Nome do novo projeto">
       <button type="button" class="btn primary" id="newProjectBtn"><svg><use href="#i-plus"/></svg>Criar projeto</button>
+      <button type="button" class="btn" id="openExternalProjectBtn" title="Abrir arquivo de projeto .json de qualquer pasta"><svg><use href="#i-folder"/></svg>Abrir .json...</button>
+      <input type="file" id="externalProjectFileInput" accept=".json" style="display:none">
     </div>
     <ul class="project-list" id="projectList"></ul>
     <p class="foot-note" id="projectsFolder"></p>

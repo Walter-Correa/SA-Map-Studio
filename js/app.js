@@ -795,7 +795,7 @@ function setupOutline() {
   if (btnAdd3DText) {
     btnAdd3DText.onclick = () => {
       const ed = app.editor;
-      const pt = getSpawnTargetPoint(1.0);
+      const pt = getSpawnTargetPoint(0.98);
       const lbl = {
         uid: null,
         text: 'Novo Texto 3D',
@@ -818,7 +818,7 @@ function setupOutline() {
   if (btnAddPickup) {
     btnAddPickup.onclick = () => {
       const ed = app.editor;
-      const pt = getSpawnTargetPoint(0.5);
+      const pt = getSpawnTargetPoint(0.98);
       const pk = {
         uid: null,
         model: 1240, // Saúde (Health / Coração)

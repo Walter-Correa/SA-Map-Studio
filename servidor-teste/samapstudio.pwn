@@ -4,19 +4,24 @@
 // objetos, as trocas de textura e texto, remove os prédios e coloca o jogador
 // no ponto escolhido. Usa só funções nativas do SA-MP/open.mp (sem plugins).
 #define SAMP_COMPAT
-#include <a_samp>
+#include <open.mp>
+#include <streamer>
+
+#pragma dynamic 2000000
 
 #define SAMS_ARQUIVO        "samapstudio/mapa.txt"
-#define SAMS_MAX_OBJETOS    2000
-#define SAMS_MAX_REMOVIDOS  1000
-#define SAMS_MAX_VEICULOS   200
-#define SAMS_MAX_ACTORS     500
-#define SAMS_MAX_LABELS     500
-#define SAMS_MAX_PICKUPS    500
-#define SAMS_MAX_GANGZONES  200
+#define SAMS_MAX_OBJETOS    20000
+#define SAMS_MAX_REMOVIDOS  2000
+#define SAMS_MAX_VEICULOS   1000
+#define SAMS_MAX_ACTORS     1000
+#define SAMS_MAX_LABELS     2000
+#define SAMS_MAX_PICKUPS    2000
+#define SAMS_MAX_GANGZONES  500
 #define SAMS_MAX_TEXTDRAWS  256
 #define SAMS_COR_INFO       0xF0A630FF
 #define SAMS_COR_OK         0x57B77AFF
+
+new bool:gUseStreamer = false;
 
 // Modo de voo livre (No-Clip)
 #define CAMERA_MODE_NONE        0
@@ -223,6 +228,10 @@ stock SAMS_CarregarMapa()
         SAMS_Campo(linha, 0, tipo, sizeof(tipo));
         switch (tipo[0])
         {
+            case 'X':
+            {
+                gUseStreamer = (SAMS_Int(linha, 1) != 0);
+            }
             case 'S':
             {
                 gSpawn[0] = SAMS_Float(linha, 1);
@@ -259,13 +268,24 @@ stock SAMS_CarregarMapa()
                 new Float:ox = SAMS_Float(linha, 2);
                 new Float:oy = SAMS_Float(linha, 3);
                 new Float:oz = SAMS_Float(linha, 4);
-                new id = CreateObject(SAMS_Int(linha, 1),
-                    ox, oy, oz,
-                    SAMS_Float(linha, 5), SAMS_Float(linha, 6), SAMS_Float(linha, 7),
-                    SAMS_Float(linha, 8));
+                new Float:orx = SAMS_Float(linha, 5);
+                new Float:ory = SAMS_Float(linha, 6);
+                new Float:orz = SAMS_Float(linha, 7);
+                new Float:odist = SAMS_Float(linha, 8);
+                if (odist <= 0.0) odist = 300.0;
+
+                new id;
+                if (gUseStreamer)
+                {
+                    id = _:CreateDynamicObject(SAMS_Int(linha, 1), ox, oy, oz, orx, ory, orz, -1, -1, -1, (odist > 300.0 ? odist : 300.0), odist);
+                }
+                else
+                {
+                    id = CreateObject(SAMS_Int(linha, 1), ox, oy, oz, orx, ory, orz, odist);
+                }
                 gObjetos[gTotalObjetos] = id;
                 gTotalObjetos++;
-                if (id == INVALID_OBJECT_ID) gIgnorados++;
+                if (id == INVALID_OBJECT_ID || id == 0) gIgnorados++;
 
                 sumX += ox;
                 sumY += oy;
@@ -275,19 +295,34 @@ stock SAMS_CarregarMapa()
             case 'M':
             {
                 new indice = SAMS_Int(linha, 1);
-                if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID) continue;
+                if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
                 SAMS_Campo(linha, 4, txd, sizeof(txd));
                 SAMS_Campo(linha, 5, textura, sizeof(textura));
-                SetObjectMaterial(gObjetos[indice], SAMS_Int(linha, 2), SAMS_Int(linha, 3), txd, textura, SAMS_Int(linha, 6));
+                if (gUseStreamer)
+                {
+                    SetDynamicObjectMaterial(STREAMER_TAG_OBJECT:gObjetos[indice], SAMS_Int(linha, 2), SAMS_Int(linha, 3), txd, textura, SAMS_Int(linha, 6));
+                }
+                else
+                {
+                    SetObjectMaterial(gObjetos[indice], SAMS_Int(linha, 2), SAMS_Int(linha, 3), txd, textura, SAMS_Int(linha, 6));
+                }
             }
             case 'T':
             {
                 new indice = SAMS_Int(linha, 1);
-                if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID) continue;
+                if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
                 SAMS_Campo(linha, 9, fonte, sizeof(fonte));
                 SAMS_Resto(linha, 10, texto, sizeof(texto));
-                SetObjectMaterialText(gObjetos[indice], texto, SAMS_Int(linha, 2), SAMS_Int(linha, 3), fonte,
-                    SAMS_Int(linha, 4), SAMS_Int(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), SAMS_Int(linha, 8));
+                if (gUseStreamer)
+                {
+                    SetDynamicObjectMaterialText(STREAMER_TAG_OBJECT:gObjetos[indice], SAMS_Int(linha, 2), texto, SAMS_Int(linha, 3), fonte,
+                        SAMS_Int(linha, 4), bool:SAMS_Int(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), SAMS_Int(linha, 8));
+                }
+                else
+                {
+                    SetObjectMaterialText(gObjetos[indice], texto, SAMS_Int(linha, 2), SAMS_Int(linha, 3), fonte,
+                        SAMS_Int(linha, 4), bool:SAMS_Int(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), SAMS_Int(linha, 8));
+                }
             }
             case 'R':
             {
@@ -408,12 +443,21 @@ stock SAMS_CarregarMapa()
                 new Float:ly = SAMS_Float(linha, 2);
                 new Float:lz = SAMS_Float(linha, 3);
                 new Float:ldist = SAMS_Float(linha, 4);
+                if (ldist <= 0.0) ldist = 50.0;
                 new lcolor = SAMS_HexOrInt(linha, 5);
                 new lworld = SAMS_Int(linha, 6);
                 new ltestlos = SAMS_Int(linha, 7);
                 SAMS_Resto(linha, 8, texto, sizeof(texto));
-                new Text3D:lbl = Create3DTextLabel(texto, lcolor, lx, ly, lz, (ldist > 0.0 ? ldist : 50.0), lworld, ltestlos);
-                gLabels[gTotalLabels] = lbl;
+                if (gUseStreamer)
+                {
+                    new Text3D:lbl = Text3D:CreateDynamic3DTextLabel(texto, lcolor, lx, ly, lz, ldist, INVALID_PLAYER_ID, INVALID_VEHICLE_ID, ltestlos, lworld);
+                    gLabels[gTotalLabels] = lbl;
+                }
+                else
+                {
+                    new Text3D:lbl = Create3DTextLabel(texto, lcolor, lx, ly, lz, ldist, lworld, bool:ltestlos);
+                    gLabels[gTotalLabels] = lbl;
+                }
                 gTotalLabels++;
             }
             case 'P':
@@ -421,12 +465,21 @@ stock SAMS_CarregarMapa()
                 if (gTotalPickups >= SAMS_MAX_PICKUPS) continue;
                 new pmodel = SAMS_Int(linha, 1);
                 new ptype = SAMS_Int(linha, 2);
+                if (ptype <= 0) ptype = 1;
                 new Float:px = SAMS_Float(linha, 3);
                 new Float:py = SAMS_Float(linha, 4);
                 new Float:pz = SAMS_Float(linha, 5);
                 new pworld = SAMS_Int(linha, 6);
-                new pick = CreatePickup(pmodel, (ptype > 0 ? ptype : 1), px, py, pz, pworld);
-                gPickups[gTotalPickups] = pick;
+                if (gUseStreamer)
+                {
+                    new pick = _:CreateDynamicPickup(pmodel, ptype, px, py, pz, pworld);
+                    gPickups[gTotalPickups] = pick;
+                }
+                else
+                {
+                    new pick = CreatePickup(pmodel, ptype, px, py, pz, pworld);
+                    gPickups[gTotalPickups] = pick;
+                }
                 gTotalPickups++;
             }
             case 'G':
@@ -483,12 +536,12 @@ stock SAMS_CarregarMapa()
                     TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
                     if (tdusebox)
                     {
-                        TextDrawUseBox(td, 1);
+                        TextDrawUseBox(td, true);
                         TextDrawBoxColor(td, tdboxcol);
                     }
                     TextDrawBackgroundColor(td, tdbgcol);
-                    TextDrawSetProportional(td, tdprop);
-                    if (tdselect) TextDrawSetSelectable(td, 1);
+                    TextDrawSetProportional(td, bool:tdprop);
+                    if (tdselect) TextDrawSetSelectable(td, true);
                     if (tdfont == 5 && tdmodel > 0)
                     {
                         TextDrawSetPreviewModel(td, tdmodel);
@@ -510,7 +563,8 @@ stock SAMS_CarregarMapa()
         gHasMapCenter = true;
     }
 
-    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws", gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalTextDraws);
+    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws (Streamer: %s)",
+        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalTextDraws, gUseStreamer ? "ATIVO" : "DESATIVADO");
     printf("[SA Map Studio] Clima: %d, Horario: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
@@ -660,6 +714,10 @@ public OnPlayerSpawn(playerid)
     SAMS_IrParaSpawn(playerid);
     SetPlayerTime(playerid, gHora, gMinuto);
     SetPlayerWeather(playerid, gClima);
+    if (gUseStreamer)
+    {
+        Streamer_Update(playerid);
+    }
     for (new i = 0; i < gTotalGangZones; i++)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);

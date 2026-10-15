@@ -657,6 +657,12 @@ def start_test(body):
                 full = os.path.join(comps, n)
                 if os.path.isfile(full):
                     copy_if_newer(full, os.path.join(TEST_DIR, "components", n))
+        plugs = os.path.join(src, "plugins")
+        if os.path.isdir(plugs):
+            for n in os.listdir(plugs):
+                full = os.path.join(plugs, n)
+                if os.path.isfile(full):
+                    copy_if_newer(full, os.path.join(TEST_DIR, "plugins", n))
     for d in ("gamemodes", "filterscripts", "scriptfiles/samapstudio", "plugins"):
         os.makedirs(os.path.join(TEST_DIR, d), exist_ok=True)
     target_dirs = {TEST_DIR}
@@ -665,23 +671,41 @@ def start_test(body):
     dist_root_st = os.path.join(os.path.dirname(BASE_DIR), "Servidor de Teste") if os.path.basename(BASE_DIR) == "SA Map Studio" else os.path.join(BASE_DIR, "dist", "Servidor de Teste")
     if os.path.isdir(dist_root_st):
         target_dirs.add(dist_root_st)
+
+    use_streamer = bool(body.get("streamer", False))
+    streamer_src = None
+    for cand in (
+        os.path.join(APP_DIR, "servidor-teste", "plugins", "streamer.dll"),
+        os.path.join(BASE_DIR, "servidor-teste", "plugins", "streamer.dll"),
+        os.path.join(TEST_DIR, "plugins", "streamer.dll"),
+        os.path.join(src, "plugins", "streamer.dll"),
+    ):
+        if os.path.isfile(cand):
+            streamer_src = cand
+            break
+
     rcon = base64.b32encode(os.urandom(10)).decode().lower()
     for td in target_dirs:
         try:
             os.makedirs(os.path.join(td, "gamemodes"), exist_ok=True)
+            os.makedirs(os.path.join(td, "plugins"), exist_ok=True)
             os.makedirs(os.path.join(td, "scriptfiles", "samapstudio"), exist_ok=True)
             shutil.copy2(amx, os.path.join(td, "gamemodes", "samapstudio.amx"))
+            if streamer_src:
+                copy_if_newer(streamer_src, os.path.join(td, "plugins", "streamer.dll"))
             with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="cp1252", errors="replace", newline="\r\n") as f:
                 f.write(body.get("map", ""))
+            plugins_line = "plugins streamer.dll\n" if use_streamer else "plugins\n"
             with open(os.path.join(td, "server.cfg"), "w", encoding="cp1252", newline="\r\n") as f:
                 f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 8\nport %d\n"
                         "hostname SA Map Studio - teste\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
+                        "%s"
                         "query 1\nchatlogging 0\nweburl open.mp\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
-                        "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage Portugues\n" % (rcon, TEST_PORT))
+                        "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage Portugues\n" % (rcon, TEST_PORT, plugins_line))
             cfg = {
                 "name": "SA Map Studio - teste", "max_players": 8, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT, "bind": "127.0.0.1"},
-                "pawn": {"main_scripts": ["samapstudio 1"], "side_scripts": [], "legacy_plugins": []},
+                "pawn": {"main_scripts": ["samapstudio 1"], "side_scripts": [], "legacy_plugins": ["streamer"] if use_streamer else []},
                 "rcon": {"enable": False, "password": rcon},
                 "game": {"use_entry_exit_markers": False, "use_player_ped_anims": True, "use_all_animations": True},
             }

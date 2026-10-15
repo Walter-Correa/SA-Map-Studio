@@ -68,17 +68,25 @@ export function setupImport() {
   };
   const show = () => {
     if (!parsed) { summary.innerHTML = ''; $('#importGo').disabled = true; return; }
-    const objs = parsed.objects;
+    const objs = parsed.objects || [];
     const mats = objs.reduce((s, o) => s + (o.materials || []).length, 0);
     const texts = objs.reduce((s, o) => s + (o.materials || []).filter(isText).length, 0);
     const unknown = objs.filter(o => !app.gd.models.has(o.model)).length;
-    const cams = parsed.cameras.shots.length + parsed.cameras.paths.length;
+    const cams = (parsed.cameras?.shots?.length || 0) + (parsed.cameras?.paths?.length || 0);
     const actors = parsed.actors || [];
-    const total = objs.length + parsed.vehicles.length + actors.length + parsed.removed.length + cams;
+    const labels = parsed.labels || [];
+    const pickups = parsed.pickups || [];
+    const gangZones = parsed.gangZones || [];
+    const textDraws = parsed.textDraws || [];
+    const total = objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + textDraws.length;
     const parts = [plural(objs.length, 'objeto', 'objetos'), plural(mats - texts, 'textura trocada', 'texturas trocadas'), plural(texts, 'texto', 'textos'),
-      plural(parsed.vehicles.length, 'veículo', 'veículos')];
+      plural((parsed.vehicles || []).length, 'veículo', 'veículos')];
     if (actors.length) parts.push(plural(actors.length, 'actor', 'actors'));
-    parts.push(plural(parsed.removed.length, 'objeto removido', 'objetos removidos'), plural(cams, 'câmera', 'câmeras'));
+    if (labels.length) parts.push(plural(labels.length, 'texto 3D', 'textos 3D'));
+    if (pickups.length) parts.push(plural(pickups.length, 'pickup', 'pickups'));
+    if (gangZones.length) parts.push(plural(gangZones.length, 'gangzone', 'gangzones'));
+    if (textDraws.length) parts.push(plural(textDraws.length, 'textdraw', 'textdraws'));
+    parts.push(plural((parsed.removed || []).length, 'objeto removido', 'objetos removidos'), plural(cams, 'câmera', 'câmeras'));
     summary.innerHTML = total
       ? `<div><span class="tag">${esc(parsed.format)}</span> Encontrei ${parts.map(p => `<b>${p}</b>`).join(', ')}.</div>
          ${unknown ? `<div class="warn">${plural(unknown, 'objeto usa', 'objetos usam')} modelos que não existem no seu jogo (aparecem só como contorno tracejado).</div>` : ''}
@@ -124,30 +132,47 @@ export function setupImport() {
     if (!parsed) return;
     const project = app.project, ed = app.editor;
     const items = [
-      ...parsed.objects.map(o => ({ ...o, kind: 'objects', uid: undefined })),
-      ...parsed.vehicles.map(v => ({ ...v, kind: 'vehicles', uid: undefined })),
-      ...((parsed.actors || []).map(a => ({ ...a, kind: 'actors', uid: undefined }))),
-      ...parsed.removed.map(r => ({ ...r, kind: 'removed', uid: undefined })),
+      ...(parsed.objects || []).map(o => ({ ...o, kind: 'objects', uid: undefined })),
+      ...(parsed.vehicles || []).map(v => ({ ...v, kind: 'vehicles', uid: undefined })),
+      ...(parsed.actors || []).map(a => ({ ...a, kind: 'actors', uid: undefined })),
+      ...(parsed.removed || []).map(r => ({ ...r, kind: 'removed', uid: undefined })),
+      ...(parsed.labels || []).map(l => ({ ...l, kind: 'labels', uid: undefined })),
+      ...(parsed.pickups || []).map(pk => ({ ...pk, kind: 'pickups', uid: undefined })),
+      ...(parsed.gangZones || []).map(g => ({ ...g, kind: 'gangZones', uid: undefined })),
+      ...(parsed.textDraws || []).map(t => ({ ...t, kind: 'textDraws', uid: undefined })),
     ];
     if ($('#importReplace').checked) {
-      const all = [...project.objects, ...project.vehicles, ...(project.actors || []), ...project.removed].map(o => o.uid);
+      const all = [
+        ...project.objects,
+        ...project.vehicles,
+        ...(project.actors || []),
+        ...project.removed,
+        ...(project.labels || []),
+        ...(project.pickups || []),
+        ...(project.gangZones || []),
+        ...(project.textDraws || []),
+      ].map(o => o.uid);
       if (all.length) project.deleteItems('Limpar projeto', all);
-      if (parsed.preservedHeader) project.pwnHeader = parsed.preservedHeader;
+      if (parsed.pwnHeader || parsed.preservedHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
       if (parsed.rawPawn) project.rawPawn = parsed.rawPawn;
-      if (fileName) {
-        const base = fileName.replace(/\.[^/.]+$/, '').trim();
-        if (base) {
-          project.name = base;
-          const nameInp = document.getElementById('projectName');
-          if (nameInp) nameInp.value = base;
+      const projName = parsed.name || (fileName ? fileName.replace(/\.[^/.]+$/, '').trim() : '');
+      if (projName) {
+        project.name = projName;
+        const nameInp = document.getElementById('projectName');
+        if (nameInp) nameInp.value = projName;
+      }
+      if (parsed.camera) {
+        const c = parsed.camera;
+        if (typeof c.x === 'number' && typeof c.y === 'number' && typeof c.z === 'number') {
+          app.vp?.fly?.setPose(new THREE.Vector3(c.x, c.y, c.z), c.yaw || 0, c.pitch || 0);
         }
       }
     } else {
-      if (parsed.preservedHeader && !project.pwnHeader) project.pwnHeader = parsed.preservedHeader;
+      if ((parsed.pwnHeader || parsed.preservedHeader) && !project.pwnHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
       if (parsed.rawPawn && !project.rawPawn) project.rawPawn = parsed.rawPawn;
     }
     const uids = items.length ? project.addItems(`Importar ${items.length} itens`, items) : [];
-    if ($('#importCameras').checked) {
+    if ($('#importCameras').checked && parsed.cameras) {
       const c = normalizeCameras(parsed.cameras);
       if ($('#importReplace').checked) project.cameras = normalizeCameras(null);
       project.cameras.shots.push(...c.shots);
@@ -157,9 +182,9 @@ export function setupImport() {
     }
     dlg.close();
     toast(plural(items.length, 'item importado', 'itens importados') + ` (${parsed.format})`);
-    const placed = [...parsed.objects, ...parsed.vehicles, ...(parsed.actors || [])];
+    const placed = [...(parsed.objects || []), ...(parsed.vehicles || []), ...(parsed.actors || []), ...(parsed.labels || []), ...(parsed.pickups || [])];
     if (placed.length) {
-      ed.select(uids.filter(u => project.kindOf(u) !== 'removed'));
+      ed.select(uids.filter(u => project.kindOf(u) !== 'removed' && project.kindOf(u) !== 'textDraws' && project.kindOf(u) !== 'gangZones'));
       positionCameraOverProject({ objects: placed });
       const first = placed[0];
       if (first.interior > 0 && Math.abs(first.z) > 500) app.emit('view-interiors', true);
@@ -170,9 +195,12 @@ export function setupImport() {
 // =====================================================================  testar no jogo
 // Linhas do arquivo lido pelo gamemode de teste (servidor-teste/samapstudio.pwn)
 function signed(v) { return parseColor(v) | 0; }
-export function mapLines(project, spawn, env, center) {
+export function mapLines(project, spawn, env, center, useStreamer = false) {
   const clean = (s) => String(s ?? '').replace(/[|\r\n]/g, ' ');
-  const lines = [`S|${spawn.x.toFixed(4)}|${spawn.y.toFixed(4)}|${spawn.z.toFixed(4)}|${spawn.a.toFixed(2)}|${spawn.interior}|${spawn.world}|${spawn.jetpack ? 1 : 0}`];
+  const lines = [
+    `X|${useStreamer ? 1 : 0}`,
+    `S|${spawn.x.toFixed(4)}|${spawn.y.toFixed(4)}|${spawn.z.toFixed(4)}|${spawn.a.toFixed(2)}|${spawn.interior}|${spawn.world}|${spawn.jetpack ? 1 : 0}`
+  ];
   if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}`);
   if (center) lines.push(`C|${center.x.toFixed(4)}|${center.y.toFixed(4)}|${center.z.toFixed(4)}`);
   const allProjects = [project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])];
@@ -264,6 +292,7 @@ export function setupTest() {
   const saved = store.get('test', {});
   if (saved.spawn) { const r = $(`input[name="testSpawn"][value="${saved.spawn}"]`); if (r) r.checked = true; }
   $('#testJetpack').checked = saved.jetpack ?? false;
+  if ($('#testStreamer')) $('#testStreamer').checked = saved.streamer ?? false;
   if (saved.launch !== undefined) $('#testLaunch').checked = saved.launch;
   if (saved.weather !== undefined && $('#testWeather')) $('#testWeather').value = Math.max(0, Math.min(45, saved.weather));
   else if ($('#testWeather')) $('#testWeather').value = 10;
@@ -288,11 +317,13 @@ export function setupTest() {
   const refresh = async () => { try { showInfo(await (await fetch('/api/test/info')).json()); } catch { /* servidor fora */ } };
   const warn = () => {
     const n = app.project.objects.length;
+    const isStreamer = Boolean($('#testStreamer')?.checked);
     const notes = [];
-    if (n > 2000) notes.push(`O teste usa CreateObject, que aceita até 2000 objetos: ${n - 2000} vão ficar de fora. No seu servidor, use o streamer (CreateDynamicObject).`);
+    if (n > 2000 && !isStreamer) notes.push(`O teste sem Streamer usa CreateObject, que aceita até 2000 objetos: ${n - 2000} vão ficar de fora. Ative a opção "Usar plugin Streamer (itens dinâmicos)" para carregar todos.`);
     if (!n && !app.project.vehicles.length) notes.push('O projeto ainda está vazio: você vai nascer no ponto escolhido, só com o mapa original.');
     $('#testWarn').innerHTML = notes.map(x => `<span class="warn">${esc(x)}</span>`).join('<br>');
   };
+  $('#testStreamer')?.addEventListener('change', warn);
   $('#btnTest').onclick = async () => { warn(); dlg.showModal(); await refresh(); };
   $('#testBrowse').onclick = async () => showInfo(await postJSON('/api/test/server', { browse: true }));
   $('#testServer').addEventListener('change', async () => showInfo(await postJSON('/api/test/server', { path: $('#testServer').value })));
@@ -305,10 +336,12 @@ export function setupTest() {
     const timeParts = timeVal.split(':').map(Number);
     const hour = isNaN(timeParts[0]) ? 10 : Math.max(0, Math.min(23, timeParts[0]));
     const minute = isNaN(timeParts[1]) ? 0 : Math.max(0, Math.min(59, timeParts[1]));
+    const streamer = Boolean($('#testStreamer')?.checked);
 
     store.set('test', {
       spawn: kind,
       jetpack: $('#testJetpack').checked,
+      streamer,
       launch: $('#testLaunch').checked,
       weather,
       time: timeVal
@@ -321,7 +354,7 @@ export function setupTest() {
     $('#testGo').disabled = true;
     $('#testStatus').textContent = 'Preparando o servidor de teste...';
     try {
-      const res = await postJSON('/api/test/start', { map: mapLines(app.project, spawn, env, center), launch: $('#testLaunch').checked });
+      const res = await postJSON('/api/test/start', { map: mapLines(app.project, spawn, env, center, streamer), launch: $('#testLaunch').checked, streamer });
       if (!res.ok) { $('#testStatus').textContent = ''; toast(res.error || 'Não consegui iniciar o teste', 'error', 7000); if (res.log) showInfo({ ...info, log: res.log }); return; }
       $('#testStatus').textContent = res.launched ? `Abrindo o jogo em ${res.address}...` : `Servidor pronto. Conecte o SA-MP em ${res.address}.`;
       toast(res.launched ? 'Abrindo o GTA SA no seu mapa' : `Servidor de teste pronto em ${res.address}`, 'ok', 6000);

@@ -1088,12 +1088,8 @@ export class Editor extends EventTarget {
       const box = new THREE.Box3().setFromObject(node);
       const bottomOffset = s.item.z - box.min.z;
       let finalOffset = bottomOffset;
-      if (s.kind === 'actors') {
-        finalOffset = bottomOffset > 0.3 ? bottomOffset : 0.98;
-      } else if (s.kind === 'pickups') {
-        finalOffset = 0.5;
-      } else if (s.kind === 'labels') {
-        finalOffset = 1.0;
+      if (s.kind === 'actors' || s.kind === 'pickups' || s.kind === 'labels') {
+        finalOffset = 0.98;
       }
       const origin = new THREE.Vector3(s.item.x, s.item.y, Math.max(s.item.z + 1.0, box.max.z + 0.1));
       const rc = new THREE.Raycaster(origin, new THREE.Vector3(0, 0, -1), 0, 1000);

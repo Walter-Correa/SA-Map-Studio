@@ -526,27 +526,45 @@ function redrawCanvas() {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.save();
   ctx.lineWidth = 1;
 
   for (let x = 0; x <= 640; x += 40) {
     ctx.beginPath();
+    ctx.strokeStyle = (x % 80 === 0) ? 'rgba(0, 229, 255, 0.35)' : 'rgba(0, 229, 255, 0.18)';
     ctx.moveTo(x, 0);
     ctx.lineTo(x, 480);
     ctx.stroke();
   }
   for (let y = 0; y <= 480; y += 40) {
     ctx.beginPath();
+    ctx.strokeStyle = (y % 80 === 0) ? 'rgba(0, 229, 255, 0.35)' : 'rgba(0, 229, 255, 0.18)';
     ctx.moveTo(0, y);
     ctx.lineTo(640, y);
     ctx.stroke();
   }
 
   // Margem segura da tela do jogo (Safe Zone)
-  ctx.strokeStyle = 'rgba(255, 200, 0, 0.2)';
-  ctx.setLineDash([4, 4]);
+  // Contorno duplo: sombra preta de 3px para garantir contraste em fundos claros/céu
+  // + linha tracejada magenta neon (#FF1493) de alto destaque
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+  ctx.strokeRect(20, 20, 600, 440);
+
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#FF1493';
+  ctx.setLineDash([6, 4]);
   ctx.strokeRect(20, 20, 600, 440);
   ctx.setLineDash([]);
+
+  // Indicador de canto "SAFE ZONE (600x440)"
+  ctx.font = 'bold 9px "Segoe UI", sans-serif';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+  ctx.fillRect(20, 9, 126, 14);
+  ctx.fillStyle = '#FF1493';
+  ctx.fillText('SAFE ZONE (600 × 440)', 24, 20);
+
+  ctx.restore();
 }
 
 function renderTextDraw(td, isSelected) {

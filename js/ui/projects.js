@@ -283,6 +283,28 @@ export function setupProjects() {
     await switchTo(new Project(name));
     $('#dlgProjects').close();
   };
+  const btnOpenExt = $('#openExternalProjectBtn');
+  const fileExt = $('#externalProjectFileInput');
+  if (btnOpenExt && fileExt) {
+    btnOpenExt.onclick = () => fileExt.click();
+    fileExt.onchange = async () => {
+      const file = fileExt.files?.[0];
+      fileExt.value = '';
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const nameFromFile = file.name.replace(/\.[^/.]+$/, '').trim();
+        if (!json.name && nameFromFile) json.name = nameFromFile;
+        const project = Project.fromJSON(json);
+        await switchTo(project);
+        $('#dlgProjects').close();
+        toast(`Projeto "${project.name}" carregado com sucesso!`, 'ok');
+      } catch (err) {
+        toast('Erro ao abrir arquivo .json: ' + err.message, 'error', 5000);
+      }
+    };
+  }
   window.addEventListener('beforeunload', (e) => {
     if (isDirty()) { saveNow(); e.preventDefault(); e.returnValue = ''; }
   });

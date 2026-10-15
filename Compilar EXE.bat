@@ -143,7 +143,9 @@ if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
     echo Copiando o servidor de teste de: "%SRVSRC%"
     robocopy "%SRVSRC%" "%ST%" omp-server.exe samp-server.exe *.dll /NFL /NDL /NJH /NJS /NP >nul
     if exist "%SRVSRC%\components" robocopy "%SRVSRC%\components" "%ST%\components" /E /NFL /NDL /NJH /NJS /NP >nul
+    if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
+if exist "servidor-teste\plugins" robocopy "servidor-teste\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 rem Copia tambem para a raiz da dist (dist\Servidor de Teste) para garantir acesso em ambos os caminhos
 if /i not "%MODO%"=="limpo" (
     set "STRoot=%~dp0dist\Servidor de Teste"

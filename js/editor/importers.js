@@ -14,7 +14,7 @@ import { normalizeMaterial, formatColor, parseColor, MAX_MATERIAL_INDEX } from '
 import { parseIplText } from '../formats/text.js';
 import { isBinaryIpl, parseIplBinary } from '../formats/iplbin.js';
 
-const empty = () => ({ format: '', objects: [], vehicles: [], actors: [], removed: [], cameras: { shots: [], paths: [] }, spawn: null, notes: [] });
+const empty = () => ({ format: '', name: '', objects: [], vehicles: [], actors: [], removed: [], labels: [], pickups: [], gangZones: [], textDraws: [], cameras: { shots: [], paths: [] }, camera: null, pwnHeader: '', rawPawn: '', spawn: null, notes: [] });
 
 // Texto: UTF-8 quando válido, senão Windows-1252 (o padrão do Pawn no Windows)
 export function decodeBytes(bytes) {
@@ -140,12 +140,21 @@ function fromMta(text, out) {
 function fromJson(data, out) {
   const list = (v) => (Array.isArray(v) ? v : []);
   if (Array.isArray(data)) data = { objects: data };
+  if (data.name) out.name = String(data.name);
+  if (data.pwnHeader) out.pwnHeader = String(data.pwnHeader);
+  if (data.rawPawn) out.rawPawn = String(data.rawPawn);
+  if (data.camera) out.camera = data.camera;
+  if (data.cameras) out.cameras = data.cameras;
   out.objects = list(data.objects || data.Objects).filter(o => o && (o.model ?? o.modelid ?? o.ModelID) !== undefined)
     .map(o => ({ ...o, model: +(o.model ?? o.modelid ?? o.ModelID) | 0, x: +(o.x ?? o.posX ?? o.xPos) || 0, y: +(o.y ?? o.posY ?? o.yPos) || 0, z: +(o.z ?? o.posZ ?? o.zPos) || 0,
       rx: +(o.rx ?? o.rotX ?? o.rxRot) || 0, ry: +(o.ry ?? o.rotY ?? o.ryRot) || 0, rz: +(o.rz ?? o.rotZ ?? o.rzRot) || 0, materials: o.materials || [] }));
-  out.vehicles = list(data.vehicles);
-  out.removed = list(data.removed);
-  if (data.cameras) out.cameras = data.cameras;
+  out.vehicles = list(data.vehicles || data.Vehicles);
+  out.actors = list(data.actors || data.Actors);
+  out.removed = list(data.removed || data.Removed);
+  out.labels = list(data.labels || data.Labels);
+  out.pickups = list(data.pickups || data.Pickups);
+  out.gangZones = list(data.gangZones || data.GangZones);
+  out.textDraws = list(data.textDraws || data.TextDraws);
 }
 
 // ---------------------------------------------------------------- linhas soltas
@@ -201,7 +210,14 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
   const text = decodeBytes(u8);
   const trimmed = text.trim();
   if (/^[[{]/.test(trimmed)) {
-    try { fromJson(JSON.parse(trimmed), out); out.format = 'JSON'; if (out.objects.length + out.vehicles.length + out.removed.length) return finish(out); } catch { /* não é JSON */ }
+    try {
+      fromJson(JSON.parse(trimmed), out);
+      out.format = 'JSON';
+      const count = out.objects.length + out.vehicles.length + out.actors.length + out.removed.length +
+                    out.labels.length + out.pickups.length + out.gangZones.length + out.textDraws.length +
+                    (out.cameras?.shots?.length || 0) + (out.cameras?.paths?.length || 0);
+      if (count > 0) return finish(out);
+    } catch { /* não é JSON */ }
   }
   if (/<\s*(object|removeWorldObject)\b[^>]*\bmodel\s*=/i.test(text)) {
     out.format = 'Mapa do MTA';
