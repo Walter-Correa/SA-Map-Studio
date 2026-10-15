@@ -98,6 +98,8 @@ rem Compila numa pasta temporaria (assim Projetos, Exportados e Dados nunca sao 
 if exist "build" rmdir /s /q "build"
 set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory Sistema"
 set "ARGS=%ARGS% --name "SA Map Studio" --icon "%SRC%icon.ico""
+rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
+set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;." --add-data "%SRC%anim_list.json;.""
 set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts""

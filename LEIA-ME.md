@@ -97,8 +97,8 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Comandos no servidor: `/fly` ou `/voar` (voo livre da câmera estilo noclip), `/map` ou `/mapa` (teleporte ao centro do mapa), `/w [0-45]` (altera clima), `/t [0-23] [minutos]` (altera horário), `/anim`, `/v [modelo]`, `/jetpack`, `/spawn`, `/pos` e `/ajuda`.
 - **Logs e Diagnóstico**:
   - Registro de erros em tempo real com botão dedicado na barra superior e janela para consultar e copiar os registros para suporte rápido.
-- **Compilação Autônoma e Limpa**:
-  - Scripts `Compilar EXE.bat` e `Compilar EXE limpo.bat` com auto-recuperação do ambiente virtual (`.venv-build`), auto-detecção de executáveis Python funcionais e empacotamento completo testado e verificado.
+- **Compilação Autônoma e Privilégios de Administrador**:
+  - Scripts `Compilar EXE.bat` e `Compilar EXE limpo.bat` com auto-recuperação do ambiente virtual (`.venv-build`), auto-detecção de executáveis Python funcionais e compilação com `--uac-admin`, solicitando privilégios de administrador nativamente no Windows ao abrir o `.exe`.
 
 Aperte `?` dentro do programa para ver todos os atalhos.
 

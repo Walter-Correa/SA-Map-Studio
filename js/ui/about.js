@@ -16,6 +16,7 @@ const CHANGELOG = [
       'Estabilidade de Navegação da Câmera: captura contínua de ponteiro (Pointer Capture) com deltas manuais (sem avisos do navegador), centralização nativa do cursor via Win32 e suporte a DPI real no Windows.',
       'Pré-geração de Miniaturas no Boot: tela de carregamento prepara automaticamente em segundo plano as miniaturas do catálogo na primeira inicialização caso o cache esteja vazio.',
       'Compilação Limpa e Autônoma do Executável (.exe): script de compilação aprimorado com auto-recuperação de ambientes virtuais (.venv-build) corrompidos ou transferidos entre computadores, detecção multi-caminho de interpretadores Python funcionais (evitando stubs inválidos da Microsoft Store) e suporte à compilação limpa 100% autônoma (dist-limpo).',
+      'Elevação Automática de Privilégios (Admin / UAC): inclusão da flag --uac-admin na compilação via PyInstaller, gravando nativamente requireAdministrator no manifesto PE do executável para garantir permissões totais de leitura/escrita na pasta do jogo, controle de processos e portas sem necessidade de configuração manual do Windows.',
     ],
   },
   {
