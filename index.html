@@ -184,8 +184,8 @@
       <button id="btnGangZones" class="btn ghost" title="Criar e editar GangZones no mapa do radar"><svg><use href="#i-map"/></svg><span class="lbl2">GangZones</span></button>
       <button id="btnTextDraws" class="btn ghost" title="Editor visual de TextDraws (640x480)"><svg><use href="#i-text"/></svg><span class="lbl2">TextDraws</span></button>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
-      <button id="btnExport" class="btn"><svg><use href="#i-out"/></svg>Exportar</button>
-      <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg>Testar no jogo</button>
+      <button id="btnExport" class="btn" title="Exportar mapa (Pawn, CreateObject, etc.)"><svg><use href="#i-out"/></svg><span class="lbl-export">Exportar</span></button>
+      <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar no jogo</span></button>
       <button id="btnHelp" class="btn icon" title="Atalhos (?)" aria-label="Atalhos de teclado"><svg><use href="#i-help"/></svg></button>
       <button id="btnAbout" class="btn icon" title="Novidades e documentação" aria-label="Novidades e documentação"><svg><use href="#i-doc"/></svg></button>
       <button id="btnLogs" class="btn ghost icon" title="Registros de erros e diagnóstico do sistema" aria-label="Registros e diagnóstico" style="position:relative;"><svg><use href="#i-terminal"/></svg><span class="log-badge" id="logBadge" hidden>0</span></button>
@@ -618,46 +618,49 @@
     </div>
   </div>
   <footer class="dialog-foot" style="border-top: 1px solid var(--line); padding-top: 8px; margin-top: auto; display: flex; justify-content: flex-end;">
-    <button type="button" class="btn primary" onclick="document.getElementById('dlgGangZones').classList.remove('open');">Concluir</button>
+    <button type="button" class="btn primary" id="gzBtnDone">Concluir</button>
   </footer>
 </dialog>
 
-<dialog class="dialog wide" id="dlgTextDraw" style="max-width: 1060px; width: 95vw; height: 86vh;">
+<dialog class="dialog wide" id="dlgTextDraw" style="max-width: 1080px; width: 95vw; height: 86vh;">
   <div class="dialog-head">
     <div class="dialog-title"><svg><use href="#i-text"/></svg>Editor Visual de TextDraws (640x480)</div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="td-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
-    <div class="td-canvas-container" style="flex: 1; display: flex; flex-direction: column; background: #07090e; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
-      <div class="td-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px;">
+    <div class="td-canvas-container" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: #07090e; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
+      <div class="td-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px; flex-shrink: 0;">
         <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGrid" checked> Grade & Safe Zone</label>
-        <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Arraste os elementos para posicionar</span>
+        <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Arraste os elementos para mover ou use a alça no canto para redimensionar</span>
         <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;">640 x 480</span>
       </div>
-      <div id="tdCanvasWrap" style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; background: radial-gradient(circle, #10141f 0%, #06080d 100%);">
+      <div id="tdCanvasWrap" style="flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; background: radial-gradient(circle, #10141f 0%, #06080d 100%);">
         <canvas id="tdCanvas" width="640" height="480" style="width: 100%; max-width: 640px; aspect-ratio: 4/3; box-shadow: 0 4px 20px rgba(0,0,0,0.8); border: 1px solid var(--line); border-radius: 4px; cursor: default;"></canvas>
       </div>
     </div>
 
-    <div class="td-sidebar" style="width: 340px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 4px;">
-      <div style="display: flex; gap: 6px;">
+    <div class="td-sidebar" style="width: 350px; min-width: 350px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 6px; box-sizing: border-box;">
+      <div style="display: flex; gap: 6px; flex-shrink: 0;">
         <button type="button" class="btn primary small" id="tdBtnAdd" style="flex: 1;"><svg><use href="#i-plus"/></svg>+ Texto</button>
         <button type="button" class="btn small" id="tdBtnAddBox">+ Caixa</button>
         <button type="button" class="btn small" id="tdBtnAddModel">+ Modelo 3D</button>
       </div>
 
-      <div class="pop-title" style="margin: 4px 0 2px 0;">Elementos</div>
-      <div id="tdList" class="td-list" style="max-height: 140px; overflow-y: auto; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 6px; padding: 4px;"></div>
+      <div class="pop-title" style="margin: 4px 0 2px 0; flex-shrink: 0;">Elementos</div>
+      <div id="tdList" class="td-list" style="min-height: 90px; max-height: 140px; height: 110px; flex-shrink: 0; overflow-y: auto; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 6px; padding: 4px; box-sizing: border-box;"></div>
 
-      <div id="tdDetailsPanel" style="display: none; border-top: 1px solid var(--line); padding-top: 6px;">
-        <label class="field-row">Texto <textarea id="tdText" rows="2" style="flex: 1; font-family: monospace; font-size: 12px;" placeholder="Texto ou {RRGGBB}Tags"></textarea></label>
+      <div id="tdDetailsPanel" style="display: none; border-top: 1px solid var(--line); padding-top: 6px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px;">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--paper-mute);">
+          <span>Texto</span>
+          <textarea id="tdText" rows="2" style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px; resize: vertical; min-height: 48px; border-radius: 4px; background: var(--asphalt-800); border: 1px solid var(--line); color: var(--paper); padding: 6px;" placeholder="Texto ou {RRGGBB}Tags"></textarea>
+        </label>
 
-        <div class="pair" style="margin-top: 4px;">
+        <div class="pair">
           <label>Pos X (0-640)<input type="number" id="tdPosX" step="1"></label>
           <label>Pos Y (0-480)<input type="number" id="tdPosY" step="1"></label>
         </div>
 
-        <div class="pair" style="margin-top: 4px;">
+        <div class="pair">
           <label>Fonte
             <select id="tdFont">
               <option value="0">Font 0: Diploma / Gótico</option>
@@ -677,39 +680,39 @@
           </label>
         </div>
 
-        <div class="pair" style="margin-top: 4px;">
+        <div class="pair">
           <label>Letter Size X <input type="number" id="tdLetterX" step="0.05"></label>
           <label>Letter Size Y <input type="number" id="tdLetterY" step="0.05"></label>
         </div>
 
-        <div class="pair" style="margin-top: 4px;">
-          <label>Text Size X (Box/Linha)<input type="number" id="tdSizeX" step="1"></label>
+        <div class="pair">
+          <label>Text Size X (Box/Largura)<input type="number" id="tdSizeX" step="1"></label>
           <label>Text Size Y (Altura Box)<input type="number" id="tdSizeY" step="1"></label>
         </div>
 
-        <div class="pair" style="margin-top: 4px;">
+        <div class="pair">
           <label>Cor Texto <input type="color" id="tdColor"></label>
           <label>Opacidade Texto <input type="range" id="tdAlpha" min="0" max="100"></label>
         </div>
 
-        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
           <label class="check" style="margin: 0;"><input type="checkbox" id="tdUseBox"> Ativar Caixa (Box)</label>
           <input type="color" id="tdBoxColor" value="#000000" style="width: 32px; height: 26px; border: none; border-radius: 4px;">
           <input type="range" id="tdBoxAlpha" min="0" max="100" value="50" style="flex: 1;" title="Opacidade da Caixa">
         </div>
 
-        <div class="pair" style="margin-top: 4px;">
+        <div class="pair">
           <label>Contorno (Outline)<input type="number" id="tdOutline" min="0" max="5" value="0"></label>
           <label>Sombra (Shadow)<input type="number" id="tdShadow" min="0" max="5" value="1"></label>
         </div>
 
-        <div style="display: flex; gap: 12px; margin-top: 4px; font-size: 11px;">
+        <div style="display: flex; gap: 12px; font-size: 11px;">
           <label class="check"><input type="checkbox" id="tdProportional" checked> Proporcional</label>
           <label class="check"><input type="checkbox" id="tdSelectable"> Clicável</label>
           <label class="check"><input type="checkbox" id="tdIsPlayer"> PlayerTextDraw</label>
         </div>
 
-        <div id="tdModelPreviewPanel" style="display: none; background: rgba(0,102,255,0.08); border: 1px solid rgba(0,102,255,0.25); border-radius: 4px; padding: 6px; margin-top: 6px;">
+        <div id="tdModelPreviewPanel" style="display: none; background: rgba(0,102,255,0.08); border: 1px solid rgba(0,102,255,0.25); border-radius: 4px; padding: 6px; margin-top: 4px;">
           <div class="pop-title" style="margin: 0 0 4px 0;">Configurações do Modelo 3D (Font 5)</div>
           <div class="pair">
             <label>Modelo (ID)<input type="number" id="tdPreviewModel" value="411"></label>
@@ -722,7 +725,7 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 6px; margin-top: 10px;">
+        <div style="display: flex; gap: 6px; margin-top: 6px;">
           <button type="button" class="btn small" id="tdBtnDuplicate" title="Duplicar"><svg><use href="#i-copy"/></svg>Duplicar</button>
           <button type="button" class="btn small primary" id="tdBtnCopyPwn" style="flex: 1;"><svg><use href="#i-doc"/></svg>Copiar Pawn</button>
           <button type="button" class="btn small danger" id="tdBtnDelete" title="Excluir"><svg><use href="#i-trash"/></svg></button>
@@ -731,7 +734,7 @@
     </div>
   </div>
   <footer class="dialog-foot" style="border-top: 1px solid var(--line); padding-top: 8px; margin-top: auto; display: flex; justify-content: flex-end;">
-    <button type="button" class="btn primary" onclick="document.getElementById('dlgTextDraw').classList.remove('open');">Concluir</button>
+    <button type="button" class="btn primary" id="tdBtnDone">Concluir</button>
   </footer>
 </dialog>
 

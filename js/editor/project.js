@@ -310,15 +310,39 @@ export class Project {
     return op.label;
   }
 
+  // Adiciona um item de qualquer tipo suportado com registro de undo/redo
+  add(kind, data, label = 'Adicionar') {
+    let created = null;
+    this.transact(label, [], () => {
+      const maker = MAKERS[kind] || makeObject;
+      created = maker(data || {});
+      if (!this[kind]) this[kind] = [];
+      this[kind].push(created);
+      return [created.uid];
+    });
+    return created;
+  }
+
   // ---- operações de alto nível ----
   addItems(label, items) {
     const uids = [];
     this.transact(label, [], () => {
       for (const it of items) {
-        if (it.kind === 'removed') { const r = makeRemoved(it); this.removed.push(r); uids.push(r.uid); }
-        else if (it.kind === 'actors') { const a = makeActor(it); this.actors.push(a); uids.push(a.uid); }
-        else if (it.kind === 'vehicles' || (it.kind !== 'objects' && isVehicleModel(it.model))) { const v = makeVehicle(it); this.vehicles.push(v); uids.push(v.uid); }
-        else { const o = makeObject(it); this.objects.push(o); uids.push(o.uid); }
+        const k = it.kind;
+        if (k && MAKERS[k]) {
+          const obj = MAKERS[k](it);
+          if (!this[k]) this[k] = [];
+          this[k].push(obj);
+          uids.push(obj.uid);
+        } else if (it.kind === 'removed') {
+          const r = makeRemoved(it); this.removed.push(r); uids.push(r.uid);
+        } else if (it.kind === 'actors') {
+          const a = makeActor(it); this.actors.push(a); uids.push(a.uid);
+        } else if (it.kind === 'vehicles' || (it.kind !== 'objects' && isVehicleModel(it.model))) {
+          const v = makeVehicle(it); this.vehicles.push(v); uids.push(v.uid);
+        } else {
+          const o = makeObject(it); this.objects.push(o); uids.push(o.uid);
+        }
       }
       return uids;
     });

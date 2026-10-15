@@ -63,6 +63,9 @@ function setupDialogEvents() {
   const closeBtn = dialogEl.querySelector('.modal-close');
   if (closeBtn) closeBtn.onclick = () => closeTextDrawEditor();
 
+  const doneBtn = dialogEl.querySelector('#tdBtnDone');
+  if (doneBtn) doneBtn.onclick = () => closeTextDrawEditor();
+
   const addBtn = dialogEl.querySelector('#tdBtnAdd');
   if (addBtn) {
     addBtn.onclick = () => {
@@ -241,6 +244,40 @@ function bindFieldInputs() {
   if (colBg) colBg.oninput = onBgChange;
 }
 
+// Cache de miniaturas de modelos 3D (Font 5)
+const modelImgCache = new Map();
+
+function getOrLoadModelThumbnail(modelId) {
+  const id = Number(modelId) || 0;
+  if (!id) return null;
+  if (modelImgCache.has(id)) {
+    return modelImgCache.get(id);
+  }
+  const entry = { img: new Image(), loaded: false, failed: false };
+  entry.img.onload = () => {
+    entry.loaded = true;
+    redrawCanvas();
+  };
+  entry.img.onerror = () => {
+    if (appRef?.thumbs?.request) {
+      appRef.thumbs.request(id, (url) => {
+        if (url && url !== entry.img.src) {
+          entry.img.src = url;
+          return;
+        }
+        entry.failed = true;
+        redrawCanvas();
+      });
+    } else {
+      entry.failed = true;
+      redrawCanvas();
+    }
+  };
+  entry.img.src = `/thumbs/obj/${id}.webp`;
+  modelImgCache.set(id, entry);
+  return entry;
+}
+
 function setupCanvasEvents() {
   canvasEl.addEventListener('mousedown', (e) => {
     const rect = canvasEl.getBoundingClientRect();
@@ -251,24 +288,32 @@ function setupCanvasEvents() {
 
     const tds = appRef.project?.textDraws || [];
 
-    // Checa se clicou na alça de redimensionamento do TextDraw selecionado
+    // 1. Checa se clicou na alça de redimensionamento do TextDraw selecionado
     const curTd = getSelectedTd();
-    if (curTd && curTd.useBox) {
-      const handleDist = Math.hypot(sx - curTd.textSizeX, sy - (curTd.y + curTd.textSizeY));
-      if (handleDist <= 10) {
+    if (curTd) {
+      const curBounds = getTextDrawBounds(curTd);
+      const handleX = curBounds.x + curBounds.w;
+      const handleY = curBounds.y + curBounds.h;
+      if (Math.hypot(sx - handleX, sy - handleY) <= 12) {
         isDraggingTd = {
           idx: selectedIdx,
           isResize: true,
           startX: sx,
           startY: sy,
-          origW: curTd.textSizeX,
-          origH: curTd.textSizeY,
+          origX: curTd.x,
+          origY: curTd.y,
+          origW: curBounds.w,
+          origH: curBounds.h,
+          origSizeX: curTd.textSizeX,
+          origSizeY: curTd.textSizeY,
+          origLetterX: curTd.letterSizeX,
+          origLetterY: curTd.letterSizeY,
         };
         return;
       }
     }
 
-    // Busca TextDraw clicado de trás para frente (ordem de exibição)
+    // 2. Busca TextDraw clicado de trás para frente (ordem de exibição)
     for (let i = tds.length - 1; i >= 0; i--) {
       const td = tds[i];
       const bounds = getTextDrawBounds(td);
@@ -281,6 +326,7 @@ function setupCanvasEvents() {
           startY: sy,
           origX: td.x,
           origY: td.y,
+          origSizeX: td.textSizeX,
         };
         updateSidebarFields();
         updateSidebarList();
@@ -291,24 +337,78 @@ function setupCanvasEvents() {
   });
 
   window.addEventListener('mousemove', (e) => {
-    if (!dialogEl || !dialogEl.classList.contains('open') || !isDraggingTd) return;
+    if (!dialogEl || !dialogEl.classList.contains('open')) return;
     const rect = canvasEl.getBoundingClientRect();
     const scaleX = 640 / rect.width;
     const scaleY = 480 / rect.height;
     const sx = (e.clientX - rect.left) * scaleX;
     const sy = (e.clientY - rect.top) * scaleY;
 
+    if (!isDraggingTd) {
+      // Atualiza estilo do cursor do mouse ao passar por cima
+      const curTd = getSelectedTd();
+      if (curTd) {
+        const curBounds = getTextDrawBounds(curTd);
+        const handleX = curBounds.x + curBounds.w;
+        const handleY = curBounds.y + curBounds.h;
+        if (Math.hypot(sx - handleX, sy - handleY) <= 12) {
+          canvasEl.style.cursor = 'nwse-resize';
+          return;
+        }
+      }
+      const tds = appRef.project?.textDraws || [];
+      for (let i = tds.length - 1; i >= 0; i--) {
+        const b = getTextDrawBounds(tds[i]);
+        if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) {
+          canvasEl.style.cursor = 'move';
+          return;
+        }
+      }
+      canvasEl.style.cursor = 'default';
+      return;
+    }
+
     const td = appRef.project?.textDraws?.[isDraggingTd.idx];
     if (!td) return;
 
     if (isDraggingTd.isResize) {
-      td.textSizeX = Math.round(Math.max(1, sx));
-      td.textSizeY = Math.round(Math.max(1, sy - td.y));
+      const dx = sx - isDraggingTd.startX;
+      const dy = sy - isDraggingTd.startY;
+      const newW = Math.max(10, Math.round(isDraggingTd.origW + dx));
+      const newH = Math.max(10, Math.round(isDraggingTd.origH + dy));
+
+      if (td.font === 5) {
+        // Prévia de modelo 3D: textSizeX e textSizeY são largura e altura da caixa
+        td.textSizeX = newW;
+        td.textSizeY = newH;
+      } else if (td.useBox) {
+        // Caixa padrão SA-MP: textSizeX é a coordenada X final da caixa (td.x + newW), textSizeY é altura
+        td.textSizeX = Math.round(td.x + newW);
+        td.textSizeY = newH;
+      } else {
+        // Texto normal: escala letterSizeX e letterSizeY proporcionalmente
+        const lines = String(td.text || '').split(/\r?\n/);
+        const lineCount = Math.max(1, lines.length);
+        const maxChars = Math.max(...lines.map(l => l.replace(/\{[A-Fa-f0-9]{6}\}/g, '').length), 1);
+        td.letterSizeX = Number(Math.max(0.1, (newW / maxChars) / 18).toFixed(2));
+        td.letterSizeY = Number(Math.max(0.2, (newH / lineCount) / 20).toFixed(2));
+      }
     } else {
       const dx = sx - isDraggingTd.startX;
       const dy = sy - isDraggingTd.startY;
-      td.x = Math.round(Math.max(0, Math.min(640, isDraggingTd.origX + dx)));
-      td.y = Math.round(Math.max(0, Math.min(480, isDraggingTd.origY + dy)));
+      const newX = Math.round(Math.max(0, Math.min(640, isDraggingTd.origX + dx)));
+      const newY = Math.round(Math.max(0, Math.min(480, isDraggingTd.origY + dy)));
+
+      if (td.useBox && td.font !== 5 && isDraggingTd.origSizeX > isDraggingTd.origX) {
+        // Mantém a largura da caixa ao arrastá-la de posição
+        const boxW = isDraggingTd.origSizeX - isDraggingTd.origX;
+        td.x = newX;
+        td.textSizeX = newX + boxW;
+        td.y = newY;
+      } else {
+        td.x = newX;
+        td.y = newY;
+      }
     }
 
     updateSidebarFields();
@@ -318,6 +418,7 @@ function setupCanvasEvents() {
   window.addEventListener('mouseup', () => {
     if (isDraggingTd) {
       isDraggingTd = null;
+      canvasEl.style.cursor = 'default';
       appRef.editor?.saveUndoState?.('Editar TextDraw');
       redrawCanvas();
     }
@@ -330,18 +431,21 @@ function getTextDrawBounds(td) {
   const lineCount = Math.max(1, lines.length);
 
   let w = 100;
-  if (td.useBox && td.textSizeX > td.x) {
-    w = td.textSizeX - td.x;
-  } else if (td.font === 5) {
-    w = td.textSizeX > 0 ? td.textSizeX : 60;
+  let h = 100;
+
+  if (td.font === 5) {
+    w = td.textSizeX > 0 ? td.textSizeX : 100;
+    h = td.textSizeY > 0 ? td.textSizeY : 100;
+  } else if (td.useBox) {
+    w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(30, td.textSizeX || 100);
+    h = (td.textSizeY > 0) ? td.textSizeY : (lineCount * fontH);
   } else {
     // Estimativa de largura do texto baseada na fonte e letterSizeX
     const charW = (td.letterSizeX || 0.48) * 18;
-    const maxChars = Math.max(...lines.map(l => l.replace(/\{[A-Fa-f0-9]{6}\}/g, '').length));
-    w = Math.max(20, maxChars * charW);
+    const maxChars = Math.max(...lines.map(l => l.replace(/\{[A-Fa-f0-9]{6}\}/g, '').length), 1);
+    w = Math.max(20, Math.round(maxChars * charW));
+    h = Math.max(14, Math.round(lineCount * fontH));
   }
-
-  const h = (td.useBox && td.textSizeY > 0) ? td.textSizeY : (lineCount * fontH);
 
   let x = td.x;
   if (td.alignment === 2) x -= w / 2; // Centro
@@ -437,7 +541,7 @@ function renderTextDraw(td, isSelected) {
     renderTextDrawString(td, bounds);
   }
 
-  // 4. Borda de seleção
+  // 4. Borda de seleção e alça de redimensionamento
   if (isSelected) {
     ctx.strokeStyle = '#00CCFF';
     ctx.lineWidth = 1.5;
@@ -445,11 +549,14 @@ function renderTextDraw(td, isSelected) {
     ctx.strokeRect(bounds.x - 2, bounds.y - 2, bounds.w + 4, bounds.h + 4);
     ctx.setLineDash([]);
 
-    // Alça de redimensionamento no canto inferior direito para caixas
-    if (td.useBox) {
-      ctx.fillStyle = '#00CCFF';
-      ctx.fillRect(bounds.x + bounds.w - 4, bounds.y + bounds.h - 4, 8, 8);
-    }
+    // Alça de redimensionamento no canto inferior direito para qualquer TextDraw
+    const hx = bounds.x + bounds.w;
+    const hy = bounds.y + bounds.h;
+    ctx.fillStyle = '#00CCFF';
+    ctx.fillRect(hx - 5, hy - 5, 10, 10);
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(hx - 5, hy - 5, 10, 10);
   }
 }
 
@@ -534,23 +641,58 @@ function getFontFamily(fontId) {
 
 function renderModelPreview(td, bounds) {
   // Fundo com contorno indicando o modelo 3D
-  ctx.fillStyle = '#1b2230';
+  ctx.fillStyle = td.useBox ? toHexRgba(td.boxColor ?? 0x00000080).css : '#151b26';
   ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
   ctx.strokeStyle = '#384860';
   ctx.lineWidth = 1;
   ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
 
-  // Desenha ícone de cubo 3D e ID do modelo
-  ctx.font = 'bold 11px Inter, sans-serif';
-  ctx.fillStyle = '#65B5FF';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(`MODELO 3D: #${td.previewModel || 0}`, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+  const modelId = td.previewModel || 411;
+  const thumb = getOrLoadModelThumbnail(modelId);
+  const zoom = Math.max(0.2, Math.min(5.0, Number(td.previewZoom) || 1.0));
 
-  // Badge no canto
+  if (thumb && thumb.loaded && thumb.img.width > 0) {
+    ctx.save();
+    // Clipa dentro da caixa do TextDraw
+    ctx.beginPath();
+    ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
+    ctx.clip();
+
+    const cx = bounds.x + bounds.w / 2;
+    const cy = bounds.y + bounds.h / 2;
+    ctx.translate(cx, cy);
+
+    // Rotação Z do preview
+    if (td.previewRotZ) {
+      ctx.rotate((td.previewRotZ * Math.PI) / 180);
+    }
+
+    // Calcula dimensão da imagem mantendo proporção
+    const imgAspect = thumb.img.width / thumb.img.height;
+    let drawW = bounds.w * 0.9 * zoom;
+    let drawH = drawW / imgAspect;
+    if (drawH > bounds.h * 0.9 * zoom) {
+      drawH = bounds.h * 0.9 * zoom;
+      drawW = drawH * imgAspect;
+    }
+
+    ctx.drawImage(thumb.img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+  } else {
+    // Se ainda está carregando ou não tem miniatura, exibe texto indicativo
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.fillStyle = '#65B5FF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`MODELO 3D: #${modelId}`, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+  }
+
+  // Tag do Modelo no canto superior
   ctx.font = '9px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`Zoom: ${(td.previewZoom || 1).toFixed(1)}x`, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2 + 14);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`#${modelId} (${zoom.toFixed(1)}x)`, bounds.x + 4, bounds.y + 4);
 }
 
 function updateSidebarList() {

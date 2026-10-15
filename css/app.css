@@ -96,7 +96,7 @@ body.cursor-hidden * {
 .save-state { color: var(--paper-mute); font-size: 11.5px; white-space: nowrap; }
 .save-state.dirty { color: var(--sodium); }
 .save-state.error { color: var(--danger); }
-.tools, .actions { display: flex; align-items: center; gap: clamp(2px, 0.5vw, 6px); min-width: 0; flex: 0 1 auto; }
+.tools, .actions { display: flex; align-items: center; gap: clamp(2px, 0.5vw, 6px); flex-shrink: 0; min-width: max-content; }
 .tools { margin-left: auto; }
 .divider { width: 1px; height: 24px; background: var(--line); margin: 0 2px; }
 
@@ -507,32 +507,33 @@ legend.sub { margin-top: 8px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* ---------------------------------------------------------------- telas menores / responsividade */
-@media (max-width: 1550px) {
-  .lbl { display: none; }
-  .project-name { max-width: 130px; }
-}
-@media (max-width: 1380px) {
+@media (max-width: 1700px) {
   .lbl2 { display: none; }
-  .btn { padding: 0 8px; font-size: 13px; }
-  .project-name { max-width: 110px; font-size: 13.5px; }
 }
-@media (max-width: 1240px) {
-  .app { --left-sb-width: 260px; --right-sb-width: 270px; }
+@media (max-width: 1520px) {
+  .lbl { display: none; }
+  .lbl-export { display: none; }
+  .project-name { max-width: 115px; }
+}
+@media (max-width: 1350px) {
   .lbl-keep { display: none; }
-  .seg-btn { padding: 0 7px; font-size: 12px; }
-  .btn.ghost span, .actions .btn.ghost { font-size: 12px; }
+  .lbl-test { display: none; }
+  .btn { padding: 0 7px; font-size: 12.5px; }
+  .seg-btn { padding: 0 6px; font-size: 11.5px; }
   .project-name { max-width: 95px; font-size: 12.5px; }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1150px) {
+  .app { --left-sb-width: 260px; --right-sb-width: 270px; }
   .brand span { display: none; }
-  .tools .btn, .actions .btn { padding: 0 6px; }
+  .save-state { display: none; }
+  .tools .btn, .actions .btn { padding: 0 5px; }
   .btn { height: 30px; }
-  .seg-btn { font-size: 11.5px; }
+  .project-name { max-width: 80px; }
 }
-@media (max-width: 960px) {
-  .seg-btn { padding: 0 5px; }
+@media (max-width: 980px) {
+  .seg-btn { padding: 0 4px; }
   .tools, .actions { gap: 2px; }
-  .project-box { padding-left: 4px; gap: 2px; }
+  .project-box { padding-left: 3px; gap: 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

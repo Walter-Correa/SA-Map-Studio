@@ -69,6 +69,9 @@ function setupDialogEvents() {
   const closeBtn = dialogEl.querySelector('.modal-close');
   if (closeBtn) closeBtn.onclick = () => closeGangZoneDialog();
 
+  const doneBtn = dialogEl.querySelector('#gzBtnDone');
+  if (doneBtn) doneBtn.onclick = () => closeGangZoneDialog();
+
   const addBtn = dialogEl.querySelector('#gzBtnAdd');
   if (addBtn) {
     addBtn.onclick = () => {

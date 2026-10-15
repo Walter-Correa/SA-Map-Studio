@@ -276,8 +276,32 @@ export class Viewport {
     this.renderRequested = true;
     new ResizeObserver(() => this.resize()).observe(container);
     this.resize();
-    const loop = () => {
+
+    let lastRenderTime = 0;
+    const loop = (timestamp) => {
       requestAnimationFrame(loop);
+
+      // Controle dinâmico de taxa de quadros (FPS) para economia inteligente de CPU:
+      const isHidden = document.hidden;
+      const isModalOpen = Boolean(document.querySelector('dialog.open, dialog[open]'));
+      const isCameraActive = this.fly?._movingState || this.fly?.looking || this.fly?.panning || (this.fly?.keys?.size > 0);
+      const isInteracting = isCameraActive || this.renderRequested;
+
+      let targetFps = 60; // Limite padrão de 60 FPS (fluido e suave, eliminando desperdício de 144Hz/240Hz)
+      if (isHidden) {
+        targetFps = 2; // Aba oculta ou minimizado: 2 FPS (quase 0% CPU)
+      } else if (isModalOpen) {
+        targetFps = 5; // Modais abertos (TextDraws, GangZones, etc): 5 FPS
+      } else if (!isInteracting) {
+        targetFps = 30; // Ocioso (sem mover a câmera): 30 FPS (animação de pickups perfeita com CPU baixíssimo)
+      }
+
+      const minInterval = 1000 / targetFps;
+      const elapsed = timestamp - lastRenderTime;
+      if (elapsed < minInterval) return;
+
+      lastRenderTime = timestamp - (elapsed % minInterval);
+
       this.timer.update();
       const dt = Math.min(0.1, this.timer.getDelta());
       for (const cb of this.frameCallbacks) cb(dt);
@@ -285,8 +309,13 @@ export class Viewport {
       this.renderer.render(this.scene, this.camera);
       this._fpsT += dt; this._fpsN++;
       if (this._fpsT >= 0.5) { this.fps = Math.round(this._fpsN / this._fpsT); this._fpsT = 0; this._fpsN = 0; }
+      this.renderRequested = false;
     };
-    loop();
+    requestAnimationFrame(loop);
+  }
+
+  requestRender() {
+    this.renderRequested = true;
   }
 
   setupSky() {
