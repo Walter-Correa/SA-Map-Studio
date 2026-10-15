@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-2.9.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-2.9.1-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -188,6 +188,11 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 2.9.1 — 15/10/2026
+- Correção dos submenus da barra superior e do menu "Ir para": remoção de restrições de overflow na topbar e prevenção de rolagem acidental no foco do campo de coordenadas (Ctrl+G), garantindo que todos os menus suspensos ("Encaixe", "Ir para", "Visão") abram e flutuem perfeitamente sobre a viewport 3D sem deslocar botões.
+- Ocultação automática do cursor do mouse durante movimentação da câmera: o cursor agora é completamente ocultado ao rotacionar a visão (botão direito), arrastar a tela (botão do meio) ou movimentar-se pelo mapa, reaparecendo instantaneamente ao cessar o movimento.
+- Remoção da função e botão redundantes "Preparar miniaturas" no catálogo de objetos, uma vez que 100% das 15.956 miniaturas já se encontram pré-geradas e armazenadas localmente no disco (`Dados/cache/miniaturas/objetos`).
 
 ### 2.9.0 — 15/10/2026
 - Catálogo completo de armas do open.mp e GTA SA: 46 armas e itens especiais (IDs 321 a 372) com categoria dedicada "Armas" e ordenação alfabética de categorias em português.

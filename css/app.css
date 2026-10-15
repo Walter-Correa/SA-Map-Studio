@@ -65,13 +65,21 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
   background: var(--asphalt-700);
   border-bottom: 1px solid var(--line);
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 100;
 }
 .sidebar { background: var(--asphalt-700); min-height: 0; display: flex; flex-direction: column; position: relative; overflow-x: hidden !important; }
 .sidebar.left { border-right: 1px solid var(--line); grid-column: 1; grid-row: 2; width: var(--left-sb-width); overflow-x: hidden !important; }
 .sidebar.right { border-left: 1px solid var(--line); overflow-y: auto; overflow-x: hidden !important; grid-column: 3; grid-row: 2; width: var(--right-sb-width); }
 .viewport { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #6f9fd0; grid-column: 2; grid-row: 2; }
 .viewport canvas { display: block; width: 100%; height: 100%; outline: none; }
+
+/* Ocultação do ponteiro do mouse durante movimentação da câmera / tela */
+body.cursor-hidden,
+body.cursor-hidden * {
+  cursor: none !important;
+}
 
 /* ---------------------------------------------------------------- topo */
 .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-cond); font-weight: 700; font-size: 17px; white-space: nowrap; }
@@ -121,7 +129,7 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
 /* ---------------------------------------------------------------- popovers */
 .pop-anchor { position: relative; }
 .popover {
-  position: absolute; top: calc(100% + 8px); right: 0; z-index: 50;
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 200;
   width: 260px; padding: 12px;
   background: var(--asphalt-600); border: 1px solid var(--asphalt-500); border-radius: var(--radius-m);
   box-shadow: 0 14px 34px rgba(0, 0, 0, .45);
@@ -129,7 +137,10 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
 }
 .tools .popover { left: 0; right: auto; }
 .popover.wide { width: 320px; }
-.popover.wide-goto { width: 440px; max-width: calc(100vw - 32px); }
+.popover.wide-goto { width: 440px; max-width: calc(100vw - 32px); left: 0; right: auto; }
+@media (max-width: 800px) {
+  .popover.wide-goto { left: auto; right: 0; }
+}
 .goto-tabs { display: flex; background: var(--asphalt-800); padding: 3px; border-radius: var(--radius-s); gap: 4px; }
 .goto-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: transparent; border: none; border-radius: 4px; padding: 6px 10px; color: var(--paper-dim); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s ease; }
 .goto-tab svg { width: 14px; height: 14px; }

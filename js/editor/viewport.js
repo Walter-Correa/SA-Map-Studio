@@ -24,6 +24,17 @@ export class FlyCamera {
     this._movingState = false;
     this._stopTimer = null;
 
+    this.updateCursorVisibility = () => {
+      const shouldHide = this.looking || this.panning || (this.keys.size > 0 && this._movingState);
+      if (shouldHide) {
+        document.body.classList.add('cursor-hidden');
+        if (this.dom) this.dom.style.cursor = 'none';
+      } else {
+        document.body.classList.remove('cursor-hidden');
+        if (this.dom) this.dom.style.cursor = '';
+      }
+    };
+
     const setMoving = (active) => {
       if (active) {
         if (this._stopTimer) { clearTimeout(this._stopTimer); this._stopTimer = null; }
@@ -31,6 +42,7 @@ export class FlyCamera {
           this._movingState = true;
           this.onActivity?.(true);
         }
+        this.updateCursorVisibility();
       } else {
         if (this.looking || this.panning || this.keys.size > 0) return;
         if (this._stopTimer) clearTimeout(this._stopTimer);
@@ -39,6 +51,7 @@ export class FlyCamera {
           if (!this.looking && !this.panning && this.keys.size === 0) {
             this._movingState = false;
             this.onActivity?.(false);
+            this.updateCursorVisibility();
           }
         }, 180);
       }
@@ -52,16 +65,33 @@ export class FlyCamera {
       if (MOVE_KEYS.has(k)) {
         this.keys.add(k);
         setMoving(true);
+        this.updateCursorVisibility();
         if (k === 'Space' || k.startsWith('Arrow') || k === 'AltLeft') e.preventDefault();
       }
     };
     const ku = (e) => {
       this.keys.delete(e.code);
       setMoving(false);
+      this.updateCursorVisibility();
     };
     window.addEventListener('keydown', kd);
     window.addEventListener('keyup', ku);
-    window.addEventListener('blur', () => { this.keys.clear(); setMoving(false); });
+    window.addEventListener('blur', () => {
+      this.keys.clear();
+      this.looking = false;
+      this.panning = false;
+      this.updateCursorVisibility();
+      setMoving(false);
+    });
+    window.addEventListener('mouseup', () => {
+      if (this.looking || this.panning) {
+        this.looking = false;
+        this.panning = false;
+        this.centerCursor();
+        setMoving(false);
+        this.updateCursorVisibility();
+      }
+    });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('pointerdown', (e) => {
       if (!this.enabled) return;
@@ -71,6 +101,7 @@ export class FlyCamera {
         this.lastY = e.clientY;
         try { dom.setPointerCapture(e.pointerId); } catch (_) {}
         setMoving(true);
+        this.updateCursorVisibility();
       }
       if (e.button === 1) {
         this.panning = true;
@@ -79,6 +110,7 @@ export class FlyCamera {
         try { dom.setPointerCapture(e.pointerId); } catch (_) {}
         e.preventDefault();
         setMoving(true);
+        this.updateCursorVisibility();
       }
     });
     dom.addEventListener('pointerup', (e) => {
@@ -87,12 +119,14 @@ export class FlyCamera {
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
         this.centerCursor();
         setMoving(false);
+        this.updateCursorVisibility();
       }
       if (e.button === 1) {
         this.panning = false;
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
         this.centerCursor();
         setMoving(false);
+        this.updateCursorVisibility();
       }
     });
     dom.addEventListener('pointercancel', (e) => {
@@ -102,6 +136,7 @@ export class FlyCamera {
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
         this.centerCursor();
         setMoving(false);
+        this.updateCursorVisibility();
       }
     });
     dom.addEventListener('pointermove', (e) => {

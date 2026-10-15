@@ -94,24 +94,7 @@ export function setupCatalog() {
     }
     return !inUse.has(id) && app.editor.placing?.model !== id;
   };
-  $('#btnThumbs').onclick = () => {
-    const ids = catalog.filter(c => !c.isLod).map(c => c.id);
-    thumbs.startBackground(ids);
-    if (!thumbs.background.total) $('#thumbText').textContent = 'Todas as miniaturas já estão prontas';
-  };
-  $('#btnThumbsStop').onclick = () => thumbs.stopBackground();
-  thumbs.addEventListener('progress', renderThumbProgress);
   filterCatalog();
-}
-
-function renderThumbProgress() {
-  const b = app.thumbs.background;
-  $('#thumbProgress').hidden = !b.running;
-  $('#btnThumbs').hidden = b.running;
-  if (b.running) {
-    $('#thumbBar').style.width = (100 * b.done / Math.max(1, b.total)) + '%';
-    $('#thumbText').textContent = `Miniaturas: ${b.done.toLocaleString('pt-BR')} de ${b.total.toLocaleString('pt-BR')}`;
-  }
 }
 
 function toggleFav(id) {

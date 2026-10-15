@@ -137,7 +137,7 @@ function setupToolbar(cfg) {
   ed.addEventListener('mode', updateToolButtons);
   updateToolButtons();
   setupPopover('#btnSnap', '#popSnap');
-  setupPopover('#btnGoto', '#popGoto', () => setTimeout(() => $('#gotoInput').focus(), 0));
+  setupPopover('#btnGoto', '#popGoto', () => setTimeout(() => $('#gotoInput')?.focus({ preventScroll: true }), 0));
   setupPopover('#btnView', '#popView');
   const snap = store.get('snap', { enabled: false, move: 0.5, rotate: 15, magnetic: true, magDist: 0.8 });
   $('#snapOn').checked = snap.enabled; $('#snapMove').value = snap.move; $('#snapRot').value = snap.rotate;
@@ -482,7 +482,13 @@ async function changeGtaFolder() {
 function openGoto() {
   const pop = $('#popGoto');
   if (pop.hidden) $('#btnGoto').click();
-  setTimeout(() => { $('#gotoInput').focus(); $('#gotoInput').select(); }, 0);
+  setTimeout(() => {
+    const input = $('#gotoInput');
+    if (input) {
+      input.focus({ preventScroll: true });
+      input.select();
+    }
+  }, 0);
 }
 
 // Marcador do ponto de teleporte (some sozinho)

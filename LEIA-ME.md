@@ -52,7 +52,8 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Distância de visão configurável até 2500 metros no menu Visão.
   - Botões dedicados nas bordas internas de cada menu lateral para recolhimento e expansão independente, além do atalho **F10** para recolher e restaurar ambos simultaneamente.
   - Modo opcional no menu Visão para recolher automaticamente os menus laterais durante o movimento da câmera (WASD, botão direito ou pan) e restaurar inteligentemente os menus que estavam abertos.
-  - Controle de mouse preciso: captura de ponteiro contínua (sem avisos do navegador), recentralização física do cursor via Win32 e suporte a DPI real no Windows.
+  - Controle de mouse preciso: ocultação automática do cursor durante rotação da visão (botão direito), arrasto (botão do meio) e movimentação, recentralização física do cursor via Win32 e captura contínua sem avisos do navegador.
+  - Submenus da barra superior e menu "Ir para" (Ctrl+G) com abertura fluida sobre o mapa sem cortes e sem deslocamento da barra de ferramentas.
   - Campo copiável **"Coordenadas do clique do mouse"** no topo do menu lateral direito, com cópia rápida e botão **"Ir até o local"** para teleporte imediato da câmera ao ponto clicado.
   - Câmera centralizada automaticamente olhando para baixo sobre o centro do mapa ao carregar qualquer projeto.
 - **Identidade e Ícone**:

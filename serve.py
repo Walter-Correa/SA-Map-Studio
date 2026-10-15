@@ -36,7 +36,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "2.9.0"
+VERSION = "2.9.1"
 FROZEN = getattr(sys, "frozen", False)
 # Arquivos do editor (html/js/css); no .exe ficam na pasta Sistema
 APP_DIR = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))

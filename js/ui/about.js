@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '2.9.1', date: '15/10/2026', items: [
+      'Correção dos Submenus da Barra Superior e do Menu "Ir para": remoção de restrições de overflow na barra superior e prevenção de auto-rolagem no campo de coordenadas do menu "Ir para" (Ctrl+G), garantindo que todos os menus suspensos ("Encaixe", "Ir para", "Visão") abram e flutuem perfeitamente sobre a viewport sem deslocar ou ocultar os botões da barra.',
+      'Ocultação Automática do Cursor do Mouse durante Movimentação da Câmera: o ponteiro do mouse agora é ocultado automaticamente ao rotacionar a visão (botão direito), arrastar a tela (botão do meio) ou navegar livremente com teclado/mouse, reaparecendo instantaneamente assim que a movimentação da câmera é interrompida.',
+      'Remoção da Função Obsoleta "Preparar miniaturas" no Catálogo: remoção definitiva do botão redundante e da barra de progresso no painel de objetos, uma vez que todas as 15.956 miniaturas estão 100% pré-geradas e armazenadas localmente no disco (Dados/cache/miniaturas/objetos) com carregamento instantâneo via scroll virtual.',
+    ],
+  },
+  {
     version: '2.9.0', date: '15/10/2026', items: [
       'Catálogo Completo de Armas do open.mp e GTA SA: inclusão de 46 armas e itens especiais (IDs 321 a 372) com miniaturas 3D e categoria dedicada "Armas", com ordenação alfabética completa das categorias.',
       'Ajuste Fino com Setas Direcionais nos Eixos (▲ / ▼): botões interativos de passo para Posição (X, Y, Z) e Rotação (RX, RY, RZ) com suporte a clique contínuo (auto-repeat), Shift (passo fino 0.1x), Ctrl (passo rápido 5.0x) e histórico completo de Desfazer/Refazer.',
