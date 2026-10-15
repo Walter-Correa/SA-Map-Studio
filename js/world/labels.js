@@ -40,7 +40,7 @@ export function hexToLabelColor(hexStr, alpha = 0xFF) {
   return (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
 }
 
-// Renderiza o texto com suporte a quebras de linha (\n) e códigos de cor ({FFFFFF})
+// Renderiza o texto com suporte a quebras de linha (\n ou reais) e códigos de cor ({FFFFFF} ou [FFFFFF])
 export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -48,14 +48,15 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   const lineHeight = 46;
   ctx.font = `bold ${fontSize}px "Segoe UI", Arial, sans-serif`;
 
-  const rawLines = String(text ?? '').replace(/\r/g, '').split('\n');
+  const normalizedText = String(text ?? '').replace(/\r/g, '').replace(/\\n/g, '\n');
+  const rawLines = normalizedText.split('\n');
   const parsedLines = [];
   let curColor = defaultHex || '#FFFFFF';
 
   for (const line of rawLines) {
     const segments = [];
     let lastIdx = 0;
-    const re = /\{([0-9a-fA-F]{6})\}/g;
+    const re = /[\{\[]([0-9a-fA-F]{6})[\}\]]/g;
     let match;
     while ((match = re.exec(line)) !== null) {
       if (match.index > lastIdx) {
@@ -133,7 +134,7 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
 // Cria o nó 3D (Sprite) para visualização e interação no Three.js
 export function createLabelNode(label) {
   const group = new THREE.Group();
-  group.userData = { uid: label.uid, kind: 'labels' };
+  group.userData = { uid: label.uid, kind: 'labels', isLabel: true };
 
   const hex = labelColorToHex(label.color);
   const { canvas, width, height } = renderLabelCanvas(label.text, hex);
@@ -150,9 +151,11 @@ export function createLabelNode(label) {
   });
 
   const sprite = new THREE.Sprite(mat);
-  const scaleMul = 0.015;
+  const userScale = (label.scale !== undefined && !isNaN(label.scale)) ? Math.max(0.2, Math.min(5.0, +label.scale)) : 1.0;
+  const scaleMul = 0.0075 * userScale;
   sprite.scale.set(width * scaleMul, height * scaleMul, 1);
   sprite.position.set(0, 0, 0);
+  sprite.userData = { uid: label.uid, kind: 'labels', isLabel: true, noPick: true };
   group.add(sprite);
 
   // Caixa invisível para clique e gizmo
@@ -163,7 +166,7 @@ export function createLabelNode(label) {
   );
   const hitMat = new THREE.MeshBasicMaterial({ visible: false });
   const hitMesh = new THREE.Mesh(hitGeo, hitMat);
-  hitMesh.userData = { uid: label.uid, kind: 'labels' };
+  hitMesh.userData = { uid: label.uid, kind: 'labels', isLabel: true };
   group.add(hitMesh);
 
   group.userData.sprite = sprite;

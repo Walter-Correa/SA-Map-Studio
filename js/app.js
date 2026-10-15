@@ -520,7 +520,9 @@ function showMarker(p) {
 
 function groundAt(x, y, fromZ = 1200) {
   const rc = new THREE.Raycaster(new THREE.Vector3(x, y, fromZ), new THREE.Vector3(0, 0, -1), 0, fromZ + 200);
-  const hit = rc.intersectObjects([app.editor.root, ...app.streamer.pickables()], true).find(h => !h.object.userData.noPick && h.object.visible);
+  if (app?.vp?.camera) rc.camera = app.vp.camera;
+  const hit = rc.intersectObjects([app.editor.root, ...app.streamer.pickables()], true)
+    .find(h => !h.object.userData.noPick && !h.object.isSprite && !h.object.userData?.isLabel && !h.object.userData?.isPickup && h.object.visible);
   return hit ? hit.point.z : null;
 }
 
@@ -773,17 +775,19 @@ function setupOutline() {
       project.removed.length;
   };
 
-  const getSpawnTargetPoint = () => {
+  const getSpawnTargetPoint = (offsetZ = 0.5) => {
     const vp = app.vp;
     if (!vp || !vp.camera) return { x: 0, y: 0, z: 10 };
     const cam = vp.camera;
     const dir = new THREE.Vector3();
     cam.getWorldDirection(dir);
     const target = cam.position.clone().add(dir.multiplyScalar(4.0));
+    const groundZ = groundAt(target.x, target.y, Math.max(target.z + 5.0, cam.position.z + 5.0));
+    const finalZ = groundZ !== null ? (groundZ + offsetZ) : target.z;
     return {
       x: Math.round(target.x * 100) / 100,
       y: Math.round(target.y * 100) / 100,
-      z: Math.round(target.z * 100) / 100,
+      z: Math.round(finalZ * 100) / 100,
     };
   };
 
@@ -791,7 +795,7 @@ function setupOutline() {
   if (btnAdd3DText) {
     btnAdd3DText.onclick = () => {
       const ed = app.editor;
-      const pt = getSpawnTargetPoint();
+      const pt = getSpawnTargetPoint(1.0);
       const lbl = {
         uid: null,
         text: 'Novo Texto 3D',
@@ -814,7 +818,7 @@ function setupOutline() {
   if (btnAddPickup) {
     btnAddPickup.onclick = () => {
       const ed = app.editor;
-      const pt = getSpawnTargetPoint();
+      const pt = getSpawnTargetPoint(0.5);
       const pk = {
         uid: null,
         model: 1240, // Saúde (Health / Coração)

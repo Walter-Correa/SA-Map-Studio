@@ -171,7 +171,7 @@ export class Editor extends EventTarget {
           if (kind === 'objects') sig = JSON.stringify(o.materials || []);
           else if (kind === 'vehicles') sig = JSON.stringify([o.color1, o.color2, o.paintjob, o.components]);
           else if (kind === 'actors') sig = JSON.stringify([o.skin, o.anim]);
-          else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS]);
+          else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
           else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
           else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
 
@@ -1087,11 +1087,20 @@ export class Editor extends EventTarget {
       if (!node) continue;
       const box = new THREE.Box3().setFromObject(node);
       const bottomOffset = s.item.z - box.min.z;
-      const finalOffset = s.kind === 'actors' ? (bottomOffset > 0.3 ? bottomOffset : 0.98) : bottomOffset;
-      const origin = new THREE.Vector3(s.item.x, s.item.y, box.max.z + 0.1);
+      let finalOffset = bottomOffset;
+      if (s.kind === 'actors') {
+        finalOffset = bottomOffset > 0.3 ? bottomOffset : 0.98;
+      } else if (s.kind === 'pickups') {
+        finalOffset = 0.5;
+      } else if (s.kind === 'labels') {
+        finalOffset = 1.0;
+      }
+      const origin = new THREE.Vector3(s.item.x, s.item.y, Math.max(s.item.z + 1.0, box.max.z + 0.1));
       const rc = new THREE.Raycaster(origin, new THREE.Vector3(0, 0, -1), 0, 1000);
+      rc.camera = this.vp.camera;
       const hits = rc.intersectObjects(this.pickTargets(), true).filter(h => {
         if (h.object.userData.noPick) return false;
+        if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup) return false;
         if (isDescendant(h.object, node)) return false;
         const hitUid = h.object.userData.uid;
         if (hitUid && selectedUids.has(hitUid)) return false;

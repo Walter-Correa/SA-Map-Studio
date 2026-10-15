@@ -1563,6 +1563,19 @@ function labelInspector(l) {
       </div>
     </div>
 
+    <div class="insp-section">
+      <div class="insp-label" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Tamanho / Zoom do Texto 3D</span>
+        <span id="lblScaleVal" style="font-family:monospace; font-weight:bold; color:var(--accent, #f0a630);">${Math.round((l.scale ?? 1.0) * 100)}%</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:11px; color:#888;">20%</span>
+        <input type="range" id="lblScaleRange" min="0.2" max="3.0" step="0.1" value="${l.scale ?? 1.0}" style="flex:1;">
+        <span style="font-size:11px; color:#888;">300%</span>
+        <button type="button" class="btn small" id="btnLblScaleReset" title="Restaurar tamanho padrão (100%)">100%</button>
+      </div>
+    </div>
+
     <!-- Cor Base -->
     <div class="insp-section">
       <div class="insp-label">Cor Padrão / Base (Hexadecimal ou Paleta SA-MP)</div>
@@ -1615,10 +1628,40 @@ function bindLabel(l) {
 
   const txt = $('#lblText');
   if (txt) {
+    txt.addEventListener('keydown', (e) => e.stopPropagation());
+    txt.addEventListener('keyup', (e) => e.stopPropagation());
     txt.oninput = () => {
-      project.updateItems('Editar Texto 3D', [uid], (o) => { o.text = txt.value; });
-      app.editor.syncAll();
-      updateLabelCode(project.find(uid));
+      suppress = true;
+      try {
+        project.updateItems('Editar Texto 3D', [uid], (o) => { o.text = txt.value; });
+        app.editor.syncAll();
+        updateLabelCode(project.find(uid));
+      } finally {
+        suppress = false;
+      }
+    };
+  }
+
+  const scaleRange = $('#lblScaleRange');
+  const scaleVal = $('#lblScaleVal');
+  const btnScaleReset = $('#btnLblScaleReset');
+  if (scaleRange) {
+    scaleRange.oninput = () => {
+      const val = parseFloat(scaleRange.value) || 1.0;
+      if (scaleVal) scaleVal.textContent = Math.round(val * 100) + '%';
+      suppress = true;
+      try {
+        project.updateItems('Alterar escala do Texto 3D', [uid], (o) => { o.scale = val; });
+        app.editor.syncAll();
+      } finally {
+        suppress = false;
+      }
+    };
+  }
+  if (btnScaleReset && scaleRange) {
+    btnScaleReset.onclick = () => {
+      scaleRange.value = '1.0';
+      scaleRange.dispatchEvent(new Event('input'));
     };
   }
 
@@ -1656,9 +1699,14 @@ function bindLabel(l) {
     if (hexInp) hexInp.value = hex;
     if (preview) preview.style.background = hex;
     const num = hexToLabelColor(hex);
-    project.updateItems('Alterar Cor do Texto 3D', [uid], (o) => { o.color = num; });
-    app.editor.syncAll();
-    updateLabelCode(project.find(uid));
+    suppress = true;
+    try {
+      project.updateItems('Alterar Cor do Texto 3D', [uid], (o) => { o.color = num; });
+      app.editor.syncAll();
+      updateLabelCode(project.find(uid));
+    } finally {
+      suppress = false;
+    }
   };
 
   if (cp) cp.oninput = () => applyColor(cp.value.toUpperCase());
@@ -1676,9 +1724,14 @@ function bindLabel(l) {
   const los = $('#lblTestLOS');
   if (los) {
     los.onchange = () => {
-      project.updateItems('Alterar testLOS', [uid], (o) => { o.testLOS = los.checked ? 1 : 0; });
-      app.editor.syncAll();
-      updateLabelCode(project.find(uid));
+      suppress = true;
+      try {
+        project.updateItems('Alterar testLOS', [uid], (o) => { o.testLOS = los.checked ? 1 : 0; });
+        app.editor.syncAll();
+        updateLabelCode(project.find(uid));
+      } finally {
+        suppress = false;
+      }
     };
   }
 
@@ -1688,9 +1741,14 @@ function bindLabel(l) {
       let val = parseFloat(inp.value);
       if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
       if (['world'].includes(field)) val = Math.trunc(val);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
-      app.editor.syncAll();
-      updateLabelCode(project.find(uid));
+      suppress = true;
+      try {
+        project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+        app.editor.syncAll();
+        updateLabelCode(project.find(uid));
+      } finally {
+        suppress = false;
+      }
     });
   });
 

@@ -11,6 +11,18 @@ let appRef = null;
 let selectedIdx = 0;
 let isDraggingTd = null; // { idx, startX, startY, origX, origY, isResize }
 let showGrid = true;
+let showGameBg = true;
+let gameBgImg = null;
+
+function loadGameBg() {
+  if (!gameBgImg) {
+    gameBgImg = new Image();
+    gameBgImg.src = 'css/game_bg.png';
+    gameBgImg.onload = () => {
+      if (dialogEl && dialogEl.classList.contains('open')) redrawCanvas();
+    };
+  }
+}
 
 // Cores padrão do SA-MP
 const DEFAULT_TD_COLORS = [
@@ -56,6 +68,7 @@ export function initTextDrawEditor(app) {
     setupCanvasEvents();
   }
 
+  loadGameBg();
   setupDialogEvents();
 }
 
@@ -105,6 +118,14 @@ function setupDialogEvents() {
   if (btnDup) {
     btnDup.onclick = () => {
       duplicateSelectedTextDraw();
+    };
+  }
+
+  const chkGameBg = dialogEl.querySelector('#tdChkGameBg');
+  if (chkGameBg) {
+    chkGameBg.onchange = (e) => {
+      showGameBg = e.target.checked;
+      redrawCanvas();
     };
   }
 
@@ -461,6 +482,7 @@ function getSelectedTd() {
 
 export function openTextDrawEditor() {
   if (!dialogEl) return;
+  loadGameBg();
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
@@ -484,9 +506,13 @@ function redrawCanvas() {
   if (!ctx || !canvasEl) return;
   ctx.clearRect(0, 0, 640, 480);
 
-  // Fundo cinza escuro simulando o jogo / GTA SA
-  ctx.fillStyle = '#0a0d14';
-  ctx.fillRect(0, 0, 640, 480);
+  // Fundo do jogo / GTA SA
+  if (showGameBg && gameBgImg && gameBgImg.complete && gameBgImg.naturalWidth > 0) {
+    ctx.drawImage(gameBgImg, 0, 0, 640, 480);
+  } else {
+    ctx.fillStyle = '#0a0d14';
+    ctx.fillRect(0, 0, 640, 480);
+  }
 
   // Grade e linhas guias de limites
   if (showGrid) {

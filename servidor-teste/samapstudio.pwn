@@ -3,7 +3,7 @@
 // Lê o mapa de scriptfiles/samapstudio/mapa.txt (gerado pelo editor), cria os
 // objetos, as trocas de textura e texto, remove os prédios e coloca o jogador
 // no ponto escolhido. Usa só funções nativas do SA-MP/open.mp (sem plugins).
-// ===========================================================================
+#define SAMP_COMPAT
 #include <a_samp>
 
 #define SAMS_ARQUIVO        "samapstudio/mapa.txt"
@@ -14,6 +14,7 @@
 #define SAMS_MAX_LABELS     500
 #define SAMS_MAX_PICKUPS    500
 #define SAMS_MAX_GANGZONES  200
+#define SAMS_MAX_TEXTDRAWS  256
 #define SAMS_COR_INFO       0xF0A630FF
 #define SAMS_COR_OK         0x57B77AFF
 
@@ -66,6 +67,8 @@ new gTotalPickups;
 new gGangZones[SAMS_MAX_GANGZONES];
 new gGangZoneColors[SAMS_MAX_GANGZONES];
 new gTotalGangZones;
+new Text:gTextDraws[SAMS_MAX_TEXTDRAWS];
+new gTotalTextDraws;
 
 enum E_SAMS_ACTOR_ANIM
 {
@@ -442,6 +445,59 @@ stock SAMS_CarregarMapa()
                     gTotalGangZones++;
                 }
             }
+            case 'D':
+            {
+                if (gTotalTextDraws >= SAMS_MAX_TEXTDRAWS) continue;
+                new Float:tdx = SAMS_Float(linha, 1);
+                new Float:tdy = SAMS_Float(linha, 2);
+                new tdfont = SAMS_Int(linha, 3);
+                new Float:tdletx = SAMS_Float(linha, 4);
+                new Float:tdlety = SAMS_Float(linha, 5);
+                new Float:tdsizex = SAMS_Float(linha, 6);
+                new Float:tdsizey = SAMS_Float(linha, 7);
+                new tdcol = SAMS_HexOrInt(linha, 8);
+                new tdboxcol = SAMS_HexOrInt(linha, 9);
+                new tdbgcol = SAMS_HexOrInt(linha, 10);
+                new tdoutline = SAMS_Int(linha, 11);
+                new tdshadow = SAMS_Int(linha, 12);
+                new tdalign = SAMS_Int(linha, 13);
+                new tdusebox = SAMS_Int(linha, 14);
+                new tdprop = SAMS_Int(linha, 15);
+                new tdselect = SAMS_Int(linha, 16);
+                new tdmodel = SAMS_Int(linha, 17);
+                new Float:tdrotx = SAMS_Float(linha, 18);
+                new Float:tdroty = SAMS_Float(linha, 19);
+                new Float:tdrotz = SAMS_Float(linha, 20);
+                new Float:tdzoom = SAMS_Float(linha, 21);
+                SAMS_Resto(linha, 22, texto, sizeof(texto));
+
+                new Text:td = TextDrawCreate(tdx, tdy, texto);
+                if (td != Text:INVALID_TEXT_DRAW)
+                {
+                    TextDrawFont(td, tdfont);
+                    TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.48), (tdlety > 0.0 ? tdlety : 1.12));
+                    TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 1280.0), (tdsizey > 0.0 ? tdsizey : 1280.0));
+                    TextDrawColor(td, tdcol);
+                    TextDrawSetOutline(td, tdoutline);
+                    TextDrawSetShadow(td, tdshadow);
+                    TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
+                    if (tdusebox)
+                    {
+                        TextDrawUseBox(td, 1);
+                        TextDrawBoxColor(td, tdboxcol);
+                    }
+                    TextDrawBackgroundColor(td, tdbgcol);
+                    TextDrawSetProportional(td, tdprop);
+                    if (tdselect) TextDrawSetSelectable(td, 1);
+                    if (tdfont == 5 && tdmodel > 0)
+                    {
+                        TextDrawSetPreviewModel(td, tdmodel);
+                        TextDrawSetPreviewRot(td, tdrotx, tdroty, tdrotz, (tdzoom > 0.0 ? tdzoom : 1.0));
+                    }
+                    gTextDraws[gTotalTextDraws] = td;
+                    gTotalTextDraws++;
+                }
+            }
         }
     }
     fclose(arquivo);
@@ -454,7 +510,7 @@ stock SAMS_CarregarMapa()
         gHasMapCenter = true;
     }
 
-    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors, %d labels, %d pickups, %d gangzones", gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones);
+    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws", gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalTextDraws);
     printf("[SA Map Studio] Clima: %d, Horario: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
@@ -540,6 +596,10 @@ public OnPlayerConnect(playerid)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
     }
+    for (new i = 0; i < gTotalTextDraws; i++)
+    {
+        TextDrawShowForPlayer(playerid, gTextDraws[i]);
+    }
     SAMS_PreloadAllAnims(playerid);
     return 1;
 }
@@ -603,6 +663,10 @@ public OnPlayerSpawn(playerid)
     for (new i = 0; i < gTotalGangZones; i++)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
+    }
+    for (new i = 0; i < gTotalTextDraws; i++)
+    {
+        TextDrawShowForPlayer(playerid, gTextDraws[i]);
     }
     SAMS_PreloadAllAnims(playerid);
     SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);

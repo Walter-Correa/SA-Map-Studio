@@ -220,6 +220,13 @@ export function mapLines(project, spawn, env, center) {
       const maxy = gz.maxy ?? gz.maxY ?? 0;
       lines.push(`G|${minx.toFixed(4)}|${miny.toFixed(4)}|${maxx.toFixed(4)}|${maxy.toFixed(4)}|${colorInt}`);
     }
+    for (const td of p.textDraws || []) {
+      const cInt = signed(td.color ?? 0xFFFFFFFF);
+      const bInt = signed(td.boxColor ?? 0x00000080);
+      const bgInt = signed(td.backgroundColor ?? 0x000000FF);
+      const textEsc = String(td.text || '').replace(/\\n/g, '\n').replace(/\r?\n/g, '\\n').replace(/\r/g, '');
+      lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${(td.letterSizeX ?? 0.48).toFixed(2)}|${(td.letterSizeY ?? 1.12).toFixed(2)}|${(td.textSizeX ?? 100).toFixed(2)}|${(td.textSizeY ?? 100).toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${td.alignment ?? 1}|${td.useBox ? 1 : 0}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${(td.previewRotX || 0).toFixed(2)}|${(td.previewRotY || 0).toFixed(2)}|${(td.previewRotZ || 0).toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
+    }
   }
   return lines.join('\n') + '\n';
 }
@@ -231,7 +238,8 @@ function spawnPoint(kind) {
   const a = (((yaw * 180 / Math.PI) - 90) % 360 + 360) % 360;
   const down = (x, y, zTop) => {
     const rc = new THREE.Raycaster(new THREE.Vector3(x, y, zTop), new THREE.Vector3(0, 0, -1), 0, 1500);
-    const hit = rc.intersectObjects([ed.root, ...app.streamer.pickables()], true).find(h => !h.object.userData.noPick && h.object.visible);
+    rc.camera = cam;
+    const hit = rc.intersectObjects([ed.root, ...app.streamer.pickables()], true).find(h => !h.object.userData.noPick && !h.object.isSprite && !h.object.userData.isLabel && !h.object.userData.isPickup && h.object.visible);
     return hit ? hit.point.z + 1.0 : null;
   };
   if (kind === 'selection') {

@@ -102,6 +102,7 @@ export function makeLabel(data) {
     color: data.color !== undefined ? (data.color | 0) : 0xFFFFFFFF,
     x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
     drawDist: data.drawDist !== undefined ? +data.drawDist : 40.0,
+    scale: data.scale !== undefined ? +data.scale : 1.0,
     world: data.world !== undefined ? (data.world | 0) : 0,
     testLOS: data.testLOS ? 1 : 0,
     comment: data.comment ? String(data.comment) : '',

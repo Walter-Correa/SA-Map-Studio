@@ -563,7 +563,7 @@
   </form>
 </dialog>
 
-<dialog class="dialog wide" id="dlgGangZones" style="max-width: 1040px; width: 95vw; height: 85vh;">
+<dialog class="dialog wide" id="dlgGangZones" style="max-width: 1560px; width: 96vw; height: 92vh;">
   <div class="dialog-head">
     <div class="dialog-title"><svg><use href="#i-map"/></svg>Editor de GangZones (GTA SA Radar Map)</div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
@@ -622,7 +622,7 @@
   </footer>
 </dialog>
 
-<dialog class="dialog wide" id="dlgTextDraw" style="max-width: 1080px; width: 95vw; height: 86vh;">
+<dialog class="dialog wide" id="dlgTextDraw" style="max-width: 1560px; width: 96vw; height: 92vh;">
   <div class="dialog-head">
     <div class="dialog-title"><svg><use href="#i-text"/></svg>Editor Visual de TextDraws (640x480)</div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
@@ -630,12 +630,13 @@
   <div class="td-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
     <div class="td-canvas-container" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: #07090e; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
       <div class="td-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px; flex-shrink: 0;">
+        <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGameBg" checked> HUD / Tela GTA SA</label>
         <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGrid" checked> Grade & Safe Zone</label>
         <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Arraste os elementos para mover ou use a alça no canto para redimensionar</span>
         <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;">640 x 480</span>
       </div>
       <div id="tdCanvasWrap" style="flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; background: radial-gradient(circle, #10141f 0%, #06080d 100%);">
-        <canvas id="tdCanvas" width="640" height="480" style="width: 100%; max-width: 640px; aspect-ratio: 4/3; box-shadow: 0 4px 20px rgba(0,0,0,0.8); border: 1px solid var(--line); border-radius: 4px; cursor: default;"></canvas>
+        <canvas id="tdCanvas" width="640" height="480" style="width: 100%; max-width: 860px; aspect-ratio: 4/3; box-shadow: 0 4px 20px rgba(0,0,0,0.8); border: 1px solid var(--line); border-radius: 4px; cursor: default;"></canvas>
       </div>
     </div>
 
