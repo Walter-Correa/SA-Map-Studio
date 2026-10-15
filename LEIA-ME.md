@@ -38,7 +38,7 @@ Há dois arquivos para compilar:
 - **`Compilar EXE limpo.bat`**: gera **`dist-limpo\SA Map Studio`** do zero, sem nenhum dado carregado
   (sem projetos, cache, miniaturas nem configuração), pronta para enviar a outra pessoa. Não mexe na sua pasta `dist`.
 
-Os dois usam as versões mais recentes do PyInstaller e do pywebview e montam a pasta **`Servidor de Teste`**
+Os dois contam com sistema inteligente de detecção de interpretadores Python no Windows (evitando stubs vazios da Microsoft Store), auto-recuperação de ambientes virtuais (`.venv-build`) corrompidos ou transferidos de outro computador, usam as versões mais recentes do PyInstaller e do pywebview e montam a pasta **`Servidor de Teste`**
 dentro do programa, com o gamemode do editor e os arquivos do seu servidor open.mp / SA-MP (copiados do servidor
 que você já usa no "Testar no jogo"). Se não houver servidor, coloque o `omp-server.exe`, as `.dll` e a pasta
 `components` nessa pasta.
@@ -97,6 +97,8 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Comandos no servidor: `/fly` ou `/voar` (voo livre da câmera estilo noclip), `/map` ou `/mapa` (teleporte ao centro do mapa), `/w [0-45]` (altera clima), `/t [0-23] [minutos]` (altera horário), `/anim`, `/v [modelo]`, `/jetpack`, `/spawn`, `/pos` e `/ajuda`.
 - **Logs e Diagnóstico**:
   - Registro de erros em tempo real com botão dedicado na barra superior e janela para consultar e copiar os registros para suporte rápido.
+- **Compilação Autônoma e Limpa**:
+  - Scripts `Compilar EXE.bat` e `Compilar EXE limpo.bat` com auto-recuperação do ambiente virtual (`.venv-build`), auto-detecção de executáveis Python funcionais e empacotamento completo testado e verificado.
 
 Aperte `?` dentro do programa para ver todos os atalhos.
 

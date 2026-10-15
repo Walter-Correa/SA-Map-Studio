@@ -24,17 +24,57 @@ echo  Resultado: dist\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
 )
 echo ============================================================
 
-rem Usa o lancador "py" se existir; senao, o "python" do PATH
-set "PY=python"
-where py >nul 2>nul && set "PY=py -3"
+set "VPY=.venv-build\Scripts\python.exe"
+
+rem Se o venv existir mas estiver corrompido ou apontando para Python inexistente de outra maquina, recria
+if exist "%VPY%" (
+    "%VPY%" -c "import sys" >nul 2>nul
+    if errorlevel 1 (
+        echo Ambiente .venv-build existente esta corrompido ou pertence a outro usuario. Recriando...
+        rmdir /s /q ".venv-build" 2>nul
+    )
+)
 
 rem Ambiente separado so para a compilacao (nao mexe no seu Python)
-if not exist ".venv-build\Scripts\python.exe" (
-    echo Criando ambiente de compilacao...
+if not exist "%VPY%" (
+    echo Procurando instalacao funcional do Python...
+    set "PY="
+    py -3 -c "import sys" >nul 2>nul && set "PY=py -3"
+    if not defined PY (
+        python -c "import sys" >nul 2>nul && set "PY=python"
+    )
+    if not defined PY if exist "%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" (
+        "%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" -c "import sys" >nul 2>nul && set "PY="%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe""
+    )
+    if not defined PY (
+        for %%P in (
+            "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+            "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+            "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+            "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+            "C:\Python313\python.exe"
+            "C:\Python312\python.exe"
+            "C:\Python311\python.exe"
+            "C:\Python310\python.exe"
+            "C:\Program Files\Python313\python.exe"
+            "C:\Program Files\Python312\python.exe"
+            "C:\Program Files\Python311\python.exe"
+            "C:\Program Files\Python310\python.exe"
+        ) do (
+            if not defined PY if exist %%P (
+                %%P -c "import sys" >nul 2>nul && set "PY=%%P"
+            )
+        )
+    )
+    if not defined PY (
+        echo ERRO: Nenhuma instalacao funcional do Python foi encontrada!
+        echo Instale o Python em https://www.python.org/downloads/ e marque "Add python.exe to PATH".
+        goto erro
+    )
+    echo Criando ambiente de compilacao com: %PY%...
     %PY% -m venv .venv-build
     if errorlevel 1 goto erro
 )
-set "VPY=.venv-build\Scripts\python.exe"
 
 echo Atualizando pip, PyInstaller e pywebview para as versoes mais recentes...
 "%VPY%" -m pip install --upgrade --quiet pip
@@ -48,7 +88,7 @@ echo Fechando o SA Map Studio, se estiver aberto...
 taskkill /im "SA Map Studio.exe" /f >nul 2>nul
 taskkill /im "omp-server.exe" /f >nul 2>nul
 taskkill /im "samp-server.exe" /f >nul 2>nul
-timeout /t 2 /nobreak >nul
+ping 127.0.0.1 -n 3 >nul
 
 rem Data e hora desta compilacao (aparece em "Novidades" dentro do programa)
 for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'dd/MM/yyyy HH:mm:ss'"`) do set "BUILDTIME=%%T"

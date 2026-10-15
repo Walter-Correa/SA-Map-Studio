@@ -198,6 +198,7 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 - Teleporte rápido para coordenadas de clique do mouse através de botão dedicado no inspetor.
 - Navegação de câmera com captura de ponteiro contínua (sem caixas nativas de cursor), suporte a DPI real no Windows e recentralização nativa via `user32.SetCursorPos`.
 - Pré-geração de miniaturas do catálogo em lote na tela de boot na primeira inicialização.
+- Compilação limpa e autônoma do executável (.exe): script de compilação aprimorado com auto-recuperação do ambiente virtual (.venv-build), detecção inteligente de executáveis Python no sistema (evitando stubs inválidos da Microsoft Store) e empacotamento limpo verificado em `dist-limpo\SA Map Studio`.
 
 ### 2.8.0 — 14/10/2026
 - Novo seletor de animações com painel dividido (Split View) e player de vídeo dinâmico integrado para demonstração ao vivo da animação.
