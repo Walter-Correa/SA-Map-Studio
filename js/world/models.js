@@ -99,11 +99,6 @@ export class ModelCache {
     tex.anisotropy = this.anisotropy;
     tex.flipY = false;
     tex.needsUpdate = true;
-    // Depois de enviada para a placa de vídeo, a cópia na memória do programa não é mais usada
-    tex.onUpdate = () => {
-      if (tex.isCompressedTexture) tex.mipmaps = [];
-      else tex.image = { width: tex.image.width, height: tex.image.height, data: null };
-    };
     this.uploads.push(tex);
     return { texture: tex, alpha: t.alpha };
   }

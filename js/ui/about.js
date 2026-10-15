@@ -10,6 +10,7 @@ const CHANGELOG = [
       'Correção dos Submenus da Barra Superior e do Menu "Ir para": remoção de restrições de overflow na barra superior e prevenção de auto-rolagem no campo de coordenadas do menu "Ir para" (Ctrl+G), garantindo que todos os menus suspensos ("Encaixe", "Ir para", "Visão") abram e flutuem perfeitamente sobre a viewport sem deslocar ou ocultar os botões da barra.',
       'Ocultação Automática do Cursor do Mouse durante Movimentação da Câmera: o ponteiro do mouse agora é ocultado automaticamente ao rotacionar a visão (botão direito), arrastar a tela (botão do meio) ou navegar livremente com teclado/mouse, reaparecendo instantaneamente assim que a movimentação da câmera é interrompida.',
       'Remoção da Função Obsoleta "Preparar miniaturas" no Catálogo: remoção definitiva do botão redundante e da barra de progresso no painel de objetos, uma vez que todas as 15.956 miniaturas estão 100% pré-geradas e armazenadas localmente no disco (Dados/cache/miniaturas/objetos) com carregamento instantâneo via scroll virtual.',
+      'Correção Crítica de Renderização de Texturas (Three.js WebGL): eliminação do erro TypeError Cannot read properties of undefined (reading width) em uploadTexture, preservando a integridade das estruturas de mipmaps das texturas DXT e RGBA em memória, evitando travamentos e falhas visuais na renderização dos objetos do mapa.',
     ],
   },
   {
