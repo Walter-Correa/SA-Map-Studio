@@ -2,6 +2,7 @@
 // favoritos, recentes e miniaturas guardadas no disco.
 import { OBJECT_CATEGORIES, REGIONS } from '../world/categories.js';
 import { getSkinLabel } from '../world/actors.js';
+import { PREDEFINED_PICKUPS } from '../world/pickups.js';
 import { app, $, $$, esc, plural, store, showPrompt } from './common.js';
 
 const ROW_H = 80;
@@ -31,7 +32,7 @@ export function setupCatalog() {
   regSel.onchange = () => { region = regSel.value; store.set('catRegion', region); filterCatalog(); };
 
   const box = $('#catalogChips');
-  box.innerHTML = ['Todos', 'Favoritos', 'Recentes', 'Veículos', 'Actors'].map(c => `<button type="button" class="chip${c === shortcut ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('');
+  box.innerHTML = ['Todos', 'Favoritos', 'Recentes', 'Veículos', 'Actors', 'Pickups'].map(c => `<button type="button" class="chip${c === shortcut ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('');
   box.onclick = (e) => {
     const b = e.target.closest('.chip'); if (!b) return;
     shortcut = b.dataset.cat;
@@ -72,7 +73,12 @@ export function setupCatalog() {
       return;
     }
     if (e.target.closest('.fav')) { toggleFav(id); return; }
-    if (app.editor.placing?.model === id) app.editor.cancelPlacing(); else app.editor.startPlacing(id);
+    if (app.editor.placing?.model === id) {
+      app.editor.cancelPlacing();
+    } else {
+      const isPickup = shortcut === 'Pickups' || PREDEFINED_PICKUPS.some(p => p.model === id && (category === 'Pickups' || category === 'Placas e sinalização'));
+      app.editor.startPlacing(id, isPickup ? { kind: 'pickups' } : {});
+    }
   });
   app.editor.addEventListener('placing', renderCatalogRows);
   app.editor.addEventListener('placed', (e) => {
@@ -114,6 +120,10 @@ export function filterCatalog() {
   else if (shortcut === 'Recentes') { const order = new Map(recent.map((id, i) => [id, i])); list = list.filter(c => order.has(c.id)).sort((a, b) => order.get(a.id) - order.get(b.id)); }
   else if (shortcut === 'Veículos') list = list.filter(c => c.def?.type === 'cars' || c.category === 'Veículos');
   else if (shortcut === 'Actors') list = list.filter(c => c.def?.type === 'peds' || c.category === 'Actors (Personagens)');
+  else if (shortcut === 'Pickups') {
+    const pSet = new Set(PREDEFINED_PICKUPS.map(p => p.model));
+    list = list.filter(c => pSet.has(c.id));
+  }
   if (category) list = list.filter(c => c.category === category);
   if (region) list = list.filter(c => c.region === region);
   if (q) {
@@ -125,7 +135,9 @@ export function filterCatalog() {
       const gName = (c.def.gameName || '').toLowerCase();
       const cat = c.category.toLowerCase();
       const sLabel = (c.def.type === 'peds' ? getSkinLabel(c.id) : '').toLowerCase();
-      return words.every(w => alias.includes(w) || c.name.includes(w) || gName.includes(w) || cat.includes(w) || sLabel.includes(w));
+      const pk = PREDEFINED_PICKUPS.find(p => p.model === c.id);
+      const pkName = pk ? pk.name.toLowerCase() : '';
+      return words.every(w => alias.includes(w) || c.name.includes(w) || gName.includes(w) || cat.includes(w) || sLabel.includes(w) || pkName.includes(w));
     });
     if (asNum) list = [...list].sort((a, b) => (String(b.id) === asNum) - (String(a.id) === asNum));
   } else if (!category && shortcut === 'Todos') {
@@ -156,10 +168,12 @@ export function renderCatalogRows() {
     row.className = 'row' + (placingId === c.id ? ' active' : '');
     row.style.top = i * ROW_H + 'px';
     row.dataset.id = c.id;
-    const baseLabel = c.def.type === 'peds' ? getSkinLabel(c.id) : (c.def.type === 'cars' && c.def.gameName ? c.def.gameName : c.name);
+    const pkDef = PREDEFINED_PICKUPS.find(p => p.model === c.id);
+    const baseLabel = c.def.type === 'peds' ? getSkinLabel(c.id) : (c.def.type === 'cars' && c.def.gameName ? c.def.gameName : (pkDef ? pkDef.name : c.name));
     const alias = aliases[c.id];
     const displayTitle = alias || baseLabel;
-    const displaySub = alias ? `${esc(baseLabel)} · ${c.id} · ${esc(c.category)}` : `${c.id} · ${esc(c.category)}`;
+    const catLabel = pkDef ? 'Pickups' : c.category;
+    const displaySub = alias ? `${esc(baseLabel)} · ${c.id} · ${esc(catLabel)}` : `${c.id} · ${esc(catLabel)}`;
     const known = app.thumbs.url(c.id);
     row.innerHTML = `<img class="thumb${known ? '' : ' empty'}" alt="" width="72" height="72" ${known ? `src="${known}"` : ''} decoding="async">
       <div class="row-text">

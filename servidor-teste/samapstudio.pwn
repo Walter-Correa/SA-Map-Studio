@@ -7,16 +7,14 @@
 #include <open.mp>
 #include <streamer>
 
-#pragma dynamic 2000000
-
 #define SAMS_ARQUIVO        "samapstudio/mapa.txt"
-#define SAMS_MAX_OBJETOS    20000
-#define SAMS_MAX_REMOVIDOS  2000
-#define SAMS_MAX_VEICULOS   1000
-#define SAMS_MAX_ACTORS     1000
-#define SAMS_MAX_LABELS     2000
-#define SAMS_MAX_PICKUPS    2000
-#define SAMS_MAX_GANGZONES  500
+#define SAMS_MAX_OBJETOS    5000
+#define SAMS_MAX_REMOVIDOS  500
+#define SAMS_MAX_VEICULOS   500
+#define SAMS_MAX_ACTORS     250
+#define SAMS_MAX_LABELS     500
+#define SAMS_MAX_PICKUPS    500
+#define SAMS_MAX_GANGZONES  200
 #define SAMS_MAX_TEXTDRAWS  256
 #define SAMS_COR_INFO       0xF0A630FF
 #define SAMS_COR_OK         0x57B77AFF
@@ -224,7 +222,8 @@ stock SAMS_CarregarMapa()
     while (fread(arquivo, linha))
     {
         SAMS_LimparLinha(linha);
-        if (linha[0] == EOS || linha[1] != '|') continue;
+        new pipePos = strfind(linha, "|");
+        if (pipePos < 1 || pipePos > 3) continue;
         SAMS_Campo(linha, 0, tipo, sizeof(tipo));
         switch (tipo[0])
         {

@@ -44,17 +44,20 @@ const OBJECT_RULES = [
   ['Prédios e casas', /(^|_)(build|bldg|bld|blok|block|tower|house|hse|home|shop|store|office|apart|apt|motel|hotel|hospital|church|chapel|garage|warehouse|mall|plaza|condo|villa|mansion|cabin|shack|hut|barn|shed|club|bank|school|police|fire_?st|stadium|arena|temple|cathedral|tenement|terrace|skyscr|corp|hq)(s|_|\d|$)|(_las|_lae|_lan|_law|_sfe|_sfs|_sfn|_sfw|_veg)/],
 ];
 
+import { isPickupModel } from './pickups.js';
+
 export const OBJECT_CATEGORIES = [
   'Actors (Personagens)', 'Armas', 'Barreiras e cercas', 'Comida e bebida', 'Diversos',
   'Efeitos e partículas', 'Eletrônicos e escritório', 'Esportes e lazer', 'Iluminação',
   'Industrial', 'Interiores', 'Kit de construção', 'LOD (vistos de longe)', 'Lixo e sucata',
-  'Móveis', 'Placas e sinalização', 'Portas e janelas', 'Praia', 'Prédios e casas',
+  'Móveis', 'Pickups', 'Placas e sinalização', 'Portas e janelas', 'Praia', 'Prédios e casas',
   'Ruas e estradas', 'Terreno', 'Vegetação', 'Veículos', 'Água e docas'
 ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 export function objectCategory(def) {
   if (def.type === 'cars') return 'Veículos';
   if (def.type === 'peds') return 'Actors (Personagens)';
+  if (isPickupModel(def.id) && def.type !== 'weap') return 'Pickups';
   if (def.type === 'weap' || (def.id >= 321 && def.id <= 373)) return 'Armas';
   if (isKitPiece(def.id)) return 'Kit de construção';
   const n = (def.model || '').toLowerCase();

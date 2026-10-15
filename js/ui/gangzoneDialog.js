@@ -3,6 +3,35 @@
 // desenho interativo de retângulos, alinhamento magnético (snap) e cores RGBA.
 import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
+import { toast } from './common.js';
+
+export function parseAndNormalizeHexColor(input, currentAlpha = 0.56) {
+  if (!input) return null;
+  let str = String(input).trim().replace(/^0x/i, '').replace(/^#/i, '');
+  str = str.replace(/[^0-9A-Fa-f]/g, '');
+  if (str.length === 3) {
+    str = str[0] + str[0] + str[1] + str[1] + str[2] + str[2];
+  } else if (str.length === 4) {
+    str = str[0] + str[0] + str[1] + str[1] + str[2] + str[2] + str[3] + str[3];
+  }
+  if (str.length === 6) {
+    const aByte = Math.round(currentAlpha * 255).toString(16).padStart(2, '0');
+    str += aByte;
+  }
+  if (str.length >= 8) {
+    str = str.slice(0, 8);
+    const num = parseInt(str, 16);
+    if (!isNaN(num)) {
+      return {
+        num: num >>> 0,
+        hexPrefixed: '0x' + str.toUpperCase(),
+        rgbHex: '#' + str.slice(0, 6).toUpperCase(),
+        alpha: parseInt(str.slice(6, 8), 16) / 255,
+      };
+    }
+  }
+  return null;
+}
 
 let dialogEl = null;
 let canvasEl = null;
@@ -143,6 +172,7 @@ function setupDialogEvents() {
   const colorInput = dialogEl.querySelector('#gzColor');
   const alphaSlider = dialogEl.querySelector('#gzAlpha');
   const alphaVal = dialogEl.querySelector('#gzAlphaVal');
+  const hexInput = dialogEl.querySelector('#gzHexInput');
 
   const onColorChange = () => {
     const z = getSelectedZone();
@@ -151,6 +181,9 @@ function setupDialogEvents() {
     const a = +alphaSlider.value / 100;
     if (alphaVal) alphaVal.textContent = `${Math.round(a * 100)}%`;
     z.color = hexAndAlphaToGzColor(hex, a);
+    if (hexInput) {
+      hexInput.value = '0x' + (Number(z.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    }
     appRef.editor?.syncAll();
     redrawCanvas();
     updateSidebarList();
@@ -159,19 +192,57 @@ function setupDialogEvents() {
   if (colorInput) colorInput.oninput = onColorChange;
   if (alphaSlider) alphaSlider.oninput = onColorChange;
 
+  const onHexChange = () => {
+    const z = getSelectedZone();
+    if (!z || !hexInput) return;
+    const curA = (+alphaSlider?.value || 56) / 100;
+    const res = parseAndNormalizeHexColor(hexInput.value, curA);
+    if (!res) return;
+    z.color = res.num;
+    if (colorInput) colorInput.value = res.rgbHex;
+    if (alphaSlider) alphaSlider.value = Math.round(res.alpha * 100);
+    if (alphaVal) alphaVal.textContent = `${Math.round(res.alpha * 100)}%`;
+    hexInput.value = res.hexPrefixed;
+    appRef.editor?.syncAll();
+    redrawCanvas();
+    updateSidebarList();
+  };
+
+  if (hexInput) {
+    hexInput.onchange = onHexChange;
+    hexInput.oninput = () => {
+      const str = hexInput.value.trim().replace(/^0x/i, '').replace(/^#/i, '');
+      if (str.length === 6 || str.length === 8) onHexChange();
+    };
+  }
+
   const btnDel = dialogEl.querySelector('#gzBtnDelete');
   if (btnDel) {
-    btnDel.onclick = () => {
+    btnDel.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       deleteSelectedZone();
     };
   }
 
   const btnFocus3D = dialogEl.querySelector('#gzBtnFocus3D');
   if (btnFocus3D) {
-    btnFocus3D.onclick = () => {
-      focusSelectedZoneIn3D();
+    btnFocus3D.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      focusSelectedZone();
     };
   }
+
+  dialogEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Del') {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag !== 'input' && activeTag !== 'textarea') {
+        e.preventDefault();
+        deleteSelectedZone();
+      }
+    }
+  });
 }
 
 function setupCanvasEvents() {
@@ -192,14 +263,16 @@ function setupCanvasEvents() {
     redrawCanvas();
   });
 
+  canvasEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
   canvasEl.addEventListener('mousedown', (e) => {
     const rect = canvasEl.getBoundingClientRect();
     const cx = e.clientX - rect.left;
     const cy = e.clientY - rect.top;
     const w = canvasToWorld(cx, cy);
 
-    // Botão do meio ou barra de espaço = Pan
-    if (e.button === 1 || e.shiftKey || e.altKey) {
+    // Botão direito (2), botão do meio (1) ou barra de espaço/Shift/Alt = Pan / Mover mapa
+    if (e.button === 2 || e.button === 1 || e.shiftKey || e.altKey) {
       isPanning = true;
       panStart = { x: e.clientX - view.panX, y: e.clientY - view.panY };
       canvasEl.style.cursor = 'grabbing';
@@ -356,6 +429,29 @@ function setupCanvasEvents() {
       isDrawing.curX = curX;
       isDrawing.curY = curY;
       redrawCanvas();
+      return;
+    }
+
+    // Atualiza cursor dinamicamente conforme hover em alças, bordas ou centro da zona
+    if (!isPanning && !isDraggingHandle && !isDrawing) {
+      const selZone = getSelectedZone();
+      let cursorSet = false;
+      if (selZone) {
+        const h = getHandleAtPos(selZone, cx, cy);
+        if (h) {
+          canvasEl.style.cursor = cursorForHandle(h);
+          cursorSet = true;
+        }
+      }
+      if (!cursorSet) {
+        const hoverZ = findZoneAtWorld(w.x, w.y);
+        if (hoverZ) {
+          const h = getHandleAtPos(hoverZ, cx, cy);
+          canvasEl.style.cursor = h ? cursorForHandle(h) : 'move';
+        } else {
+          canvasEl.style.cursor = 'crosshair';
+        }
+      }
     }
   });
 
@@ -451,18 +547,56 @@ function findZoneAtWorld(wx, wy) {
   return null;
 }
 
+function getZoneCanvasBounds(z) {
+  const pTL = worldToCanvas(z.minx, z.maxy);
+  const pBR = worldToCanvas(z.maxx, z.miny);
+  const left = Math.min(pTL.x, pBR.x);
+  const right = Math.max(pTL.x, pBR.x);
+  const top = Math.min(pTL.y, pBR.y);
+  const bottom = Math.max(pTL.y, pBR.y);
+  return { left, right, top, bottom };
+}
+
 function getHandleAtPos(z, cx, cy) {
-  const handles = [
-    { id: 'nw', ...worldToCanvas(z.minx, z.maxy) },
-    { id: 'ne', ...worldToCanvas(z.maxx, z.maxy) },
-    { id: 'sw', ...worldToCanvas(z.minx, z.miny) },
-    { id: 'se', ...worldToCanvas(z.maxx, z.miny) },
-  ];
-  for (const h of handles) {
-    const dist = Math.hypot(cx - h.x, cy - h.y);
-    if (dist <= 8) return h.id;
+  const { left, right, top, bottom } = getZoneCanvasBounds(z);
+  const tol = 8;
+
+  // 1. Cantos da zona
+  if (Math.hypot(cx - left, cy - top) <= tol) return 'nw';
+  if (Math.hypot(cx - right, cy - top) <= tol) return 'ne';
+  if (Math.hypot(cx - left, cy - bottom) <= tol) return 'sw';
+  if (Math.hypot(cx - right, cy - bottom) <= tol) return 'se';
+
+  // 2. Bordas da zona (topo=n, baixo=s, esquerda=w, direita=e)
+  if (cx >= left - tol && cx <= right + tol) {
+    if (Math.abs(cy - top) <= tol) return 'n';
+    if (Math.abs(cy - bottom) <= tol) return 's';
+  }
+  if (cy >= top - tol && cy <= bottom + tol) {
+    if (Math.abs(cx - left) <= tol) return 'w';
+    if (Math.abs(cx - right) <= tol) return 'e';
+  }
+
+  // 3. Área interna
+  if (cx >= left && cx <= right && cy >= top && cy <= bottom) {
+    return 'move';
   }
   return null;
+}
+
+function cursorForHandle(handle) {
+  switch (handle) {
+    case 'nw':
+    case 'se': return 'nwse-resize';
+    case 'ne':
+    case 'sw': return 'nesw-resize';
+    case 'n':
+    case 's': return 'ns-resize';
+    case 'e':
+    case 'w': return 'ew-resize';
+    case 'move': return 'move';
+    default: return 'crosshair';
+  }
 }
 
 export function openGangZoneDialog() {
@@ -733,6 +867,10 @@ function updateSidebarFields() {
   if (colorInput) colorInput.value = hex;
   if (alphaSlider) alphaSlider.value = Math.round(alpha * 100);
   if (alphaVal) alphaVal.textContent = `${Math.round(alpha * 100)}%`;
+  const hexInput = dialogEl.querySelector('#gzHexInput');
+  if (hexInput) {
+    hexInput.value = '0x' + (Number(z.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  }
 
   // Renderiza paleta rápida de cores
   const presetsEl = dialogEl.querySelector('#gzPresets');
@@ -783,26 +921,35 @@ function deleteSelectedZone() {
     selectedUid = null;
     appRef.editor?.syncAll();
     appRef.editor?.saveUndoState?.('Excluir GangZone');
+    toast('GangZone excluída', 'info');
     updateSidebarFields();
     updateSidebarList();
     redrawCanvas();
   }
 }
 
-function focusSelectedZoneIn3D() {
+function focusSelectedZone() {
   const z = getSelectedZone();
-  if (!z || !appRef.vp) return;
+  if (!z) return;
   const cx = (z.minx + z.maxx) / 2;
   const cy = (z.miny + z.maxy) / 2;
-  const cz = 50.0;
-  appRef.vp.teleport(cx, cy - 80, cz + 60, cx, cy, cz);
-  appRef.toast(`Câmera 3D focada em ${z.name || 'GangZone'}`, 'ok');
+
+  // Centraliza a gangzone na visão 2D do radar
+  const normX = (cx - WORLD_MIN) / WORLD_SIZE;
+  const normY = (WORLD_MAX - cy) / WORLD_SIZE;
+  const imgW = (radarImg?.width || 1536) * view.zoom;
+  const imgH = (radarImg?.height || 1536) * view.zoom;
+  view.panX = (canvasEl?.width || 800) / 2 - normX * imgW;
+  view.panY = (canvasEl?.height || 600) / 2 - normY * imgH;
+  redrawCanvas();
+
+  toast(`Visão centralizada na GangZone "${z.name || 'Zona'}"`, 'ok');
 }
 
 function copyAllGangZonesPawn() {
   const zones = appRef.project?.gangZones || [];
   if (!zones.length) {
-    appRef.toast('Nenhuma GangZone para copiar', 'info');
+    toast('Nenhuma GangZone para copiar', 'info');
     return;
   }
   const lines = ['// GangZones geradas pelo SA Map Studio', 'new gangzoneid;'];
@@ -813,6 +960,6 @@ function copyAllGangZonesPawn() {
   }
   const text = lines.join('\n');
   navigator.clipboard.writeText(text).then(() => {
-    appRef.toast(`${zones.length} GangZone(s) copiada(s) em formato Pawn!`, 'ok');
+    toast(`${zones.length} GangZone(s) copiada(s) em formato Pawn!`, 'ok');
   });
 }

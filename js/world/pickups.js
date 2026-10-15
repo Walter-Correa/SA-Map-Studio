@@ -14,34 +14,79 @@ export const PICKUP_TYPES = [
 ];
 
 export const PREDEFINED_PICKUPS = [
-  // Saúde, Armadura e Vida
-  { model: 1240, name: 'Coração / Vida (Health)', category: 'Saúde e Proteção' },
-  { model: 1242, name: 'Colete / Armadura (Armour)', category: 'Saúde e Proteção' },
-  { model: 1241, name: 'Pílula de Adrenalina', category: 'Saúde e Proteção' },
-
-  // Propriedades, Dinheiro e Marcadores
-  { model: 1274, name: 'Cifrão de Dinheiro ($)', category: 'Geral e Marcadores' },
-  { model: 1239, name: 'Ícone de Informação (i)', category: 'Geral e Marcadores' },
-  { model: 1318, name: 'Seta de Entrada (Branca/Amarela)', category: 'Geral e Marcadores' },
-  { model: 1272, name: 'Casa Azul (Comprada/Ocupada)', category: 'Propriedades' },
-  { model: 1273, name: 'Casa Verde (À Venda)', category: 'Propriedades' },
-  { model: 1277, name: 'Disquete de Save Game', category: 'Geral e Marcadores' },
-  { model: 1247, name: 'Estrela de Suborno Policial', category: 'Geral e Marcadores' },
-  { model: 1248, name: 'Distintivo Policial', category: 'Geral e Marcadores' },
+  // Todos os 59 IDs oficiais da tabela open.mp (https://open.mp/docs/scripting/resources/pickupids)
+  { model: 954, name: 'Ferradura da Sorte (Horseshoe)', category: 'Itens' },
   { model: 1210, name: 'Maleta de Dinheiro (Briefcase)', category: 'Geral e Marcadores' },
-  { model: 1253, name: 'Câmera Fotográfica', category: 'Itens' },
-  { model: 1254, name: 'Mochila de Pára-quedas', category: 'Itens' },
-  { model: 1275, name: 'Camisa Azul', category: 'Itens' },
+  { model: 1212, name: 'Pacote de Dinheiro (Money)', category: 'Geral e Marcadores' },
+  { model: 1213, name: 'Mina Terrestre (Landmine)', category: 'Itens' },
+  { model: 1239, name: 'Ícone de Informação (i)', category: 'Geral e Marcadores' },
+  { model: 1240, name: 'Coração / Vida (Health)', category: 'Saúde e Proteção' },
+  { model: 1241, name: 'Pílula de Adrenalina', category: 'Saúde e Proteção' },
+  { model: 1242, name: 'Colete / Armadura (Armour)', category: 'Saúde e Proteção' },
+  { model: 1247, name: 'Estrela de Suborno Policial', category: 'Geral e Marcadores' },
+  { model: 1248, name: 'Logo GTA III', category: 'Geral e Marcadores' },
+  { model: 1252, name: 'Barril Explosivo (Barrel explosion)', category: 'Itens' },
+  { model: 1254, name: 'Caveira (Skull)', category: 'Geral e Marcadores' },
+  { model: 1272, name: 'Casa Azul (Comprada)', category: 'Propriedades' },
+  { model: 1273, name: 'Casa Verde (À Venda)', category: 'Propriedades' },
+  { model: 1274, name: 'Cifrão de Dinheiro ($)', category: 'Geral e Marcadores' },
+  { model: 1275, name: 'Camisa Azul (Shirt)', category: 'Itens' },
   { model: 1276, name: 'Estátua Tiki', category: 'Itens' },
-  { model: 1252, name: 'Bomba / Detonador Explosivo', category: 'Itens' },
-  { model: 1313, name: 'Ícone 2 Jogadores', category: 'Geral e Marcadores' },
-  { model: 1314, name: 'Caveira 2 Jogadores', category: 'Geral e Marcadores' },
+  { model: 1277, name: 'Disquete de Save Game', category: 'Geral e Marcadores' },
+  { model: 1279, name: 'Pacote Craig (Package)', category: 'Itens' },
+  { model: 1310, name: 'Pára-quedas (Parachute)', category: 'Itens' },
+  { model: 1313, name: 'Caveira Dupla (Kill frenzy rampage)', category: 'Geral e Marcadores' },
+  { model: 1314, name: 'Ícone 2 Jogadores', category: 'Geral e Marcadores' },
+  { model: 1318, name: 'Seta Amarela de Entrada', category: 'Geral e Marcadores' },
+  { model: 1550, name: 'Saco de Dinheiro (Money bag)', category: 'Geral e Marcadores' },
+  { model: 1575, name: 'Pacote de Drogas Branco', category: 'Itens' },
+  { model: 1576, name: 'Pacote de Drogas Laranja', category: 'Itens' },
+  { model: 1577, name: 'Pacote de Drogas Amarelo', category: 'Itens' },
+  { model: 1578, name: 'Pacote de Drogas Verde', category: 'Itens' },
+  { model: 1579, name: 'Pacote de Drogas Azul', category: 'Itens' },
+  { model: 1580, name: 'Pacote de Drogas Vermelho', category: 'Itens' },
+  { model: 1581, name: 'Cartão de Acesso (Keycard)', category: 'Itens' },
+  { model: 1582, name: 'Caixa de Pizza (Pizza box)', category: 'Itens' },
+  { model: 1636, name: 'Bomba RC (RC bomb)', category: 'Itens' },
+  { model: 1650, name: 'Galão de Combustível (Petrol can)', category: 'Itens' },
+  { model: 1654, name: 'Dinamite (Dynamite)', category: 'Itens' },
+  { model: 2057, name: 'Lata de Chamas (Flame tins)', category: 'Itens' },
+  { model: 2060, name: 'Saco de Areia (Sandbag)', category: 'Itens' },
+  { model: 2061, name: 'Conchas (Shells)', category: 'Itens' },
+  { model: 2690, name: 'Extintor de Incêndio', category: 'Itens' },
+  { model: 2710, name: 'Relógio de Pulso (Hand watch)', category: 'Itens' },
+  { model: 11736, name: 'Bolsa Médica (Medical satchel)', category: 'Saúde e Proteção' },
+  { model: 11738, name: 'Maleta Médica (Medical case)', category: 'Saúde e Proteção' },
+  { model: 19130, name: 'Seta Flutuante Tipo 1', category: 'Geral e Marcadores' },
+  { model: 19131, name: 'Seta Flutuante Tipo 2', category: 'Geral e Marcadores' },
+  { model: 19132, name: 'Seta Flutuante Tipo 3', category: 'Geral e Marcadores' },
+  { model: 19133, name: 'Seta Flutuante Tipo 4', category: 'Geral e Marcadores' },
+  { model: 19134, name: 'Seta Flutuante Tipo 5', category: 'Geral e Marcadores' },
+  { model: 19135, name: 'Marcador Externo Animado', category: 'Geral e Marcadores' },
+  { model: 19197, name: 'Marcador Amarelo Grande', category: 'Geral e Marcadores' },
+  { model: 19198, name: 'Marcador Amarelo Pequeno', category: 'Geral e Marcadores' },
+  { model: 19320, name: 'Abóbora de Halloween', category: 'Itens' },
+  { model: 19522, name: 'Casa Vermelha (House red)', category: 'Propriedades' },
+  { model: 19523, name: 'Casa Laranja (House orange)', category: 'Propriedades' },
+  { model: 19524, name: 'Casa Amarela (House yellow)', category: 'Propriedades' },
+  { model: 19602, name: 'Mina Terrestre Tipo 2', category: 'Itens' },
+  { model: 19605, name: 'Marcador Externo Vermelho', category: 'Geral e Marcadores' },
+  { model: 19606, name: 'Marcador Externo Verde', category: 'Geral e Marcadores' },
+  { model: 19607, name: 'Marcador Externo Azul', category: 'Geral e Marcadores' },
+  { model: 19832, name: 'Caixa Ammu-Nation', category: 'Geral e Marcadores' },
 
-  // Armas Corpo a Corpo
+  // Armas Corpo a Corpo e Objetos Seguráveis
+  { model: 321, name: 'Dildo Padrão (Regular Dildo)', category: 'Armas Brancas' },
+  { model: 322, name: 'Dildo Branco (White Dildo)', category: 'Armas Brancas' },
+  { model: 323, name: 'Vibrador Médio (Vibrator)', category: 'Armas Brancas' },
+  { model: 324, name: 'Vibrador Grande (Vibrator)', category: 'Armas Brancas' },
+  { model: 325, name: 'Buquê de Flores', category: 'Armas Brancas' },
+  { model: 326, name: 'Bengala (Cane)', category: 'Armas Brancas' },
+  { model: 330, name: 'Celular do CJ', category: 'Itens' },
   { model: 331, name: 'Soco Inglês (Brass Knuckles)', category: 'Armas Brancas' },
   { model: 333, name: 'Taco de Golfe (Golf Club)', category: 'Armas Brancas' },
   { model: 334, name: 'Cassetete Policial (Nightstick)', category: 'Armas Brancas' },
-  { model: 335, name: 'Faca (Knife)', category: 'Armas Brancas' },
+  { model: 335, name: 'Faca (Combat Knife)', category: 'Armas Brancas' },
   { model: 336, name: 'Taco de Beisebol (Baseball Bat)', category: 'Armas Brancas' },
   { model: 337, name: 'Pá (Shovel)', category: 'Armas Brancas' },
   { model: 338, name: 'Taco de Sinuca (Pool Cue)', category: 'Armas Brancas' },
@@ -49,8 +94,8 @@ export const PREDEFINED_PICKUPS = [
   { model: 341, name: 'Motosserra (Chainsaw)', category: 'Armas Brancas' },
 
   // Pistolas
-  { model: 346, name: 'Pistola 9mm', category: 'Pistolas' },
-  { model: 347, name: 'Pistola 9mm Silenciada', category: 'Pistolas' },
+  { model: 346, name: 'Pistola 9mm (Colt 45)', category: 'Pistolas' },
+  { model: 347, name: 'Pistola Silenciada (Silenced Colt)', category: 'Pistolas' },
   { model: 348, name: 'Desert Eagle', category: 'Pistolas' },
 
   // Shotguns
@@ -63,7 +108,7 @@ export const PREDEFINED_PICKUPS = [
   { model: 353, name: 'MP5', category: 'Submetralhadoras' },
   { model: 372, name: 'Tec-9', category: 'Submetralhadoras' },
 
-  // Fuzis de Assalto e Rifles
+  // Fuzis e Rifles
   { model: 355, name: 'AK-47', category: 'Fuzis e Rifles' },
   { model: 356, name: 'M4', category: 'Fuzis e Rifles' },
   { model: 357, name: 'Rifle de Caça (Country Rifle)', category: 'Fuzis e Rifles' },
@@ -78,9 +123,18 @@ export const PREDEFINED_PICKUPS = [
   { model: 343, name: 'Gás Lacrimogêneo (Teargas)', category: 'Pesadas e Explosivos' },
   { model: 344, name: 'Coquetel Molotov', category: 'Pesadas e Explosivos' },
   { model: 363, name: 'Carga Explosiva (Satchel Charge)', category: 'Pesadas e Explosivos' },
+  { model: 364, name: 'Detonador', category: 'Pesadas e Explosivos' },
   { model: 365, name: 'Lata de Spray', category: 'Outros' },
   { model: 366, name: 'Extintor de Incêndio', category: 'Outros' },
+  { model: 367, name: 'Câmera Fotográfica', category: 'Itens' },
+  { model: 368, name: 'Óculos de Visão Noturna', category: 'Itens' },
+  { model: 369, name: 'Óculos de Visão Térmica', category: 'Itens' },
+  { model: 370, name: 'Jetpack', category: 'Itens' },
+  { model: 371, name: 'Pára-quedas (Equipável)', category: 'Itens' },
 ];
+
+export const PICKUP_MODEL_IDS = new Set(PREDEFINED_PICKUPS.map(p => p.model));
+export const isPickupModel = (id) => PICKUP_MODEL_IDS.has(id | 0);
 
 export function getPickupLabel(model) {
   const p = PREDEFINED_PICKUPS.find(item => item.model === (model | 0));

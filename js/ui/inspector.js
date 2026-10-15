@@ -12,7 +12,8 @@ import { app, $, $$, esc, fmt, plural, store, toast, copyText, modelLabel, bindS
 import { CAR_COLORS, carColorHex, COMPONENT_TYPES, VEHICLE_COMPONENTS, supportsPaintjob, isVehicleValidForColor, isVehicleValidForModding, isPaintjobValidForVehicle, isModValidForVehicle, getCompatiblePaintjobs } from '../world/vehicleMods.js';
 import { POPULAR_ANIMATIONS, ALL_ANIMATIONS, POPULAR_SKINS, ALL_SKINS, getSkinLabel, findSkin } from '../world/actors.js';
 import { openAnimPicker } from './animPicker.js';
-import { STANDARD_LABEL_COLORS, labelColorToHex, hexToLabelColor } from '../world/labels.js';
+import { openSkinPicker } from './skinPicker.js';
+import { STANDARD_LABEL_COLORS, labelColorToHex, hexToLabelColor, labelColorToPawnHex } from '../world/labels.js';
 import { PREDEFINED_PICKUPS, PICKUP_TYPES, getPickupLabel } from '../world/pickups.js';
 import { DEFAULT_GANGZONE_COLORS, gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor } from '../world/gangzones.js';
 
@@ -23,11 +24,40 @@ let matTab = store.get('matTab', 'texture');
 let textDraft = { text: 'Texto', ...TEXT_DEFAULTS };
 let suppress = false;
 let pendingSlots = new Set();
+let creatingLabelDraft = null;
+
+export function openCreate3DTextPanel() {
+  app.editor.select([]);
+  creatingLabelDraft = {
+    text: 'Novo Texto 3D',
+    color: 0x33CCFFFF,
+    scale: 1.0,
+    drawDist: 50.0,
+    world: 0,
+    testLOS: 0,
+    comment: ''
+  };
+  const rightSb = $('#rightSidebar') || document.querySelector('.right-sidebar');
+  if (rightSb && rightSb.classList.contains('collapsed')) {
+    $('#btnToggleRightSidebar')?.click();
+  }
+  renderInspector();
+  setTimeout(() => {
+    const txt = $('#lblDraftText');
+    if (txt) {
+      txt.focus();
+      txt.select();
+    }
+  }, 50);
+}
 
 export function setupInspector() {
   const ed = app.editor;
   const rerender = () => { if (!suppress) renderInspector(); };
-  ed.addEventListener('selection', rerender);
+  ed.addEventListener('selection', () => {
+    creatingLabelDraft = null;
+    rerender();
+  });
   ed.addEventListener('slot', rerender);
   ed.addEventListener('mode', rerender);
   ed.addEventListener('change', rerender);
@@ -43,6 +73,11 @@ export function renderInspector() {
   if (ed.worldSelection?.length > 1) { el.innerHTML = worldMultiInspector(ed.worldSelection); bindWorldMulti(); return; }
   if (ed.worldSel) { el.innerHTML = worldInspector(ed.worldSel); bindWorld(); return; }
   if (!items.length) {
+    if (creatingLabelDraft) {
+      el.innerHTML = labelCreateInspector(creatingLabelDraft);
+      bindLabelCreate(creatingLabelDraft);
+      return;
+    }
     el.innerHTML = emptyInspector();
     const btnAll = $('#btnSelectAll');
     if (btnAll) btnAll.onclick = () => ed.selectAll(true);
@@ -373,7 +408,7 @@ function actorInspector(a) {
           </select>
         </label>
       </div>
-      <button type="button" class="btn small block" id="btnBrowseSkin" style="margin-top:6px;" title="Buscar qualquer skin por nome ou ID"><svg><use href="#i-search"/></svg>Buscar skin por nome ou ID...</button>
+      <button type="button" class="btn small primary block" id="btnOpenSkinPicker" style="margin-top:6px; font-weight:600;" title="Abrir galeria com prévia visual de todas as 312 skins"><svg><use href="#i-user"/></svg> Escolher Skin pelo Preview Visual...</button>
     </div>
 
     <!-- Propriedades -->
@@ -996,25 +1031,24 @@ function bindActor(a) {
     };
   }
 
-  const btnBrowse = $('#btnBrowseSkin');
-  if (btnBrowse) {
-    btnBrowse.onclick = async () => {
-      const val = await showPrompt({
-        title: 'Buscar Skin do Actor',
-        desc: 'Digite o ID (0 a 311) ou nome da Skin (ex: CJ, Ryder, Cop, Smoke, Ballas...):',
-        value: String(a.skin ?? 0),
-        placeholder: '0 ou nome'
-      });
-      if (val !== null && val.trim()) {
-        const found = findSkin(val.trim());
-        if (found) {
-          changeActorSkin(uid, found.id);
-          toast(`Skin alterada para ${found.id} - ${found.name}`);
-        } else {
-          toast('Nenhuma skin encontrada para: ' + val, 'warn');
+  const btnOpenSkin = $('#btnOpenSkinPicker') || $('#btnBrowseSkin');
+  if (btnOpenSkin) {
+    btnOpenSkin.onclick = () => {
+      openSkinPicker({
+        currentSkin: a.skin ?? 0,
+        onSelect: (newSkinId) => {
+          changeActorSkin(uid, newSkinId);
+          toast(`Skin alterada para ID ${newSkinId}!`, 'ok');
         }
-      }
+      });
     };
+  }
+
+  const thumbImg = $('#inspector .insp-title img');
+  if (thumbImg) {
+    thumbImg.style.cursor = 'pointer';
+    thumbImg.title = 'Clique para escolher a skin deste actor';
+    thumbImg.onclick = () => btnOpenSkin?.click();
   }
 
   const chkInv = $('#chkInvulnerable');
@@ -1542,6 +1576,7 @@ function bindTextEditor(uids, o, idx) {
 // ===========================================================================
 function labelInspector(l) {
   const hex = labelColorToHex(l.color);
+  const pawnHex = labelColorToPawnHex(l.color);
   return `
     <div class="insp-title">
       <div style="width:48px; height:48px; background:rgba(238,221,130,0.18); border:1px solid rgba(238,221,130,0.4); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#EEDD82; font-size:18px; font-weight:bold;">3D</div>
@@ -1578,15 +1613,15 @@ function labelInspector(l) {
 
     <!-- Cor Base -->
     <div class="insp-section">
-      <div class="insp-label">Cor Padrão / Base (Hexadecimal ou Paleta SA-MP)</div>
+      <div class="insp-label">Cor Padrão / Base (Formato 0xRRGGBBFF com alfa FF)</div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <input type="color" id="lblColorPicker" value="${hex.slice(0, 7)}" style="width:36px; height:32px; border:none; border-radius:4px; cursor:pointer;">
-        <input type="text" id="lblHexInput" value="${hex}" placeholder="#FFFFFF" style="width:90px; font-family:monospace; font-weight:bold;">
+        <input type="color" id="lblColorPicker" value="${hex.slice(0, 7)}" style="width:36px; height:32px; border:none; border-radius:4px; cursor:pointer;" title="Escolher cor visual">
+        <input type="text" id="lblHexInput" value="${pawnHex}" placeholder="0xFFFFFFFF" style="width:115px; font-family:monospace; font-weight:bold; font-size:12px;">
         <span id="lblColorPreview" style="display:inline-block; width:22px; height:22px; border-radius:4px; background:${hex}; border:1px solid rgba(255,255,255,0.2);"></span>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
         ${STANDARD_LABEL_COLORS.slice(0, 8).map(c => `
-          <button type="button" class="slot-swatch" data-lbl-color="${c.hex}" style="width:20px; height:20px; background:${c.hex}; border-radius:3px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="${c.name}"></button>
+          <button type="button" class="slot-swatch" data-lbl-color="${labelColorToPawnHex(c.val)}" style="width:20px; height:20px; background:${c.hex}; border-radius:3px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="${c.name} (${labelColorToPawnHex(c.val)})"></button>
         `).join('')}
       </div>
     </div>
@@ -1695,10 +1730,12 @@ function bindLabel(l) {
   const preview = $('#lblColorPreview');
 
   const applyColor = (hex) => {
-    if (cp) cp.value = hex.slice(0, 7);
-    if (hexInp) hexInp.value = hex;
-    if (preview) preview.style.background = hex;
     const num = hexToLabelColor(hex);
+    const colorHex = labelColorToHex(num);
+    const pwh = labelColorToPawnHex(num);
+    if (cp) cp.value = colorHex.slice(0, 7);
+    if (hexInp) hexInp.value = pwh;
+    if (preview) preview.style.background = colorHex;
     suppress = true;
     try {
       project.updateItems('Alterar Cor do Texto 3D', [uid], (o) => { o.color = num; });
@@ -1712,9 +1749,7 @@ function bindLabel(l) {
   if (cp) cp.oninput = () => applyColor(cp.value.toUpperCase());
   if (hexInp) {
     hexInp.onchange = () => {
-      let h = hexInp.value.trim();
-      if (!h.startsWith('#')) h = '#' + h;
-      applyColor(h.toUpperCase());
+      applyColor(hexInp.value.trim());
     };
   }
   $$('#inspector [data-lbl-color]').forEach(b => {
@@ -1765,9 +1800,226 @@ function bindLabel(l) {
 function updateLabelCode(l) {
   const codeEl = $('#lblCode');
   if (!codeEl || !l) return;
-  const hex = '0x' + (Number(l.color) >>> 0).toString(16).toUpperCase().padStart(8, 'F');
+  const hex = '0x' + (Number(l.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const clean = String(l.text || '').replace(/\r/g, '').replace(/\n/g, '\\n');
   codeEl.textContent = `Create3DTextLabel("${clean}", ${hex}, ${l.x.toFixed(4)}, ${l.y.toFixed(4)}, ${l.z.toFixed(4)}, ${(l.drawDist ?? 40.0).toFixed(1)}, ${l.world ?? 0}, ${l.testLOS ? 1 : 0});`;
+}
+
+export function getCameraLookSurfacePoint(offsetZ = 0.5) {
+  const vp = app.vp;
+  if (!vp || !vp.camera) return { x: 0, y: 0, z: 10 };
+  const cam = vp.camera;
+  const rc = new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2(0, 0), cam);
+  rc.far = Math.max(3500, cam.far);
+  const targets = app.editor.pickTargets ? app.editor.pickTargets() : [];
+  const hits = rc.intersectObjects(targets, true)
+    .filter(h => !h.object.userData.noPick && !h.object.isSprite && !h.object.userData?.isLabel && !h.object.userData?.isPickup && h.object.visible);
+
+  if (hits.length > 0 && hits[0].distance < 300) {
+    const p = hits[0].point;
+    return {
+      x: Math.round(p.x * 100) / 100,
+      y: Math.round(p.y * 100) / 100,
+      z: Math.round((p.z + offsetZ) * 100) / 100,
+    };
+  }
+
+  const dir = new THREE.Vector3();
+  cam.getWorldDirection(dir);
+  const target = cam.position.clone().add(dir.multiplyScalar(8.0));
+  const downRc = new THREE.Raycaster(
+    new THREE.Vector3(target.x, target.y, Math.max(target.z + 50, cam.position.z + 50)),
+    new THREE.Vector3(0, 0, -1),
+    0,
+    1500
+  );
+  const downHits = downRc.intersectObjects(targets, true)
+    .filter(h => !h.object.userData.noPick && !h.object.isSprite && !h.object.userData?.isLabel && !h.object.userData?.isPickup && h.object.visible);
+  const surfaceZ = downHits.length > 0 ? downHits[0].point.z : null;
+  const finalZ = surfaceZ !== null ? (surfaceZ + offsetZ) : (target.z + offsetZ);
+  return {
+    x: Math.round(target.x * 100) / 100,
+    y: Math.round(target.y * 100) / 100,
+    z: Math.round(finalZ * 100) / 100,
+  };
+}
+
+function labelCreateInspector(draft) {
+  const hex = labelColorToHex(draft.color);
+  const pawnHex = labelColorToPawnHex(draft.color);
+  return `
+    <div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(238,221,130,0.18); border:1px solid rgba(238,221,130,0.4); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#EEDD82; font-size:18px; font-weight:bold;">3D</div>
+      <div>
+        <div style="font-weight:bold; font-size:14px;">Criar Texto 3D</div>
+        <span class="tag">Create3DTextLabel</span>
+      </div>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Texto (suporta quebra de linha com \\n e cores {RRGGBB})</div>
+      <textarea id="lblDraftText" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:13px; resize:vertical; padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff;" placeholder="Digite o texto 3D...">${esc(draft.text || '')}</textarea>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+        ${STANDARD_LABEL_COLORS.map(c => `
+          <button type="button" class="btn small" data-lbl-draft-tag="${c.tag}" style="font-size:10px; padding:2px 6px; border-left:3px solid ${c.hex};" title="Inserir cor ${c.name}">${c.tag}</button>
+        `).join('')}
+        <button type="button" class="btn small" id="btnLblDraftBreak" style="font-size:10px; padding:2px 6px;" title="Inserir quebra de linha">\\n Quebra</button>
+      </div>
+
+      <button type="button" class="btn primary block" id="btnConfirmCreate3DText" style="margin: 10px 0 6px; font-weight: bold; font-size: 13px; padding: 10px;">
+        <svg><use href="#i-text3d"/></svg> Criar Texto 3D no Mapa
+      </button>
+      <button type="button" class="btn ghost small block" id="btnCancelCreate3DText">Cancelar</button>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Tamanho / Zoom do Texto 3D</span>
+        <span id="lblDraftScaleVal" style="font-family:monospace; font-weight:bold; color:var(--accent, #f0a630);">${Math.round((draft.scale ?? 1.0) * 100)}%</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:11px; color:#888;">20%</span>
+        <input type="range" id="lblDraftScaleRange" min="0.2" max="3.0" step="0.1" value="${draft.scale ?? 1.0}" style="flex:1;">
+        <span style="font-size:11px; color:#888;">300%</span>
+        <button type="button" class="btn small" id="btnLblDraftScaleReset" title="Restaurar 100%">100%</button>
+      </div>
+    </div>
+
+    <!-- Cor Base -->
+    <div class="insp-section">
+      <div class="insp-label">Cor Padrão / Base (Formato 0xRRGGBBFF com alfa FF)</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="color" id="lblDraftColorPicker" value="${hex.slice(0, 7)}" style="width:36px; height:32px; border:none; border-radius:4px; cursor:pointer;" title="Escolher cor visual">
+        <input type="text" id="lblDraftHexInput" value="${pawnHex}" placeholder="0xFFFFFFFF" style="width:115px; font-family:monospace; font-weight:bold; font-size:12px;">
+        <span id="lblDraftColorPreview" style="display:inline-block; width:22px; height:22px; border-radius:4px; background:${hex}; border:1px solid rgba(255,255,255,0.2);"></span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+        ${STANDARD_LABEL_COLORS.slice(0, 8).map(c => `
+          <button type="button" class="slot-swatch" data-lbl-draft-color="${labelColorToPawnHex(c.val)}" style="width:20px; height:20px; background:${c.hex}; border-radius:3px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="${c.name} (${labelColorToPawnHex(c.val)})"></button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Propriedades do Texto 3D</div>
+      <div class="pair">
+        <label>Distância de Visão<input type="number" step="5" min="1" max="500" id="lblDraftDrawDist" value="${draft.drawDist ?? 50.0}"></label>
+        <label>Mundo Virtual<input type="number" step="1" id="lblDraftWorld" value="${draft.world ?? 0}"></label>
+      </div>
+      <label class="check" style="margin-top:6px;">
+        <input type="checkbox" id="lblDraftTestLOS" ${draft.testLOS ? 'checked' : ''}> Testar linha de visão (testLOS: oculta atrás de paredes)
+      </label>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+      <input type="text" id="lblDraftComment" placeholder="// Ex: Texto da porta de entrada" value="${esc(draft.comment || '')}" style="width:100%;">
+    </div>
+  `;
+}
+
+function bindLabelCreate(draft) {
+  const txt = $('#lblDraftText');
+  if (txt) {
+    txt.addEventListener('keydown', (e) => e.stopPropagation());
+    txt.addEventListener('keyup', (e) => e.stopPropagation());
+    txt.oninput = () => { draft.text = txt.value; };
+  }
+
+  const btnBreak = $('#btnLblDraftBreak');
+  if (btnBreak && txt) {
+    btnBreak.onclick = () => {
+      const start = txt.selectionStart || txt.value.length;
+      const end = txt.selectionEnd || txt.value.length;
+      txt.value = txt.value.substring(0, start) + '\\n' + txt.value.substring(end);
+      txt.focus();
+      txt.selectionStart = txt.selectionEnd = start + 2;
+      draft.text = txt.value;
+    };
+  }
+
+  $$('#inspector [data-lbl-draft-tag]').forEach(b => {
+    b.onclick = () => {
+      if (!txt) return;
+      const tag = b.dataset.lblDraftTag;
+      const start = txt.selectionStart || txt.value.length;
+      const end = txt.selectionEnd || txt.value.length;
+      txt.value = txt.value.substring(0, start) + tag + txt.value.substring(end);
+      txt.focus();
+      txt.selectionStart = txt.selectionEnd = start + tag.length;
+      draft.text = txt.value;
+    };
+  });
+
+  const scaleRange = $('#lblDraftScaleRange');
+  const scaleVal = $('#lblDraftScaleVal');
+  const btnScaleReset = $('#btnLblDraftScaleReset');
+  if (scaleRange) {
+    scaleRange.oninput = () => {
+      const val = parseFloat(scaleRange.value) || 1.0;
+      if (scaleVal) scaleVal.textContent = Math.round(val * 100) + '%';
+      draft.scale = val;
+    };
+  }
+  if (btnScaleReset && scaleRange) {
+    btnScaleReset.onclick = () => {
+      scaleRange.value = '1.0';
+      scaleRange.dispatchEvent(new Event('input'));
+    };
+  }
+
+  const cp = $('#lblDraftColorPicker');
+  const hexInp = $('#lblDraftHexInput');
+  const preview = $('#lblDraftColorPreview');
+  const applyDraftColor = (hex) => {
+    const num = hexToLabelColor(hex);
+    draft.color = num;
+    const colorHex = labelColorToHex(num);
+    const pwh = labelColorToPawnHex(num);
+    if (cp) cp.value = colorHex.slice(0, 7);
+    if (hexInp) hexInp.value = pwh;
+    if (preview) preview.style.background = colorHex;
+  };
+
+  if (cp) cp.oninput = () => applyDraftColor(cp.value.toUpperCase());
+  if (hexInp) hexInp.onchange = () => applyDraftColor(hexInp.value.trim());
+  $$('#inspector [data-lbl-draft-color]').forEach(b => {
+    b.onclick = () => applyDraftColor(b.dataset.lblDraftColor);
+  });
+
+  $('#lblDraftDrawDist')?.addEventListener('change', (e) => { draft.drawDist = parseFloat(e.target.value) || 50.0; });
+  $('#lblDraftWorld')?.addEventListener('change', (e) => { draft.world = parseInt(e.target.value, 10) || 0; });
+  $('#lblDraftTestLOS')?.addEventListener('change', (e) => { draft.testLOS = e.target.checked ? 1 : 0; });
+  $('#lblDraftComment')?.addEventListener('change', (e) => { draft.comment = e.target.value; });
+
+  $('#btnCancelCreate3DText')?.addEventListener('click', () => {
+    creatingLabelDraft = null;
+    renderInspector();
+  });
+
+  $('#btnConfirmCreate3DText')?.addEventListener('click', () => {
+    const pt = getCameraLookSurfacePoint(0.5);
+    const newLbl = {
+      uid: null,
+      text: draft.text || 'Novo Texto 3D',
+      color: draft.color || 0x33CCFFFF,
+      scale: draft.scale ?? 1.0,
+      x: pt.x,
+      y: pt.y,
+      z: pt.z,
+      drawDist: draft.drawDist ?? 50.0,
+      world: draft.world ?? 0,
+      interior: 0,
+      testLOS: draft.testLOS ? 1 : 0,
+      comment: draft.comment || '',
+    };
+    creatingLabelDraft = null;
+    if (!app.project.labels) app.project.labels = [];
+    const item = app.project.add('labels', newLbl, 'Criar Texto 3D');
+    app.editor.syncAll();
+    app.editor.select([item.uid]);
+    toast('Texto 3D criado no mapa!', 'ok');
+  });
 }
 
 // ===========================================================================

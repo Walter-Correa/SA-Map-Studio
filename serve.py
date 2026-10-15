@@ -695,7 +695,8 @@ def start_test(body):
                 copy_if_newer(streamer_src, os.path.join(td, "plugins", "streamer.dll"))
             with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="cp1252", errors="replace", newline="\r\n") as f:
                 f.write(body.get("map", ""))
-            plugins_line = "plugins streamer.dll\n" if use_streamer else "plugins\n"
+            load_streamer = bool(streamer_src or use_streamer)
+            plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
             with open(os.path.join(td, "server.cfg"), "w", encoding="cp1252", newline="\r\n") as f:
                 f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 8\nport %d\n"
                         "hostname SA Map Studio - teste\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
@@ -705,7 +706,7 @@ def start_test(body):
             cfg = {
                 "name": "SA Map Studio - teste", "max_players": 8, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT, "bind": "127.0.0.1"},
-                "pawn": {"main_scripts": ["samapstudio 1"], "side_scripts": [], "legacy_plugins": ["streamer"] if use_streamer else []},
+                "pawn": {"main_scripts": ["samapstudio 1"], "side_scripts": [], "legacy_plugins": ["streamer"] if load_streamer else []},
                 "rcon": {"enable": False, "password": rcon},
                 "game": {"use_entry_exit_markers": False, "use_player_ped_anims": True, "use_all_animations": True},
             }
@@ -1081,6 +1082,12 @@ class Handler(SimpleHTTPRequestHandler):
             return self.get_gta(path[5:])
         if path.startswith("/thumbs/"):
             return self.get_thumb(path[len("/thumbs/"):])
+        if path.startswith("/cache/"):
+            sub = path[len("/cache/"):].lstrip("/")
+            full = os.path.join(CACHE_DIR, sub.replace("/", os.sep))
+            if os.path.isfile(full):
+                return self.send_file(full, cache="public, max-age=86400")
+            return self.send_error(404, "Arquivo de cache nao encontrado")
         if path == "/api/ping":
             State.last_ping = time.time()
             return self.send_json({"ok": True})

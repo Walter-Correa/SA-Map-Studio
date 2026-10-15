@@ -896,7 +896,7 @@ export class Editor extends EventTarget {
   }
 
   // ------------------------------------------------------------------ posicionar
-  startPlacing(model) {
+  startPlacing(model, options = {}) {
     this.cancelPlacing();
     const def = this.gd.models.get(model);
     if (!def) return;
@@ -904,7 +904,7 @@ export class Editor extends EventTarget {
     ghost.rotation.order = 'ZXY';
     ghost.userData.noPick = true;
     this.vp.scene.add(ghost);
-    this.placing = { model, ghost, rz: 0, ready: false, offsetZ: 0 };
+    this.placing = { model, ghost, rz: 0, ready: false, offsetZ: 0, options };
     this.tc.detach();
     this.models.getModel(model).then(() => {
       if (!this.placing || this.placing.ghost !== ghost) return;
@@ -912,7 +912,9 @@ export class Editor extends EventTarget {
       if (m) {
         ghost.add(m);
         const box = m.userData.box || this.models.ready.get(model)?.userData.box;
-        if (def?.type === 'peds') {
+        if (options?.kind === 'pickups') {
+          this.placing.offsetZ = 0.98;
+        } else if (def?.type === 'peds') {
           this.placing.offsetZ = (box && box.min.z < -0.3) ? -box.min.z : 0.98;
         } else {
           this.placing.offsetZ = box ? -box.min.z : 0;
@@ -958,16 +960,21 @@ export class Editor extends EventTarget {
     if (!pl || !pl.ready) return;
     const p = pl.ghost.position;
     const def = this.gd.models.get(pl.model);
-    const kind = def?.type === 'peds' ? 'actors' : (def?.type === 'cars' ? 'vehicles' : 'objects');
+    let kind = pl.options?.kind;
+    if (!kind) {
+      kind = def?.type === 'peds' ? 'actors' : (def?.type === 'cars' ? 'vehicles' : 'objects');
+    }
     const data = {
       kind,
       model: pl.model,
       skin: pl.model,
+      type: 1, // Tipo padrão para pickups (1: sempre visível)
+      world: 0,
       x: round(p.x), y: round(p.y), z: round(p.z),
       rx: 0, ry: 0, rz: pl.rz,
       interior: pl.interior ?? -1,
     };
-    const label = kind === 'actors' ? 'Adicionar actor' : (kind === 'vehicles' ? 'Adicionar veículo' : 'Adicionar objeto');
+    const label = kind === 'actors' ? 'Adicionar actor' : (kind === 'vehicles' ? 'Adicionar veículo' : (kind === 'pickups' ? 'Adicionar pickup' : 'Adicionar objeto'));
     const uids = this.project.addItems(label, [data]);
     this.emit('placed', { model: pl.model });
     if (!keep) { this.cancelPlacing(); this.select(uids); }

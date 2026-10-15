@@ -29,10 +29,17 @@ export function labelColorToHex(num) {
   return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
+export function labelColorToPawnHex(num) {
+  if (num === undefined || num === null) return '0xFFFFFFFF';
+  const val = Number(num) >>> 0;
+  return '0x' + val.toString(16).toUpperCase().padStart(8, '0');
+}
+
 export function hexToLabelColor(hexStr, alpha = 0xFF) {
-  let clean = String(hexStr || '').replace(/[^0-9a-fA-F]/g, '');
-  if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
-  if (clean.length < 6) clean = clean.padEnd(6, 'F');
+  let clean = String(hexStr || '').replace(/^0x/i, '').replace(/[^0-9a-fA-F]/g, '');
+  if (clean.length === 3) clean = clean.split('').map(c => c + c).join('') + 'FF';
+  else if (clean.length === 6) clean = clean + 'FF';
+  else if (clean.length < 8) clean = clean.padEnd(8, 'F');
   const r = parseInt(clean.slice(0, 2), 16) || 0;
   const g = parseInt(clean.slice(2, 4), 16) || 0;
   const b = parseInt(clean.slice(4, 6), 16) || 0;
@@ -88,9 +95,9 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   canvas.width = w;
   canvas.height = h;
 
-  // Fundo escuro semi-transparente arredondado para visualização nítida
+  // Fundo escuro semi-transparente arredondado (transparência aumentada em 50%)
   ctx.font = `bold ${fontSize}px "Segoe UI", Arial, sans-serif`;
-  ctx.fillStyle = 'rgba(10, 12, 16, 0.72)';
+  ctx.fillStyle = 'rgba(10, 12, 16, 0.36)';
   const r = 10;
   ctx.beginPath();
   ctx.moveTo(r, 0);
@@ -105,8 +112,8 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Desenha cada linha e segmento

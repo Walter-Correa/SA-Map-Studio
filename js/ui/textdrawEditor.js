@@ -2,6 +2,7 @@
 // Tela de visualização com resolução clássica 640x480, arrasto interativo,
 // fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
 import { makeTextDraw } from '../editor/project.js';
+import { openSpritePicker } from './spritePicker.js';
 
 let dialogEl = null;
 let canvasEl = null;
@@ -13,6 +14,27 @@ let isDraggingTd = null; // { idx, startX, startY, origX, origY, isResize }
 let showGrid = true;
 let showGameBg = true;
 let gameBgImg = null;
+
+const spriteImageCache = new Map();
+
+function getSpriteImage(lib, name) {
+  const key = `${(lib || 'hud').toLowerCase()}:${(name || '').toLowerCase()}`;
+  if (spriteImageCache.has(key)) return spriteImageCache.get(key);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = `/cache/sprites/${(lib || 'hud').toLowerCase()}/${(name || '').toLowerCase()}.png`;
+  img.onerror = () => {
+    if (!img._fallback) {
+      img._fallback = true;
+      img.src = `https://assets.open.mp/assets/images/sprites/${lib}/${name}.png`;
+    }
+  };
+  img.onload = () => {
+    if (dialogEl && dialogEl.classList.contains('open')) redrawCanvas();
+  };
+  spriteImageCache.set(key, img);
+  return img;
+}
 
 function loadGameBg() {
   if (!gameBgImg) {
@@ -100,6 +122,13 @@ function setupDialogEvents() {
     };
   }
 
+  const addSpriteBtn = dialogEl.querySelector('#tdBtnAddSprite');
+  if (addSpriteBtn) {
+    addSpriteBtn.onclick = () => {
+      createNewSprite();
+    };
+  }
+
   const copyPwnBtn = dialogEl.querySelector('#tdBtnCopyPwn');
   if (copyPwnBtn) {
     copyPwnBtn.onclick = () => {
@@ -177,6 +206,39 @@ function bindFieldInputs() {
       updateSidebarFields();
       updateSidebarList();
       redrawCanvas();
+    };
+  }
+
+  const selSprite = dialogEl.querySelector('#tdSpriteSelect');
+  if (selSprite) {
+    selSprite.onchange = () => {
+      const td = getSelectedTd();
+      if (!td || !selSprite.value) return;
+      td.text = selSprite.value;
+      const txt = dialogEl.querySelector('#tdText');
+      if (txt) txt.value = td.text;
+      updateSidebarList();
+      redrawCanvas();
+    };
+  }
+
+  const btnOpenSprite = dialogEl.querySelector('#btnOpenSpritePicker');
+  if (btnOpenSprite) {
+    btnOpenSprite.onclick = () => {
+      const td = getSelectedTd();
+      openSpritePicker({
+        currentSprite: td?.text || 'hud:arrow',
+        onSelect: (val) => {
+          if (td) {
+            td.text = val;
+            const txt = dialogEl.querySelector('#tdText');
+            if (txt) txt.value = val;
+            if (selSprite) selSprite.value = val;
+            updateSidebarList();
+            redrawCanvas();
+          }
+        }
+      });
     };
   }
 
@@ -557,12 +619,14 @@ function drawGrid() {
   ctx.strokeRect(20, 20, 600, 440);
   ctx.setLineDash([]);
 
-  // Indicador de canto "SAFE ZONE (600x440)"
+  // Indicador de canto "SAFE ZONE (600x440)" posicionado acima da borda safe (y < 20)
   ctx.font = 'bold 9px "Segoe UI", sans-serif';
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-  ctx.fillRect(20, 9, 126, 14);
+  ctx.textBaseline = 'bottom';
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+  ctx.lineWidth = 2.5;
+  ctx.strokeText('SAFE ZONE (600 × 440)', 20, 18);
   ctx.fillStyle = '#FF1493';
-  ctx.fillText('SAFE ZONE (600 × 440)', 24, 20);
+  ctx.fillText('SAFE ZONE (600 × 440)', 20, 18);
 
   ctx.restore();
 }
@@ -580,8 +644,11 @@ function renderTextDraw(td, isSelected) {
   // 2. Se for Font 5 (Prévia de Modelo 3D)
   if (td.font === 5) {
     renderModelPreview(td, bounds);
+  } else if (td.font === 4) {
+    // 3. Se for Font 4 (Sprite open.mp / SA-MP)
+    renderSpriteTextDraw(td, bounds);
   } else {
-    // 3. Renderiza Texto normal
+    // 4. Renderiza Texto normal
     renderTextDrawString(td, bounds);
   }
 
@@ -681,6 +748,63 @@ function getFontFamily(fontId) {
     case 4: return 'monospace';
     default: return 'sans-serif';
   }
+}
+
+function renderSpriteTextDraw(td, bounds) {
+  const sprite = (td.text || 'hud:arrow').trim();
+  const col = toHexRgba(td.color ?? 0xFFFFFFFF);
+  const [lib, name] = sprite.includes(':') ? sprite.split(':') : ['hud', sprite];
+
+  ctx.save();
+  const img = getSpriteImage(lib, name);
+
+  if (img && img.complete && img.naturalWidth > 0) {
+    if (col.a > 0) {
+      ctx.globalAlpha = col.a;
+      const isPureWhite = col.r === 255 && col.g === 255 && col.b === 255;
+      if (!isPureWhite) {
+        try {
+          const off = document.createElement('canvas');
+          off.width = img.naturalWidth;
+          off.height = img.naturalHeight;
+          const offCtx = off.getContext('2d');
+          offCtx.drawImage(img, 0, 0);
+          offCtx.globalCompositeOperation = 'source-in';
+          offCtx.fillStyle = `rgb(${col.r}, ${col.g}, ${col.b})`;
+          offCtx.fillRect(0, 0, off.width, off.height);
+          ctx.drawImage(off, bounds.x, bounds.y, bounds.w, bounds.h);
+        } catch (_) {
+          ctx.drawImage(img, bounds.x, bounds.y, bounds.w, bounds.h);
+        }
+      } else {
+        ctx.drawImage(img, bounds.x, bounds.y, bounds.w, bounds.h);
+      }
+    }
+  } else {
+    // Vetor de fallback / placeholder enquanto a imagem carrega
+    const spLower = sprite.toLowerCase();
+    ctx.fillStyle = col.css;
+    ctx.strokeStyle = col.css;
+    if (spLower === 'ld_beat:chit') {
+      const r = Math.min(bounds.w, bounds.h) * 0.28;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bounds.x, bounds.y, bounds.w, bounds.h, r);
+      else ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+      ctx.font = 'bold 10px "Segoe UI", monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const shortName = (name || sprite).slice(0, 14);
+      ctx.fillText(shortName, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+    }
+  }
+  ctx.restore();
 }
 
 function renderModelPreview(td, bounds) {
@@ -821,14 +945,22 @@ function updateSidebarFields() {
   const bgCol = toHexRgba(td.backgroundColor ?? 0x000000FF);
   setVal('#tdBgColor', bgCol.hex);
 
+  // Painel de Sprite (Font 4)
+  const spritePanel = dialogEl.querySelector('#tdSpritePanel');
+  if (spritePanel) {
+    spritePanel.style.display = td.font === 4 ? 'block' : 'none';
+    const selSprite = dialogEl.querySelector('#tdSpriteSelect');
+    if (selSprite) selSprite.value = td.text || '';
+  }
+
   // Controles específicos de Font 5 (Model Preview)
   const modelPanel = dialogEl.querySelector('#tdModelPreviewPanel');
   if (modelPanel) {
     modelPanel.style.display = td.font === 5 ? 'block' : 'none';
     setVal('#tdPreviewModel', td.previewModel || 411);
-    setVal('#tdPreviewRotX', td.previewRotX || 0);
-    setVal('#tdPreviewRotY', td.previewRotY || 0);
-    setVal('#tdPreviewRotZ', td.previewRotZ || 0);
+    setVal('#tdPreviewRotX', td.previewRotX !== undefined ? td.previewRotX : -16.0);
+    setVal('#tdPreviewRotY', td.previewRotY !== undefined ? td.previewRotY : 0.0);
+    setVal('#tdPreviewRotZ', td.previewRotZ !== undefined ? td.previewRotZ : -55.0);
     setVal('#tdPreviewZoom', td.previewZoom || 1);
   }
 }
@@ -884,6 +1016,9 @@ function createNewModelPreview() {
     font: 5,
     previewModel: 411, // Infernus
     previewZoom: 1.0,
+    previewRotX: -16.0,
+    previewRotY: 0.0,
+    previewRotZ: -55.0,
     textSizeX: 100,
     textSizeY: 100,
     useBox: 1,
@@ -892,6 +1027,26 @@ function createNewModelPreview() {
   appRef.project.textDraws.push(td);
   selectedIdx = appRef.project.textDraws.length - 1;
   appRef.editor?.saveUndoState?.('Criar Model Preview');
+  updateSidebarFields();
+  updateSidebarList();
+  redrawCanvas();
+}
+
+function createNewSprite() {
+  if (!appRef.project.textDraws) appRef.project.textDraws = [];
+  const td = makeTextDraw({
+    text: 'LD_BEAT:chit',
+    x: 290,
+    y: 210,
+    font: 4,
+    textSizeX: 60,
+    textSizeY: 60,
+    color: 0xFFFFFFFF,
+    useBox: 0,
+  });
+  appRef.project.textDraws.push(td);
+  selectedIdx = appRef.project.textDraws.length - 1;
+  appRef.editor?.saveUndoState?.('Criar Sprite');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();

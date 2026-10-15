@@ -26,3 +26,6 @@ dados-da-janela/
 cache/
 scratch/
 scratch_*.png
+bans.json
+log.txt
+*.dmp

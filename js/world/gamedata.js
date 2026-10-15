@@ -7,6 +7,7 @@ import { isBinaryIpl, parseIplBinary } from '../formats/iplbin.js';
 import { objectCategory, regionOf } from './categories.js';
 import { ALL_SKINS } from './actors.js';
 import { ALL_WEAPONS, isWeaponModelId } from './weapons.js';
+import { isPickupModel } from './pickups.js';
 
 const SKIP_IPL = /(^|\/)(paths\d?|cull|occlu\w*|audiozon|tunnels)\.ipl$|\.zon$/i;
 
@@ -236,8 +237,11 @@ export class GameData {
       } else if (d.type === 'peds') {
         if (d.id !== 0) continue; // No catálogo "todos" ou "actors" mantém apenas uma skin disponível (ID 0)
         category = 'Actors (Personagens)';
+      } else if (d.type === 'cars') {
+        category = 'Veículos';
+      } else if (isPickupModel(d.id)) {
+        category = 'Pickups';
       }
-      else if (d.type === 'cars') category = 'Veículos';
       out.push({
         id: d.id,
         name: d.type === 'peds' ? 'Actor (Personagem)' : (d.name || d.model),

@@ -139,7 +139,10 @@ export class Thumbnails extends EventTarget {
       const center = box.getCenter(new THREE.Vector3());
       const radius = Math.max(0.3, box.getBoundingSphere(new THREE.Sphere()).radius);
       const dist = radius / Math.sin((this.camera.fov / 2) * Math.PI / 180) * 1.05;
-      const dir = new THREE.Vector3(-0.75, -1, 0.65).normalize();
+      const def = this.models?.gd?.models?.get(id);
+      const isCarOrPed = def?.type === 'cars' || def?.type === 'peds';
+      const dirX = isCarOrPed ? -0.75 : 0.75;
+      const dir = new THREE.Vector3(dirX, -1, 0.65).normalize();
       this.camera.position.copy(center).addScaledVector(dir, dist);
       this.camera.near = dist / 100; this.camera.far = dist * 4;
       this.camera.up.set(0, 0, 1);

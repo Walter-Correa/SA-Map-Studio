@@ -172,7 +172,7 @@ export function setupImport() {
       if (parsed.rawPawn && !project.rawPawn) project.rawPawn = parsed.rawPawn;
     }
     const uids = items.length ? project.addItems(`Importar ${items.length} itens`, items) : [];
-    if ($('#importCameras').checked && parsed.cameras) {
+    if (parsed.cameras) {
       const c = normalizeCameras(parsed.cameras);
       if ($('#importReplace').checked) project.cameras = normalizeCameras(null);
       project.cameras.shots.push(...c.shots);

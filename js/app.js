@@ -15,12 +15,14 @@ import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, 
 import { setupProjects, openInitialProject, saveNow } from './ui/projects.js';
 import { setupCatalog, renderCatalogRows } from './ui/catalog.js';
 import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.js';
-import { setupInspector } from './ui/inspector.js';
+import { setupInspector, openCreate3DTextPanel } from './ui/inspector.js';
 import { setupCameras, stopPreview } from './ui/cameras.js';
 import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
 import { setupAbout } from './ui/about.js';
 import { setupLogsDialog } from './ui/logger.js';
 import { setupAnimPicker } from './ui/animPicker.js';
+import { setupSkinPicker } from './ui/skinPicker.js';
+import { setupSpritePicker } from './ui/spritePicker.js';
 import { initGangZoneDialog, openGangZoneDialog } from './ui/gangzoneDialog.js';
 import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 
@@ -115,6 +117,8 @@ async function start(cfg) {
   setupAbout();
   setupLogsDialog();
   setupAnimPicker();
+  setupSkinPicker();
+  setupSpritePicker();
   initGangZoneDialog(app);
   initTextDrawEditor(app);
   await openInitialProject();
@@ -753,15 +757,15 @@ function setupOutline() {
     };
 
     $('#outline').innerHTML =
-      group('Objetos', 'objects', regularObjs, 'i-cube', 'Nenhum objeto padrão.') +
-      group('Texturizações', 'objects', texObjs, 'i-image', 'Nenhum objeto texturizado.') +
-      group('Textos', 'objects', textObjs, 'i-text', 'Nenhum objeto com texto.') +
       group('Veículos', 'vehicles', order(project.vehicles), 'i-car', 'Nenhum veículo.') +
       group('Actors', 'actors', order(project.actors || []), 'i-actor', 'Nenhum actor criado.') +
-      group('Textos 3D', 'labels', order(project.labels || []), 'i-text', 'Nenhum texto 3D criado.') +
+      group('Textos 3D', 'labels', order(project.labels || []), 'i-text3d', 'Nenhum texto 3D criado.') +
       group('Pickups', 'pickups', order(project.pickups || []), 'i-diamond', 'Nenhum pickup criado.') +
       group('GangZones', 'gangZones', order(project.gangZones || []), 'i-map', 'Nenhuma gangzone criada.') +
       group('TextDraws', 'textDraws', order(project.textDraws || []), 'i-text', 'Nenhum textdraw criado.') +
+      group('Objetos', 'objects', regularObjs, 'i-cube', 'Nenhum objeto padrão.') +
+      group('Texturizações', 'objects', texObjs, 'i-image', 'Nenhum objeto texturizado.') +
+      group('Texto em objetos', 'objects', textObjs, 'i-text', 'Nenhum objeto com texto.') +
       group('Objetos removidos', 'removed', order(project.removed), 'i-demolish', 'Clique num objeto do mapa e use "Remover objeto".');
 
     $('#outlineCount').textContent =
@@ -792,26 +796,16 @@ function setupOutline() {
   };
 
   const btnAdd3DText = $('#btnAdd3DText');
+  const create3DTextAction = () => {
+    openCreate3DTextPanel();
+  };
+
   if (btnAdd3DText) {
-    btnAdd3DText.onclick = () => {
-      const ed = app.editor;
-      const pt = getSpawnTargetPoint(0.98);
-      const lbl = {
-        uid: null,
-        text: 'Novo Texto 3D',
-        color: 0x33CCFFAA,
-        x: pt.x, y: pt.y, z: pt.z,
-        drawDist: 50.0,
-        world: 0,
-        interior: 0,
-        testLOS: 0,
-      };
-      if (!app.project.labels) app.project.labels = [];
-      const item = app.project.add('labels', lbl, 'Criar Texto 3D');
-      ed.syncAll();
-      ed.select([item.uid]);
-      toast('Texto 3D criado no mapa!', 'ok');
-    };
+    btnAdd3DText.onclick = create3DTextAction;
+  }
+  const btn3DTextTop = $('#btn3DText');
+  if (btn3DTextTop) {
+    btn3DTextTop.onclick = create3DTextAction;
   }
 
   const btnAddPickup = $('#btnAddPickup');
