@@ -307,7 +307,7 @@ export class ModelCache {
   }
 
   // Libera os modelos usados há mais tempo quando passa do limite (otimizado para baixo uso de RAM).
-  evict(keep, budget = 300) {
+  evict(keep, budget = 250) {
     const loaded = [...this.ready.entries()].filter(([, t]) => t);
     let removed = 0;
     if (loaded.length > budget) {
@@ -315,13 +315,25 @@ export class ModelCache {
       for (const [id, t] of loaded) {
         if (loaded.length - removed <= budget * 0.85) break;
         if (keep.has(id)) continue;
-        t.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+        t.traverse(o => {
+          if (o.isMesh) {
+            if (o.geometry) o.geometry.dispose();
+            if (o.material) {
+              const mats = Array.isArray(o.material) ? o.material : [o.material];
+              for (const m of mats) {
+                if (m.map) m.map.dispose();
+                m.dispose();
+              }
+            }
+          }
+        });
         this.ready.delete(id);
         this.models.delete(id);
         removed++;
       }
     }
     this.releaseTxds();
+    if (this.renderer?.renderLists?.dispose) this.renderer.renderLists.dispose();
     return removed;
   }
 
@@ -338,8 +350,18 @@ export class ModelCache {
       p.then(map => {
         const dead = new Set();
         for (const info of map.values()) { info.texture.dispose(); dead.add(info.texture.uuid); }
-        for (const [key, m] of this.materials) if (m.map && dead.has(m.map.uuid)) { m.dispose(); this.materials.delete(key); }
-        for (const [key, m] of this.overrides) if (m.map && dead.has(m.map.uuid)) { m.dispose(); this.overrides.delete(key); }
+        for (const [key, m] of this.materials) {
+          if (m.map && dead.has(m.map.uuid)) {
+            m.dispose();
+            this.materials.delete(key);
+          }
+        }
+        for (const [key, m] of this.overrides) {
+          if (m.map && dead.has(m.map.uuid)) {
+            m.dispose();
+            this.overrides.delete(key);
+          }
+        }
       }).catch(() => {});
     }
     return freed;

@@ -99,6 +99,8 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Registro de erros em tempo real com botão dedicado na barra superior e janela para consultar e copiar os registros para suporte rápido.
 - **Compilação Autônoma e Privilégios de Administrador**:
   - Scripts `Compilar EXE.bat` e `Compilar EXE limpo.bat` com auto-recuperação do ambiente virtual (`.venv-build`), auto-detecção de executáveis Python funcionais e compilação com `--uac-admin`, solicitando privilégios de administrador nativamente no Windows ao abrir o `.exe`.
+- **Arquitetura de Memória e Miniaturas em Disco**:
+  - Pré-empacotamento de 15.956 miniaturas WebP (~15 MB) na pasta local `Dados/cache/miniaturas/`, garantindo leitura direta do disco sem renderizar 16 mil malhas 3D no boot, com limites de VRAM e descarte imediato de recursos, reduzindo o consumo de memória de mais de 3,1 GB para ~126 MB.
 
 Aperte `?` dentro do programa para ver todos os atalhos.
 

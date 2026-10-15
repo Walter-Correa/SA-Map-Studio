@@ -19,7 +19,7 @@ export class Thumbnails extends EventTarget {
     this.waiting = new Map();   // id -> [callbacks]
     this.queue = [];
     this.busy = false;
-    this.target = new THREE.WebGLRenderTarget(SIZE * COLS, SIZE * ROWS, { samples: 4 });
+    this.target = new THREE.WebGLRenderTarget(SIZE * COLS, SIZE * ROWS, { samples: 0, depthBuffer: true });
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x2b333b);
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.5));
@@ -49,38 +49,8 @@ export class Thumbnails extends EventTarget {
     this.pump();
   }
 
-  // Prepara todas as miniaturas necessárias na tela de boot
-  async prepareAllOnBoot(ids, onProgress = () => {}) {
-    const missing = ids.filter(id => !this.have.has(id));
-    if (!missing.length) return;
-    const total = missing.length;
-    let done = 0;
-    onProgress(done, total);
-    while (missing.length) {
-      const batch = missing.splice(0, BATCH);
-      const loaded = new Set(batch.filter(id => this.models.ready.has(id)));
-      const timeout = () => new Promise(r => setTimeout(() => r(null), 15000));
-      const templates = await Promise.all(batch.map(id => Promise.race([this.models.getModel(id).catch(() => null), timeout()])));
-      const results = await this.renderBatch(batch, templates);
-      await Promise.all(batch.map(async (id, i) => {
-        const blob = results[i] ? await results[i] : null;
-        if (blob) {
-          try {
-            const res = await fetch(`/api/thumbs/obj/${id}`, { method: 'POST', body: blob });
-            if (res.ok) this.have.add(id);
-          } catch (_) {}
-        }
-        if (!loaded.has(id) && this.releasable?.(id)) this.releaseModel(id);
-      }));
-      done += batch.length;
-      onProgress(done, total);
-      if (done % 32 === 0) {
-        this.models.releaseTxds?.();
-        await new Promise(r => setTimeout(r, 0));
-      }
-    }
-    this.models.releaseTxds?.();
-  }
+  // Prepara miniaturas em segundo plano de forma contida e leve
+  async prepareAllOnBoot() {}
 
   // Descarta pedidos que saíram da tela (os do fundo continuam)
   cancelExcept(ids) {
@@ -118,11 +88,13 @@ export class Thumbnails extends EventTarget {
           const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp` : null;
           if (this.background.ids?.delete(id)) { this.background.done++; this.dispatchEvent(new Event('progress')); }
           this.finish(id, diskUrl);
-          // Modelos carregados só para a miniatura saem da memória logo
-          if (!loaded.has(id) && this.releasable?.(id)) this.releaseModel(id);
+          // Modelos carregados só para a miniatura saem imediatamente da memória
+          const canRelease = this.releasable ? this.releasable(id) : true;
+          if (!loaded.has(id) && canRelease) this.releaseModel(id);
         }
-        // Na geração em segundo plano: libera as texturas e dá folga para o editor continuar leve
-        if (this.background.running && ++this.batches % 4 === 0) this.models.releaseTxds?.();
+        // Libera imediatamente texturas e listas de renderização para manter uso de RAM/VRAM mínimo
+        this.models.releaseTxds?.();
+        if (this.renderer?.renderLists?.dispose) this.renderer.renderLists.dispose();
         await new Promise(r => setTimeout(r, this.background.running && !this.waiting.size ? 150 : 0));
         await new Promise(r => requestAnimationFrame(r));
       }
@@ -140,8 +112,20 @@ export class Thumbnails extends EventTarget {
 
   releaseModel(id) {
     const t = this.models.ready.get(id);
-    if (!t) return;
-    t.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+    if (t) {
+      t.traverse(o => {
+        if (o.isMesh) {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            for (const m of mats) {
+              if (m.map) m.map.dispose();
+              m.dispose();
+            }
+          }
+        }
+      });
+    }
     this.models.ready.delete(id);
     this.models.models.delete(id);
   }
@@ -175,6 +159,12 @@ export class Thumbnails extends EventTarget {
       this.camera.updateProjectionMatrix();
       r.render(this.scene, this.camera);
       this.scene.remove(obj);
+      obj.traverse(o => {
+        if (o.isMesh) {
+          o.geometry = null;
+          o.material = null;
+        }
+      });
       drawn.push(true);
     });
     r.setRenderTarget(prev);

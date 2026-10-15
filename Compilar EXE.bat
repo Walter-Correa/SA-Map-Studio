@@ -151,6 +151,17 @@ if /i not "%MODO%"=="limpo" (
 )
 if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "Servidor de Teste".
 
+rem ---------------- Miniaturas do Catalogo (leitura direta da pasta local em Dados\cache\miniaturas)
+set "THUMBSRC="
+if exist "%SRC%Dados\cache\miniaturas\objetos" set "THUMBSRC=%SRC%Dados\cache\miniaturas"
+if not defined THUMBSRC if exist "%DADOS%\Dados\cache\miniaturas\objetos" set "THUMBSRC=%DADOS%\Dados\cache\miniaturas"
+if not defined THUMBSRC if exist "%~dp0dist-limpo\SA Map Studio\Dados\cache\miniaturas\objetos" set "THUMBSRC=%~dp0dist-limpo\SA Map Studio\Dados\cache\miniaturas"
+if defined THUMBSRC (
+    echo Copiando miniaturas do catalogo para a pasta local Dados\cache\miniaturas...
+    if not exist "%OUT%\Dados\cache\miniaturas" mkdir "%OUT%\Dados\cache\miniaturas"
+    robocopy "%THUMBSRC%" "%OUT%\Dados\cache\miniaturas" /E /NFL /NDL /NJH /NJS /NP >nul
+)
+
 rem ---------------- So na versao normal: traz os dados da versao antiga (um .exe solto em dist)
 if /i not "%MODO%"=="limpo" (
     for %%D in (projetos exportados cache dados-da-janela) do (

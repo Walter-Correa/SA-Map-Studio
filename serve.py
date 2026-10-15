@@ -1347,6 +1347,13 @@ def open_window(url, httpd):
             webview.settings["ALLOW_DOWNLOADS"] = True
         except (AttributeError, TypeError):
             pass
+        # Limita o uso de memoria do WebView2 (coleta de lixo do V8 e teto de cache)
+        if "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS" not in os.environ:
+            os.environ["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = (
+                "--js-flags=--max-old-space-size=512 "
+                "--disable-features=Translate,MediaRouter,OptimizationHints "
+                "--disk-cache-size=104857600"
+            )
         win_w, win_h, win_x, win_y, min_size = get_initial_window_geometry()
         State.window = webview.create_window("SA Map Studio", url,
                                              width=win_w, height=win_h,

@@ -96,17 +96,6 @@ async function start(cfg) {
   const have = await thumbs.loadIndex();
   app.texlib.setHave(have.tex);
 
-  // Primeira inicialização: prepara todas as miniaturas na tela de carregamento
-  const allCatalog = gd.catalog();
-  const missingThumbs = allCatalog.map(c => c.id).filter(id => !thumbs.have.has(id));
-  if (missingThumbs.length > 0 && have.obj.length === 0) {
-    status.textContent = 'Preparando miniaturas pela primeira vez...';
-    await thumbs.prepareAllOnBoot(missingThumbs, (done, total) => {
-      const pct = Math.min(100, Math.round((done / total) * 100));
-      status.textContent = `Preparando miniaturas: ${done} de ${total} (${pct}%)...`;
-      bar.style.width = pct + '%';
-    });
-  }
   window.app = app;
 
   setupProjects();
