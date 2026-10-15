@@ -95,8 +95,98 @@ export function makeRemoved(data) {
   };
 }
 
-const KINDS = ['objects', 'vehicles', 'actors', 'removed'];
-const MAKERS = { objects: makeObject, vehicles: makeVehicle, actors: makeActor, removed: makeRemoved };
+export function makeLabel(data) {
+  return {
+    uid: data.uid || newUid(),
+    text: data.text !== undefined ? String(data.text) : 'Texto 3D',
+    color: data.color !== undefined ? (data.color | 0) : 0xFFFFFFFF,
+    x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
+    drawDist: data.drawDist !== undefined ? +data.drawDist : 40.0,
+    world: data.world !== undefined ? (data.world | 0) : 0,
+    testLOS: data.testLOS ? 1 : 0,
+    comment: data.comment ? String(data.comment) : '',
+    preComment: data.preComment ? String(data.preComment) : '',
+    blankLinesBefore: +data.blankLinesBefore || 0,
+    projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
+  };
+}
+
+export function makePickup(data) {
+  return {
+    uid: data.uid || newUid(),
+    model: data.model !== undefined ? (data.model | 0) : 1240,
+    type: data.type !== undefined ? (data.type | 0) : 1,
+    x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
+    world: data.world !== undefined ? (data.world | 0) : 0,
+    comment: data.comment ? String(data.comment) : '',
+    preComment: data.preComment ? String(data.preComment) : '',
+    blankLinesBefore: +data.blankLinesBefore || 0,
+    projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
+  };
+}
+
+export function makeGangZone(data) {
+  return {
+    uid: data.uid || newUid(),
+    name: data.name ? String(data.name) : 'GangZone',
+    minx: Number(data.minx !== undefined ? data.minx : data.minX) || 0,
+    miny: Number(data.miny !== undefined ? data.miny : data.minY) || 0,
+    maxx: Number(data.maxx !== undefined ? data.maxx : data.maxX) || 0,
+    maxy: Number(data.maxy !== undefined ? data.maxy : data.maxY) || 0,
+    color: data.color !== undefined ? (data.color | 0) : 0xFF000080,
+    comment: data.comment ? String(data.comment) : '',
+    preComment: data.preComment ? String(data.preComment) : '',
+    blankLinesBefore: +data.blankLinesBefore || 0,
+    projectId: data.projectId || '',
+  };
+}
+
+export function makeTextDraw(data) {
+  return {
+    uid: data.uid || newUid(),
+    name: data.name ? String(data.name) : 'Textdraw0',
+    isPlayer: Boolean(data.isPlayer),
+    text: data.text !== undefined ? String(data.text) : 'SA-MP TextDraw',
+    x: +data.x || 320.0,
+    y: +data.y || 240.0,
+    font: data.font !== undefined ? (data.font | 0) : 1,
+    letterSizeX: data.letterSizeX !== undefined ? +data.letterSizeX : 0.5,
+    letterSizeY: data.letterSizeY !== undefined ? +data.letterSizeY : 2.0,
+    textSizeX: data.textSizeX !== undefined ? +data.textSizeX : 100.0,
+    textSizeY: data.textSizeY !== undefined ? +data.textSizeY : 20.0,
+    color: data.color !== undefined ? (data.color | 0) : 0xFFFFFFFF,
+    useBox: data.useBox ? 1 : 0,
+    boxColor: data.boxColor !== undefined ? (data.boxColor | 0) : 0x00000080,
+    shadow: data.shadow !== undefined ? (data.shadow | 0) : 1,
+    outline: data.outline !== undefined ? (data.outline | 0) : 0,
+    align: data.align !== undefined ? (data.align | 0) : 1,
+    backgroundColor: data.backgroundColor !== undefined ? (data.backgroundColor | 0) : 0x000000FF,
+    proportional: data.proportional !== undefined ? (data.proportional ? 1 : 0) : 1,
+    selectable: data.selectable ? 1 : 0,
+    previewModel: data.previewModel !== undefined ? (data.previewModel | 0) : 0,
+    previewRotX: data.previewRotX !== undefined ? +data.previewRotX : 0,
+    previewRotY: data.previewRotY !== undefined ? +data.previewRotY : 0,
+    previewRotZ: data.previewRotZ !== undefined ? +data.previewRotZ : 0,
+    previewZoom: data.previewZoom !== undefined ? +data.previewZoom : 1.0,
+    previewColor1: data.previewColor1 !== undefined ? (data.previewColor1 | 0) : -1,
+    previewColor2: data.previewColor2 !== undefined ? (data.previewColor2 | 0) : -1,
+    comment: data.comment ? String(data.comment) : '',
+  };
+}
+
+const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws'];
+const MAKERS = {
+  objects: makeObject,
+  vehicles: makeVehicle,
+  actors: makeActor,
+  removed: makeRemoved,
+  labels: makeLabel,
+  pickups: makePickup,
+  gangZones: makeGangZone,
+  textDraws: makeTextDraw,
+};
 
 export class Project {
   constructor(name = 'Meu mapa') {
@@ -105,6 +195,10 @@ export class Project {
     this.vehicles = [];
     this.actors = [];
     this.removed = [];
+    this.labels = [];
+    this.pickups = [];
+    this.gangZones = [];
+    this.textDraws = [];
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
@@ -126,9 +220,13 @@ export class Project {
   }
 
   toJSON() {
-    return { app: 'SA Map Studio', format: 1, name: this.name, savedAt: new Date().toISOString(),
+    return {
+      app: 'SA Map Studio', format: 1, name: this.name, savedAt: new Date().toISOString(),
       pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '',
-      camera: this.camera, cameras: this.cameras, objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed };
+      camera: this.camera, cameras: this.cameras,
+      objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,
+      labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws
+    };
   }
 
   // Mudanças fora do histórico (câmeras): só avisa para salvar

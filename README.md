@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-2.9.1-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.0.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -43,6 +43,30 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - **Duplicar** e **Posicionar outro igual** criam a cópia no mesmo lugar, já com o gizmo de mover.
 - Remover prédios do mapa original (`RemoveBuildingForPlayer`, com o LOD junto) ou torná-los editáveis.
 - Veículos (`CreateVehicle` / `AddStaticVehicleEx`), desfazer e refazer, seleção múltipla.
+- **Tuning e Paintjobs Compatíveis**: filtragem rigorosa de componentes de tuning, paintjobs (0 a 2) e cores conforme regras oficiais do SA-MP/open.mp (`IsModValidForVehicle`, `IsPaintjobValidForVehicle`, `IsVehicleValidForModding`, `IsVehicleValidForColor`), exibindo apenas peças compatíveis no inspetor.
+
+### Textos 3D (3D Text Labels)
+- Criação e visualização direta no 3D com efeito billboard voltado para a câmera (`Create3DTextLabel` / `CreateDynamic3DTextLabel`).
+- Suporte a múltiplas linhas (`\n`), códigos de cores embutidos no formato `{RRGGBB}`, paleta rápida SA-MP e seletor hexadecimal.
+- Ajuste de distância de visão (`drawDistance`), teste de linha de visão (`testLOS`), interior e mundo virtual.
+
+### Pickups
+- Criação e visualização no 3D com malha rotativa animada (`CreatePickup` / `CreateDynamicPickup`).
+- Catálogo categorizado com presets oficiais do open.mp: Vida (1240), Colete (1242), Dinheiro (1274), Casas e Informações (1272, 1273, 1239), Armas (IDs 321 a 372) e Equipamentos.
+- Configuração de tipo de pickup, tempo de respawn, interior e mundo virtual.
+
+### GangZones (Radar Map Interativo)
+- Diálogo modal com o mapa de radar oficial de San Andreas (-3000 a +3000) em alta resolução, com navegação por pan e zoom.
+- Criação de zonas retangulares por arrasto do mouse (`GangZoneCreate` e `GangZoneShowForAll`).
+- **Encaixe magnético de bordas (Snap)**: alinhamento automático entre zonas adjacentes com guias ciano na tela.
+- Seletor de cores RGBA com opacidade/transparência e projeção plana 3D no chão do mapa.
+
+### TextDraws (Editor Visual)
+- Editor visual dedicado na resolução nativa do SA-MP (640x480) com linhas de margem segura e grade.
+- Criação e edição de textos e caixas (`TextDrawCreate` / `CreatePlayerTextDraw`).
+- Fontes 0 a 5, cores de texto e caixa com transparência, alinhamento (esquerda, centro, direita), tamanho de letras e caixas, contorno (`outline`) e sombra (`shadow`).
+- **Pré-visualização 3D de modelos (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com ajuste de rotação (RX, RY, RZ) e zoom.
+- Exportação limpa de script Pawn pronto para compilação.
 
 ### Materiais do SA-MP
 - O inspetor lista **todos os índices de material** do objeto (0 a 15) com a textura original de cada um.
@@ -60,8 +84,8 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 
 ### Testar no jogo
 - Sobe um **servidor de teste local** (open.mp ou SA-MP) com o gamemode do editor, carrega o mapa com
-  texturas e textos e abre o SA-MP já conectado, nascendo onde a câmera está olhando.
-- No jogo: `/jetpack`, `/v [modelo]`, `/spawn` e `/pos`.
+  texturas, textos, veículos com seus tuning/paintjobs reais (`AddVehicleComponent`, `ChangeVehiclePaintjob`), Textos 3D (`Create3DTextLabel`), Pickups (`CreatePickup`) e GangZones (`GangZoneCreate`), abrindo o SA-MP já conectado e nascendo onde a câmera está olhando.
+- No jogo: `/fly`, `/map`, `/w`, `/t`, `/v [modelo]`, `/anim`, `/jetpack`, `/spawn`, `/pos` e `/ajuda`.
 
 ### Importar e exportar
 - **Importa qualquer arquivo**, descobrindo o formato sozinho: código Pawn (Map Construction,
@@ -188,6 +212,14 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.0.0 — 15/10/2026
+- Filtragem inteligente de tuning, paintjobs e cores de veículos: compatibilidade rigorosa com o modelo do veículo baseada nas regras oficiais do SA-MP/open.mp (`IsVehicleValidForColor`, `IsVehicleValidForModding`, `IsPaintjobValidForVehicle` e `IsModValidForVehicle`). O inspetor de veículos agora exibe exclusivamente os componentes de modding (spoilers, capôs, tetos, saias, escapamentos, nitro, rodas, som estéreo, hidráulica), paintjobs (0 a 2) e seletores de cor compatíveis com o modelo selecionado.
+- Aplicação real de tuning e paintjobs no servidor de teste: integração completa de `AddVehicleComponent` e `ChangeVehiclePaintjob` no gamemode de teste (`samapstudio.pwn` e `samapstudio.amx`), exibindo veículos com suas peças e pinturas aplicadas diretamente dentro do jogo.
+- Suporte completo a Textos 3D (3D Text Labels): criação visual na viewport 3D com efeito billboard voltado para a câmera (`Create3DTextLabel` / `CreateDynamic3DTextLabel`), suporte a múltiplas linhas (`\n`), tags de cores embutidas (`{RRGGBB}`), paleta rápida SA-MP e seletor hexadecimal, ajuste de distância de visão (`drawDistance`), teste de linha de visão (`testLOS`), interior e mundo virtual, importação/exportação Pawn e sincronização automática no servidor de teste.
+- Suporte completo a Pickups (`CreatePickup` / `CreateDynamicPickup`): catálogo categorizado de pickups pré-definidos do open.mp e SA-MP (vida, colete, dinheiro, propriedades, armas IDs 321 a 372 e itens), malha 3D animada com rotação contínua na viewport, inspetor com seleção de tipo de pickup, tempo de respawn, mundo e interior, salvamento/carregamento no projeto, importação/exportação Pawn e sincronização no servidor de teste.
+- Novo editor interativo de GangZones com Radar Map: diálogo modal exibindo o mapa de radar oficial do GTA San Andreas (-3000 a +3000), navegação por pan/zoom, desenho de zonas arrastando o mouse, sistema magnético inteligente de encaixe/alinhamento de bordas (snap) entre zonas adjacentes com guias visuais ciano, seletor de cores RGBA com opacidade/transparência, projeção plana 3D da zona no chão do mundo, salvamento/carregamento no projeto, exportação Pawn (`GangZoneCreate` / `GangZoneShowForAll`) e renderização no servidor de teste.
+- Novo editor visual de TextDraws (TextDraw Editor): ambiente de edição na resolução nativa 640x480 do SA-MP com guias de margem segura, suporte a textos e caixas com cores e opacidade personalizadas, seleção de fontes (0 a 5), sombra (`shadow`), contorno (`outline`), alinhamento (left, center, right), espaçamento de letras (`letter size`), tamanho de texto/caixa (`text size`), pré-visualização de modelos 3D para Font 5 (veículos, skins e objetos com rotação e zoom configuráveis), arrastar e redimensionar interativo e exportação limpa de scripts Pawn prontos para uso (`TextDrawCreate` ou `CreatePlayerTextDraw`).
 
 ### 2.9.1 — 15/10/2026
 - Correção crítica de renderização de texturas (Three.js WebGL): eliminação do erro `TypeError: Cannot read properties of undefined (reading 'width')` em `uploadTexture`, preservando a integridade das estruturas de mipmaps das texturas DXT/RGBA em memória e evitando travamentos e falhas visuais na renderização dos modelos do mapa.

@@ -9,9 +9,12 @@ import {
 } from '../editor/materials.js';
 import { colorPalette, openVehicleColorPicker } from './palette.js';
 import { app, $, $$, esc, fmt, plural, store, toast, copyText, modelLabel, bindScrub, showPrompt } from './common.js';
-import { CAR_COLORS, carColorHex, COMPONENT_TYPES, VEHICLE_COMPONENTS, supportsPaintjob } from '../world/vehicleMods.js';
+import { CAR_COLORS, carColorHex, COMPONENT_TYPES, VEHICLE_COMPONENTS, supportsPaintjob, isVehicleValidForColor, isVehicleValidForModding, isPaintjobValidForVehicle, isModValidForVehicle, getCompatiblePaintjobs } from '../world/vehicleMods.js';
 import { POPULAR_ANIMATIONS, ALL_ANIMATIONS, POPULAR_SKINS, ALL_SKINS, getSkinLabel, findSkin } from '../world/actors.js';
 import { openAnimPicker } from './animPicker.js';
+import { STANDARD_LABEL_COLORS, labelColorToHex, hexToLabelColor } from '../world/labels.js';
+import { PREDEFINED_PICKUPS, PICKUP_TYPES, getPickupLabel } from '../world/pickups.js';
+import { DEFAULT_GANGZONE_COLORS, gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor } from '../world/gangzones.js';
 
 const round = (v, d = 4) => Math.round((+v || 0) * 10 ** d) / 10 ** d;
 
@@ -56,15 +59,27 @@ export function renderInspector() {
   if (kind === 'vehicles') {
     el.innerHTML = vehicleInspector(item);
     bindVehicle(item);
+    titleThumb(item.model);
   } else if (kind === 'actors') {
     el.innerHTML = actorInspector(item);
     bindActor(item);
+    titleThumb(item.skin ?? 0);
+  } else if (kind === 'labels') {
+    el.innerHTML = labelInspector(item);
+    bindLabel(item);
+  } else if (kind === 'pickups') {
+    el.innerHTML = pickupInspector(item);
+    bindPickup(item);
+    titleThumb(item.model);
+  } else if (kind === 'gangZones') {
+    el.innerHTML = gangZoneInspector(item);
+    bindGangZone(item);
   } else {
     el.innerHTML = objectInspector(item);
     bindItem(item);
     bindMaterials([item]);
+    titleThumb(item.model);
   }
-  titleThumb(kind === 'actors' ? (item.skin ?? 0) : item.model);
 }
 
 function titleThumb(model) {
@@ -74,12 +89,16 @@ function titleThumb(model) {
 function emptyInspector() {
   const p = app.project;
   const c = p.cameras || { shots: [], paths: [] };
-  const total = p.objects.length + p.vehicles.length + (p.actors?.length || 0);
+  const total = (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.gangZones?.length || 0);
   return `<div class="insp-empty"><h3>${esc(p.name)}</h3>
-    <div class="stat-line"><span>Objetos</span><b>${p.objects.length}</b></div>
-    <div class="stat-line"><span>Veículos</span><b>${p.vehicles.length}</b></div>
+    <div class="stat-line"><span>Objetos</span><b>${p.objects?.length || 0}</b></div>
+    <div class="stat-line"><span>Veículos</span><b>${p.vehicles?.length || 0}</b></div>
     <div class="stat-line"><span>Actors</span><b>${p.actors?.length || 0}</b></div>
-    <div class="stat-line"><span>Objetos removidos</span><b>${p.removed.length}</b></div>
+    <div class="stat-line"><span>Textos 3D</span><b>${p.labels?.length || 0}</b></div>
+    <div class="stat-line"><span>Pickups</span><b>${p.pickups?.length || 0}</b></div>
+    <div class="stat-line"><span>GangZones</span><b>${p.gangZones?.length || 0}</b></div>
+    <div class="stat-line"><span>TextDraws</span><b>${p.textDraws?.length || 0}</b></div>
+    <div class="stat-line"><span>Objetos removidos</span><b>${p.removed?.length || 0}</b></div>
     <div class="stat-line"><span>Câmeras</span><b>${c.shots.length + c.paths.length}</b></div>
     ${total > 0 ? `<button type="button" class="btn primary block" id="btnSelectAll" style="margin: 12px 0 16px;"><svg><use href="#i-move"/></svg>Mover todo o projeto (${total} itens)</button>` : ''}
     <ul>
@@ -235,7 +254,9 @@ function vehicleInspector(v) {
     ${actionGrid()}
 
     <!-- Cores -->
-    <div class="insp-section"><div class="insp-label">Cores do veículo (carcols.dat: 0 a 255)</div>
+    <div class="insp-section">
+      <div class="insp-label">Cores do veículo (carcols.dat: 0 a 255)</div>
+      ${isVehicleValidForColor(v.model) ? `
       <div class="pair">
         <label>Cor 1
           <div style="display:flex; gap:6px; align-items:center;">
@@ -251,6 +272,9 @@ function vehicleInspector(v) {
         </label>
       </div>
       <div class="insp-note">-1 significa cor aleatória. Clique no quadrado para abrir a paleta de 256 cores.</div>
+      ` : `
+      <div class="insp-note warn">Este modelo de veículo não suporta alteração de cores no SA-MP (IsVehicleValidForColor = 0).</div>
+      `}
     </div>
     <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Carro da polícia" value="${esc(v.comment || '')}" style="width:100%;">
@@ -259,13 +283,17 @@ function vehicleInspector(v) {
     <!-- Paintjob -->
     <div class="insp-section">
       <div class="insp-label">Paintjob</div>
+      ${supportsPaintjob(v.model) ? `
       <select id="vehPaintjob" style="width:100%;">
         <option value="-1" ${v.paintjob === -1 ? 'selected' : ''}>Nenhum (-1)</option>
-        <option value="0" ${v.paintjob === 0 ? 'selected' : ''}>Paintjob 1 (0)</option>
-        <option value="1" ${v.paintjob === 1 ? 'selected' : ''}>Paintjob 2 (1)</option>
-        <option value="2" ${v.paintjob === 2 ? 'selected' : ''}>Paintjob 3 (2)</option>
+        ${isPaintjobValidForVehicle(0, v.model) ? `<option value="0" ${v.paintjob === 0 ? 'selected' : ''}>Paintjob 1 (0)</option>` : ''}
+        ${isPaintjobValidForVehicle(1, v.model) ? `<option value="1" ${v.paintjob === 1 ? 'selected' : ''}>Paintjob 2 (1)</option>` : ''}
+        ${isPaintjobValidForVehicle(2, v.model) ? `<option value="2" ${v.paintjob === 2 ? 'selected' : ''}>Paintjob 3 (2)</option>` : ''}
       </select>
-      ${supportsPaintjob(v.model) ? '<div class="insp-note">Veículo compatível com paintjobs no SA-MP.</div>' : '<div class="insp-note warn">Este modelo não tem textura de paintjob nativa no GTA SA.</div>'}
+      <div class="insp-note">Veículo compatível com ${getCompatiblePaintjobs(v.model).length} paintjob(s) no SA-MP.</div>
+      ` : `
+      <div class="insp-note">Este modelo não suporta paintjobs no SA-MP (IsPaintjobValidForVehicle = 0).</div>
+      `}
     </div>
 
     <!-- Tuning / Componentes -->
@@ -281,12 +309,13 @@ function vehicleInspector(v) {
           </div>`;
         }).join('') || '<div class="insp-note">Nenhum componente de tuning adicionado.</div>'}
       </div>
+      ${isVehicleValidForModding(v.model) ? `
       <div style="margin-top:8px;">
-        <label>Adicionar componente
+        <label>Adicionar componente (compatíveis com o modelo)
           <select id="selAddComp" style="width:100%;">
             <option value="">Escolha um componente...</option>
             ${Object.entries(COMPONENT_TYPES).map(([typeId, typeName]) => {
-              const items = Object.entries(VEHICLE_COMPONENTS).filter(([cId, c]) => c.type === +typeId && !comps.includes(+cId));
+              const items = Object.entries(VEHICLE_COMPONENTS).filter(([cId, c]) => c.type === +typeId && !comps.includes(+cId) && isModValidForVehicle(+cId, v.model));
               if (!items.length) return '';
               return `<optgroup label="${esc(typeName)}">
                 ${items.map(([cId, c]) => `<option value="${cId}">${cId} - ${esc(c.name)}</option>`).join('')}
@@ -295,6 +324,9 @@ function vehicleInspector(v) {
           </select>
         </label>
       </div>
+      ` : `
+      <div class="insp-note warn" style="margin-top:8px;">Este modelo não suporta modificações de tuning no SA-MP (IsVehicleValidForModding = 0).</div>
+      `}
       <details class="pawn-preview" style="margin-top:8px;"><summary>Código Pawn deste veículo</summary><pre class="code small" id="vehCode"></pre>
         <button type="button" class="btn small" data-vehcopy><svg><use href="#i-copy"/></svg>Copiar</button></details>
     </div>`;
@@ -1503,4 +1535,448 @@ function bindTextEditor(uids, o, idx) {
   colorPalette($('#mxFontColor'), { value: textDraft.fontColor, allowNone: true, noneLabel: 'Invisível (0)', onChange: (c) => { textDraft.fontColor = c; changed(); } });
   colorPalette($('#mxBackColor'), { value: textDraft.backColor, allowNone: true, noneLabel: 'Sem fundo (0)', onChange: (c) => { textDraft.backColor = c; changed(); } });
   drawPreview();
+}
+
+// ===========================================================================
+// 3D Text Labels
+// ===========================================================================
+function labelInspector(l) {
+  const hex = labelColorToHex(l.color);
+  return `
+    <div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(238,221,130,0.18); border:1px solid rgba(238,221,130,0.4); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#EEDD82; font-size:18px; font-weight:bold;">3D</div>
+      <div>
+        <div style="font-weight:bold; font-size:14px;">Texto 3D</div>
+        <span class="tag">Create3DTextLabel</span>
+      </div>
+    </div>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar Texto 3D</button>
+
+    <div class="insp-section">
+      <div class="insp-label">Texto (suporta quebra de linha com \\n e cores {RRGGBB})</div>
+      <textarea id="lblText" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:13px; resize:vertical; padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff;">${esc(l.text || '')}</textarea>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+        ${STANDARD_LABEL_COLORS.map(c => `
+          <button type="button" class="btn small" data-lbl-tag="${c.tag}" style="font-size:10px; padding:2px 6px; border-left:3px solid ${c.hex};" title="Inserir cor ${c.name}">${c.tag}</button>
+        `).join('')}
+        <button type="button" class="btn small" id="btnLblBreak" style="font-size:10px; padding:2px 6px;" title="Inserir quebra de linha">\\n Quebra</button>
+      </div>
+    </div>
+
+    <!-- Cor Base -->
+    <div class="insp-section">
+      <div class="insp-label">Cor Padrão / Base (Hexadecimal ou Paleta SA-MP)</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="color" id="lblColorPicker" value="${hex.slice(0, 7)}" style="width:36px; height:32px; border:none; border-radius:4px; cursor:pointer;">
+        <input type="text" id="lblHexInput" value="${hex}" placeholder="#FFFFFF" style="width:90px; font-family:monospace; font-weight:bold;">
+        <span id="lblColorPreview" style="display:inline-block; width:22px; height:22px; border-radius:4px; background:${hex}; border:1px solid rgba(255,255,255,0.2);"></span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+        ${STANDARD_LABEL_COLORS.slice(0, 8).map(c => `
+          <button type="button" class="slot-swatch" data-lbl-color="${c.hex}" style="width:20px; height:20px; background:${c.hex}; border-radius:3px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="${c.name}"></button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [l.x, l.y, l.z], 0.1)}</div>
+    ${speedSection()}
+    ${actionGrid()}
+
+    <div class="insp-section">
+      <div class="insp-label">Propriedades do Texto 3D</div>
+      <div class="pair">
+        <label>Distância de Visão<input type="number" step="5" min="1" max="500" data-field="drawDist" value="${l.drawDist ?? 40.0}"></label>
+        <label>Mundo Virtual<input type="number" step="1" data-field="world" value="${l.world ?? 0}"></label>
+      </div>
+      <label class="check" style="margin-top:6px;">
+        <input type="checkbox" id="lblTestLOS" ${l.testLOS ? 'checked' : ''}> Testar linha de visão (testLOS: oculta atrás de paredes)
+      </label>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+      <input type="text" data-field-str="comment" placeholder="// Ex: Texto da porta de entrada" value="${esc(l.comment || '')}" style="width:100%;">
+    </div>
+
+    <div class="insp-section">
+      <details class="pawn-preview"><summary>Código Pawn deste Texto 3D</summary>
+        <pre class="code small" id="lblCode"></pre>
+        <button type="button" class="btn small" id="btnLblCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
+      </details>
+    </div>
+  `;
+}
+
+function bindLabel(l) {
+  bindCommon();
+  bindSpeedControls();
+  bindStringFields(l.uid);
+  const uid = l.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
+
+  const txt = $('#lblText');
+  if (txt) {
+    txt.oninput = () => {
+      project.updateItems('Editar Texto 3D', [uid], (o) => { o.text = txt.value; });
+      app.editor.syncAll();
+      updateLabelCode(project.find(uid));
+    };
+  }
+
+  $$('#inspector [data-lbl-tag]').forEach(b => {
+    b.onclick = () => {
+      if (!txt) return;
+      const tag = b.dataset.lblTag;
+      const start = txt.selectionStart || txt.value.length;
+      const end = txt.selectionEnd || txt.value.length;
+      txt.value = txt.value.substring(0, start) + tag + txt.value.substring(end);
+      txt.focus();
+      txt.selectionStart = txt.selectionEnd = start + tag.length;
+      txt.dispatchEvent(new Event('input'));
+    };
+  });
+
+  const btnBreak = $('#btnLblBreak');
+  if (btnBreak && txt) {
+    btnBreak.onclick = () => {
+      const start = txt.selectionStart || txt.value.length;
+      const end = txt.selectionEnd || txt.value.length;
+      txt.value = txt.value.substring(0, start) + '\\n' + txt.value.substring(end);
+      txt.focus();
+      txt.selectionStart = txt.selectionEnd = start + 2;
+      txt.dispatchEvent(new Event('input'));
+    };
+  }
+
+  const cp = $('#lblColorPicker');
+  const hexInp = $('#lblHexInput');
+  const preview = $('#lblColorPreview');
+
+  const applyColor = (hex) => {
+    if (cp) cp.value = hex.slice(0, 7);
+    if (hexInp) hexInp.value = hex;
+    if (preview) preview.style.background = hex;
+    const num = hexToLabelColor(hex);
+    project.updateItems('Alterar Cor do Texto 3D', [uid], (o) => { o.color = num; });
+    app.editor.syncAll();
+    updateLabelCode(project.find(uid));
+  };
+
+  if (cp) cp.oninput = () => applyColor(cp.value.toUpperCase());
+  if (hexInp) {
+    hexInp.onchange = () => {
+      let h = hexInp.value.trim();
+      if (!h.startsWith('#')) h = '#' + h;
+      applyColor(h.toUpperCase());
+    };
+  }
+  $$('#inspector [data-lbl-color]').forEach(b => {
+    b.onclick = () => applyColor(b.dataset.lblColor);
+  });
+
+  const los = $('#lblTestLOS');
+  if (los) {
+    los.onchange = () => {
+      project.updateItems('Alterar testLOS', [uid], (o) => { o.testLOS = los.checked ? 1 : 0; });
+      app.editor.syncAll();
+      updateLabelCode(project.find(uid));
+    };
+  }
+
+  $$('#inspector [data-field]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const field = inp.dataset.field;
+      let val = parseFloat(inp.value);
+      if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
+      if (['world'].includes(field)) val = Math.trunc(val);
+      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      app.editor.syncAll();
+      updateLabelCode(project.find(uid));
+    });
+  });
+
+  updateLabelCode(l);
+  const copyBtn = $('#btnLblCopy');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = $('#lblCode')?.textContent;
+      if (code) { copyText(code); toast('Código Pawn do Texto 3D copiado!'); }
+    };
+  }
+}
+
+function updateLabelCode(l) {
+  const codeEl = $('#lblCode');
+  if (!codeEl || !l) return;
+  const hex = '0x' + (Number(l.color) >>> 0).toString(16).toUpperCase().padStart(8, 'F');
+  const clean = String(l.text || '').replace(/\r/g, '').replace(/\n/g, '\\n');
+  codeEl.textContent = `Create3DTextLabel("${clean}", ${hex}, ${l.x.toFixed(4)}, ${l.y.toFixed(4)}, ${l.z.toFixed(4)}, ${(l.drawDist ?? 40.0).toFixed(1)}, ${l.world ?? 0}, ${l.testLOS ? 1 : 0});`;
+}
+
+// ===========================================================================
+// Pickups
+// ===========================================================================
+function pickupInspector(p) {
+  const label = getPickupLabel(p.model);
+  const categories = [...new Set(PREDEFINED_PICKUPS.map(x => x.category))];
+  return `
+    ${titleBlock(p.model, `Pickup <span class="tag">ID ${p.model}</span>`)}
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar Pickup</button>
+
+    <div class="insp-section">
+      <div class="insp-label">Modelo do Pickup (${esc(label)})</div>
+      <select id="pkModelSelect" style="width:100%; margin-bottom:6px;">
+        <option value="">-- Escolha um pickup pré-definido --</option>
+        ${categories.map(cat => `
+          <optgroup label="${esc(cat)}">
+            ${PREDEFINED_PICKUPS.filter(x => x.category === cat).map(x => `
+              <option value="${x.model}" ${x.model === p.model ? 'selected' : ''}>${x.model} - ${esc(x.name)}</option>
+            `).join('')}
+          </optgroup>
+        `).join('')}
+      </select>
+      <label>Ou digite o ID do modelo:<input type="number" step="1" min="1" id="pkModelInput" value="${p.model}"></label>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Tipo de Pickup (Comportamento ao pegar)</div>
+      <select id="pkTypeSelect" style="width:100%;">
+        ${PICKUP_TYPES.map(t => `<option value="${t.type}" ${t.type === p.type ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [p.x, p.y, p.z], 0.1)}</div>
+    ${speedSection()}
+    ${actionGrid()}
+
+    <div class="insp-section">
+      <div class="pair">
+        <label>Mundo Virtual<input type="number" step="1" data-field="world" value="${p.world ?? 0}"></label>
+      </div>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+      <input type="text" data-field-str="comment" placeholder="// Ex: Colete do spawn" value="${esc(p.comment || '')}" style="width:100%;">
+    </div>
+
+    <div class="insp-section">
+      <details class="pawn-preview"><summary>Código Pawn deste Pickup</summary>
+        <pre class="code small" id="pkCode"></pre>
+        <button type="button" class="btn small" id="btnPkCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
+      </details>
+    </div>
+  `;
+}
+
+function bindPickup(p) {
+  bindCommon();
+  bindSpeedControls();
+  bindStringFields(p.uid);
+  const uid = p.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
+
+  const sel = $('#pkModelSelect');
+  const inp = $('#pkModelInput');
+  const updateModel = (mId) => {
+    project.updateItems('Alterar Modelo Pickup', [uid], (o) => { o.model = mId; });
+    app.editor.syncAll();
+    renderInspector();
+  };
+  if (sel) {
+    sel.onchange = () => {
+      const val = parseInt(sel.value, 10);
+      if (val > 0) updateModel(val);
+    };
+  }
+  if (inp) {
+    inp.onchange = () => {
+      const val = parseInt(inp.value, 10);
+      if (val > 0) updateModel(val);
+    };
+  }
+
+  const typeSel = $('#pkTypeSelect');
+  if (typeSel) {
+    typeSel.onchange = () => {
+      const val = parseInt(typeSel.value, 10);
+      project.updateItems('Alterar Tipo Pickup', [uid], (o) => { o.type = val; });
+      updatePickupCode(project.find(uid));
+    };
+  }
+
+  $$('#inspector [data-field]').forEach(inEl => {
+    inEl.addEventListener('change', () => {
+      const field = inEl.dataset.field;
+      let val = parseFloat(inEl.value);
+      if (!Number.isFinite(val)) { inEl.value = fmt(project.find(uid)?.[field]); return; }
+      if (['world'].includes(field)) val = Math.trunc(val);
+      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      app.editor.syncAll();
+      updatePickupCode(project.find(uid));
+    });
+  });
+
+  updatePickupCode(p);
+  const copyBtn = $('#btnPkCopy');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = $('#pkCode')?.textContent;
+      if (code) { copyText(code); toast('Código Pawn do Pickup copiado!'); }
+    };
+  }
+}
+
+function updatePickupCode(p) {
+  const codeEl = $('#pkCode');
+  if (!codeEl || !p) return;
+  codeEl.textContent = `CreatePickup(${p.model}, ${p.type}, ${p.x.toFixed(4)}, ${p.y.toFixed(4)}, ${p.z.toFixed(4)}, ${p.world ?? 0});`;
+}
+
+// ===========================================================================
+// GangZones
+// ===========================================================================
+function gangZoneInspector(gz) {
+  const { hex, alpha } = gzColorToHexAndAlpha(gz.color);
+  return `
+    <div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(51,170,51,0.2); border:2px solid ${hex}; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:bold;">GZ</div>
+      <div>
+        <div style="font-weight:bold; font-size:14px;">${esc(gz.name || 'GangZone')}</div>
+        <span class="tag">GangZoneCreate</span>
+      </div>
+    </div>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar GangZone</button>
+
+    <div class="insp-section">
+      <div class="insp-label">Identificador / Nome (Pawn)</div>
+      <input type="text" id="gzName" value="${esc(gz.name || 'GangZone')}" placeholder="gGroveStreetZone" style="width:100%;">
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Coordenadas da Área Retangular</div>
+      <div class="pair">
+        <label>Min X<input type="number" step="1" id="gzMinX" value="${fmt(gz.minx, 2)}"></label>
+        <label>Min Y<input type="number" step="1" id="gzMinY" value="${fmt(gz.miny, 2)}"></label>
+      </div>
+      <div class="pair" style="margin-top:4px;">
+        <label>Max X<input type="number" step="1" id="gzMaxX" value="${fmt(gz.maxx, 2)}"></label>
+        <label>Max Y<input type="number" step="1" id="gzMaxY" value="${fmt(gz.maxy, 2)}"></label>
+      </div>
+      <button type="button" class="btn primary small block" id="btnOpenGzMap" style="margin-top:8px;"><svg><use href="#i-pin"/></svg>Abrir / Editar no Mapa do GTA</button>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Cor da GangZone e Transparência</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="color" id="gzColorPicker" value="${hex}" style="width:36px; height:32px; border:none; border-radius:4px; cursor:pointer;">
+        <input type="text" id="gzHexInput" value="${hex}" style="width:85px; font-family:monospace; font-weight:bold;">
+        <div style="flex:1;">
+          <label style="font-size:11px;">Opacidade: <span id="gzAlphaLbl">${Math.round(alpha * 100)}%</span>
+            <input type="range" id="gzAlphaSlider" min="0.05" max="1.0" step="0.05" value="${alpha}">
+          </label>
+        </div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;">
+        ${DEFAULT_GANGZONE_COLORS.map(c => `
+          <button type="button" class="btn small" data-gz-color="${c.val}" style="font-size:10px; padding:2px 6px; border-left:3px solid ${c.hex};" title="${c.name}">${c.name.split(' ')[0]}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="insp-section">
+      <details class="pawn-preview"><summary>Código Pawn desta GangZone</summary>
+        <pre class="code small" id="gzCode"></pre>
+        <button type="button" class="btn small" id="btnGzCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
+      </details>
+    </div>
+  `;
+}
+
+function bindGangZone(gz) {
+  bindCommon();
+  const uid = gz.uid, project = app.editor.findProjectOf(uid) || app.project;
+
+  const nameInp = $('#gzName');
+  if (nameInp) {
+    nameInp.onchange = () => {
+      project.updateItems('Renomear GangZone', [uid], (o) => { o.name = nameInp.value; });
+      updateGangZoneCode(project.find(uid));
+    };
+  }
+
+  const cp = $('#gzColorPicker');
+  const hexInp = $('#gzHexInput');
+  const alphaSlider = $('#gzAlphaSlider');
+  const alphaLbl = $('#gzAlphaLbl');
+
+  const applyGzColor = (hex, a) => {
+    if (cp) cp.value = hex.slice(0, 7);
+    if (hexInp) hexInp.value = hex;
+    if (alphaSlider) alphaSlider.value = a;
+    if (alphaLbl) alphaLbl.textContent = `${Math.round(a * 100)}%`;
+    const num = hexAndAlphaToGzColor(hex, a);
+    project.updateItems('Alterar Cor GangZone', [uid], (o) => { o.color = num; });
+    app.editor.syncAll();
+    updateGangZoneCode(project.find(uid));
+  };
+
+  if (cp) cp.oninput = () => applyGzColor(cp.value.toUpperCase(), parseFloat(alphaSlider?.value || 0.5));
+  if (hexInp) {
+    hexInp.onchange = () => {
+      let h = hexInp.value.trim();
+      if (!h.startsWith('#')) h = '#' + h;
+      applyGzColor(h.toUpperCase(), parseFloat(alphaSlider?.value || 0.5));
+    };
+  }
+  if (alphaSlider) {
+    alphaSlider.oninput = () => {
+      applyGzColor(hexInp?.value || '#FF0000', parseFloat(alphaSlider.value));
+    };
+  }
+  $$('#inspector [data-gz-color]').forEach(b => {
+    b.onclick = () => {
+      const val = parseInt(b.dataset.gzColor, 10);
+      const { hex, alpha } = gzColorToHexAndAlpha(val);
+      applyGzColor(hex, alpha);
+    };
+  });
+
+  const coordIds = ['gzMinX', 'gzMinY', 'gzMaxX', 'gzMaxY'];
+  const coordFields = ['minx', 'miny', 'maxx', 'maxy'];
+  coordIds.forEach((id, i) => {
+    const el = $('#' + id);
+    if (el) {
+      el.onchange = () => {
+        const val = parseFloat(el.value);
+        if (Number.isFinite(val)) {
+          project.updateItems('Alterar Coordenada GangZone', [uid], (o) => { o[coordFields[i]] = val; });
+          app.editor.syncAll();
+          updateGangZoneCode(project.find(uid));
+        }
+      };
+    }
+  });
+
+  const btnMap = $('#btnOpenGzMap');
+  if (btnMap) {
+    btnMap.onclick = () => {
+      $('#btnGangZones')?.click();
+    };
+  }
+
+  updateGangZoneCode(gz);
+  const copyBtn = $('#btnGzCopy');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = $('#gzCode')?.textContent;
+      if (code) { copyText(code); toast('Código Pawn da GangZone copiado!'); }
+    };
+  }
+}
+
+function updateGangZoneCode(gz) {
+  const codeEl = $('#gzCode');
+  if (!codeEl || !gz) return;
+  const hex = '0x' + (Number(gz.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  const varName = (gz.name || 'gGangZone').replace(/[^a-zA-Z0-9_]/g, '');
+  codeEl.textContent = `new ${varName} = GangZoneCreate(${gz.minx.toFixed(2)}, ${gz.miny.toFixed(2)}, ${gz.maxx.toFixed(2)}, ${gz.maxy.toFixed(2)});\nGangZoneShowForAll(${varName}, ${hex});`;
 }

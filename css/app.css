@@ -961,5 +961,62 @@ legend.sub { margin-top: 8px; }
   text-overflow: ellipsis;
 }
 
+/* GangZones e TextDraws Dialogs */
+.gz-list-item, .td-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.gz-list-item:hover, .td-list-item:hover {
+  background: var(--bg-hover);
+}
+.gz-list-item.selected, .td-list-item.selected {
+  background: rgba(0, 102, 255, 0.15);
+  border-color: var(--accent);
+}
+.gz-badge, .td-badge {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+.gz-info, .td-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.gz-title, .td-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gz-sub, .td-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+.gz-preset-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s, border-color 0.15s;
+}
+.gz-preset-dot:hover {
+  transform: scale(1.15);
+  border-color: #ffffff;
+}
+
 
 

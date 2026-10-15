@@ -1,8 +1,8 @@
 // ===========================================================================
 // SA Map Studio - gamemode de teste
-// Lê o mapa de scriptfiles/samapstudio/mapa.txt (gerado pelo editor), cria os
-// objetos, as trocas de textura e texto, remove os prédios e coloca o jogador
-// no ponto escolhido. Usa só funções nativas do SA-MP/open.mp (sem plugins).
+// LÃª o mapa de scriptfiles/samapstudio/mapa.txt (gerado pelo editor), cria os
+// objetos, as trocas de textura e texto, remove os prÃ©dios e coloca o jogador
+// no ponto escolhido. Usa sÃ³ funÃ§Ãµes nativas do SA-MP/open.mp (sem plugins).
 // ===========================================================================
 #include <a_samp>
 
@@ -11,6 +11,9 @@
 #define SAMS_MAX_REMOVIDOS  1000
 #define SAMS_MAX_VEICULOS   200
 #define SAMS_MAX_ACTORS     500
+#define SAMS_MAX_LABELS     500
+#define SAMS_MAX_PICKUPS    500
+#define SAMS_MAX_GANGZONES  200
 #define SAMS_COR_INFO       0xF0A630FF
 #define SAMS_COR_OK         0x57B77AFF
 
@@ -51,9 +54,18 @@ new gTotalObjetos;
 new Float:gRemovidos[SAMS_MAX_REMOVIDOS][4];
 new gRemovidosModelo[SAMS_MAX_REMOVIDOS];
 new gTotalRemovidos;
+new gVeiculos[SAMS_MAX_VEICULOS];
 new gTotalVeiculos;
 new gTotalActors;
 new gActors[SAMS_MAX_ACTORS];
+
+new Text3D:gLabels[SAMS_MAX_LABELS];
+new gTotalLabels;
+new gPickups[SAMS_MAX_PICKUPS];
+new gTotalPickups;
+new gGangZones[SAMS_MAX_GANGZONES];
+new gGangZoneColors[SAMS_MAX_GANGZONES];
+new gTotalGangZones;
 
 enum E_SAMS_ACTOR_ANIM
 {
@@ -76,7 +88,7 @@ new gSpawnInterior;
 new gSpawnMundo;
 new bool:gJetpack = true;
 
-// Clima, Horário e Centro do Mapa
+// Clima, HorÃ¡rio e Centro do Mapa
 new gClima = 10;
 new gHora = 10;
 new gMinuto = 0;
@@ -88,7 +100,7 @@ main()
     print("SA Map Studio - teste de mapa");
 }
 
-// Copia o campo número "campo" (separado por |) da linha para "destino"
+// Copia o campo nÃºmero "campo" (separado por |) da linha para "destino"
 stock SAMS_Campo(const linha[], campo, destino[], tamanho)
 {
     new atual = 0, i = 0, j = 0;
@@ -113,7 +125,7 @@ stock SAMS_Campo(const linha[], campo, destino[], tamanho)
     return (atual >= campo);
 }
 
-// Tudo a partir do campo número "campo" (usado no texto, que pode conter |)
+// Tudo a partir do campo nÃºmero "campo" (usado no texto, que pode conter |)
 stock SAMS_Resto(const linha[], campo, destino[], tamanho)
 {
     new atual = 0, i = 0, j = 0;
@@ -153,6 +165,29 @@ stock SAMS_Int(const linha[], campo)
 {
     new valor[32];
     SAMS_Campo(linha, campo, valor, sizeof(valor));
+    return strval(valor);
+}
+
+stock SAMS_HexOrInt(const linha[], campo)
+{
+    new valor[32];
+    SAMS_Campo(linha, campo, valor, sizeof(valor));
+    if (valor[0] == '0' && (valor[1] == 'x' || valor[1] == 'X'))
+    {
+        new ret = 0, i = 2;
+        while (valor[i] != EOS)
+        {
+            new c = valor[i];
+            new digit = 0;
+            if (c >= '0' && c <= '9') digit = c - '0';
+            else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+            else break;
+            ret = (ret << 4) | digit;
+            i++;
+        }
+        return ret;
+    }
     return strval(valor);
 }
 
@@ -263,12 +298,31 @@ stock SAMS_CarregarMapa()
             }
             case 'V':
             {
+                if (tipo[1] == 'P')
+                {
+                    new vehIdx = SAMS_Int(linha, 1);
+                    if (vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
+                    {
+                        ChangeVehiclePaintjob(gVeiculos[vehIdx], SAMS_Int(linha, 2));
+                    }
+                    continue;
+                }
+                if (tipo[1] == 'C')
+                {
+                    new vehIdx = SAMS_Int(linha, 1);
+                    if (vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
+                    {
+                        AddVehicleComponent(gVeiculos[vehIdx], SAMS_Int(linha, 2));
+                    }
+                    continue;
+                }
                 if (gTotalVeiculos >= SAMS_MAX_VEICULOS) continue;
                 new Float:vx = SAMS_Float(linha, 2);
                 new Float:vy = SAMS_Float(linha, 3);
                 new Float:vz = SAMS_Float(linha, 4);
-                CreateVehicle(SAMS_Int(linha, 1), vx, vy, vz,
+                new veh = CreateVehicle(SAMS_Int(linha, 1), vx, vy, vz,
                     SAMS_Float(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), -1);
+                gVeiculos[gTotalVeiculos] = veh;
                 gTotalVeiculos++;
 
                 sumX += vx;
@@ -344,6 +398,50 @@ stock SAMS_CarregarMapa()
                     countCoords++;
                 }
             }
+            case 'L':
+            {
+                if (gTotalLabels >= SAMS_MAX_LABELS) continue;
+                new Float:lx = SAMS_Float(linha, 1);
+                new Float:ly = SAMS_Float(linha, 2);
+                new Float:lz = SAMS_Float(linha, 3);
+                new Float:ldist = SAMS_Float(linha, 4);
+                new lcolor = SAMS_HexOrInt(linha, 5);
+                new lworld = SAMS_Int(linha, 6);
+                new ltestlos = SAMS_Int(linha, 7);
+                SAMS_Resto(linha, 8, texto, sizeof(texto));
+                new Text3D:lbl = Create3DTextLabel(texto, lcolor, lx, ly, lz, (ldist > 0.0 ? ldist : 50.0), lworld, ltestlos);
+                gLabels[gTotalLabels] = lbl;
+                gTotalLabels++;
+            }
+            case 'P':
+            {
+                if (gTotalPickups >= SAMS_MAX_PICKUPS) continue;
+                new pmodel = SAMS_Int(linha, 1);
+                new ptype = SAMS_Int(linha, 2);
+                new Float:px = SAMS_Float(linha, 3);
+                new Float:py = SAMS_Float(linha, 4);
+                new Float:pz = SAMS_Float(linha, 5);
+                new pworld = SAMS_Int(linha, 6);
+                new pick = CreatePickup(pmodel, (ptype > 0 ? ptype : 1), px, py, pz, pworld);
+                gPickups[gTotalPickups] = pick;
+                gTotalPickups++;
+            }
+            case 'G':
+            {
+                if (gTotalGangZones >= SAMS_MAX_GANGZONES) continue;
+                new Float:gminx = SAMS_Float(linha, 1);
+                new Float:gminy = SAMS_Float(linha, 2);
+                new Float:gmaxx = SAMS_Float(linha, 3);
+                new Float:gmaxy = SAMS_Float(linha, 4);
+                new gcolor = SAMS_HexOrInt(linha, 5);
+                new gz = GangZoneCreate(gminx, gminy, gmaxx, gmaxy);
+                if (gz != -1)
+                {
+                    gGangZones[gTotalGangZones] = gz;
+                    gGangZoneColors[gTotalGangZones] = gcolor;
+                    gTotalGangZones++;
+                }
+            }
         }
     }
     fclose(arquivo);
@@ -356,7 +454,7 @@ stock SAMS_CarregarMapa()
         gHasMapCenter = true;
     }
 
-    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors (%d ignorados)", gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gIgnorados);
+    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors, %d labels, %d pickups, %d gangzones", gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones);
     printf("[SA Map Studio] Clima: %d, Horario: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
@@ -438,6 +536,10 @@ public OnPlayerConnect(playerid)
     {
         RemoveBuildingForPlayer(playerid, gRemovidosModelo[i], gRemovidos[i][0], gRemovidos[i][1], gRemovidos[i][2], gRemovidos[i][3]);
     }
+    for (new i = 0; i < gTotalGangZones; i++)
+    {
+        GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
+    }
     SAMS_PreloadAllAnims(playerid);
     return 1;
 }
@@ -498,6 +600,10 @@ public OnPlayerSpawn(playerid)
     SAMS_IrParaSpawn(playerid);
     SetPlayerTime(playerid, gHora, gMinuto);
     SetPlayerWeather(playerid, gClima);
+    for (new i = 0; i < gTotalGangZones; i++)
+    {
+        GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
+    }
     SAMS_PreloadAllAnims(playerid);
     SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
     SetTimerEx("SAMS_SyncActorAnims", 1500, false, "i", playerid);

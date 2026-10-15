@@ -21,6 +21,8 @@ import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
 import { setupAbout } from './ui/about.js';
 import { setupLogsDialog } from './ui/logger.js';
 import { setupAnimPicker } from './ui/animPicker.js';
+import { initGangZoneDialog, openGangZoneDialog } from './ui/gangzoneDialog.js';
+import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 
 let water = null;
 let hintDismissed = false;
@@ -113,6 +115,8 @@ async function start(cfg) {
   setupAbout();
   setupLogsDialog();
   setupAnimPicker();
+  initGangZoneDialog(app);
+  initTextDrawEditor(app);
   await openInitialProject();
   $('#overlay').hidden = true;
   for (const w of gd.warnings) toast(w, 'warn', 6000);
@@ -162,6 +166,8 @@ function setupToolbar(cfg) {
   ed.setTransformSpeed(initSpeed);
   $('#btnUndo').onclick = doUndo;
   $('#btnRedo').onclick = doRedo;
+  if ($('#btnGangZones')) $('#btnGangZones').onclick = () => openGangZoneDialog();
+  if ($('#btnTextDraws')) $('#btnTextDraws').onclick = () => openTextDrawEditor();
   app.on('project-change', updateUndoButtons);
   app.on('project', updateUndoButtons);
   ed.on('extra-project-change', updateUndoButtons);
@@ -708,21 +714,16 @@ function setupOutline() {
     const sel = new Set(ed.selection);
     const match = (o) => {
       const idStr = String(o.model ?? o.skin ?? '');
-      const lbl = o.kind === 'actors' || o.skin !== undefined ? `Skin ${o.skin}` : modelLabel(o.model);
+      const lbl = o.kind === 'actors' || o.skin !== undefined
+        ? `Skin ${o.skin}`
+        : (o.text || o.name || modelLabel(o.model));
       const cmt = o.comment || '';
       return !q || idStr.startsWith(q) || lbl.toLowerCase().includes(q) || cmt.toLowerCase().includes(q);
     };
 
     // Aplica inversão de ordem se configurada
-    const order = (arr) => app.outlineInverted ? [...arr].reverse() : arr;
+    const order = (arr) => app.outlineInverted ? [...(arr || [])].reverse() : (arr || []);
 
-    // Categorias solicitadas:
-    // - Objetos (padrão)
-    // - Texturizações (com texturas)
-    // - Textos (com texto)
-    // - Veículos
-    // - Actors
-    // - Objetos removidos (substitui prédios removidos)
     const allObjs = order(project.objects);
     const textObjs = allObjs.filter(o => o.materials?.some(isText));
     const texObjs = allObjs.filter(o => o.materials?.some(m => !isText(m)) && !o.materials?.some(isText));
@@ -733,10 +734,15 @@ function setupOutline() {
       const rows = filtered.map(o => {
         const extra = kind === 'removed'
           ? `<button type="button" class="btn icon" data-restore="${o.uid}" title="Restaurar objeto" aria-label="Restaurar"><svg><use href="#i-restore"/></svg></button>`
-          : `<button type="button" class="btn icon" data-del="${o.uid}" title="Apagar" aria-label="Apagar"><svg><use href="#i-trash"/></svg></button>`;
+          : `<button type="button" class="btn icon" data-del="${o.uid}" data-del-kind="${kind}" title="Apagar" aria-label="Apagar"><svg><use href="#i-trash"/></svg></button>`;
         const mats = (kind === 'objects') && o.materials?.length ? `<span class="ol-tag" title="${o.materials.length} trocas de material">${o.materials.some(isText) ? 'Aa' : '◧'} ${o.materials.length}</span>` : '';
-        const nameStr = kind === 'actors' ? `Skin ${o.skin}` : modelLabel(o.model);
-        const idVal = kind === 'actors' ? o.skin : o.model;
+        let nameStr = modelLabel(o.model);
+        let idVal = o.model;
+        if (kind === 'actors') { nameStr = `Skin ${o.skin}`; idVal = o.skin; }
+        else if (kind === 'labels') { nameStr = o.text || 'Texto 3D'; idVal = (o.drawDist || 50) + 'm'; }
+        else if (kind === 'pickups') { nameStr = `Pickup #${o.model}`; idVal = `Tipo ${o.type || 1}`; }
+        else if (kind === 'gangZones') { nameStr = o.name || 'GangZone'; idVal = `${o.minx},${o.miny}`; }
+        else if (kind === 'textDraws') { nameStr = o.text || 'TextDraw'; idVal = `Font ${o.font ?? 1}`; }
         const cmtStr = o.comment ? `<span class="ol-comment" style="color:var(--text-dim); font-size:11px; margin-left:4px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(o.comment)}">// ${esc(o.comment)}</span>` : '';
         return `<div class="ol-item${sel.has(o.uid) ? ' active' : ''}" data-uid="${o.uid}" data-kind="${kind}"><span class="ol-name">${esc(nameStr)}</span>${cmtStr}${mats}<span class="ol-id">${idVal}</span>${extra}</div>`;
       }).join('');
@@ -750,10 +756,79 @@ function setupOutline() {
       group('Textos', 'objects', textObjs, 'i-text', 'Nenhum objeto com texto.') +
       group('Veículos', 'vehicles', order(project.vehicles), 'i-car', 'Nenhum veículo.') +
       group('Actors', 'actors', order(project.actors || []), 'i-actor', 'Nenhum actor criado.') +
+      group('Textos 3D', 'labels', order(project.labels || []), 'i-text', 'Nenhum texto 3D criado.') +
+      group('Pickups', 'pickups', order(project.pickups || []), 'i-diamond', 'Nenhum pickup criado.') +
+      group('GangZones', 'gangZones', order(project.gangZones || []), 'i-map', 'Nenhuma gangzone criada.') +
+      group('TextDraws', 'textDraws', order(project.textDraws || []), 'i-text', 'Nenhum textdraw criado.') +
       group('Objetos removidos', 'removed', order(project.removed), 'i-demolish', 'Clique num objeto do mapa e use "Remover objeto".');
 
-    $('#outlineCount').textContent = project.objects.length + project.vehicles.length + (project.actors?.length || 0) + project.removed.length;
+    $('#outlineCount').textContent =
+      project.objects.length +
+      project.vehicles.length +
+      (project.actors?.length || 0) +
+      (project.labels?.length || 0) +
+      (project.pickups?.length || 0) +
+      (project.gangZones?.length || 0) +
+      (project.textDraws?.length || 0) +
+      project.removed.length;
   };
+
+  const getSpawnTargetPoint = () => {
+    const vp = app.vp;
+    if (!vp || !vp.camera) return { x: 0, y: 0, z: 10 };
+    const cam = vp.camera;
+    const dir = new THREE.Vector3();
+    cam.getWorldDirection(dir);
+    const target = cam.position.clone().add(dir.multiplyScalar(4.0));
+    return {
+      x: Math.round(target.x * 100) / 100,
+      y: Math.round(target.y * 100) / 100,
+      z: Math.round(target.z * 100) / 100,
+    };
+  };
+
+  const btnAdd3DText = $('#btnAdd3DText');
+  if (btnAdd3DText) {
+    btnAdd3DText.onclick = () => {
+      const ed = app.editor;
+      const pt = getSpawnTargetPoint();
+      const lbl = {
+        uid: null,
+        text: 'Novo Texto 3D',
+        color: 0x33CCFFAA,
+        x: pt.x, y: pt.y, z: pt.z,
+        drawDist: 50.0,
+        world: 0,
+        interior: 0,
+        testLOS: 0,
+      };
+      if (!app.project.labels) app.project.labels = [];
+      const item = app.project.add('labels', lbl, 'Criar Texto 3D');
+      ed.syncAll();
+      ed.select([item.uid]);
+      toast('Texto 3D criado no mapa!', 'ok');
+    };
+  }
+
+  const btnAddPickup = $('#btnAddPickup');
+  if (btnAddPickup) {
+    btnAddPickup.onclick = () => {
+      const ed = app.editor;
+      const pt = getSpawnTargetPoint();
+      const pk = {
+        uid: null,
+        model: 1240, // Saúde (Health / Coração)
+        type: 1,
+        x: pt.x, y: pt.y, z: pt.z,
+        world: -1,
+      };
+      if (!app.project.pickups) app.project.pickups = [];
+      const item = app.project.add('pickups', pk, 'Criar Pickup');
+      ed.syncAll();
+      ed.select([item.uid]);
+      toast('Pickup criado no mapa!', 'ok');
+    };
+  }
 
   const btnInvert = $('#btnInvertOutline');
   if (btnInvert) {
@@ -770,9 +845,11 @@ function setupOutline() {
   const btnClear = $('#btnClearProject');
   if (btnClear) {
     btnClear.onclick = () => {
-      const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0) + app.project.removed.length;
+      const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0) +
+        (app.project.labels?.length || 0) + (app.project.pickups?.length || 0) + (app.project.gangZones?.length || 0) +
+        (app.project.textDraws?.length || 0) + app.project.removed.length;
       if (!total) { toast('O projeto já está vazio', 'warn'); return; }
-      if (!confirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors e remoções.`)) return;
+      if (!confirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, pickups e remoções.`)) return;
       const before = app.project.snapshotAll();
       app.project.clearAll();
       app.editor.syncAll();
@@ -792,9 +869,34 @@ function setupOutline() {
   $('#outline').addEventListener('click', (e) => {
     const project = app.project, ed = app.editor;
     const del = e.target.closest('[data-del]'), res = e.target.closest('[data-restore]');
-    if (del) { project.deleteItems('Apagar', [del.dataset.del]); return; }
+    if (del) {
+      const kind = del.dataset.delKind;
+      if (kind && kind !== 'objects' && kind !== 'vehicles' && kind !== 'actors') {
+        const arr = project[kind];
+        if (arr) {
+          const idx = arr.findIndex(item => item.uid === del.dataset.del);
+          if (idx >= 0) {
+            arr.splice(idx, 1);
+            ed.syncAll();
+            project.saveUndoState?.('Excluir ' + kind);
+            render();
+            return;
+          }
+        }
+      }
+      project.deleteItems('Apagar', [del.dataset.del]);
+      return;
+    }
     if (res) { ed.restoreRemoved([res.dataset.restore]); toast('Objeto restaurado'); return; }
     const it = e.target.closest('.ol-item'); if (!it) return;
+    if (it.dataset.kind === 'gangZones') {
+      openGangZoneDialog();
+      return;
+    }
+    if (it.dataset.kind === 'textDraws') {
+      openTextDrawEditor();
+      return;
+    }
     if (it.dataset.kind === 'removed') {
       const r = project.find(it.dataset.uid);
       ed.goTo(r.x - 30, r.y - 30, r.z + 25, Math.PI / 4);

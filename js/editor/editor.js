@@ -5,11 +5,14 @@ import { TransformControls } from 'three/addons/TransformControls.js';
 import { isTyping } from './viewport.js';
 import { normalizeMaterial, isText, keepsTexture, parseColor, MAX_MATERIAL_INDEX } from './materials.js';
 import { CAR_COLORS } from '../world/vehicleMods.js';
+import { createLabelNode } from '../world/labels.js';
+import { createPickupFallbackMesh } from '../world/pickups.js';
+import { createGangZoneNode } from '../world/gangzones.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
 export function eulerFromItem(o, kind) {
-  return (kind === 'vehicles' || kind === 'actors')
+  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups')
     ? new THREE.Euler(0, 0, (o.rz || 0) * D2R, 'ZXY')
     : new THREE.Euler((o.rx || 0) * D2R, (o.ry || 0) * D2R, (o.rz || 0) * D2R, 'ZXY');
 }
@@ -159,15 +162,18 @@ export class Editor extends EventTarget {
     const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
     const alive = new Set();
     for (const p of projects) {
-      for (const kind of ['objects', 'vehicles', 'actors']) {
+      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones']) {
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
           let node = this.nodes.get(o.uid);
-          const modelId = kind === 'actors' ? (o.skin ?? 0) : o.model;
+          const modelId = kind === 'actors' ? (o.skin ?? 0) : (o.model ?? 0);
           let sig = '';
           if (kind === 'objects') sig = JSON.stringify(o.materials || []);
           else if (kind === 'vehicles') sig = JSON.stringify([o.color1, o.color2, o.paintjob, o.components]);
           else if (kind === 'actors') sig = JSON.stringify([o.skin, o.anim]);
+          else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS]);
+          else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
+          else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
 
           if (!node || node.userData.model !== modelId || node.userData.matSig !== sig) {
             if (node) this.root.remove(node);
@@ -177,8 +183,14 @@ export class Editor extends EventTarget {
             this.nodes.set(o.uid, node);
             this.root.add(node);
           }
-          node.position.set(o.x, o.y, o.z);
-          node.rotation.copy(eulerFromItem(o, kind));
+          if (kind === 'gangZones') {
+            const cx = (o.minx + o.maxx) / 2;
+            const cy = (o.miny + o.maxy) / 2;
+            node.position.set(cx, cy, 5.0);
+          } else {
+            node.position.set(o.x, o.y, o.z);
+            node.rotation.copy(eulerFromItem(o, kind));
+          }
           node.updateMatrixWorld(true);
         }
       }
@@ -192,10 +204,23 @@ export class Editor extends EventTarget {
   }
 
   createNode(o, kind) {
+    if (kind === 'labels') {
+      const node = createLabelNode(o);
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
+      return node;
+    }
+    if (kind === 'gangZones') {
+      const node = createGangZoneNode(o);
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
+      return node;
+    }
+
     const node = new THREE.Group();
     node.rotation.order = 'ZXY';
     const modelId = kind === 'actors' ? (o.skin ?? 0) : o.model;
     node.userData = { uid: o.uid, model: modelId, kind };
+    if (kind === 'pickups') node.userData.isPickup = true;
+
     const fill = () => {
       const m = this.models.instantiate(modelId);
       node.clear();
@@ -209,9 +234,13 @@ export class Editor extends EventTarget {
           this.models.applyMaterials(m, o.materials).then(() => this.updateSlotHighlight());
         }
       } else {
-        node.add(this.models.missingMarker());
+        if (kind === 'pickups') {
+          node.add(createPickupFallbackMesh(modelId));
+        } else {
+          node.add(this.models.missingMarker());
+        }
       }
-      node.traverse(c => { c.userData.uid = o.uid; });
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
       this.refreshSelectionBoxes();
       if (this.selection.includes(o.uid)) this.attachGizmo();
       if (this.matSel.length && this.selection.includes(o.uid)) this.updateSlotHighlight();
@@ -428,7 +457,7 @@ export class Editor extends EventTarget {
     this.tc.attach(this.pivot);
     this.tc.setMode(this.mode);
     this.tc.setSpace(this.mode === 'rotate' && items.length === 1 ? this.space : this.space);
-    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors');
+    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups');
     this.tc.showX = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showY = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showZ = true;
@@ -542,7 +571,7 @@ export class Editor extends EventTarget {
         if (item) {
           item.x = round(node.position.x); item.y = round(node.position.y); item.z = round(node.position.z);
           const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-          if (kind === 'vehicles' || kind === 'actors') item.rz = normDeg(e.z * R2D);
+          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups') item.rz = normDeg(e.z * R2D);
           else { item.rx = normDeg(e.x * R2D); item.ry = normDeg(e.y * R2D); item.rz = normDeg(e.z * R2D); }
         }
       }
@@ -1365,6 +1394,13 @@ export class Editor extends EventTarget {
 
   frame() {
     this.streamer.update(this.vp.camera);
+    if (this.nodes) {
+      for (const node of this.nodes.values()) {
+        if (node.userData?.isPickup) {
+          node.rotation.z += 0.03;
+        }
+      }
+    }
     if (this.worldSelection.length && !this._lastWorldBoxOk) { this.refreshSelectionBoxes(); }
     this._lastWorldBoxOk = !this.worldSelection.length || this.worldSelection.every(w => this.streamer.shown.has(w.index));
   }

@@ -70,7 +70,26 @@ assinatura digital). Clique em "Mais informações" e em "Executar assim mesmo".
   - Catálogo completo de armas do GTA San Andreas e open.mp (IDs 321 a 372) com categoria dedicada "Armas", nomes oficiais e ordenação alfabética de categorias em português.
 - **Veículos, Tuning e Cores**:
   - Paleta com todas as 256 cores de veículos do SA-MP/open.mp (incluindo cores novas a partir do ID 128).
-  - Tuning de componentes (`AddVehicleComponent`) e paintjobs aplicados e visualizados no 3D em tempo real.
+  - **Filtragem de Compatibilidade Rigorosa**: os componentes de modding, paintjobs (0 a 2) e seletores de cores exibidos no inspetor respeitam 100% as regras oficiais do SA-MP/open.mp (`IsModValidForVehicle`, `IsPaintjobValidForVehicle`, `IsVehicleValidForModding`, `IsVehicleValidForColor`).
+  - Aplicação real de tuning (`AddVehicleComponent`) e paintjobs (`ChangeVehiclePaintjob`) tanto na viewport 3D quanto dentro do jogo ao clicar em "Testar no jogo".
+- **Textos 3D (3D Text Labels)**:
+  - Criação visual de labels 3D (`Create3DTextLabel` / `CreateDynamic3DTextLabel`) com efeito billboard (sempre voltado para a câmera).
+  - Suporte a múltiplas linhas (`\n`), códigos de cores embutidos (`{RRGGBB}`), paleta rápida SA-MP e seletor hexadecimal.
+  - Configuração de distância de visão (`drawDistance`), teste de linha de visão (`testLOS`), interior e mundo virtual, com sincronização em tempo real no servidor de teste.
+- **Pickups**:
+  - Criação e visualização 3D de pickups (`CreatePickup` / `CreateDynamicPickup`) com malha animada rotativa no mundo.
+  - Catálogo categorizado de presets pré-definidos do open.mp: Vida, Colete, Dinheiro, Casas, Armas (IDs 321 a 372) e Equipamentos.
+  - Configuração de tipo de pickup, tempo de respawn, interior e mundo virtual, sincronizados no servidor de teste.
+- **GangZones (Radar Map Interativo)**:
+  - Diálogo modal exibindo o mapa de radar oficial do GTA San Andreas (-3000 a +3000) com pan e zoom fluído.
+  - Criação de zonas retangulares arrastando o mouse (`GangZoneCreate` e `GangZoneShowForAll`).
+  - **Encaixe magnético de bordas (Snap)**: sistema inteligente de atração entre bordas de zonas adjacentes com guias ciano na tela para criar mapas sem falhas ou sobreposições.
+  - Seletor de cores RGBA com opacidade/transparência e projeção plana 3D no piso do mapa.
+- **TextDraws (Editor Visual 640x480)**:
+  - Ambiente visual completo na resolução nativa do SA-MP (640x480) com linhas de margem segura e grade.
+  - Criação de textos e caixas com personalização de fontes (0 a 5), sombra (`shadow`), contorno (`outline`), alinhamento (esquerda, centro, direita), tamanho de letras e caixas.
+  - **Pré-visualização de Modelos 3D (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com rotação (RX, RY, RZ) e zoom interativos.
+  - Exportação limpa de scripts Pawn prontos (`TextDrawCreate` ou `CreatePlayerTextDraw`).
 - **Actors e Dinâmicos**:
   - Inserção de Actors diretamente no catálogo com troca de skin em tempo real no menu lateral direito.
   - Actors surgem perfeitamente eretos/em pé e apoiados com os pés na superfície.

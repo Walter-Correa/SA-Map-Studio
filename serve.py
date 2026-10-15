@@ -36,7 +36,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "2.9.1"
+VERSION = "3.0.0"
 FROZEN = getattr(sys, "frozen", False)
 # Arquivos do editor (html/js/css); no .exe ficam na pasta Sistema
 APP_DIR = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
@@ -171,6 +171,9 @@ MIME = {
     ".png": "image/png",
     ".webp": "image/webp",
     ".ico": "image/x-icon",
+    ".bmp": "image/bmp",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
     ".ttf": "font/ttf",
     ".woff2": "font/woff2",
     ".txt": "text/plain; charset=utf-8",
@@ -840,6 +843,125 @@ class AnimCacheManager:
         cls.stop_requested = True
 
 
+def decode_dxt1(data, width, height):
+    out = bytearray(width * height * 3)
+    bw, bh = width // 4, height // 4
+    p = 0
+    for by in range(bh):
+        for bx in range(bw):
+            if p + 8 > len(data): break
+            c0, c1, lookup = struct.unpack_from('<HHI', data, p)
+            p += 8
+            r0 = ((c0 >> 11) & 0x1F) * 255 // 31
+            g0 = ((c0 >> 5) & 0x3F) * 255 // 63
+            b0 = (c0 & 0x1F) * 255 // 31
+            r1 = ((c1 >> 11) & 0x1F) * 255 // 31
+            g1 = ((c1 >> 5) & 0x3F) * 255 // 63
+            b1 = (c1 & 0x1F) * 255 // 31
+            if c0 > c1:
+                colors = [
+                    (r0, g0, b0),
+                    (r1, g1, b1),
+                    ((2*r0 + r1)//3, (2*g0 + g1)//3, (2*b0 + b1)//3),
+                    ((r0 + 2*r1)//3, (g0 + 2*g1)//3, (b0 + 2*b1)//3)
+                ]
+            else:
+                colors = [
+                    (r0, g0, b0),
+                    (r1, g1, b1),
+                    ((r0 + r1)//2, (g0 + g1)//2, (b0 + b1)//2),
+                    (0, 0, 0)
+                ]
+            for py in range(4):
+                y = by * 4 + py
+                for px in range(4):
+                    x = bx * 4 + px
+                    code = (lookup >> (2 * (py * 4 + px))) & 3
+                    c = colors[code]
+                    idx = (y * width + x) * 3
+                    out[idx] = c[0]
+                    out[idx+1] = c[1]
+                    out[idx+2] = c[2]
+    return out
+
+
+def write_png(filename, width, height, rgb_data):
+    import zlib
+    def chunk(chunk_type, data):
+        c = chunk_type + data
+        crc = struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+        return struct.pack('>I', len(data)) + c + crc
+
+    ihdr = chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+    raw_lines = bytearray()
+    row_len = width * 3
+    for y in range(height):
+        raw_lines.append(0)
+        raw_lines.extend(rgb_data[y * row_len : (y + 1) * row_len])
+
+    idat = chunk(b'IDAT', zlib.compress(bytes(raw_lines), 6))
+    iend = chunk(b'IEND', b'')
+
+    with open(filename, 'wb') as f:
+        f.write(b'\x89PNG\r\n\x1a\n')
+        f.write(ihdr)
+        f.write(idat)
+        f.write(iend)
+
+
+def ensure_radarmap(gta_path, out_png):
+    if not gta_path: return False
+    gta3_img = os.path.join(gta_path, "models", "gta3.img")
+    if not os.path.isfile(gta3_img): return False
+    try:
+        entries = {}
+        with open(gta3_img, 'rb') as f:
+            header = f.read(8)
+            if header[:4] != b'VER2': return False
+            num_entries = struct.unpack('<I', header[4:8])[0]
+            for _ in range(num_entries):
+                b = f.read(32)
+                off, size, name = struct.unpack('<II24s', b)
+                nm = name.split(b'\x00')[0].decode('ascii', 'ignore').lower()
+                if nm.startswith('radar') and nm.endswith('.txd'):
+                    entries[nm] = (off * 2048, size * 2048)
+
+            tiles = {}
+            for i in range(144):
+                nm = f'radar{i:02d}.txd'
+                if nm not in entries: continue
+                off, sz = entries[nm]
+                f.seek(off)
+                data = f.read(sz)
+                idx = data.find(b'DXT1')
+                if idx != -1:
+                    tiles[i] = data[idx+16 : idx+16+8192]
+
+        grid_w, grid_h = 12, 12
+        tile_size = 128
+        total_w, total_h = grid_w * tile_size, grid_h * tile_size
+        full_map = bytearray(total_w * total_h * 3)
+
+        for i in range(144):
+            if i not in tiles: continue
+            tile_rgb = decode_dxt1(tiles[i], tile_size, tile_size)
+            gx = i % grid_w
+            gy = i // grid_w
+            for ty in range(tile_size):
+                dest_y = gy * tile_size + ty
+                dest_x = gx * tile_size
+                dest_idx = (dest_y * total_w + dest_x) * 3
+                src_idx = ty * tile_size * 3
+                full_map[dest_idx : dest_idx + tile_size * 3] = tile_rgb[src_idx : src_idx + tile_size * 3]
+
+        os.makedirs(os.path.dirname(out_png), exist_ok=True)
+        write_png(out_png, total_w, total_h, full_map)
+        return True
+    except Exception as e:
+        print(f"Erro em ensure_radarmap: {e}")
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Servidor HTTP
 # ---------------------------------------------------------------------------
@@ -949,6 +1071,13 @@ class Handler(SimpleHTTPRequestHandler):
             return self.get_project(path[len("/api/projects/"):])
         if path == "/api/thumbs/index":
             return self.thumbs_index()
+        if path == "/api/radarmap":
+            png_path = os.path.join(CACHE_DIR, "radarmap.png")
+            if not os.path.isfile(png_path):
+                ensure_radarmap(State.gta_path, png_path)
+            if os.path.isfile(png_path):
+                return self.send_file(png_path, cache="public, max-age=86400")
+            return self.send_json({"error": "Mapa do radar nao disponivel"}, 404)
         if path.startswith("/api/cache/"):
             full = os.path.join(CACHE_DIR, safe_name(path[len("/api/cache/"):]) + ".json")
             if not os.path.isfile(full):

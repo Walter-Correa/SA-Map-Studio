@@ -161,6 +161,10 @@ if defined THUMBSRC (
     if not exist "%OUT%\Dados\cache\miniaturas" mkdir "%OUT%\Dados\cache\miniaturas"
     robocopy "%THUMBSRC%" "%OUT%\Dados\cache\miniaturas" /E /NFL /NDL /NJH /NJS /NP >nul
 )
+if exist "%SRC%Dados\cache\radarmap.png" (
+    if not exist "%OUT%\Dados\cache" mkdir "%OUT%\Dados\cache"
+    copy /y "%SRC%Dados\cache\radarmap.png" "%OUT%\Dados\cache\radarmap.png" >nul
+)
 
 rem ---------------- So na versao normal: traz os dados da versao antiga (um .exe solto em dist)
 if /i not "%MODO%"=="limpo" (

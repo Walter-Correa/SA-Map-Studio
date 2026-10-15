@@ -170,7 +170,7 @@ export function setupImport() {
 // =====================================================================  testar no jogo
 // Linhas do arquivo lido pelo gamemode de teste (servidor-teste/samapstudio.pwn)
 function signed(v) { return parseColor(v) | 0; }
-function mapLines(project, spawn, env, center) {
+export function mapLines(project, spawn, env, center) {
   const clean = (s) => String(s ?? '').replace(/[|\r\n]/g, ' ');
   const lines = [`S|${spawn.x.toFixed(4)}|${spawn.y.toFixed(4)}|${spawn.z.toFixed(4)}|${spawn.a.toFixed(2)}|${spawn.interior}|${spawn.world}|${spawn.jetpack ? 1 : 0}`];
   if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}`);
@@ -187,12 +187,38 @@ function mapLines(project, spawn, env, center) {
       objIdx++;
     }
     for (const r of p.removed || []) lines.push(`R|${r.model}|${r.x.toFixed(4)}|${r.y.toFixed(4)}|${r.z.toFixed(4)}|${(r.radius ?? 0.25).toFixed(2)}`);
-    for (const v of p.vehicles || []) lines.push(`V|${v.model}|${v.x.toFixed(4)}|${v.y.toFixed(4)}|${v.z.toFixed(4)}|${v.rz.toFixed(2)}|${v.color1}|${v.color2}`);
+    let vehIdx = 0;
+    for (const v of p.vehicles || []) {
+      lines.push(`V|${v.model}|${v.x.toFixed(4)}|${v.y.toFixed(4)}|${v.z.toFixed(4)}|${v.rz.toFixed(2)}|${v.color1}|${v.color2}`);
+      if (v.paintjob !== undefined && v.paintjob !== null && v.paintjob >= 0) {
+        lines.push(`VP|${vehIdx}|${v.paintjob}`);
+      }
+      for (const c of (v.components || [])) {
+        lines.push(`VC|${vehIdx}|${c}`);
+      }
+      vehIdx++;
+    }
     for (const a of p.actors || []) {
       const animStr = a.anim && a.anim.lib && a.anim.name
         ? `${clean(a.anim.lib)}|${clean(a.anim.name)}|${(a.anim.delta ?? 4.1).toFixed(1)}|${(a.anim.loop ?? 1) ? 1 : 0}|${a.anim.lockx ? 1 : 0}|${a.anim.locky ? 1 : 0}|${a.anim.freeze ? 1 : 0}|${a.anim.time ?? 0}`
         : '|||||||';
       lines.push(`A|${a.skin ?? 0}|${a.x.toFixed(4)}|${a.y.toFixed(4)}|${a.z.toFixed(4)}|${((a.rz % 360 + 360) % 360).toFixed(2)}|${a.world ?? 0}|${a.invulnerable ? 1 : 0}|${animStr}`);
+    }
+    for (const l of p.labels || []) {
+      const colorInt = signed(l.color);
+      const textEsc = String(l.text || '').replace(/\r?\n/g, '\\n').replace(/\r/g, '');
+      lines.push(`L|${l.x.toFixed(4)}|${l.y.toFixed(4)}|${l.z.toFixed(4)}|${(l.drawDist || 50).toFixed(1)}|${colorInt}|${l.world ?? 0}|${l.testLOS ? 1 : 0}|${textEsc}`);
+    }
+    for (const pk of p.pickups || []) {
+      lines.push(`P|${pk.model}|${pk.type ?? 1}|${pk.x.toFixed(4)}|${pk.y.toFixed(4)}|${pk.z.toFixed(4)}|${pk.world ?? -1}`);
+    }
+    for (const gz of p.gangZones || []) {
+      const colorInt = signed(gz.color);
+      const minx = gz.minx ?? gz.minX ?? 0;
+      const miny = gz.miny ?? gz.minY ?? 0;
+      const maxx = gz.maxx ?? gz.maxX ?? 0;
+      const maxy = gz.maxy ?? gz.maxY ?? 0;
+      lines.push(`G|${minx.toFixed(4)}|${miny.toFixed(4)}|${maxx.toFixed(4)}|${maxy.toFixed(4)}|${colorInt}`);
     }
   }
   return lines.join('\n') + '\n';
