@@ -213,8 +213,15 @@ export function parsePwn(source) {
     let nextNl = source.indexOf('\n', stmtEnd);
     if (nextNl < 0) nextNl = source.length;
     const lineRest = source.slice(stmtEnd, nextNl);
-    const mInline = lineRest.match(/(?:\/\/|\/\*)\s*(.*?)(?:\*\/)?$/);
-    const inlineComment = mInline ? mInline[1].trim() : '';
+    let inlineComment = '';
+    const idxLineCmt = lineRest.indexOf('//');
+    const idxBlockCmt = lineRest.indexOf('/*');
+    if (idxLineCmt >= 0) {
+      inlineComment = lineRest.slice(idxLineCmt + 2).replace(/\r$/, '').trim();
+    } else if (idxBlockCmt >= 0) {
+      const endBlock = lineRest.indexOf('*/', idxBlockCmt + 2);
+      inlineComment = (endBlock >= 0 ? lineRest.slice(idxBlockCmt + 2, endBlock) : lineRest.slice(idxBlockCmt + 2)).replace(/\r$/, '').trim();
+    }
 
     const isChild = childFns.has(fn);
     let preComment = '', blankLinesBefore = 0;
@@ -237,11 +244,18 @@ export function parsePwn(source) {
     if (fn === 'CreateObject' || fn === 'CreateDynamicObject' || fn === 'CreateDynamicObjectEx' || fn === 'CreatePlayerObject') {
       const o = fn === 'CreatePlayerObject' ? 1 : 0;
       if (a.length < 7 + o) continue;
+      const raw = {
+        x: a[o + 1], y: a[o + 2], z: a[o + 3],
+        rx: a[o + 4], ry: a[o + 5], rz: a[o + 6],
+        drawDist: fn === 'CreateDynamicObject' ? a[11] : (fn === 'CreateDynamicObjectEx' ? a[7] : a[7 + o]),
+        streamDist: fn === 'CreateDynamicObject' ? a[10] : (fn === 'CreateDynamicObjectEx' ? a[8] : undefined),
+      };
       const obj = {
         model: int(a[o]), x: num(a[o + 1]), y: num(a[o + 2]), z: num(a[o + 3]),
         rx: num(a[o + 4]), ry: num(a[o + 5]), rz: num(a[o + 6]),
         world: -1, interior: -1, streamDist: 0, drawDist: 0, materials: [],
         comment: inlineComment, preComment, blankLinesBefore,
+        raw,
       };
       if (fn === 'CreateDynamicObject') {
         if (a[7] !== undefined) obj.world = int(a[7], -1);
@@ -273,20 +287,29 @@ export function parsePwn(source) {
     } else if (fn === 'RemoveBuildingForPlayer' || fn === 'RemoveBuilding') {
       const o = fn === 'RemoveBuildingForPlayer' || a.length >= 6 ? 1 : 0;
       if (a.length < 5 + o) continue;
+      const raw = {
+        x: a[o + 1], y: a[o + 2], z: a[o + 3],
+        radius: a[o + 4],
+      };
       const rem = {
         model: int(a[o]), x: num(a[o + 1]), y: num(a[o + 2]), z: num(a[o + 3]),
         radius: num(a[o + 4], 0.25),
         comment: inlineComment, preComment, blankLinesBefore,
+        raw,
       };
       removed.push(rem);
     } else if (fn === 'CreateVehicle' || fn === 'AddStaticVehicle' || fn === 'AddStaticVehicleEx') {
       if (a.length < 5) continue;
+      const raw = {
+        x: a[1], y: a[2], z: a[3], rz: a[4],
+      };
       const veh = {
         model: int(a[0]), x: num(a[1]), y: num(a[2]), z: num(a[3]), rz: num(a[4]),
         color1: int(a[5], -1), color2: int(a[6], -1),
         respawn: fn === 'AddStaticVehicle' ? -1 : int(a[7], -1),
         paintjob: -1, components: [],
         comment: inlineComment, preComment, blankLinesBefore,
+        raw,
       };
       vehicles.push(veh);
       lastVeh = veh;
@@ -347,6 +370,7 @@ export function parsePwn(source) {
           comment: inlineComment,
           preComment,
           blankLinesBefore,
+          raw: { x: a[1], y: a[2], z: a[3], rz: a[4] },
         };
         actors.push(actor);
         lastActor = actor;
@@ -455,10 +479,29 @@ export function parsePwn(source) {
 }
 
 // =====================================================================  exportar Pawn
-const f = (n, d = 4) => {
-  const s = (+n || 0).toFixed(d);
-  return s === '-0.0000' ? (0).toFixed(d) : s;
-};
+export function formatCoord(val, rawStr) {
+  if (val === undefined || val === null || isNaN(val)) return '0.0';
+  const num = +val || 0;
+  // Regra 9: Coordenadas ou valores float que estiverem com valor zero depois do ponto (180.00000, 0.00000), devem ficar assim: 180.0, 0.0
+  if (Math.abs(num - Math.round(num)) < 1e-6) {
+    const rounded = Math.round(num);
+    return (rounded === 0 ? 0 : rounded) + '.0';
+  }
+  // Preserva exatamente a representação do arquivo importado se o valor não foi modificado
+  if (rawStr !== undefined && rawStr !== null) {
+    const s = String(rawStr).trim().replace(/^Float:/i, '');
+    const parsed = parseFloat(s);
+    if (!isNaN(parsed) && Math.abs(parsed - num) < 1e-6) {
+      return s;
+    }
+  }
+  // Se for alterado ou novo e tiver casas decimais, formata com até 6 casas sem zeros extras
+  let s = num.toFixed(6);
+  s = s.replace(/(\.\d*?[1-9])0+$/, '$1');
+  return s;
+}
+
+const f = (n, d = 4) => formatCoord(n);
 const normAngle = (a) => ((+a || 0) % 360 + 360) % 360;
 
 
@@ -487,16 +530,34 @@ function commentSuffix(item) {
 }
 
 function objectLine(o, opt, center) {
-  const d = opt.decimals;
+  const isRel = Boolean(opt.relative && (center.x || center.y || center.z));
   const x = o.x - center.x, y = o.y - center.y, z = o.z - center.z;
-  const base = `${o.model}, ${f(x, d)}, ${f(y, d)}, ${f(z, d)}, ${f(normAngle(o.rx), d)}, ${f(normAngle(o.ry), d)}, ${f(normAngle(o.rz), d)}`;
+  const raw = o.raw || {};
+  const fx = formatCoord(x, isRel ? null : raw.x);
+  const fy = formatCoord(y, isRel ? null : raw.y);
+  const fz = formatCoord(z, isRel ? null : raw.z);
+  const frx = formatCoord(o.rx, isRel ? null : raw.rx);
+  const fry = formatCoord(o.ry, isRel ? null : raw.ry);
+  const frz = formatCoord(o.rz, isRel ? null : raw.rz);
+  const base = `${o.model}, ${fx}, ${fy}, ${fz}, ${frx}, ${fry}, ${frz}`;
+
   if (opt.objectFn === 'CreateObject') {
-    return `CreateObject(${base}${o.drawDist > 0 ? ', ' + f(o.drawDist, 1) : ''})`;
+    return `CreateObject(${base}${o.drawDist > 0 ? ', ' + formatCoord(o.drawDist, raw.drawDist) : ''})`;
   }
+
   const extra = [];
-  const needStream = o.streamDist > 0 || o.drawDist > 0;
-  if ((o.world ?? -1) !== -1 || (o.interior ?? -1) !== -1 || needStream) extra.push(o.world ?? -1, o.interior ?? -1);
-  if (needStream) extra.push(-1, o.streamDist > 0 ? f(o.streamDist, 1) : 'STREAMER_OBJECT_SD', o.drawDist > 0 ? f(o.drawDist, 1) : 'STREAMER_OBJECT_DD');
+  const hasStreamOrDraw = o.streamDist > 0 || o.drawDist > 0;
+  const hasWorldOrInt = (o.world ?? -1) !== -1 || (o.interior ?? -1) !== -1;
+  if (hasStreamOrDraw || hasWorldOrInt) {
+    extra.push(o.world ?? -1, o.interior ?? -1);
+    if (hasStreamOrDraw) {
+      const dd = o.drawDist > 0 ? o.drawDist : 0;
+      const sd = o.streamDist > 0 ? o.streamDist : dd;
+      const rawSd = raw.streamDist || (raw.drawDist && !o.streamDist ? raw.drawDist : null);
+      const rawDd = raw.drawDist || null;
+      extra.push(-1, formatCoord(sd, rawSd), formatCoord(dd, rawDd));
+    }
+  }
   return `CreateDynamicObject(${base}${extra.length ? ', ' + extra.join(', ') : ''})`;
 }
 
@@ -509,9 +570,11 @@ function materialLines(o, opt, varName) {
 }
 
 function vehicleLine(v, opt, center) {
+  const isRel = Boolean(opt.relative && (center.x || center.y || center.z));
   const x = v.x - center.x, y = v.y - center.y, z = v.z - center.z;
+  const raw = v.raw || {};
   const respawn = v.respawn > 0 ? v.respawn : (opt.vehicleFn === 'CreateVehicle' ? -1 : 300);
-  return `${opt.vehicleFn}(${v.model}, ${f(x, 4)}, ${f(y, 4)}, ${f(z, 4)}, ${f(normAngle(v.rz), 4)}, ${v.color1 ?? -1}, ${v.color2 ?? -1}, ${respawn});`;
+  return `${opt.vehicleFn}(${v.model}, ${formatCoord(x, isRel ? null : raw.x)}, ${formatCoord(y, isRel ? null : raw.y)}, ${formatCoord(z, isRel ? null : raw.z)}, ${formatCoord(v.rz, isRel ? null : raw.rz)}, ${v.color1 ?? -1}, ${v.color2 ?? -1}, ${respawn});`;
 }
 
 export function projectCenter(project) {
@@ -596,14 +659,15 @@ export function exportPawn(project, options = {}) {
         if (t) actorLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
+    const isRel = Boolean(opt.relative && (center.x || center.y || center.z));
     const ax = a.x - center.x, ay = a.y - center.y, az = a.z - center.z;
     const cmt = commentSuffix(a);
-    actorLines.push(`actorid = CreateActor(${a.skin}, ${f(ax, 4)}, ${f(ay, 4)}, ${f(az, 4)}, ${f(normAngle(a.rz), 4)});${cmt}`);
+    actorLines.push(`actorid = CreateActor(${a.skin}, ${formatCoord(ax, isRel ? null : a.raw?.x)}, ${formatCoord(ay, isRel ? null : a.raw?.y)}, ${formatCoord(az, isRel ? null : a.raw?.z)}, ${formatCoord(a.rz, isRel ? null : a.raw?.rz)});${cmt}`);
     if ((a.world ?? -1) !== -1) actorLines.push(`SetActorVirtualWorld(actorid, ${a.world});`);
     if (a.invulnerable) actorLines.push('SetActorInvulnerable(actorid, 1);');
-    if (a.health !== undefined && a.health !== 100) actorLines.push(`SetActorHealth(actorid, ${f(a.health, 1)});`);
+    if (a.health !== undefined && a.health !== 100) actorLines.push(`SetActorHealth(actorid, ${formatCoord(a.health)});`);
     if (a.anim) {
-      actorLines.push(`ApplyActorAnimation(actorid, "${a.anim.lib}", "${a.anim.name}", ${f(a.anim.delta, 1)}, ${a.anim.loop ?? 1}, ${a.anim.lockx ?? 0}, ${a.anim.locky ?? 0}, ${a.anim.freeze ?? 0}, ${a.anim.time ?? 0});`);
+      actorLines.push(`ApplyActorAnimation(actorid, "${a.anim.lib}", "${a.anim.name}", ${formatCoord(a.anim.delta)}, ${a.anim.loop ?? 1}, ${a.anim.lockx ?? 0}, ${a.anim.locky ?? 0}, ${a.anim.freeze ?? 0}, ${a.anim.time ?? 0});`);
     }
   }
 
@@ -617,7 +681,7 @@ export function exportPawn(project, options = {}) {
         if (t) remLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
-    remLines.push(`RemoveBuildingForPlayer(playerid, ${r.model}, ${f(r.x, 4)}, ${f(r.y, 4)}, ${f(r.z, 4)}, ${f(r.radius ?? 0.25, 2)});${commentSuffix(r)}`);
+    remLines.push(`RemoveBuildingForPlayer(playerid, ${r.model}, ${formatCoord(r.x, r.raw?.x)}, ${formatCoord(r.y, r.raw?.y)}, ${formatCoord(r.z, r.raw?.z)}, ${formatCoord(r.radius ?? 0.25, r.raw?.radius)});${commentSuffix(r)}`);
   }
 
   const cams = opt.includeCameras ? cameraFunctions(project.cameras) : { code: '', usage: [] };
@@ -638,9 +702,17 @@ export function exportPawn(project, options = {}) {
           if (t) arrayLines.push('    ' + (t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`));
         }
       }
+      const isRel = Boolean(opt.relative && (center.x || center.y || center.z));
       const x = o.x - center.x, y = o.y - center.y, z = o.z - center.z;
+      const raw = o.raw || {};
+      const fx = formatCoord(x, isRel ? null : raw.x);
+      const fy = formatCoord(y, isRel ? null : raw.y);
+      const fz = formatCoord(z, isRel ? null : raw.z);
+      const frx = formatCoord(o.rx, isRel ? null : raw.rx);
+      const fry = formatCoord(o.ry, isRel ? null : raw.ry);
+      const frz = formatCoord(o.rz, isRel ? null : raw.rz);
       const comma = (idx === objs.length - 1) ? '' : ',';
-      arrayLines.push(`    { ${o.model}, ${f(x, d)}, ${f(y, d)}, ${f(z, d)}, ${f(normAngle(o.rx), d)}, ${f(normAngle(o.ry), d)}, ${f(normAngle(o.rz), d)} }${comma}${commentSuffix(o)}`);
+      arrayLines.push(`    { ${o.model}, ${fx}, ${fy}, ${fz}, ${frx}, ${fry}, ${frz} }${comma}${commentSuffix(o)}`);
     }
     arrayLines.push('};');
   }

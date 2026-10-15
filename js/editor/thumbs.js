@@ -39,15 +39,47 @@ export class Thumbnails extends EventTarget {
     } catch { return { obj: [], tex: [] }; }
   }
 
-  url(id) { return this.have.has(id) ? `/thumbs/obj/${id}.webp` : (this.urls.get(id) || null); }
+  url(id) { return this.have.has(id) ? `/thumbs/obj/${id}.webp` : null; }
 
   request(id, cb) {
     if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp`); return; }
-    if (this.urls.has(id)) { cb(this.urls.get(id)); return; }
     if (this.waiting.has(id)) { this.waiting.get(id).push(cb); return; }
     this.waiting.set(id, [cb]);
     this.queue.push(id);
     this.pump();
+  }
+
+  // Prepara todas as miniaturas necessárias na tela de boot
+  async prepareAllOnBoot(ids, onProgress = () => {}) {
+    const missing = ids.filter(id => !this.have.has(id));
+    if (!missing.length) return;
+    const total = missing.length;
+    let done = 0;
+    onProgress(done, total);
+    while (missing.length) {
+      const batch = missing.splice(0, BATCH);
+      const loaded = new Set(batch.filter(id => this.models.ready.has(id)));
+      const timeout = () => new Promise(r => setTimeout(() => r(null), 15000));
+      const templates = await Promise.all(batch.map(id => Promise.race([this.models.getModel(id).catch(() => null), timeout()])));
+      const results = await this.renderBatch(batch, templates);
+      await Promise.all(batch.map(async (id, i) => {
+        const blob = results[i] ? await results[i] : null;
+        if (blob) {
+          try {
+            const res = await fetch(`/api/thumbs/obj/${id}`, { method: 'POST', body: blob });
+            if (res.ok) this.have.add(id);
+          } catch (_) {}
+        }
+        if (!loaded.has(id) && this.releasable?.(id)) this.releaseModel(id);
+      }));
+      done += batch.length;
+      onProgress(done, total);
+      if (done % 32 === 0) {
+        this.models.releaseTxds?.();
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+    this.models.releaseTxds?.();
   }
 
   // Descarta pedidos que saíram da tela (os do fundo continuam)
@@ -64,34 +96,28 @@ export class Thumbnails extends EventTarget {
         const batch = [];
         while (batch.length < BATCH && this.queue.length) {
           const id = this.queue.shift();
-          if (this.have.has(id) || this.urls.has(id)) { this.finish(id, this.url(id)); continue; }
+          if (this.have.has(id)) { this.finish(id, this.url(id)); continue; }
           if (!this.waiting.has(id) && !this.background.ids?.has(id)) continue;
           batch.push(id);
         }
         if (!batch.length) continue;
         // Carrega os modelos do lote em paralelo (no grupo de workers)
         const loaded = new Set(batch.filter(id => this.models.ready.has(id)));
-        // (um modelo que demore demais não segura a fila: fica sem miniatura por enquanto)
         const timeout = () => new Promise(r => setTimeout(() => r(null), 20000));
         const templates = await Promise.all(batch.map(id => Promise.race([this.models.getModel(id).catch(() => null), timeout()])));
         const results = await this.renderBatch(batch, templates);
         for (let i = 0; i < batch.length; i++) {
           const id = batch[i];
           const blob = results[i] ? await results[i] : null;
-          let url = null;
           if (blob) {
-            url = URL.createObjectURL(blob);
-            fetch(`/api/thumbs/obj/${id}`, { method: 'POST', body: blob }).then(r => { if (r.ok) this.have.add(id); }).catch(() => {});
+            try {
+              const res = await fetch(`/api/thumbs/obj/${id}`, { method: 'POST', body: blob });
+              if (res.ok) this.have.add(id);
+            } catch (_) {}
           }
-          if (this.urls.size > 250) {
-            const oldest = this.urls.keys().next().value;
-            const oldUrl = this.urls.get(oldest);
-            if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
-            this.urls.delete(oldest);
-          }
-          this.urls.set(id, url);
+          const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp` : null;
           if (this.background.ids?.delete(id)) { this.background.done++; this.dispatchEvent(new Event('progress')); }
-          this.finish(id, url);
+          this.finish(id, diskUrl);
           // Modelos carregados só para a miniatura saem da memória logo
           if (!loaded.has(id) && this.releasable?.(id)) this.releaseModel(id);
         }

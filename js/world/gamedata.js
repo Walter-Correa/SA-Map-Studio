@@ -6,6 +6,7 @@ import { parseDat, parseIde, parseIplText } from '../formats/text.js';
 import { isBinaryIpl, parseIplBinary } from '../formats/iplbin.js';
 import { objectCategory, regionOf } from './categories.js';
 import { ALL_SKINS } from './actors.js';
+import { ALL_WEAPONS, isWeaponModelId } from './weapons.js';
 
 const SKIP_IPL = /(^|\/)(paths\d?|cull|occlu\w*|audiozon|tunnels)\.ipl$|\.zon$/i;
 
@@ -85,6 +86,28 @@ export class GameData {
       };
       this.models.set(s.id, def);
       if (!this.modelByName.has(s.model)) this.modelByName.set(s.model, def);
+    }
+
+    // Registra todas as armas de open.mp / GTA SA (321 a 372)
+    for (const w of ALL_WEAPONS) {
+      if (!this.models.has(w.id)) {
+        const def = {
+          id: w.id,
+          model: w.model,
+          txd: w.txd,
+          name: w.name,
+          type: 'weap',
+          drawDist: 100,
+          flags: 0,
+          source: 'weapons.js',
+        };
+        this.models.set(w.id, def);
+        if (!this.modelByName.has(w.model)) this.modelByName.set(w.model, def);
+      } else {
+        const def = this.models.get(w.id);
+        def.type = 'weap';
+        if (!def.name) def.name = w.name;
+      }
     }
 
     // ---- IMG ----
@@ -205,17 +228,19 @@ export class GameData {
   catalog() {
     const out = [];
     for (const d of this.models.values()) {
-      if (d.type === 'weap' || d.type === 'hier') continue;
+      if (d.type === 'hier') continue;
       if (!this.entries.has(d.model + '.dff')) continue;
       let category = objectCategory(d);
-      if (d.type === 'peds') {
+      if (d.type === 'weap' || isWeaponModelId(d.id)) {
+        category = 'Armas';
+      } else if (d.type === 'peds') {
         if (d.id !== 0) continue; // No catálogo "todos" ou "actors" mantém apenas uma skin disponível (ID 0)
         category = 'Actors (Personagens)';
       }
       else if (d.type === 'cars') category = 'Veículos';
       out.push({
         id: d.id,
-        name: d.type === 'peds' ? 'Actor (Personagem)' : d.model,
+        name: d.type === 'peds' ? 'Actor (Personagem)' : (d.name || d.model),
         category,
         region: regionOf(d),
         isLod: category.startsWith('LOD'),

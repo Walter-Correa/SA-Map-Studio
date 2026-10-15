@@ -6,6 +6,18 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '2.9.0', date: '15/10/2026', items: [
+      'Catálogo Completo de Armas do open.mp e GTA SA: inclusão de 46 armas e itens especiais (IDs 321 a 372) com miniaturas 3D e categoria dedicada "Armas", com ordenação alfabética completa das categorias.',
+      'Ajuste Fino com Setas Direcionais nos Eixos (▲ / ▼): botões interativos de passo para Posição (X, Y, Z) e Rotação (RX, RY, RZ) com suporte a clique contínuo (auto-repeat), Shift (passo fino 0.1x), Ctrl (passo rápido 5.0x) e histórico completo de Desfazer/Refazer.',
+      'Recurso Tornar Invisível em Materiais: botão para remover a textura de qualquer índice tornando a respectiva parte da malha 100% invisível no 3D e exportando o formato canônico SetObjectMaterial(..., 0, "none", "none", 0).',
+      'Formatação Rigorosa de Coordenadas Pawn: valores float com valor zero depois do ponto agora são exportados de forma limpa como 180.0 e 0.0, preservando integralmente a representação bruta para dados importados não editados.',
+      'Recolhimento Independente das Barras Laterais: novos botões nas bordas internas dos menus para recolher ou expandir a barra esquerda ou direita de forma individual, mantendo atalho F10 para alternância simultânea e memória de estado na câmera.',
+      'Teleporte Rápido para Coordenadas de Clique: botão "Ir até o local" no topo do inspetor para navegar a câmera instantaneamente até o ponto do terreno clicado pelo mouse.',
+      'Estabilidade de Navegação da Câmera: captura contínua de ponteiro (Pointer Capture) com deltas manuais (sem avisos do navegador), centralização nativa do cursor via Win32 e suporte a DPI real no Windows.',
+      'Pré-geração de Miniaturas no Boot: tela de carregamento prepara automaticamente em segundo plano as miniaturas do catálogo na primeira inicialização caso o cache esteja vazio.',
+    ],
+  },
+  {
     version: '2.8.0', date: '14/10/2026', items: [
       'Novo Seletor de Animações com Split View: painel dividido interativo com player de vídeo integrado para visualização imediata da animação em execução.',
       'Transmissão e Cache Local de Vídeos: streaming dinâmico direto do open.mp em formato WebM leve com armazenamento local automático em cache para acesso offline instantâneo.',

@@ -3,7 +3,7 @@
 // a montagem das malhas e o envio das texturas para a placa de vídeo.
 import * as THREE from 'three';
 import { prepDff, prepTxd } from './prep.js';
-import { normalizeMaterial, isText, keepsTexture, parseColor, argbParts, SIZE_PIXELS, colorSegments, cssColor } from '../editor/materials.js';
+import { normalizeMaterial, isText, keepsTexture, isNoneTexture, parseColor, argbParts, SIZE_PIXELS, colorSegments, cssColor } from '../editor/materials.js';
 
 const FLAG_ALPHA1 = 4, FLAG_ALPHA2 = 8, FLAG_NO_ZWRITE = 64, FLAG_NO_CULL = 2097152;
 const GENERIC_TXD = { img: 'models/generic/vehicle.txd', offset: 0, size: 0 };
@@ -405,6 +405,12 @@ export class ModelCache {
       m.transparent = true;
       m.alphaTest = 0.01;
       m.color.setRGB(1, 1, 1);
+    } else if (isNoneTexture(ov)) {
+      m.visible = false;
+      m.transparent = true;
+      m.opacity = 0;
+      m.depthWrite = false;
+      m.color.setRGB(0, 0, 0);
     } else {
       if (!keepsTexture(ov)) {
         const name = String(ov.texture).toLowerCase();

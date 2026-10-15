@@ -24,35 +24,38 @@ export const REGIONS = ['SA-MP', 'Los Santos', 'San Fierro', 'Las Venturas', 'In
 
 // Regras na ordem: a primeira que bater vale
 const OBJECT_RULES = [
-  ['Ruas e estradas', /(hydrant|parkingmeter|parking_?meter|manhole|drain_?cover|bus_?stop|busstop|tramstop|phonebooth|postbox|mailbox|news_?stand|newsvend)/],
   ['Efeitos e partículas', /(^|_)(fire|smoke|explosion|flame|spark|particle|blood|steam)s?(_|\d|$)|_fx(_|\d|$)/],
-  ['Armas', /(gun|rifle|pistol|shotgun|sniper|ammo|weapon|grenade|bomb|knife|sword|katana|colt|deagle|uzi|m4|ak47|rpg|minigun|chainsaw|baton|nightstick|missile)/],
-  ['Portas e janelas', /(door|gate(?!way)|window|wndw|shutter|grill_?gate|garagedr|_dr\d|blind)/],
-  ['Iluminação', /(light|lamp|lampost|streetlit|neon|spot_?l|flood|lantern|candle|chandelier|bulb|glow)/],
-  ['Móveis', /(chair|sofa|couch|bed(?!rock)|table|desk|shelf|shelv|cabinet|wardrobe|drawer|stool|armchair|seat|dresser|cupboard|bookcase|kitchen|fridge|cooker|oven|stove|sink|toilet|bath(?!ing)|shower|basin|counter|bar_?stool|futon|mattress|matress|cushion|rug|carpet|curtain|mirror|wardrb|cj_kitch|swank|cj_bed|cj_sofa|cj_table|cj_chair|kb_)/],
-  ['Eletrônicos e escritório', /(computer|(^|_)pc(_|\d|$)|monitor|laptop|keyboard|phone|(^|_)tv(_|\d|$)|television|photocopier|copier|radio|speaker|stereo|printer|fax|atm|vending|vend|arcade|jukebox|cctv|camera|console|hifi|amp\b|desk_?lamp|filing|file_?cab|whiteboard|projector)/],
-  ['Comida e bebida', /(food|drink|burger|pizza|cola|soda|bottle|beer|wine|whisky|cup\b|mug|coffee|donut|hotdog|noodle|fries|plate_?food|kebab|ice_?cream|cake|bread|fruit|vegetable|bar_|liquor)/],
-  ['Esportes e lazer', /(ball|basket|hoop|ramp|jump|stunt|loop|pool_?table|snooker|bowling|skate|gym|weight|bench_?press|treadmill|sport|golf|tennis|goal|trampoline|swing|slide|playground|carousel|ferris|rollercoaster|dance|disco|stage|piano|guitar|drum_?kit|parachute|chute|para_pack|paracx|parapak|para_col|skydiv)/],
-  ['Praia', /(beach|surf|lifeguard|parasol|umbrella|towel|deckchair|deck_?chair|sunbed|lounger|sandcastle|(^|_)pier|jetty|boardwalk|shells|buoy|lilo)/],
-  ['Vegetação', /(tree|palm|bush|plant|grass|flower|hedge|cactus|fern|weed|shrub|pine|oak|veg|leaf|leaves|ivy|vine|sm_|trunk|stump|log_|bamboo|reed|cypress|birch|elm|willow|redwood)/],
-  ['Lixo e sucata', /(trash|rubbish|garbage|bin\b|_bin|dumpster|skip|junk|wreck|scrap|debris|rubble|litter|wastebin|tyre_?pile|binbag|bag_?rubbish)/],
-  ['Industrial', /(crane|container|pipe|tank|drum|barrel|crate|pallet|generator|factory|refinery|cargo|silo|chimney|girder|scaffold|forklift|conveyor|pylon|transformer|substation|oil|gas_?tank|machinery|gantry|derrick|winch|toolbox|wrench|hammer|drill|extinguisher)/],
-  ['Barreiras e cercas', /(fence|barrier|railing|bollard|roadblock|cone|barricade|bar_?gate|wire|chainlink|hedge_?wall|wall_?low|post\b|pole|guard_?rail|crash_?bar|kerb_?block|sandbag)/],
-  ['Placas e sinalização', /(sign|billboard|bboard|noticeboard|scoreboard|arrow|plaque|poster|banner|advert|logo|traffic|sem[aá]foro|signal|marker|flag|pickup|infopoint|checkpoint|savepoint)/],
-  ['Ruas e estradas', /(road|street|hway|highway|freeway|motorway|junction|roundabout|pavement|sidewalk|kerb|curb|crossing|bridge|tunnel|overpass|underpass|flyover|rail|track|tram|lane|parking|carpark|car_?park|(^|_)rd(_|\d|$)|hiway|asphalt|tarmac|ramp_?road|slip|runway|airfield)/],
-  ['Água e docas', /(water|pool|dock|harbour|harbor|canal|sewer|drain|lake|river|sea|boat_?house|marina|quay|wharf|fountain)/],
-  ['Terreno', /(land|ground|grnd|hill|rock|cliff|mountain|terrain|dirt|desert|dune|crater|cave|mud|gravel|valley|canyon|plateau|slope|cunte|cuntw|cunts|cuntn|ctryn|ctrye|ctrys|ctryw|country)/],
-  ['Prédios e casas', /(build|bldg|bld|blok|block|tower|house|hse|home|shop|store|office|(^|_)apart|(^|_)apt(_|\d|$)|motel|hotel|hospital|church|chapel|garage|warehouse|factory|station|mall|plaza|condo|villa|mansion|(^|_)cabin|(^|_)shack|(^|_)hut(_|\d|$)|(^|_)barn|(^|_)shed(_|\d|$)|(^|_)club(_|\d|$)|(^|_)bank(_|\d|$)|school|police|fire_?st|stadium|arena|temple|cathedral|tenement|terrace|skyscr|corp|hq\b|_las\b|_lae\b|_lan\b|_law\b|_sfe\b|_sfs\b|_sfn\b|_sfw\b|_veg)/],
+  ['Armas', /(gun|rifle|pistol|shotgun|sniper|ammo|weapon|grenade|bomb|knife|sword|katana|colt|deagle|uzi|m4|ak47|rpg|minigun|chainsaw|baton|nightstick|missile|dildo|vibe|knuckle)/],
+  ['Portas e janelas', /(^|_)(door|gate(?!way)|window|wndw|shutter|grill_?gate|garagedr|blind)(s|_|\d|$)|_dr\d/],
+  ['Iluminação', /(^|_)(light|lamp|lampost|streetlit|neon|spot_?l|flood|lantern|candle|chandelier|bulb|glow)(s|_|\d|$)/],
+  ['Móveis', /(^|_)(chair|sofa|couch|bed(?!rock)|table|desk|shelf|shelv|cabinet|wardrobe|drawer|stool|armchair|seat|dresser|cupboard|bookcase|kitchen|fridge|cooker|oven|stove|sink|toilet|bath(?!ing)|shower|basin|counter|bar_?stool|futon|mattress|cushion|rug|carpet|curtain|mirror|wardrb)(s|_|\d|$)|^(cj_kitch|swank|cj_bed|cj_sofa|cj_table|cj_chair|kb_)/],
+  ['Eletrônicos e escritório', /(^|_)(computer|pc|monitor|laptop|keyboard|phone|tv|television|photocopier|copier|radio|speaker|stereo|printer|fax|atm|vending|vend|arcade|jukebox|cctv|camera|console|hifi|desk_?lamp|whiteboard|projector)(s|_|\d|$)/],
+  ['Comida e bebida', /(^|_)(food|drink|burger|pizza|cola|soda|bottle|beer|wine|whisky|cup|mug|coffee|donut|hotdog|noodle|fries|kebab|ice_?cream|cake|bread|fruit|vegetable|liquor)(s|_|\d|$)|plate_?food/],
+  ['Esportes e lazer', /(^|_)(basket|foot_?ball|base_?ball|soccer_?ball|hoop|ramp|pool_?table|snooker|bowling|skate|gym|bench_?press|treadmill|golf|tennis|goal|trampoline|swing|slide|playground|carousel|ferris|rollercoaster|dance|disco|piano|guitar|drum_?kit|parachute|skydiv)(s|_|\d|$)|(stunt_?jump|stunt_?loop)/],
+  ['Praia', /(^|_)(beach|surf|lifeguard|parasol|umbrella|towel|deckchair|deck_?chair|sunbed|lounger|sandcastle|pier|jetty|boardwalk|shells|buoy|lilo)(s|_|\d|$)/],
+  ['Vegetação', /(^|_)(tree|palm|bush|plant|grass|flower|hedge|cactus|fern|shrub|pine|oak|leaf|leaves|ivy|bamboo|reed|cypress|birch|elm|willow|redwood|foliage)(s|_|\d|$)|(trunk|stump|log_)|(^|_)vine(?!wood)/],
+  ['Lixo e sucata', /(^|_)(trash|rubbish|garbage|dumpster|skip|junk|wreck|scrap|debris|rubble|litter|wastebin|binbag)(s|_|\d|$)|_bin(s|_|\d|$)|tyre_?pile/],
+  ['Industrial', /(^|_)(crane|container|pipe|drum|barrel|crate|pallet|generator|factory|refinery|cargo|silo|chimney|girder|scaffold|forklift|conveyor|pylon|transformer|substation|gas_?tank|machinery|gantry|derrick|winch|toolbox|wrench|hammer|drill|extinguisher)(s|_|\d|$)/],
+  ['Barreiras e cercas', /(^|_)(fence|barrier|railing|bollard|roadblock|cone|barricade|bar_?gate|chainlink|hedge_?wall|guard_?rail|crash_?bar|sandbag)(s|_|\d|$)|wall_?low|kerb_?block/],
+  ['Placas e sinalização', /(^|_)(sign|billboard|bboard|noticeboard|scoreboard|arrow|plaque|poster|banner|advert|logo|traffic|signal|marker|flag|pickup|infopoint|checkpoint|savepoint)(s|_|\d|$)|sem[aá]foro/],
+  ['Ruas e estradas', /(^|_)(hydrant|parking_?meter|manhole|drain_?cover|bus_?stop|tram_?stop|phone_?booth|post_?box|mail_?box|news_?stand|newsvend|road|street|highway|freeway|motorway|junction|roundabout|pavement|sidewalk|kerb|curb|crossing|bridge|tunnel|overpass|underpass|flyover|rail|track|tram|lane|parking|car_?park|asphalt|tarmac|runway|airfield)(s|_|\d|$)|(^|_)rd(_|\d|$)|^hway|^hiway/],
+  ['Água e docas', /(^|_)(water|pool|dock|harbour|harbor|canal|sewer|drain|lake|river|sea|boat_?house|marina|quay|wharf|fountain)(s|_|\d|$)/],
+  ['Terreno', /(^|_)(land|ground|hill|rock|cliff|mountain|terrain|dirt|desert|dune|crater|cave|mud|gravel|valley|canyon|plateau|slope)(s|_|\d|$)/],
+  ['Prédios e casas', /(^|_)(build|bldg|bld|blok|block|tower|house|hse|home|shop|store|office|apart|apt|motel|hotel|hospital|church|chapel|garage|warehouse|mall|plaza|condo|villa|mansion|cabin|shack|hut|barn|shed|club|bank|school|police|fire_?st|stadium|arena|temple|cathedral|tenement|terrace|skyscr|corp|hq)(s|_|\d|$)|(_las|_lae|_lan|_law|_sfe|_sfs|_sfn|_sfw|_veg)/],
 ];
 
-export const OBJECT_CATEGORIES = ['Kit de construção', 'Móveis', 'Prédios e casas', 'Ruas e estradas', 'Praia', 'Vegetação',
-  'Iluminação', 'Portas e janelas', 'Barreiras e cercas', 'Placas e sinalização', 'Eletrônicos e escritório', 'Comida e bebida',
-  'Esportes e lazer', 'Industrial', 'Lixo e sucata', 'Água e docas', 'Terreno', 'Efeitos e partículas', 'Armas', 'Veículos',
-  'Actors (Personagens)', 'Interiores', 'LOD (vistos de longe)', 'Diversos'];
+export const OBJECT_CATEGORIES = [
+  'Actors (Personagens)', 'Armas', 'Barreiras e cercas', 'Comida e bebida', 'Diversos',
+  'Efeitos e partículas', 'Eletrônicos e escritório', 'Esportes e lazer', 'Iluminação',
+  'Industrial', 'Interiores', 'Kit de construção', 'LOD (vistos de longe)', 'Lixo e sucata',
+  'Móveis', 'Placas e sinalização', 'Portas e janelas', 'Praia', 'Prédios e casas',
+  'Ruas e estradas', 'Terreno', 'Vegetação', 'Veículos', 'Água e docas'
+].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 export function objectCategory(def) {
   if (def.type === 'cars') return 'Veículos';
   if (def.type === 'peds') return 'Actors (Personagens)';
+  if (def.type === 'weap' || (def.id >= 321 && def.id <= 373)) return 'Armas';
   if (isKitPiece(def.id)) return 'Kit de construção';
   const n = (def.model || '').toLowerCase();
   const s = (def.source || '').toLowerCase();

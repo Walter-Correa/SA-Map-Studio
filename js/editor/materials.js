@@ -129,8 +129,14 @@ export function normalizeMaterial(m) {
   };
 }
 
-// Troca que só muda a cor (o SA-MP aceita modelid -1 ou "none" para manter a textura original)
-export const keepsTexture = (m) => !isText(m) && (m.model === -1 || m.model === 0 || /^none$/i.test(m.texture || 'none') || /^none$/i.test(m.txd || 'none'));
+// Verifica se a troca é a remoção da textura (deixando o índice invisível)
+// Formato padrão do SA-MP / open.mp: SetObjectMaterial(obj, slot, 0, "none", "none", 0);
+export const isNoneTexture = (m) => !isText(m) && (m?.model === 0 || m?.model === -1) &&
+  String(m?.txd || '').toLowerCase() === 'none' && String(m?.texture || '').toLowerCase() === 'none' &&
+  parseColor(m?.color) === 0;
+
+// Troca que só muda a cor (o SA-MP aceita modelid -1 com txd/texture "none" para manter a textura original e alterar a cor)
+export const keepsTexture = (m) => !isText(m) && !isNoneTexture(m) && (m?.model === -1 || /^none$/i.test(m?.texture || 'none') || /^none$/i.test(m?.txd || 'none'));
 
 // Um material por índice: o último definido vale (igual ao jogo)
 export function setMaterial(list, mat) {
@@ -150,6 +156,9 @@ export function materialCall(m, varName = 'objectid', fn = 'SetDynamicObjectMate
     return dynamic
       ? `${fnText}(${varName}, ${t.index}, ${encodePawnString(t.text)}, ${rest});`
       : `${fnText}(${varName}, ${encodePawnString(t.text)}, ${t.index}, ${rest});`;
+  }
+  if (isNoneTexture(t)) {
+    return `${fn}(${varName}, ${t.index}, 0, "none", "none", 0);`;
   }
   return `${fn}(${varName}, ${t.index}, ${t.model}, ${encodePawnString(t.txd)}, ${encodePawnString(t.texture)}, ${t.color === '0' ? 0 : t.color});`;
 }

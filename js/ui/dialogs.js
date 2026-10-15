@@ -229,7 +229,7 @@ export function setupTest() {
   const dlg = $('#dlgTest');
   const saved = store.get('test', {});
   if (saved.spawn) { const r = $(`input[name="testSpawn"][value="${saved.spawn}"]`); if (r) r.checked = true; }
-  if (saved.jetpack !== undefined) $('#testJetpack').checked = saved.jetpack;
+  $('#testJetpack').checked = saved.jetpack ?? false;
   if (saved.launch !== undefined) $('#testLaunch').checked = saved.launch;
   if (saved.weather !== undefined && $('#testWeather')) $('#testWeather').value = Math.max(0, Math.min(45, saved.weather));
   else if ($('#testWeather')) $('#testWeather').value = 10;

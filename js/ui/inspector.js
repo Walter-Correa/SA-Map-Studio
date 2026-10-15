@@ -5,7 +5,7 @@ import { categoryOf } from '../world/gamedata.js';
 import { drawMaterialText } from '../world/models.js';
 import {
   MAX_MATERIAL_INDEX, MATERIAL_SIZES, SIZE_PIXELS, TEXT_ALIGN, FONTS, TEXT_DEFAULTS,
-  isText, keepsTexture, normalizeMaterial, materialCall, cssColor, parseColor,
+  isText, keepsTexture, isNoneTexture, normalizeMaterial, materialCall, cssColor, parseColor,
 } from '../editor/materials.js';
 import { colorPalette, openVehicleColorPicker } from './palette.js';
 import { app, $, $$, esc, fmt, plural, store, toast, copyText, modelLabel, bindScrub, showPrompt } from './common.js';
@@ -91,7 +91,14 @@ function emptyInspector() {
 }
 
 const vecInputs = (prefix, labels, values, step) => `<div class="vec">${labels.map((a, i) =>
-  `<label data-axis="${a}"><span data-scrub="${prefix}${a}" title="Arraste para ajustar (Shift: fino)">${a.toUpperCase()}</span><input type="number" step="${step}" data-field="${prefix}${a}" value="${fmt(values[i])}" aria-label="${prefix === 'r' ? 'Rotação' : 'Posição'} ${a.toUpperCase()}"></label>`).join('')}</div>`;
+  `<label data-axis="${a}">
+     <span data-scrub="${prefix}${a}" title="Arraste para ajustar (Shift: fino)">${a.toUpperCase()}</span>
+     <input type="number" step="${step}" data-field="${prefix}${a}" value="${fmt(values[i])}" aria-label="${prefix === 'r' ? 'Rotação' : 'Posição'} ${a.toUpperCase()}">
+     <div class="vec-arrows">
+       <button type="button" class="vec-arrow-btn up" data-step-field="${prefix}${a}" data-step-dir="1" data-step-base="${step}" title="Aumentar (Shift: fino, Ctrl: rápido)" aria-label="Aumentar ${a.toUpperCase()}">▲</button>
+       <button type="button" class="vec-arrow-btn down" data-step-field="${prefix}${a}" data-step-dir="-1" data-step-base="${step}" title="Diminuir (Shift: fino, Ctrl: rápido)" aria-label="Diminuir ${a.toUpperCase()}">▼</button>
+     </div>
+   </label>`).join('')}</div>`;
 
 const titleBlock = (model, sub) => `<div class="insp-title"><img class="thumb empty" alt="" width="64" height="64"><div><div class="insp-name">${esc(modelLabel(model))}</div><div class="insp-sub">${sub}</div></div></div>`;
 
@@ -504,11 +511,75 @@ function bindStringFields(uid) {
   });
 }
 
+function bindVecArrows(targetUids, project, isMulti = false) {
+  const uids = Array.isArray(targetUids) ? targetUids : [targetUids];
+  $$('#inspector [data-step-field]').forEach(btn => {
+    const field = btn.dataset.stepField;
+    const dir = parseInt(btn.dataset.stepDir, 10) || 1;
+    const baseStep = parseFloat(btn.dataset.stepBase) || 0.1;
+    const isRot = field.startsWith('r');
+
+    let timer = null;
+    let initialTimer = null;
+    let before = null;
+
+    const doStep = (e) => {
+      const spObj = app.editor.transformSpeed || { move: 1.0, rotate: 1.0 };
+      const speed = isRot ? (spObj.rotate ?? 1.0) : (spObj.move ?? 1.0);
+      let mult = 1.0;
+      if (e?.shiftKey) mult = 0.1;
+      else if (e?.ctrlKey || e?.metaKey) mult = 5.0;
+      const delta = dir * baseStep * speed * mult;
+
+      for (const uid of uids) {
+        const o = (app.editor.findProjectOf(uid) || project).find(uid);
+        if (!o) continue;
+        let cur = o[field] ?? 0;
+        let next = cur + delta;
+        if (isRot) {
+          next = Math.round(next * 10) / 10;
+          next = ((next % 360) + 360) % 360;
+        } else {
+          next = Math.round(next * 10000) / 10000;
+        }
+        o[field] = next;
+      }
+      app.editor.syncAll();
+      updateValues();
+    };
+
+    const stop = () => {
+      if (initialTimer) { clearTimeout(initialTimer); initialTimer = null; }
+      if (timer) { clearInterval(timer); timer = null; }
+      if (before) {
+        const after = uids.map(u => (app.editor.findProjectOf(u) || project).snapshot(u)).filter(Boolean);
+        project.record('Editar ' + field, before, after);
+        before = null;
+      }
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+
+    btn.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      before = uids.map(u => (app.editor.findProjectOf(u) || project).snapshot(u)).filter(Boolean);
+      doStep(e);
+      window.addEventListener('pointerup', stop);
+      window.addEventListener('pointercancel', stop);
+      initialTimer = setTimeout(() => {
+        timer = setInterval(() => doStep(e), 80);
+      }, 300);
+    });
+  });
+}
+
 function bindItem(item) {
   bindCommon();
   bindSpeedControls();
   bindStringFields(item.uid);
   const uid = item.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
     if (b.dataset.scope === 'all') app.editor.selectAll(false);
@@ -713,6 +784,7 @@ function bindVehicle(v) {
   bindSpeedControls();
   bindStringFields(v.uid);
   const uid = v.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
 
   const btnC1 = $('#btnVehColor1');
   if (btnC1) {
@@ -846,6 +918,7 @@ function bindActor(a) {
   bindSpeedControls();
   bindStringFields(a.uid);
   const uid = a.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
     if (b.dataset.scope === 'all') app.editor.selectAll(false);
@@ -1023,6 +1096,7 @@ function bindMulti(items) {
   bindCommon();
   bindSpeedControls();
   const project = app.project;
+  bindVecArrows(items.map(x => x.item.uid), project, true);
   const total = project.objects.length + project.vehicles.length + (project.actors?.length || 0);
   const isAll = items.length >= total && total > 0;
 
@@ -1211,6 +1285,7 @@ function materialSection(objs, mixedModels = false) {
     const origName = orig?.texture ? orig.texture : (exists ? '(sem textura)' : '(não existe no modelo)');
     let main = origName, sub = orig?.txd ? orig.txd : '', cls = '';
     if (m && isText(m)) { main = 'Texto: ' + m.text.replace(/\n/g, ' ').slice(0, 28); sub = `${m.font} ${m.fontSize} · era ${origName}`; cls = ' changed'; }
+    else if (m && isNoneTexture(m)) { main = 'Invisível (textura removida)'; sub = `none · none · era ${origName}`; cls = ' changed'; }
     else if (m && !keepsTexture(m)) { main = m.texture; sub = `${m.txd} · era ${origName}`; cls = ' changed'; }
     else if (m) { sub = (sub ? sub + ' · ' : '') + 'cor alterada'; cls = ' changed'; }
     const color = m && !isText(m) && parseColor(m.color) ? `<span class="slot-swatch" style="background:${cssColor(m.color)}" title="${m.color}"></span>` : '<span></span>';
@@ -1267,6 +1342,7 @@ function textureEditor(cur, label, idx, info) {
     </div>
     <div class="mini-actions">
       <button type="button" class="btn primary" data-mat="applytex"><svg><use href="#i-check"/></svg>Aplicar textura</button>
+      <button type="button" class="btn" data-mat="makeInvisible" title="Remover textura tornando este índice invisível: SetObjectMaterial(..., 0, &quot;none&quot;, &quot;none&quot;, 0)"><svg><use href="#i-trash"/></svg>Tornar invisível</button>
       <button type="button" class="btn" data-mat="clear" title="Volta a textura e a cor originais${orig?.texture ? ' (' + esc(orig.texture) + ')' : ''}"><svg><use href="#i-restore"/></svg>Original</button>
     </div>
     <div class="insp-label">Cor (materialcolor) <span class="tag">multiplica a textura; o alfa deixa transparente</span></div>
@@ -1368,8 +1444,11 @@ function bindMaterials(objs) {
       const txd = $('#mtTxd').value.trim(), texture = $('#mtTex').value.trim();
       if (!txd || !texture) { toast('Preencha txdname e texturename', 'warn'); return; }
       const lib = app.texlib.find(txd, texture);
-      if (app.texlib.items.length && !lib && !/^none$/i.test(texture)) toast(`Não achei "${texture}" em "${txd}" no seu jogo: no SA-MP essa parte vai ficar sem textura.`, 'warn', 6000);
       ed.applyTexture(uids, idx, { model: Number.isFinite(model) ? model : (lib?.model ?? -1), txd, texture });
+    } else if (a === 'makeInvisible') {
+      ed.applyTexture(uids, idx, { model: 0, txd: 'none', texture: 'none', color: '0' });
+      toast('Textura removida (índice invisível)');
+      renderInspector();
     } else if (a === 'clear') ed.clearMaterials(uids, idx);
     else if (a === 'clearall') ed.clearMaterials(uids, null);
     else if (a === 'copy') { const n = ed.copyMaterials(); toast(n ? plural(n, 'material copiado', 'materiais copiados') : 'Esse objeto não tem trocas de material', n ? 'ok' : 'warn'); renderInspector(); }

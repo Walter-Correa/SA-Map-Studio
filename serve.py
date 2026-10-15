@@ -36,7 +36,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "2.8.0"
+VERSION = "2.9.0"
 FROZEN = getattr(sys, "frozen", False)
 # Arquivos do editor (html/js/css); no .exe ficam na pasta Sistema
 APP_DIR = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
@@ -1067,10 +1067,20 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json(test_info())
         if path == "/api/center_mouse":
             data = self.read_json()
-            if IS_WINDOWS and data and "x" in data and "y" in data:
+            if IS_WINDOWS:
                 try:
                     import ctypes
-                    ctypes.windll.user32.SetCursorPos(int(data["x"]), int(data["y"]))
+                    win = getattr(State, "window", None)
+                    if win is not None and getattr(win, "x", None) is not None and getattr(win, "width", None) is not None:
+                        try:
+                            cx = int(win.x + win.width / 2)
+                            cy = int(win.y + win.height / 2)
+                            ctypes.windll.user32.SetCursorPos(cx, cy)
+                        except Exception:
+                            if data and "x" in data and "y" in data:
+                                ctypes.windll.user32.SetCursorPos(int(data["x"]), int(data["y"]))
+                    elif data and "x" in data and "y" in data:
+                        ctypes.windll.user32.SetCursorPos(int(data["x"]), int(data["y"]))
                 except Exception:
                     pass
             return self.send_json({"ok": True})
@@ -1266,7 +1276,6 @@ def make_server(port):
 
 def get_initial_window_geometry():
     """Calcula tamanho e posição inicial centralizada dentro dos limites visíveis da tela (work area)."""
-    target_w, target_h = 1600, 920
     min_w, min_h = 1050, 650
     work_left, work_top = 0, 0
     work_w, work_h = 1920, 1080
@@ -1274,6 +1283,15 @@ def get_initial_window_geometry():
     if IS_WINDOWS:
         try:
             import ctypes
+            # Garante que a leitura de resolução respeite o DPI real do monitor
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            except Exception:
+                try:
+                    ctypes.windll.user32.SetProcessDPIAware()
+                except Exception:
+                    pass
+
             from ctypes import wintypes
             class RECT(ctypes.Structure):
                 _fields_ = [
@@ -1299,14 +1317,18 @@ def get_initial_window_geometry():
         except Exception:
             pass
 
+    # Adapta dinamicamente à resolução da tela (proporcional a 88% da largura e 90% da altura da área útil)
+    target_w = max(min_w, min(int(work_w * 0.90), 2200))
+    target_h = max(min_h, min(int(work_h * 0.90), 1350))
+
     max_w = max(min_w, int(work_w * 0.96))
     max_h = max(min_h, int(work_h * 0.96))
 
     win_w = min(target_w, max_w)
     win_h = min(target_h, max_h)
 
-    if win_w > work_w: win_w = max(800, work_w)
-    if win_h > work_h: win_h = max(600, work_h)
+    if win_w > work_w: win_w = max(800, int(work_w * 0.98))
+    if win_h > work_h: win_h = max(600, int(work_h * 0.98))
 
     x = max(work_left, work_left + (work_w - win_w) // 2)
     y = max(work_top, work_top + (work_h - win_h) // 2)

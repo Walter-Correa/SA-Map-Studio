@@ -151,10 +151,26 @@ function fromJson(data, out) {
 // ---------------------------------------------------------------- linhas soltas
 function fromLooseLines(text, out, gd) {
   for (const line of text.split(/\r?\n/)) {
-    const n = (line.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    let comment = '';
+    const idxLineCmt = line.indexOf('//');
+    const idxBlockCmt = line.indexOf('/*');
+    if (idxLineCmt >= 0) {
+      comment = line.slice(idxLineCmt + 2).replace(/\r$/, '').trim();
+    } else if (idxBlockCmt >= 0) {
+      const endBlock = line.indexOf('*/', idxBlockCmt + 2);
+      comment = (endBlock >= 0 ? line.slice(idxBlockCmt + 2, endBlock) : line.slice(idxBlockCmt + 2)).replace(/\r$/, '').trim();
+    }
+    const cleanLine = idxLineCmt >= 0 ? line.slice(0, idxLineCmt) : (idxBlockCmt >= 0 ? line.slice(0, idxBlockCmt) : line);
+    const rawMatches = cleanLine.match(/-?\d+(?:\.\d+)?/g) || [];
+    const n = rawMatches.map(Number);
     if (n.length < 7 || !Number.isInteger(n[0])) continue;
     if (gd && !gd.models.has(n[0])) continue;
-    out.objects.push({ model: n[0], x: n[1], y: n[2], z: n[3], rx: n[4], ry: n[5], rz: n[6], materials: [] });
+    const raw = {
+      x: rawMatches[1], y: rawMatches[2], z: rawMatches[3],
+      rx: rawMatches[4], ry: rawMatches[5], rz: rawMatches[6],
+      drawDist: rawMatches[7] || undefined,
+    };
+    out.objects.push({ model: n[0], x: n[1], y: n[2], z: n[3], rx: n[4], ry: n[5], rz: n[6], comment, raw, materials: [] });
   }
 }
 

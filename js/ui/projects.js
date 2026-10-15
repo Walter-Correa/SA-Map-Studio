@@ -84,26 +84,31 @@ export function positionCameraOverProject(p) {
     }
     return;
   }
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
-  let minZ = Infinity, maxZ = -Infinity;
+  // Foca no objeto do projeto mais próximo do centro do mapa (0, 0, 0)
+  let nearest = null;
+  let minDist = Infinity;
   for (const o of all) {
-    if (typeof o.x === 'number') { minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x); }
-    if (typeof o.y === 'number') { minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y); }
-    if (typeof o.z === 'number') { minZ = Math.min(minZ, o.z); maxZ = Math.max(maxZ, o.z); }
+    if (typeof o.x === 'number' && typeof o.y === 'number' && typeof o.z === 'number') {
+      const d = Math.hypot(o.x, o.y, o.z);
+      if (d < minDist) {
+        minDist = d;
+        nearest = o;
+      }
+    }
   }
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  const cz = (minZ + maxZ) / 2;
-  const dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
-  const span = Math.max(12, Math.hypot(dx, dy, dz));
-  const center = new THREE.Vector3(cx, cy, cz);
-  // Posicionada próxima e um pouco acima do centro do mapa, olhando para o centro
-  const hDist = Math.max(10, Math.min(35, span * 0.35));
-  const vDist = Math.max(6, Math.min(22, span * 0.22));
-  const camPos = new THREE.Vector3(cx, cy - hDist, cz + vDist);
-  app.vp.camera.position.copy(camPos);
-  app.vp.fly.lookAt(center);
+
+  if (nearest) {
+    const target = new THREE.Vector3(nearest.x, nearest.y, nearest.z);
+    const camPos = new THREE.Vector3(nearest.x, nearest.y - 14, nearest.z + 8);
+    app.vp.camera.position.copy(camPos);
+    app.vp.fly.lookAt(target);
+  } else {
+    const o = all[0];
+    const target = new THREE.Vector3(o.x || 0, o.y || 0, o.z || 0);
+    const camPos = new THREE.Vector3((o.x || 0), (o.y || 0) - 14, (o.z || 0) + 8);
+    app.vp.camera.position.copy(camPos);
+    app.vp.fly.lookAt(target);
+  }
   app.streamer.invalidate();
 }
 

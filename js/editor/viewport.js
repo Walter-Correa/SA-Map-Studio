@@ -67,13 +67,15 @@ export class FlyCamera {
       if (!this.enabled) return;
       if (e.button === 2) {
         this.looking = true;
-        try { dom.requestPointerLock?.(); } catch (_) {}
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
         try { dom.setPointerCapture(e.pointerId); } catch (_) {}
-        dom.style.cursor = 'none';
         setMoving(true);
       }
       if (e.button === 1) {
         this.panning = true;
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
         try { dom.setPointerCapture(e.pointerId); } catch (_) {}
         e.preventDefault();
         setMoving(true);
@@ -82,32 +84,41 @@ export class FlyCamera {
     dom.addEventListener('pointerup', (e) => {
       if (e.button === 2) {
         this.looking = false;
-        try {
-          if (document.pointerLockElement) {
-            document.exitPointerLock?.();
-          }
-        } catch (_) {}
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
-        dom.style.cursor = '';
         this.centerCursor();
         setMoving(false);
       }
       if (e.button === 1) {
         this.panning = false;
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
+        this.centerCursor();
+        setMoving(false);
+      }
+    });
+    dom.addEventListener('pointercancel', (e) => {
+      if (this.looking || this.panning) {
+        this.looking = false;
+        this.panning = false;
+        try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
+        this.centerCursor();
         setMoving(false);
       }
     });
     dom.addEventListener('pointermove', (e) => {
+      const dx = (e.movementX !== undefined && e.movementX !== 0) ? e.movementX : (this.lastX !== undefined ? e.clientX - this.lastX : 0);
+      const dy = (e.movementY !== undefined && e.movementY !== 0) ? e.movementY : (this.lastY !== undefined ? e.clientY - this.lastY : 0);
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+
       if (this.looking) {
-        this.yaw -= e.movementX * 0.0035;
-        this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - e.movementY * 0.0035));
+        this.yaw -= dx * 0.0035;
+        this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - dy * 0.0035));
         this.apply();
       } else if (this.panning) {
         const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
         const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
         const s = this.speed * 0.01;
-        camera.position.addScaledVector(right, -e.movementX * s).addScaledVector(up, e.movementY * s);
+        camera.position.addScaledVector(right, -dx * s).addScaledVector(up, dy * s);
         this.onMove?.();
       }
     });
@@ -130,9 +141,12 @@ export class FlyCamera {
   }
 
   centerCursor() {
-    const rect = this.dom.getBoundingClientRect();
-    const sx = Math.round((window.screenX ?? window.screenLeft ?? 0) + rect.left + rect.width / 2);
-    const sy = Math.round((window.screenY ?? window.screenTop ?? 0) + rect.top + rect.height / 2);
+    const appLeft = window.screenX !== undefined ? window.screenX : (window.screenLeft || 0);
+    const appTop = window.screenY !== undefined ? window.screenY : (window.screenTop || 0);
+    const appW = window.outerWidth || window.innerWidth || 1200;
+    const appH = window.outerHeight || window.innerHeight || 800;
+    const sx = Math.round(appLeft + appW / 2);
+    const sy = Math.round(appTop + appH / 2);
     try {
       fetch('/api/center_mouse', {
         method: 'POST',

@@ -18,6 +18,7 @@ export function makeObject(data) {
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
     materials: (data.materials || []).map(normalizeMaterial).filter(Boolean)
       .filter((m, i, all) => all.findLastIndex(x => x.index === m.index) === i) // um por índice (o último vale)
       .sort((a, b) => a.index - b.index),
@@ -50,6 +51,7 @@ export function makeVehicle(data) {
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
     components: Array.isArray(data.components) ? [...data.components] : [],
   };
 }
@@ -66,6 +68,7 @@ export function makeActor(data) {
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
     anim: data.anim ? {
       lib: String(data.anim.lib || 'PED'),
       name: String(data.anim.name || 'IDLE_chat'),
@@ -88,6 +91,7 @@ export function makeRemoved(data) {
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
   };
 }
 

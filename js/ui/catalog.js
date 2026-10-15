@@ -15,6 +15,7 @@ export function setupCatalog() {
   const count = (key, v) => catalog.filter(c => c[key] === v).length;
   const cats = [...OBJECT_CATEGORIES];
   for (const c of new Set(catalog.map(c => c.category))) if (!cats.includes(c)) cats.push(c);
+  cats.sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const catSel = $('#catalogCategory');
   catSel.innerHTML = `<option value="">Todas as categorias (${catalog.filter(c => !c.isLod).length.toLocaleString('pt-BR')})</option>` +
     cats.map(c => [c, count('category', c)]).filter(([, n]) => n).map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n.toLocaleString('pt-BR')})</option>`).join('');

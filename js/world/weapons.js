@@ -1,0 +1,52 @@
+// Modelos de armas do GTA San Andreas / open.mp (IDs 321 a 372).
+// Referência oficial: https://open.mp/docs/scripting/resources/weaponids
+
+export const ALL_WEAPONS = [
+  { weaponId: 1, id: 331, model: 'brassknuckle', txd: 'brassknuckle', name: 'Soco-inglês (Brass Knuckles)' },
+  { weaponId: 2, id: 333, model: 'golfclub', txd: 'golfclub', name: 'Taco de Golfe (Golf Club)' },
+  { weaponId: 3, id: 334, model: 'nitestick', txd: 'nitestick', name: 'Cassetete (Nightstick)' },
+  { weaponId: 4, id: 335, model: 'knifecur', txd: 'knifecur', name: 'Faca (Knife)' },
+  { weaponId: 5, id: 336, model: 'bat', txd: 'bat', name: 'Taco de Beisebol (Baseball Bat)' },
+  { weaponId: 6, id: 337, model: 'shovel', txd: 'shovel', name: 'Pá (Shovel)' },
+  { weaponId: 7, id: 338, model: 'poolcue', txd: 'poolcue', name: 'Taco de Sinuca (Pool Cue)' },
+  { weaponId: 8, id: 339, model: 'katana', txd: 'katana', name: 'Katana' },
+  { weaponId: 9, id: 341, model: 'chnsaw', txd: 'chnsaw', name: 'Motosserra (Chainsaw)' },
+  { weaponId: 10, id: 321, model: 'gun_dildo1', txd: 'dildo1', name: 'Consolador Roxo (Purple Dildo)' },
+  { weaponId: 11, id: 322, model: 'gun_dildo2', txd: 'dildo2', name: 'Consolador Pequeno (Small Dildo)' },
+  { weaponId: 12, id: 323, model: 'gun_vibe1', txd: 'vibe1', name: 'Vibrador Grande (Large Vibrator)' },
+  { weaponId: 13, id: 324, model: 'gun_vibe2', txd: 'vibe2', name: 'Vibrador Pequeno (Small Vibrator)' },
+  { weaponId: 14, id: 325, model: 'flower', txd: 'flower', name: 'Flores (Flowers)' },
+  { weaponId: 15, id: 326, model: 'cane', txd: 'cane', name: 'Bengala (Cane)' },
+  { weaponId: 16, id: 342, model: 'grenade', txd: 'grenade', name: 'Granada (Grenade)' },
+  { weaponId: 17, id: 343, model: 'teargas', txd: 'teargas', name: 'Gás Lacrimogêneo (Tear Gas)' },
+  { weaponId: 18, id: 344, model: 'molotov', txd: 'molotov', name: 'Coquetel Molotov (Molotov Cocktail)' },
+  { weaponId: 22, id: 346, model: 'colt45', txd: 'colt45', name: 'Pistola 9mm (9mm Pistol)' },
+  { weaponId: 23, id: 347, model: 'silencer', txd: 'silencer', name: '9mm Silenciada (Silenced 9mm)' },
+  { weaponId: 24, id: 348, model: 'desert_eagle', txd: 'desert_eagle', name: 'Desert Eagle' },
+  { weaponId: 25, id: 349, model: 'chromegun', txd: 'chromegun', name: 'Espingarda (Shotgun)' },
+  { weaponId: 26, id: 350, model: 'sawnoff', txd: 'sawnoff', name: 'Espingarda Cano Serrado (Sawn-off)' },
+  { weaponId: 27, id: 351, model: 'shotgspa', txd: 'shotgspa', name: 'Espingarda de Combate (Combat Shotgun)' },
+  { weaponId: 28, id: 352, model: 'micro_uzi', txd: 'micro_uzi', name: 'Micro Uzi' },
+  { weaponId: 29, id: 353, model: 'mp5lng', txd: 'mp5lng', name: 'MP5' },
+  { weaponId: 30, id: 355, model: 'ak47', txd: 'ak47', name: 'AK-47' },
+  { weaponId: 31, id: 356, model: 'm4', txd: 'm4', name: 'M4' },
+  { weaponId: 32, id: 372, model: 'tec9', txd: 'tec9', name: 'Tec-9' },
+  { weaponId: 33, id: 357, model: 'cuntgun', txd: 'cuntgun', name: 'Rifle de Caça (Country Rifle)' },
+  { weaponId: 34, id: 358, model: 'sniper', txd: 'sniper', name: 'Fuzil de Precisão (Sniper Rifle)' },
+  { weaponId: 35, id: 359, model: 'rocketla', txd: 'rocketla', name: 'Lança-foguetes RPG (RPG)' },
+  { weaponId: 36, id: 360, model: 'heatseek', txd: 'heatseek', name: 'Lança-mísseis Teleguiado (Heatseeker)' },
+  { weaponId: 37, id: 361, model: 'flame', txd: 'flame', name: 'Lança-chamas (Flamethrower)' },
+  { weaponId: 38, id: 362, model: 'minigun', txd: 'minigun', name: 'Minigun' },
+  { weaponId: 39, id: 363, model: 'satchel', txd: 'satchel', name: 'Carga Explosiva (Satchel Charge)' },
+  { weaponId: 40, id: 364, model: 'bomb', txd: 'bomb', name: 'Detonador (Detonator)' },
+  { weaponId: 41, id: 365, model: 'spraycan', txd: 'spraycan', name: 'Lata de Spray (Spraycan)' },
+  { weaponId: 42, id: 366, model: 'fire_ex', txd: 'fire_ex', name: 'Extintor de Incêndio (Fire Extinguisher)' },
+  { weaponId: 43, id: 367, model: 'camera', txd: 'camera', name: 'Câmera Fotográfica (Camera)' },
+  { weaponId: 44, id: 368, model: 'nv_goggles', txd: 'goggles', name: 'Visão Noturna (Night Vision)' },
+  { weaponId: 45, id: 369, model: 'ir_goggles', txd: 'goggles', name: 'Visão Térmica (Thermal Goggles)' },
+  { weaponId: 46, id: 371, model: 'gun_para', txd: 'para', name: 'Paraquedas (Parachute)' },
+];
+
+export const WEAPON_BY_ID = new Map(ALL_WEAPONS.map(w => [w.id, w]));
+export const isWeaponModelId = (id) => WEAPON_BY_ID.has(id);
+export const getWeaponDef = (id) => WEAPON_BY_ID.get(id);

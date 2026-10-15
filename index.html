@@ -112,9 +112,9 @@
       <span>SA Map Studio</span>
     </div>
     <div class="project-box">
+      <button id="btnProjects" class="btn ghost" title="Abrir, criar ou apagar projetos"><svg><use href="#i-folder"/></svg><span class="lbl">Projetos</span></button>
       <input id="projectName" class="project-name" aria-label="Nome do projeto" spellcheck="false">
       <span id="saveState" class="save-state" aria-live="polite">Salvo</span>
-      <button id="btnProjects" class="btn ghost" title="Abrir, criar ou apagar projetos"><svg><use href="#i-folder"/></svg><span class="lbl">Projetos</span></button>
     </div>
     <div class="tools" role="toolbar" aria-label="Ferramentas">
       <div class="seg" role="group" aria-label="Ferramenta do gizmo">
@@ -179,7 +179,6 @@
           <label class="check"><input type="checkbox" id="autoCollapseSidebars"> Recolher menus laterais ao mover a câmera</label>
         </div>
       </div>
-      <button id="btnToggleSidebars" class="btn ghost icon" title="Recolher / Restaurar menus laterais (F10)" aria-label="Recolher menus laterais"><svg><use href="#i-panels"/></svg></button>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
       <button id="btnExport" class="btn"><svg><use href="#i-out"/></svg>Exportar</button>
       <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg>Testar no jogo</button>
@@ -189,7 +188,10 @@
     </div>
   </header>
 
-  <aside class="sidebar left" aria-label="Biblioteca">
+  <aside class="sidebar left" id="sidebarLeft" aria-label="Biblioteca">
+    <button type="button" class="sidebar-toggle left" id="btnToggleLeftSidebar" title="Recolher menu esquerdo" aria-label="Recolher menu esquerdo">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
     <nav class="tabs" role="tablist">
       <button role="tab" class="tab active" data-tab="catalog" aria-selected="true">Objetos</button>
       <button role="tab" class="tab" data-tab="textures" aria-selected="false">Texturas</button>
@@ -252,9 +254,6 @@
   </aside>
 
   <main class="viewport" id="viewport">
-    <button type="button" class="btn-restore-sidebars" id="btnRestoreSidebars" title="Restaurar menus laterais (F10)" hidden>
-      <svg><use href="#i-panels"/></svg> Restaurar menus
-    </button>
     <div class="sign" id="sign" aria-live="off" title="Clique para teleportar para uma coordenada (Ctrl+G). Botão direito copia a posição.">
       <div class="sign-area" id="signArea">San Andreas</div>
       <div class="sign-coords" id="signCoords">0.0  0.0  0.0</div>
@@ -268,11 +267,17 @@
     </div>
   </main>
 
-  <aside class="sidebar right" aria-label="Propriedades">
+  <aside class="sidebar right" id="sidebarRight" aria-label="Propriedades">
+    <button type="button" class="sidebar-toggle right" id="btnToggleRightSidebar" title="Recolher menu direito" aria-label="Recolher menu direito">
+      <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
     <div class="click-coords-bar" id="clickCoordsBar">
       <div class="click-coords-label">
         <svg class="click-coords-icon"><use href="#i-pin"/></svg>
         <span>Coordenadas do clique do mouse</span>
+        <button type="button" class="btn icon small click-coords-copy" id="btnGotoClickCoords" title="Teleportar câmera para esta coordenada" aria-label="Teleportar câmera">
+          <svg><use href="#i-pin"/></svg>
+        </button>
         <button type="button" class="btn icon small click-coords-copy" id="btnCopyClickCoords" title="Copiar coordenadas do clique" aria-label="Copiar coordenadas">
           <svg><use href="#i-copy"/></svg>
         </button>
@@ -395,7 +400,7 @@
         <label>Clima (0 a 45)<input type="number" id="testWeather" step="1" min="0" max="45" value="10"></label>
         <label>Horário (HH:MM)<input type="time" id="testTime" value="10:00"></label>
       </div>
-      <label class="check"><input type="checkbox" id="testJetpack" checked> Começar com jetpack</label>
+      <label class="check"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
       <label class="check"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
       <div class="insp-note" id="testWarn"></div>
       <pre class="code log" id="testLog" hidden></pre>
@@ -552,6 +557,16 @@
 </dialog>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<script>
+// Desativa o aviso nativo "Mostrar o cursor, pressione ESC" do navegador/Chromium
+if (typeof Element !== 'undefined') {
+  Element.prototype.requestPointerLock = function() {};
+}
+if (typeof Document !== 'undefined') {
+  Document.prototype.exitPointerLock = function() {};
+}
+</script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>
+

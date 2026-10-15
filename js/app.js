@@ -95,6 +95,18 @@ async function start(cfg) {
   // Miniaturas que já estão no disco aparecem na hora
   const have = await thumbs.loadIndex();
   app.texlib.setHave(have.tex);
+
+  // Primeira inicialização: prepara todas as miniaturas na tela de carregamento
+  const allCatalog = gd.catalog();
+  const missingThumbs = allCatalog.map(c => c.id).filter(id => !thumbs.have.has(id));
+  if (missingThumbs.length > 0 && have.obj.length === 0) {
+    status.textContent = 'Preparando miniaturas pela primeira vez...';
+    await thumbs.prepareAllOnBoot(missingThumbs, (done, total) => {
+      const pct = Math.min(100, Math.round((done / total) * 100));
+      status.textContent = `Preparando miniaturas: ${done} de ${total} (${pct}%)...`;
+      bar.style.width = pct + '%';
+    });
+  }
   window.app = app;
 
   setupProjects();
@@ -116,6 +128,7 @@ async function start(cfg) {
   $('#overlay').hidden = true;
   for (const w of gd.warnings) toast(w, 'warn', 6000);
   setInterval(updateHud, 250);
+
   // Sinal de vida para o servidor feito num Worker: continua mesmo se a tela ficar ocupada
   try {
     const src = `const p=()=>fetch(${JSON.stringify(location.origin + '/api/ping')},{cache:'no-store'}).catch(()=>{});p();setInterval(p,10000);`;
@@ -234,32 +247,49 @@ function setupToolbar(cfg) {
   const btnChange = $('#btnChangeGta');
   if (btnChange) btnChange.onclick = () => { closePopovers(); changeGtaFolder(); };
 
-  // Recolhimento dos menus laterais
-  let sidebarsCollapsed = false;
-  let autoCollapsedByMove = false;
-  const setSidebarsCollapsed = (collapsed, isAuto = false) => {
-    if (sidebarsCollapsed === collapsed) return;
-    sidebarsCollapsed = collapsed;
-    if (!isAuto) autoCollapsedByMove = false;
-    else autoCollapsedByMove = collapsed;
+  // Recolhimento independente dos menus laterais pelas bordas internas
+  let leftCollapsed = false;
+  let rightCollapsed = false;
+  let autoCollapsedPrevLeft = false;
+  let autoCollapsedPrevRight = false;
+
+  const setLeftCollapsed = (collapsed, isAuto = false) => {
+    if (leftCollapsed === collapsed) return;
+    leftCollapsed = collapsed;
     const appEl = $('#app');
-    if (appEl) appEl.classList.toggle('sidebars-collapsed', collapsed);
-    const btnRestore = $('#btnRestoreSidebars');
-    if (btnRestore) btnRestore.hidden = !collapsed;
-    const btnToggle = $('#btnToggleSidebars');
-    if (btnToggle) {
-      btnToggle.classList.toggle('active', collapsed);
-      btnToggle.title = collapsed ? 'Restaurar menus laterais (F10)' : 'Recolher menus laterais (F10)';
+    if (appEl) appEl.classList.toggle('sidebar-left-collapsed', collapsed);
+    const btn = $('#btnToggleLeftSidebar');
+    if (btn) {
+      btn.classList.toggle('collapsed', collapsed);
+      btn.title = collapsed ? 'Expandir menu esquerdo' : 'Recolher menu esquerdo';
+      btn.setAttribute('aria-label', btn.title);
     }
     vp.resize();
   };
 
-  $('#btnToggleSidebars')?.addEventListener('click', () => setSidebarsCollapsed(!sidebarsCollapsed, false));
-  $('#btnRestoreSidebars')?.addEventListener('click', () => setSidebarsCollapsed(false, false));
+  const setRightCollapsed = (collapsed, isAuto = false) => {
+    if (rightCollapsed === collapsed) return;
+    rightCollapsed = collapsed;
+    const appEl = $('#app');
+    if (appEl) appEl.classList.toggle('sidebar-right-collapsed', collapsed);
+    const btn = $('#btnToggleRightSidebar');
+    if (btn) {
+      btn.classList.toggle('collapsed', collapsed);
+      btn.title = collapsed ? 'Expandir menu direito' : 'Recolher menu direito';
+      btn.setAttribute('aria-label', btn.title);
+    }
+    vp.resize();
+  };
+
+  $('#btnToggleLeftSidebar')?.addEventListener('click', () => setLeftCollapsed(!leftCollapsed));
+  $('#btnToggleRightSidebar')?.addEventListener('click', () => setRightCollapsed(!rightCollapsed));
+
   window.addEventListener('keydown', (e) => {
     if (e.code === 'F10' && !isTyping(e)) {
       e.preventDefault();
-      setSidebarsCollapsed(!sidebarsCollapsed, false);
+      const shouldCollapse = !(leftCollapsed && rightCollapsed);
+      setLeftCollapsed(shouldCollapse);
+      setRightCollapsed(shouldCollapse);
     }
   });
 
@@ -268,13 +298,15 @@ function setupToolbar(cfg) {
     const shouldAuto = $('#autoCollapseSidebars')?.checked ?? false;
     if (!shouldAuto) return;
     if (isMoving) {
-      if (!sidebarsCollapsed) {
-        setSidebarsCollapsed(true, true);
+      if (!leftCollapsed || !rightCollapsed) {
+        autoCollapsedPrevLeft = !leftCollapsed;
+        autoCollapsedPrevRight = !rightCollapsed;
+        setLeftCollapsed(true, true);
+        setRightCollapsed(true, true);
       }
     } else {
-      if (autoCollapsedByMove && sidebarsCollapsed) {
-        setSidebarsCollapsed(false, true);
-      }
+      if (autoCollapsedPrevLeft) { setLeftCollapsed(false, true); autoCollapsedPrevLeft = false; }
+      if (autoCollapsedPrevRight) { setRightCollapsed(false, true); autoCollapsedPrevRight = false; }
     }
   };
 
@@ -301,6 +333,19 @@ function setupToolbar(cfg) {
     await copyText(raw);
     toast(`Coordenadas copiadas: ${raw}`);
   };
+  $('#btnGotoClickCoords')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const x = parseFloat($('#ccX')?.textContent || '0');
+    const y = parseFloat($('#ccY')?.textContent || '0');
+    const z = parseFloat($('#ccZ')?.textContent || '0');
+    if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+      const target = new THREE.Vector3(x, y, z);
+      app.vp.camera.position.set(x, y - 10, z + 6);
+      app.vp.fly.lookAt(target);
+      app.streamer.invalidate();
+      toast(`Câmera teleportada para (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
+    }
+  });
   $('#btnCopyClickCoords')?.addEventListener('click', (e) => {
     e.stopPropagation();
     copyCurrentCoords();
@@ -697,7 +742,7 @@ function setupOutline() {
         const mats = (kind === 'objects') && o.materials?.length ? `<span class="ol-tag" title="${o.materials.length} trocas de material">${o.materials.some(isText) ? 'Aa' : '◧'} ${o.materials.length}</span>` : '';
         const nameStr = kind === 'actors' ? `Skin ${o.skin}` : modelLabel(o.model);
         const idVal = kind === 'actors' ? o.skin : o.model;
-        const cmtStr = o.comment ? `<span class="ol-comment" style="color:var(--text-dim); font-size:11px; margin-left:4px; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(o.comment)}">// ${esc(o.comment)}</span>` : '';
+        const cmtStr = o.comment ? `<span class="ol-comment" style="color:var(--text-dim); font-size:11px; margin-left:4px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(o.comment)}">// ${esc(o.comment)}</span>` : '';
         return `<div class="ol-item${sel.has(o.uid) ? ' active' : ''}" data-uid="${o.uid}" data-kind="${kind}"><span class="ol-name">${esc(nameStr)}</span>${cmtStr}${mats}<span class="ol-id">${idVal}</span>${extra}</div>`;
       }).join('');
       const empty = filtered.length ? '' : `<div class="ol-empty">${emptyMsg || 'Nenhum item.'}</div>`;
