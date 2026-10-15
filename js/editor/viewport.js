@@ -216,7 +216,7 @@ export class Viewport {
     this.container = container;
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
     renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
     container.appendChild(renderer.domElement);
     this.renderer = renderer;
     this.scene = new THREE.Scene();

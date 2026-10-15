@@ -315,25 +315,13 @@ export class ModelCache {
       for (const [id, t] of loaded) {
         if (loaded.length - removed <= budget * 0.85) break;
         if (keep.has(id)) continue;
-        t.traverse(o => {
-          if (o.isMesh) {
-            if (o.geometry) o.geometry.dispose();
-            if (o.material) {
-              const mats = Array.isArray(o.material) ? o.material : [o.material];
-              for (const m of mats) {
-                if (m.map) m.map.dispose();
-                m.dispose();
-              }
-            }
-          }
-        });
+        t.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
         this.ready.delete(id);
         this.models.delete(id);
         removed++;
       }
     }
     this.releaseTxds();
-    if (this.renderer?.renderLists?.dispose) this.renderer.renderLists.dispose();
     return removed;
   }
 

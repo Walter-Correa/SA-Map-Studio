@@ -92,9 +92,8 @@ export class Thumbnails extends EventTarget {
           const canRelease = this.releasable ? this.releasable(id) : true;
           if (!loaded.has(id) && canRelease) this.releaseModel(id);
         }
-        // Libera imediatamente texturas e listas de renderização para manter uso de RAM/VRAM mínimo
+        // Libera imediatamente texturas para manter uso de RAM/VRAM mínimo
         this.models.releaseTxds?.();
-        if (this.renderer?.renderLists?.dispose) this.renderer.renderLists.dispose();
         await new Promise(r => setTimeout(r, this.background.running && !this.waiting.size ? 150 : 0));
         await new Promise(r => requestAnimationFrame(r));
       }
@@ -113,18 +112,7 @@ export class Thumbnails extends EventTarget {
   releaseModel(id) {
     const t = this.models.ready.get(id);
     if (t) {
-      t.traverse(o => {
-        if (o.isMesh) {
-          if (o.geometry) o.geometry.dispose();
-          if (o.material) {
-            const mats = Array.isArray(o.material) ? o.material : [o.material];
-            for (const m of mats) {
-              if (m.map) m.map.dispose();
-              m.dispose();
-            }
-          }
-        }
-      });
+      t.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
     }
     this.models.ready.delete(id);
     this.models.models.delete(id);
