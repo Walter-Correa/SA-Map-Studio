@@ -19,14 +19,24 @@ echo  Resultado: compiled\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
 )
 echo ============================================================
 
-set "VPY=.venv-build\Scripts\python.exe"
+set "VENV_DIR=%SRC%compile-sources\.venv-build"
+set "VPY=%VENV_DIR%\Scripts\python.exe"
+
+rem Se houver um venv antigo na raiz, move para compile-sources ou remove
+if exist "%SRC%.venv-build" (
+    if not exist "%VENV_DIR%" (
+        move "%SRC%.venv-build" "%VENV_DIR%" >nul 2>nul
+    ) else (
+        rmdir /s /q "%SRC%.venv-build" 2>nul
+    )
+)
 
 rem Se o venv existir mas estiver corrompido ou apontando para Python inexistente de outra maquina, recria
 if exist "%VPY%" (
     "%VPY%" -c "import sys" >nul 2>nul
     if errorlevel 1 (
-        echo Ambiente .venv-build existente esta corrompido ou pertence a outro usuario. Recriando...
-        rmdir /s /q ".venv-build" 2>nul
+        echo Ambiente de compilacao existente esta corrompido. Recriando...
+        rmdir /s /q "%VENV_DIR%" 2>nul
     )
 )
 
@@ -63,11 +73,12 @@ if not exist "%VPY%" (
     )
     if not defined PY (
         echo ERRO: Nenhuma instalacao funcional do Python foi encontrada!
-        echo Instale o Python em https://www.python.org/downloads/ e marque "Add python.exe to PATH".
+        echo Instale o Python para poder compilar o executavel.
         goto erro
     )
     echo Criando ambiente de compilacao com: %PY%...
-    %PY% -m venv .venv-build
+    if not exist "%SRC%compile-sources" mkdir "%SRC%compile-sources"
+    %PY% -m venv "%VENV_DIR%"
     if errorlevel 1 goto erro
 )
 

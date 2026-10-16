@@ -37,8 +37,9 @@ sa-map-studio.log
 # Banco de dados local do open.mp (mantido localmente na raiz, nao versionar)
 omp-server-source/
 
-# Fontes de compilacao pesadas (cache de miniaturas/texturas geradas)
+# Fontes de compilacao pesadas e ambiente isolado
 compile-sources/cache/
+compile-sources/.venv-build/
 
 # Pasta de testes e scripts temporarios (mantem a pasta testing/, ignora o conteudo)
 testing/*

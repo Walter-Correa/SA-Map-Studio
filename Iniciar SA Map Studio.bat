@@ -1,14 +1,14 @@
 @echo off
 title SA Map Studio
 cd /d "%~dp0"
-where py >nul 2>nul
-if %errorlevel%==0 (
-    py -3 serve.py %*
+set "PYCMD="
+if exist "%~dp0compile-sources\.venv-build\Scripts\python.exe" set "PYCMD="%~dp0compile-sources\.venv-build\Scripts\python.exe""
+if not defined PYCMD where py >nul 2>nul && set "PYCMD=py -3"
+if not defined PYCMD where python >nul 2>nul && set "PYCMD=python"
+if defined PYCMD (
+    %PYCMD% serve.py %*
 ) else (
-    python serve.py %*
-)
-if errorlevel 1 (
     echo.
-    echo Nao consegui iniciar. Confira se o Python 3 esta instalado: https://www.python.org/downloads/
+    echo Nao foi possivel iniciar. Certifique-se de que o Python 3 esta instalado.
     pause
 )
