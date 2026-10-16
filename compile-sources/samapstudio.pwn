@@ -250,7 +250,19 @@ stock SAMS_LimparLinha(linha[])
     }
 }
 
-stock SAMS_CleanSprite(texto[])
+stock SAMS_ToLower(c)
+{
+    if (c >= 'A' && c <= 'Z') return c + ('a' - 'A');
+    return c;
+}
+
+stock SAMS_ToUpper(c)
+{
+    if (c >= 'a' && c <= 'z') return c - ('a' - 'A');
+    return c;
+}
+
+stock SAMS_NormalizeSprite(texto[], maxlen)
 {
     new start = 0;
     while (texto[start] == ' ' || texto[start] == '\t' || texto[start] == '"' || texto[start] == '\'') start++;
@@ -270,7 +282,56 @@ stock SAMS_CleanSprite(texto[])
         len--;
         texto[len] = EOS;
     }
+
+    if (texto[0] == EOS)
+    {
+        format(texto, maxlen, "hud:radardisc");
+        return;
+    }
+
+    new colon = -1;
+    for (new i = 0; texto[i] != EOS; i++)
+    {
+        if (texto[i] == ':')
+        {
+            colon = i;
+            break;
+        }
+    }
+
+    if (colon == -1)
+    {
+        new tmp[128];
+        format(tmp, sizeof(tmp), "hud:%s", texto);
+        format(texto, maxlen, "%s", tmp);
+        return;
+    }
+
+    new lib[64], tex[64];
+    new i = 0;
+    for (; i < colon && i < sizeof(lib) - 1; i++) lib[i] = SAMS_ToLower(texto[i]);
+    lib[i] = EOS;
+
+    new j = 0;
+    for (i = colon + 1; texto[i] != EOS && j < sizeof(tex) - 1; i++, j++) tex[j] = SAMS_ToLower(texto[i]);
+    tex[j] = EOS;
+
+    if (!strcmp(lib, "loadscs", true))
+    {
+        format(lib, sizeof(lib), "LOADSCS");
+    }
+    else if (!strcmp(lib, "loadsuk", true))
+    {
+        format(lib, sizeof(lib), "LOADSUK");
+    }
+    else if (lib[0] == 'l' && lib[1] == 'd' && lib[2] == '_')
+    {
+        for (new k = 0; lib[k] != EOS; k++) lib[k] = SAMS_ToUpper(lib[k]);
+    }
+
+    format(texto, maxlen, "%s:%s", lib, tex);
 }
+
 
 stock SAMS_CarregarMapa()
 {
@@ -592,15 +653,15 @@ stock SAMS_CarregarMapa()
 
                 if (tdfont == 4)
                 {
-                    SAMS_CleanSprite(texto);
-                    new const defaultSprite[] = "hud:radardisc";
-                    new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : defaultSprite);
+                    SAMS_NormalizeSprite(texto, sizeof(texto));
+                    new Text:td = TextDrawCreate(tdx, tdy, texto);
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
                         TextDrawFont(td, 4);
-                        TextDrawSetString(td, texto[0] != EOS ? texto : defaultSprite);
-                        TextDrawLetterSize(td, 0.0, 0.0);
+                        TextDrawSetString(td, texto);
+                        TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.5), (tdlety > 0.0 ? tdlety : 1.0));
                         TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
+                        if (tdcol == 0 || tdcol == 0xFF) tdcol = 0xFFFFFFFF;
                         if ((tdcol & 0xFF) == 0) tdcol |= 0xFF;
                         TextDrawColor(td, tdcol);
                         TextDrawSetOutline(td, 0);

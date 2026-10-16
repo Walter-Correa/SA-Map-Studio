@@ -40,12 +40,12 @@ export class Thumbnails extends EventTarget {
   }
 
   url(id) {
-    if (id === 0 || id === '0') return '/cache/skins/0.png';
+    if (id === 0 || id === '0') return '/thumbs/obj/0.webp?v=4';
     return this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
   }
 
   request(id, cb) {
-    if (id === 0 || id === '0') { cb('/cache/skins/0.png'); return; }
+    if (id === 0 || id === '0') { cb('/thumbs/obj/0.webp?v=4'); return; }
     if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=3`); return; }
     if (this.waiting.has(id)) { this.waiting.get(id).push(cb); return; }
     this.waiting.set(id, [cb]);

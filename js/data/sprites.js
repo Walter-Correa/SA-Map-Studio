@@ -2534,117 +2534,117 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/ld_tatt/9rasta.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "eax",
-    "value": "loadscs:eax",
+    "value": "LOADSCS:eax",
     "thumb": "/cache/sprites/loadscs/eax.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc0",
-    "value": "loadscs:loadsc0",
+    "value": "LOADSCS:loadsc0",
     "thumb": "/cache/sprites/loadscs/loadsc0.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc1",
-    "value": "loadscs:loadsc1",
+    "value": "LOADSCS:loadsc1",
     "thumb": "/cache/sprites/loadscs/loadsc1.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc10",
-    "value": "loadscs:loadsc10",
+    "value": "LOADSCS:loadsc10",
     "thumb": "/cache/sprites/loadscs/loadsc10.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc11",
-    "value": "loadscs:loadsc11",
+    "value": "LOADSCS:loadsc11",
     "thumb": "/cache/sprites/loadscs/loadsc11.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc12",
-    "value": "loadscs:loadsc12",
+    "value": "LOADSCS:loadsc12",
     "thumb": "/cache/sprites/loadscs/loadsc12.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc13",
-    "value": "loadscs:loadsc13",
+    "value": "LOADSCS:loadsc13",
     "thumb": "/cache/sprites/loadscs/loadsc13.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc14",
-    "value": "loadscs:loadsc14",
+    "value": "LOADSCS:loadsc14",
     "thumb": "/cache/sprites/loadscs/loadsc14.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc2",
-    "value": "loadscs:loadsc2",
+    "value": "LOADSCS:loadsc2",
     "thumb": "/cache/sprites/loadscs/loadsc2.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc3",
-    "value": "loadscs:loadsc3",
+    "value": "LOADSCS:loadsc3",
     "thumb": "/cache/sprites/loadscs/loadsc3.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc4",
-    "value": "loadscs:loadsc4",
+    "value": "LOADSCS:loadsc4",
     "thumb": "/cache/sprites/loadscs/loadsc4.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc5",
-    "value": "loadscs:loadsc5",
+    "value": "LOADSCS:loadsc5",
     "thumb": "/cache/sprites/loadscs/loadsc5.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc6",
-    "value": "loadscs:loadsc6",
+    "value": "LOADSCS:loadsc6",
     "thumb": "/cache/sprites/loadscs/loadsc6.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc7",
-    "value": "loadscs:loadsc7",
+    "value": "LOADSCS:loadsc7",
     "thumb": "/cache/sprites/loadscs/loadsc7.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc8",
-    "value": "loadscs:loadsc8",
+    "value": "LOADSCS:loadsc8",
     "thumb": "/cache/sprites/loadscs/loadsc8.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "loadsc9",
-    "value": "loadscs:loadsc9",
+    "value": "LOADSCS:loadsc9",
     "thumb": "/cache/sprites/loadscs/loadsc9.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "nvidia",
-    "value": "loadscs:nvidia",
+    "value": "LOADSCS:nvidia",
     "thumb": "/cache/sprites/loadscs/nvidia.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "title_pc_EU",
-    "value": "loadscs:title_pc_EU",
+    "value": "LOADSCS:title_pc_EU",
     "thumb": "/cache/sprites/loadscs/title_pc_eu.png"
   },
   {
-    "lib": "loadscs",
+    "lib": "LOADSCS",
     "name": "title_pc_US",
-    "value": "loadscs:title_pc_US",
+    "value": "LOADSCS:title_pc_US",
     "thumb": "/cache/sprites/loadscs/title_pc_us.png"
   },
   {

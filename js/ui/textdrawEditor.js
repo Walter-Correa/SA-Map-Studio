@@ -1161,14 +1161,22 @@ function copyTextDrawsPawn() {
     const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 480.0);
 
     if (td.font === 4) {
-      lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "_");`);
+      let rawText = td.text || 'hud:radardisc';
+      if (rawText.toLowerCase().startsWith('loadscs:')) rawText = 'LOADSCS:' + rawText.slice(8).toLowerCase();
+      else if (rawText.toLowerCase().startsWith('loadsuk:')) rawText = 'LOADSUK:' + rawText.slice(8).toLowerCase();
+      else if (rawText.toLowerCase().startsWith('ld_')) {
+        const colon = rawText.indexOf(':');
+        if (colon !== -1) rawText = rawText.slice(0, colon).toUpperCase() + ':' + rawText.slice(colon + 1).toLowerCase();
+      }
+      lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${rawText}");`);
       lines.push(`TextDrawFont(${varName}, 4);`);
-      lines.push(`TextDrawSetString(${varName}, "${td.text || 'hud:radardisc'}");`);
+      lines.push(`TextDrawSetString(${varName}, "${rawText}");`);
+      lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX || 0.5).toFixed(2)}, ${(td.letterSizeY || 1.0).toFixed(2)});`);
     } else {
       lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || '_'}");`);
       lines.push(`TextDrawFont(${varName}, ${td.font ?? 1});`);
+      lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.35).toFixed(2)}, ${(td.letterSizeY ?? 1.4).toFixed(2)});`);
     }
-    lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.35).toFixed(2)}, ${(td.letterSizeY ?? 1.4).toFixed(2)});`);
     lines.push(`TextDrawTextSize(${varName}, ${Number(expSizeX).toFixed(1)}, ${Number(expSizeY).toFixed(1)});`);
     lines.push(`TextDrawColor(${varName}, ${cHex});`);
     lines.push(`TextDrawSetOutline(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);

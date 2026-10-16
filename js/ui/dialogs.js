@@ -251,10 +251,12 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
     for (const td of p.textDraws || []) {
       const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
       const isTextNoBox = (td.font <= 3) && !td.useBox;
+      const letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
+      const letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
       const sizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0));
       const sizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? (td.font === 4 ? 64.0 : 100.0));
       let colVal = td.color ?? 0xFFFFFFFF;
-      if (td.font === 4 && (colVal & 0xFF) === 0) colVal = (colVal | 0xFF) >>> 0;
+      if (td.font === 4 && (colVal === 0 || colVal === 0xFF || (colVal & 0xFF) === 0)) colVal = 0xFFFFFFFF;
       const cInt = signed(colVal);
       const bInt = signed(td.boxColor ?? 0x00000080);
       const bgRaw = td.font === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0x00000000) : (td.backgroundColor ?? 0x000000FF);
@@ -264,9 +266,21 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       const rotX = (td.font === 5 && !hasRot) ? -16.0 : (td.previewRotX || 0);
       const rotY = (td.font === 5 && !hasRot) ? 0.0 : (td.previewRotY || 0);
       const rotZ = (td.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
-      const rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
+      let rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
+      if (td.font === 4) {
+        if (rawText.toLowerCase().startsWith('loadscs:')) {
+          rawText = 'LOADSCS:' + rawText.slice(8).toLowerCase();
+        } else if (rawText.toLowerCase().startsWith('loadsuk:')) {
+          rawText = 'LOADSUK:' + rawText.slice(8).toLowerCase();
+        } else if (rawText.toLowerCase().startsWith('ld_')) {
+          const colon = rawText.indexOf(':');
+          if (colon !== -1) {
+            rawText = rawText.slice(0, colon).toUpperCase() + ':' + rawText.slice(colon + 1).toLowerCase();
+          }
+        }
+      }
       const textEsc = rawText.replace(/\\n/g, '\n').replace(/\r?\n/g, '~n~').replace(/\r/g, '');
-      lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${(td.letterSizeX ?? 0.35).toFixed(2)}|${(td.letterSizeY ?? 1.4).toFixed(2)}|${sizeX.toFixed(2)}|${sizeY.toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${align}|${useBoxVal}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
+      lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${letX.toFixed(2)}|${letY.toFixed(2)}|${sizeX.toFixed(2)}|${sizeY.toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${align}|${useBoxVal}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
     }
   }
   return lines.join('\n') + '\n';

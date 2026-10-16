@@ -887,10 +887,22 @@ export function exportPawn(project, options = {}) {
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
-    const rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
+    let rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
+    if (td.font === 4) {
+      if (rawText.toLowerCase().startsWith('loadscs:')) {
+        rawText = 'LOADSCS:' + rawText.slice(8).toLowerCase();
+      } else if (rawText.toLowerCase().startsWith('loadsuk:')) {
+        rawText = 'LOADSUK:' + rawText.slice(8).toLowerCase();
+      } else if (rawText.toLowerCase().startsWith('ld_')) {
+        const colon = rawText.indexOf(':');
+        if (colon !== -1) {
+          rawText = rawText.slice(0, colon).toUpperCase() + ':' + rawText.slice(colon + 1).toLowerCase();
+        }
+      }
+    }
     const escText = JSON.stringify(rawText);
     let colVal = td.color ?? 0xFFFFFFFF;
-    if (td.font === 4 && (colVal & 0xFF) === 0) colVal = (colVal | 0xFF) >>> 0;
+    if (td.font === 4 && (colVal === 0 || colVal === 0xFF || (colVal & 0xFF) === 0)) colVal = 0xFFFFFFFF;
     const cHex = '0x' + (Number(colVal) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const bHex = '0x' + (Number(td.boxColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
@@ -901,8 +913,8 @@ export function exportPawn(project, options = {}) {
     if (td.font === 4) {
       textDrawLines.push(`TextDrawSetString(${tdVar}, ${escText});`);
     }
-    const letX = td.font === 4 ? 0.0 : (td.letterSizeX ?? 0.35);
-    const letY = td.font === 4 ? 0.0 : (td.letterSizeY ?? 1.4);
+    const letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
+    const letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
     textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);
     textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);

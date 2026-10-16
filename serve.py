@@ -1446,6 +1446,9 @@ class Handler(SimpleHTTPRequestHandler):
         kind, _, key = rel.partition("/")
         if key.endswith(".webp"):
             key = key[:-5]
+        full = thumb_file(kind, key)
+        if full and os.path.isfile(full):
+            return self.send_file(full, cache="max-age=86400")
         if kind == "obj" and key == "0":
             for sdir in (
                 os.path.join(DATA_DIR, "cache", "skins"),
@@ -1457,7 +1460,6 @@ class Handler(SimpleHTTPRequestHandler):
                 cj_skin = os.path.join(sdir, "0.png")
                 if os.path.isfile(cj_skin):
                     return self.send_file(cj_skin, cache="max-age=86400")
-        full = thumb_file(kind, key)
         if not full or not os.path.isfile(full):
             return self.send_error(HTTPStatus.NOT_FOUND)
         self.send_file(full, cache="max-age=86400")
