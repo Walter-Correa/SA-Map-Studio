@@ -47,11 +47,12 @@ class CDP:
 
 async def run():
     print("Starting serve.py on port 8788...")
+    ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     server = subprocess.Popen(
-        [r".venv-build\Scripts\python.exe", "serve.py", "--no-browser", "--port", "8788"],
+        [os.path.join(ROOT_DIR, "compile-sources", ".venv-build", "Scripts", "python.exe"), "serve.py", "--no-browser", "--port", "8788"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=r"d:\SERVIDOR GTA MULTIPLAYER\SA Map Studio\SA-Map-Studio"
+        cwd=ROOT_DIR
     )
 
     chrome = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
