@@ -132,15 +132,15 @@ Outras opções: `--port 8777`, `--no-browser` e `--navegador` (abre no navegado
 
 | Arquivo | Resultado | Para quê |
 |---|---|---|
-| `build.bat` | `compiled\sa-map-studio\` | Uso no dia a dia: atualiza o programa **mantendo** projetos, exportações, configuração, cache e miniaturas. |
-| `build-clean.bat` | `compiled\sa-map-studio\` | Cópia **limpa**, sem nenhum dado carregado, pronta para enviar a outra pessoa. |
+| `build.bat` | `compiled\SA Map Studio\` | Uso no dia a dia: atualiza o programa **mantendo** projetos, exportações, configuração, cache e miniaturas. |
+| `build-clean.bat` | `compiled\SA Map Studio\` | Cópia **limpa**, sem nenhum dado carregado, pronta para enviar a outra pessoa. |
 
 Os dois criam um ambiente Python separado (`compile-sources\.venv-build`), instalam as versões mais recentes do
 PyInstaller e do pywebview, gravam a data e a hora da compilação (aparecem em *Novidades* dentro do
 programa) e montam a pasta `test-server` com o gamemode e o seu servidor open.mp / SA-MP.
 
 ```powershell
-Stop-Process -Name "sa-map-studio" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "SA Map Studio" -Force -ErrorAction SilentlyContinue
 & ".\build.bat"          # mantém seus dados
 & ".\build-clean.bat"    # cópia limpa
 ```
@@ -155,13 +155,13 @@ Stop-Process -Name "sa-map-studio" -Force -ErrorAction SilentlyContinue
 Depois de compilado, tudo fica numa pasta só:
 
 ```
-sa-map-studio\
-├── sa-map-studio.exe     o programa
-├── projects\             seus mapas (salvos sozinhos)
-├── exported\             .pwn / .ipl exportados
-├── data\                 configuração, cache de texturas, miniaturas e registros
-├── test-server\          servidor usado pelo "Testar no jogo"
-└── system\               arquivos internos do programa
+SA Map Studio\
+├── SA Map Studio.exe  o programa
+├── projects\              seus mapas (salvos sozinhos)
+├── exported\              .pwn / .ipl exportados
+├── data\                  configuração, cache de texturas, miniaturas e registros
+├── test-server\           servidor usado pelo "Testar no jogo"
+└── system\                arquivos internos do programa
 ```
 
 A pasta inteira pode ser movida ou copiada para outro computador.

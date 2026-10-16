@@ -4,14 +4,14 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 
 ## 1. Compilação da Versão Final (Obrigatório)
 - **Sempre compile a versão final** executando `build-clean.bat` ao final de cada tarefa/ciclo de alterações.
-- A distribuição limpa gerada em `compiled\sa-map-studio\` deve sempre refletir com exatidão todos os arquivos atualizados (código-fonte, assets, modelos e scripts).
+- A distribuição limpa gerada em `compiled\SA Map Studio\` deve sempre refletir com exatidão todos os arquivos atualizados (código-fonte, assets, modelos e scripts).
 
 ## 2. Controle de Versão (Git)
 - **Sempre realizar commit e push ao final de cada tarefa**.
 - Mensagens de commit devem ser claras, objetivas e em português.
 
 ## 3. Padrões de Nomenclatura, Interface e Conteúdo
-- **Nomenclatura em Inglês e Minúsculas**: Todas as pastas e arquivos do projeto devem ser nomeados estritamente em inglês e letras minúsculas (sem português e sem letras maiúsculas), como `data`, `test-server`, `system`, `projects`, `exported`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `gemini.md`.
+- **Nome do Projeto e Nomenclatura**: O nome oficial do projeto é `SA Map Studio`, gerando o executável `SA Map Studio.exe` e a pasta de distribuição `compiled\SA Map Studio\`. Todas as pastas e arquivos internos de dados e sistema do projeto devem ser nomeados estritamente em inglês e letras minúsculas (sem português e sem letras maiúsculas), como `data`, `test-server`, `system`, `projects`, `exported`, `compile-sources`, `models`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `gemini.md`.
 - **Nomes curtos e objetivos**: Títulos, botões e labels da interface não devem estourar o espaço visual nem exibir reticências ("...").
 - **Fontes e citações**: Nunca citar fontes externas em lugar nenhum da interface ou do projeto.
 - **Janela inicial**: O editor deve abrir por padrão maximizado.

@@ -249,7 +249,7 @@ function render() {
   $('#aboutBody').innerHTML = `
     <div class="about-head">
       <svg class="brand-mark big" viewBox="0 0 32 32" aria-hidden="true"><use href="#i-brand-logo"/></svg>
-      <div><div class="about-title">SA Map Studio <span class="tag">versão ${esc(cfg.version || '2.5.0')}</span></div>
+      <div><div class="about-title">SA Map Studio <span class="tag">versão ${esc(cfg.version || '3.0.0')}</span></div>
         <div class="about-sub">${when}</div></div>
     </div>
     <section><h3>Novidades</h3>

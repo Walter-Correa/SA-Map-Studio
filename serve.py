@@ -603,6 +603,7 @@ def find_samapstudio_amx():
         os.path.join(BASE_DIR, "samapstudio.amx"),
         os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
         os.path.join(BASE_DIR, "omp-server-source", "gamemodes", "samapstudio.amx"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server", "gamemodes", "samapstudio.amx"),
         os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server", "gamemodes", "samapstudio.amx"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "gamemodes", "samapstudio.amx"),
     ):
@@ -617,6 +618,7 @@ def test_info():
     # Servidor que já está dentro da pasta do programa ("test-server") tem prioridade
     candidates = [
         TEST_DIR,
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server"),
         os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste"),
         os.path.join(BASE_DIR, "omp-server-source"),
@@ -734,7 +736,9 @@ def start_test(body):
     target_dirs = {TEST_DIR}
     if info.get("serverPath"):
         target_dirs.add(info["serverPath"])
-    dist_root_st = os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server") if not FROZEN else TEST_DIR
+    dist_root_st = os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server") if not FROZEN else TEST_DIR
+    if not os.path.isdir(dist_root_st):
+        dist_root_st = os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server")
     if os.path.isdir(dist_root_st):
         target_dirs.add(dist_root_st)
 
@@ -745,6 +749,7 @@ def start_test(body):
         os.path.join(TEST_DIR, "plugins", "streamer.dll"),
         os.path.join(APP_DIR, "plugins", "streamer.dll"),
         os.path.join(src, "plugins", "streamer.dll"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server", "plugins", "streamer.dll"),
         os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server", "plugins", "streamer.dll"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "plugins", "streamer.dll"),
     ):

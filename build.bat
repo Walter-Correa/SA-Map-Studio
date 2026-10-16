@@ -5,20 +5,20 @@ set "SRC=%~dp0"
 
 rem Modo: sem parametro = mantem os dados | "limpo" = remove dados de usuario antigos
 set "MODO=%~1"
-title Compilando o sa-map-studio
-set "OUT=%~dp0compiled\sa-map-studio"
-set "DADOS=%~dp0compiled\sa-map-studio"
+title Compilando o SA Map Studio
+set "OUT=%~dp0compiled\SA Map Studio"
+set "DADOS=%~dp0compiled\SA Map Studio"
 
 if /i "%MODO%"=="clean" set "MODO=clean"
 if /i "%MODO%"=="limpo" set "MODO=clean"
 
 echo ============================================================
 if /i "%MODO%"=="clean" (
-echo  Compilando o sa-map-studio - VERSAO LIMPA
-echo  Resultado: compiled\sa-map-studio\  ^(sem projetos ou dados antigos^)
+echo  Compilando o SA Map Studio - VERSAO LIMPA
+echo  Resultado: compiled\SA Map Studio\  ^(sem projetos ou dados antigos^)
 ) else (
-echo  Compilando o sa-map-studio - VERSAO NORMAL
-echo  Resultado: compiled\sa-map-studio\  ^(seus projetos e dados sao mantidos^)
+echo  Compilando o SA Map Studio - VERSAO NORMAL
+echo  Resultado: compiled\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
 )
 echo ============================================================
 
@@ -93,11 +93,13 @@ if errorlevel 1 goto erro
 "%VPY%" -m pip install --upgrade --quiet pywebview
 if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no navegador.
 
-echo Fechando o sa-map-studio, se estiver aberto...
-taskkill /im "sa-map-studio.exe" /f >nul 2>nul
+echo Fechando o SA Map Studio, se estiver aberto...
 taskkill /im "SA Map Studio.exe" /f >nul 2>nul
-powershell -NoProfile -Command "Stop-Process -Name 'sa-map-studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
+taskkill /im "SA Map Studio.exe" /f >nul 2>nul
+taskkill /im "sa-map-studio.exe" /f >nul 2>nul
 powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
+powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
+powershell -NoProfile -Command "Stop-Process -Name 'sa-map-studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 taskkill /im "omp-server.exe" /f >nul 2>nul
 taskkill /im "samp-server.exe" /f >nul 2>nul
 ping 127.0.0.1 -n 3 >nul
@@ -111,7 +113,7 @@ if exist "build" rmdir /s /q "build"
 set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory system"
 set "ICONFILE=%SRC%compile-sources\icon.ico"
 if not exist "%ICONFILE%" set "ICONFILE=%SRC%icon.ico"
-set "ARGS=%ARGS% --name "sa-map-studio" --icon "%ICONFILE%""
+set "ARGS=%ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
 rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
 set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
@@ -160,9 +162,9 @@ if /i "%MODO%"=="clean" if exist "%OUT%" (
 
 echo Copiando o programa...
 if not exist "%OUT%" mkdir "%OUT%"
-robocopy "build\saida\sa-map-studio\system" "%OUT%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
+robocopy "build\saida\SA Map Studio\system" "%OUT%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto erro
-copy /y "build\saida\sa-map-studio\sa-map-studio.exe" "%OUT%\sa-map-studio.exe" >nul
+copy /y "build\saida\SA Map Studio\SA Map Studio.exe" "%OUT%\SA Map Studio.exe" >nul
 if errorlevel 1 goto erro
 del /q "%OUT%\LEIA-ME.txt" 2>nul
 
@@ -261,6 +263,7 @@ if defined MODELSRC (
 )
 
 rem Limpa pastas legadas se existirem
+if exist "%~dp0compiled\sa-map-studio\" rmdir /s /q "%~dp0compiled\sa-map-studio" 2>nul
 if exist "%~dp0compiled\SA Map Studio\" rmdir /s /q "%~dp0compiled\SA Map Studio" 2>nul
 if exist "dist\" rmdir /s /q "dist" 2>nul
 if exist "dist-limpo\" rmdir /s /q "dist-limpo" 2>nul
@@ -270,7 +273,7 @@ del /q "build-info.json" 2>nul
 echo.
 echo ============================================================
 echo  Pronto! Pasta do programa: %OUT%
-echo    sa-map-studio.exe   - abra este
+echo    SA Map Studio.exe   - abra este
 echo    test-server\        - servidor do "Testar no jogo"
 echo    system\             - arquivos do programa (nao mexa)
 if /i "%MODO%"=="clean" (
