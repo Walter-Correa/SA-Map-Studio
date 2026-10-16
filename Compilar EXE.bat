@@ -86,6 +86,7 @@ if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no na
 
 echo Fechando o SA Map Studio, se estiver aberto...
 taskkill /im "SA Map Studio.exe" /f >nul 2>nul
+powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 taskkill /im "omp-server.exe" /f >nul 2>nul
 taskkill /im "samp-server.exe" /f >nul 2>nul
 ping 127.0.0.1 -n 3 >nul
