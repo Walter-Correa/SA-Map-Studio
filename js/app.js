@@ -565,7 +565,7 @@ function updateToolButtons() {
   const ed = app.editor;
   $$('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === ed.mode));
   const isWorld = ed.space === 'world';
-  $('#btnSpace span').textContent = isWorld ? 'Eixos: Mundo' : 'Eixos: Objeto';
+  $('#btnSpace span').textContent = isWorld ? 'Mundo' : 'Objeto';
   $('#btnSpace use').setAttribute('href', isWorld ? '#i-globe' : '#i-cube');
   $('#btnSpace').title = isWorld
     ? 'Eixos do Manipulador: Mundo (Global) — As setas seguem os eixos globais do mapa (Norte/Sul/Leste/Oeste) [Tecla L]'

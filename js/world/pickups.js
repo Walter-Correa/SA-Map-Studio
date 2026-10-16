@@ -1,6 +1,6 @@
 // Suporte completo a Pickups (CreatePickup e CreateDynamicPickup)
-// Conforme especificação do open.mp: https://open.mp/docs/scripting/functions/CreatePickup
-// e lista oficial de IDs de pickup: https://open.mp/docs/scripting/resources/pickupids
+// Conforme especificação : 
+// e lista oficial de IDs de pickup: 
 import * as THREE from 'three';
 
 export const PICKUP_TYPES = [
@@ -14,7 +14,7 @@ export const PICKUP_TYPES = [
 ];
 
 export const PREDEFINED_PICKUPS = [
-  // Todos os 59 IDs oficiais da tabela open.mp (https://open.mp/docs/scripting/resources/pickupids)
+  // Todos os 59 IDs oficiais da tabela ()
   { model: 954, name: 'Ferradura da Sorte (Horseshoe)', category: 'Itens' },
   { model: 1210, name: 'Maleta de Dinheiro (Briefcase)', category: 'Geral e Marcadores' },
   { model: 1212, name: 'Pacote de Dinheiro (Money)', category: 'Geral e Marcadores' },

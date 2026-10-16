@@ -880,23 +880,28 @@ export function exportPawn(project, options = {}) {
   const textDraws = project.textDraws || [];
   for (let idx = 0; idx < textDraws.length; idx++) {
     const td = textDraws[idx];
+    const align = td.align ?? td.alignment ?? 1;
+    const isTextNoBox = (td.font <= 3) && !td.useBox;
+    const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
+    const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 100.0);
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
-    const escText = JSON.stringify(td.text || '');
+    const escText = JSON.stringify(td.text || '_');
     const cHex = '0x' + (Number(td.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const bHex = '0x' + (Number(td.boxColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const bgHex = '0x' + (Number(td.backgroundColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
+    const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const tdVar = `td_${idx}`;
     textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
     textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
-    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(td.letterSizeX ?? 0.48, null)}, ${formatCoord(td.letterSizeY ?? 1.12, null)});`);
-    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(td.textSizeX ?? 1280, null)}, ${formatCoord(td.textSizeY ?? 1280, null)});`);
+    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(td.letterSizeX ?? 0.35, null)}, ${formatCoord(td.letterSizeY ?? 1.4, null)});`);
+    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);
     textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${td.outline ?? 0});`);
     textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${td.shadow ?? 1});`);
-    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${td.alignment ?? 1});`);
-    if (td.useBox) {
+    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${align});`);
+    if (td.useBox && td.font !== 5) {
       textDrawLines.push(`TextDrawUseBox(${tdVar}, 1);`);
       textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${bHex});`);
     }
@@ -905,12 +910,8 @@ export function exportPawn(project, options = {}) {
     if (td.selectable) textDrawLines.push(`TextDrawSetSelectable(${tdVar}, 1);`);
     if (td.font === 5 && td.previewModel) {
       textDrawLines.push(`TextDrawSetPreviewModel(${tdVar}, ${td.previewModel});`);
-      if (td.previewRotX || td.previewRotY || td.previewRotZ || td.previewZoom !== 1) {
-        textDrawLines.push(`TextDrawSetPreviewRot(${tdVar}, ${formatCoord(td.previewRotX)}, ${formatCoord(td.previewRotY)}, ${formatCoord(td.previewRotZ)}, ${formatCoord(td.previewZoom || 1)});`);
-      }
-      if ((td.previewColor1 ?? -1) !== -1 || (td.previewColor2 ?? -1) !== -1) {
-        textDrawLines.push(`TextDrawSetPreviewVehCol(${tdVar}, ${td.previewColor1 ?? -1}, ${td.previewColor2 ?? -1});`);
-      }
+      textDrawLines.push(`TextDrawSetPreviewRot(${tdVar}, ${formatCoord(td.previewRotX ?? -16)}, ${formatCoord(td.previewRotY ?? 0)}, ${formatCoord(td.previewRotZ ?? -55)}, ${formatCoord(td.previewZoom || 1)});`);
+      textDrawLines.push(`TextDrawSetPreviewVehCol(${tdVar}, ${td.previewColor1 ?? 1}, ${td.previewColor2 ?? 1});`);
     }
   }
 

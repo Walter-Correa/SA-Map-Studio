@@ -1,4 +1,4 @@
-// Trocas de material do SA-MP / open.mp, no mesmo formato das funções do jogo:
+// Trocas de material , no mesmo formato das funções do jogo:
 //
 //   SetObjectMaterial(objectid, materialindex, modelid, txdname[], texturename[], materialcolor = 0)
 //   SetObjectMaterialText(objectid, text[], materialindex = 0, materialsize = OBJECT_MATERIAL_SIZE_256x128,
@@ -130,7 +130,7 @@ export function normalizeMaterial(m) {
 }
 
 // Verifica se a troca é a remoção da textura (deixando o índice invisível)
-// Formato padrão do SA-MP / open.mp: SetObjectMaterial(obj, slot, 0, "none", "none", 0);
+// Formato padrão : SetObjectMaterial(obj, slot, 0, "none", "none", 0);
 export const isNoneTexture = (m) => !isText(m) && (m?.model === 0 || m?.model === -1) &&
   String(m?.txd || '').toLowerCase() === 'none' && String(m?.texture || '').toLowerCase() === 'none' &&
   parseColor(m?.color) === 0;

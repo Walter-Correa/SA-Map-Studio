@@ -43,11 +43,14 @@
     <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
     <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
     <symbol id="i-text3d" viewBox="0 0 24 24">
       <path d="M12 2.2L20.5 7.1V16.9L12 21.8L3.5 16.9V7.1L12 2.2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
       <path d="M12 11.5L20.5 7.1M12 11.5V21.8M12 11.5L3.5 7.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
       <text x="12" y="18.5" font-family="'Segoe UI', sans-serif" font-weight="900" font-size="7.5" fill="currentColor" stroke="none" text-anchor="middle" letter-spacing="-0.3">3D</text>
     </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></symbol>
     <symbol id="i-gamepad" viewBox="0 0 24 24"><path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/></symbol>
     <symbol id="i-path" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
@@ -128,7 +131,7 @@
         <button class="btn seg-btn" data-mode="rotate" title="Girar (R)"><svg><use href="#i-rotate"/></svg>Girar</button>
         <button class="btn seg-btn" data-mode="texture" title="Textura: clique numa face para escolher o pedaço (T)"><svg><use href="#i-brush"/></svg>Textura</button>
       </div>
-      <button id="btnSpace" class="btn ghost" title="Sistema de coordenadas: Mundo (eixos globais X/Y/Z) ou Objeto (eixos locais da rotação do objeto) [Tecla L]"><svg><use href="#i-globe"/></svg><span class="lbl-keep">Eixos: Mundo</span></button>
+      <button id="btnSpace" class="btn ghost" title="Sistema de coordenadas: Mundo (eixos globais X/Y/Z) ou Objeto (eixos locais da rotação do objeto) [Tecla L]"><svg><use href="#i-globe"/></svg><span class="lbl-keep">Mundo</span></button>
       <div class="pop-anchor">
         <button id="btnSnap" class="btn ghost" aria-pressed="false" title="Encaixe em grade"><svg><use href="#i-magnet"/></svg><span class="lbl">Encaixe</span></button>
         <div class="popover" id="popSnap" hidden>
@@ -190,7 +193,7 @@
       <button id="btn3DText" class="btn ghost" title="Criar Texto 3D no mapa"><svg><use href="#i-text3d"/></svg><span class="lbl2">3DText</span></button>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
       <button id="btnExport" class="btn" title="Exportar mapa (Pawn, CreateObject, etc.)"><svg><use href="#i-out"/></svg><span class="lbl-export">Exportar</span></button>
-      <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar no jogo</span></button>
+      <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar</span></button>
       <button id="btnHelp" class="btn icon" title="Atalhos (?)" aria-label="Atalhos de teclado"><svg><use href="#i-help"/></svg></button>
       <button id="btnAbout" class="btn icon" title="Novidades e documentação" aria-label="Novidades e documentação"><svg><use href="#i-doc"/></svg></button>
       <button id="btnLogs" class="btn ghost icon" title="Registros de erros e diagnóstico do sistema" aria-label="Registros e diagnóstico" style="position:relative;"><svg><use href="#i-terminal"/></svg><span class="log-badge" id="logBadge" hidden>0</span></button>
@@ -282,7 +285,7 @@
     <div class="click-coords-bar" id="clickCoordsBar">
       <div class="click-coords-label">
         <svg class="click-coords-icon"><use href="#i-pin"/></svg>
-        <span>Coordenadas do clique do mouse</span>
+        <span>Coordenadas do clique</span>
         <button type="button" class="btn icon small click-coords-copy" id="btnGotoClickCoords" title="Teleportar câmera para esta coordenada" aria-label="Teleportar câmera">
           <svg><use href="#i-pin"/></svg>
         </button>
@@ -311,10 +314,10 @@
     </div>
     <form class="setup" id="setupForm" hidden>
       <p>Não encontrei o GTA San Andreas neste computador. Escolha a pasta onde fica o <code>gta_sa.exe</code>.</p>
-      <p class="setup-hint">O editor só lê os arquivos do seu jogo, sem alterar nada. Use o GTA San Andreas original, o mesmo que roda o SA-MP.</p>
+      <p class="setup-hint">O editor só lê os arquivos do seu jogo, sem alterar nada. Use o GTA San Andreas original.</p>
       <div class="setup-row">
         <input id="setupPath" placeholder="C:\Program Files (x86)\Rockstar Games\GTA San Andreas" spellcheck="false" aria-label="Pasta do GTA San Andreas">
-        <button class="btn" type="button" id="setupBrowse"><svg><use href="#i-folder"/></svg>Procurar...</button>
+        <button class="btn" type="button" id="setupBrowse"><svg><use href="#i-folder"/></svg>Procurar</button>
       </div>
       <p class="error" id="setupError" hidden></p>
       <button class="btn primary" type="submit">Usar esta pasta</button>
@@ -329,7 +332,7 @@
       <div class="export-options">
         <fieldset>
           <legend>Formato</legend>
-          <label class="radio"><input type="radio" name="exFormat" value="pwn" checked> Pawn (.pwn) para SA-MP / open.mp</label>
+          <label class="radio"><input type="radio" name="exFormat" value="pwn" checked> Pawn (.pwn)</label>
           <label class="radio"><input type="radio" name="exFormat" value="ipl"> IPL para o singleplayer</label>
         </fieldset>
         <fieldset id="pwnOptions">
@@ -356,7 +359,7 @@
       <span class="foot-note" id="exportNote"></span>
       <button type="button" class="btn ghost" id="exCopy"><svg><use href="#i-copy"/></svg>Copiar</button>
       <button type="button" class="btn ghost" id="exDownload"><svg><use href="#i-in"/></svg>Baixar arquivo</button>
-      <button type="button" class="btn primary" id="exSave">Salvar na pasta Exportados</button>
+      <button type="button" class="btn primary" id="exSave">Salvar em Exportados</button>
     </footer>
   </form>
 </dialog>
@@ -364,7 +367,7 @@
 <dialog class="dialog" id="dlgImport">
   <form method="dialog" class="dialog-body">
     <header class="dialog-head"><h2>Importar mapa</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
-    <p class="dialog-text">Abra <b>qualquer arquivo</b> ou cole o código: o editor descobre o formato sozinho e traz os objetos com as texturas (SetObjectMaterial), os textos (SetObjectMaterialText), veículos, objetos removidos e câmeras. Entende código Pawn do Map Construction, Texture Studio e outros, bancos SQLite, projetos .json, mapas do MTA (.map) e IPL do jogo.</p>
+    <p class="dialog-text">Abra <b>qualquer arquivo</b> ou cole o código: o editor descobre o formato sozinho e traz os objetos com as texturas (SetObjectMaterial), os textos (SetObjectMaterialText), veículos, objetos removidos e câmeras. Entende código Pawn, bancos SQLite, projetos .json, mapas (.map) e IPL do jogo.</p>
     <div class="drop" id="importDrop">
       <svg><use href="#i-in"/></svg>
       <span>Arraste o arquivo para cá ou</span>
@@ -380,52 +383,65 @@
   </form>
 </dialog>
 
-<dialog class="dialog" id="dlgTest" style="width: min(1140px, 95vw); max-width: 1140px;">
-  <form method="dialog" class="dialog-body" style="padding: 20px 26px; gap: 14px; max-height: 92vh;">
-    <header class="dialog-head"><h2>Testar o mapa no jogo</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
-    <p class="dialog-text" style="font-size: 13px; line-height: 1.4; margin: 0;">Servidor de teste local (porta <b id="testPort">7777</b>). Comandos no jogo: <code>/fly</code> (voar), <code>/map</code> (centro do mapa), <code>/w [clima]</code>, <code>/t [hora]</code>, <code>/jetpack</code>, <code>/v [carro]</code>, <code>/spawn</code> e <code>/pos</code>.</p>
-    <div class="test-columns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
-      <div>
-        <div class="insp-label" style="margin-top: 0; font-size: 12.5px;">Jogo (GTA San Andreas)</div>
-        <div class="setup-row" style="margin-bottom: 4px;">
-          <input id="testGtaPath" placeholder="Pasta do GTA San Andreas" spellcheck="false" aria-label="Pasta do GTA" readonly style="font-size: 13px;">
-          <button type="button" class="btn" id="btnChangeGta"><svg><use href="#i-folder"/></svg>Trocar...</button>
+<dialog class="dialog" id="dlgTest" style="width: min(1140px, 95vw); max-width: 1140px; height: min(686px, 90vh); min-height: min(686px, 90vh);">
+  <form method="dialog" class="dialog-body" style="padding: 26px 32px; gap: 18px; height: 100%; max-height: 90vh; justify-content: space-between; box-sizing: border-box;">
+    <header class="dialog-head"><h2 style="font-size: 24px;">Testar o mapa no jogo</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="dialog-text" style="font-size: 14px; line-height: 1.5; margin: 0; max-width: 100%;">Servidor de teste local (porta <b id="testPort">7777</b>). Comandos no jogo: <code>/fly</code> (voar), <code>/map</code> (centro do mapa), <code>/w [clima]</code>, <code>/t [hora]</code>, <code>/jetpack</code>, <code>/v [carro]</code>, <code>/spawn</code> e <code>/pos</code>.</p>
+    <div class="test-columns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; flex: 1; align-content: center;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <div class="insp-label" style="margin-top: 0; margin-bottom: 6px; font-size: 13.5px;">Jogo (GTA San Andreas)</div>
+          <div class="setup-row" style="margin-bottom: 6px;">
+            <input id="testGtaPath" placeholder="Pasta do GTA San Andreas" spellcheck="false" aria-label="Pasta do GTA" readonly style="font-size: 13.5px; height: 38px;">
+            <button type="button" class="btn" id="btnChangeGta" style="height: 38px;"><svg><use href="#i-folder"/></svg>Trocar</button>
+          </div>
+          <div class="insp-note" id="gtaInfo" style="margin-bottom: 6px; font-size: 12.5px;"></div>
         </div>
-        <div class="insp-note" id="gtaInfo" style="margin-bottom: 10px; font-size: 12px;"></div>
 
-        <div class="insp-label" style="font-size: 12.5px;">Servidor open.mp ou SA-MP</div>
-        <div class="setup-row"><input id="testServer" placeholder="Pasta do omp-server.exe ou samp-server.exe" spellcheck="false" aria-label="Pasta do servidor" style="font-size: 13px;"><button type="button" class="btn" id="testBrowse"><svg><use href="#i-folder"/></svg>Procurar...</button></div>
-        <div class="insp-note" id="testServerInfo" style="margin-bottom: 10px; font-size: 12px;"></div>
+        <div>
+          <div class="insp-label" style="margin-bottom: 6px; font-size: 13.5px;">Servidor de Teste</div>
+          <div class="setup-row" style="margin-bottom: 6px;">
+            <input id="testServer" placeholder="Pasta do servidor de teste" spellcheck="false" aria-label="Pasta do servidor" style="font-size: 13.5px; height: 38px;">
+            <button type="button" class="btn" id="testBrowse" style="height: 38px;"><svg><use href="#i-folder"/></svg>Procurar</button>
+          </div>
+          <div class="insp-note" id="testServerInfo" style="margin-bottom: 6px; font-size: 12.5px;"></div>
+        </div>
 
-        <div class="insp-label" style="font-size: 12.5px;">Onde nascer</div>
-        <label class="radio" style="font-size: 13px; margin-bottom: 4px;"><input type="radio" name="testSpawn" value="camera" checked> No chão, onde a câmera está olhando</label>
-        <label class="radio" style="font-size: 13px; margin-bottom: 4px;"><input type="radio" name="testSpawn" value="center"> No centro do mapa</label>
-        <label class="radio" style="font-size: 13px; margin-bottom: 4px;"><input type="radio" name="testSpawn" value="selection"> Em cima do objeto selecionado</label>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+          <div class="insp-label" style="font-size: 13.5px;">Onde nascer</div>
+          <label class="radio" style="font-size: 13.5px;"><input type="radio" name="testSpawn" value="camera" checked> No chão, onde a câmera está olhando</label>
+          <label class="radio" style="font-size: 13.5px;"><input type="radio" name="testSpawn" value="center"> No centro do mapa</label>
+          <label class="radio" style="font-size: 13.5px;"><input type="radio" name="testSpawn" value="selection"> Em cima do objeto selecionado</label>
+        </div>
       </div>
 
-      <div>
-        <div class="insp-label" style="margin-top: 0; font-size: 12.5px;">Local e Ambiente no jogo</div>
-        <div class="pair" style="margin-bottom: 8px;">
-          <label style="font-size: 12.5px;">Interior<input type="number" id="testInterior" step="1" min="0" value="0" style="font-size: 13px;"></label>
-          <label style="font-size: 12.5px;">Mundo virtual<input type="number" id="testWorld" step="1" min="0" value="0" style="font-size: 13px;"></label>
-        </div>
-        <div class="pair" style="margin-bottom: 10px;">
-          <label style="font-size: 12.5px;">Clima (0 a 45)<input type="number" id="testWeather" step="1" min="0" max="45" value="10" style="font-size: 13px;"></label>
-          <label style="font-size: 12.5px;">Horário (HH:MM)<input type="time" id="testTime" value="10:00" style="font-size: 13px;"></label>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <div class="insp-label" style="margin-top: 0; margin-bottom: 8px; font-size: 13.5px;">Local e Ambiente no jogo</div>
+          <div class="pair" style="margin-bottom: 12px; gap: 12px;">
+            <label style="font-size: 13px;">Interior<input type="number" id="testInterior" step="1" min="0" value="0" style="font-size: 13.5px; height: 36px;"></label>
+            <label style="font-size: 13px;">Mundo virtual<input type="number" id="testWorld" step="1" min="0" value="0" style="font-size: 13.5px; height: 36px;"></label>
+          </div>
+          <div class="pair" style="gap: 12px;">
+            <label style="font-size: 13px;">Clima (0 a 45)<input type="number" id="testWeather" step="1" min="0" max="45" value="10" style="font-size: 13.5px; height: 36px;"></label>
+            <label style="font-size: 13px;">Horário (HH:MM)<input type="time" id="testTime" value="10:00" style="font-size: 13.5px; height: 36px;"></label>
+          </div>
         </div>
 
-        <div class="insp-label" style="font-size: 12.5px;">Opções</div>
-        <label class="check" style="margin-bottom: 5px; font-size: 13px;"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
-        <label class="check" style="margin-bottom: 5px; font-size: 13px;"><input type="checkbox" id="testStreamer"> Usar plugin Streamer (itens dinâmicos)</label>
-        <label class="check" style="margin-bottom: 6px; font-size: 13px;"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
-        <div class="insp-note" id="testWarn"></div>
-        <pre class="code log" id="testLog" hidden style="max-height: 100px; margin-top: 6px;"></pre>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+          <div class="insp-label" style="font-size: 13.5px;">Opções</div>
+          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
+          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testStreamer"> Usar plugin Streamer (itens dinâmicos)</label>
+          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
+          <div class="insp-note" id="testWarn"></div>
+          <pre class="code log" id="testLog" hidden style="max-height: 120px; margin-top: 6px;"></pre>
+        </div>
       </div>
     </div>
-    <footer class="dialog-foot" style="margin-top: 6px;">
-      <span class="foot-note" id="testStatus" style="font-size: 12.5px;"></span>
-      <button type="button" class="btn ghost" id="testStop" hidden><svg><use href="#i-stop"/></svg>Parar servidor</button>
-      <button type="button" class="btn primary" id="testGo" style="padding: 0 18px; font-size: 14px;"><svg><use href="#i-gamepad"/></svg>Testar agora</button>
+    <footer class="dialog-foot" style="padding-top: 12px; border-top: 1px solid var(--line);">
+      <span class="foot-note" id="testStatus" style="font-size: 13px;"></span>
+      <button type="button" class="btn ghost" id="testStop" hidden style="height: 38px;"><svg><use href="#i-stop"/></svg>Parar servidor</button>
+      <button type="button" class="btn primary" id="testGo" style="height: 38px; padding: 0 22px; font-size: 14.5px;"><svg><use href="#i-gamepad"/></svg>Testar agora</button>
     </footer>
   </form>
 </dialog>
@@ -436,7 +452,7 @@
     <div class="new-project">
       <input id="newProjectName" placeholder="Nome do novo projeto" aria-label="Nome do novo projeto">
       <button type="button" class="btn primary" id="newProjectBtn"><svg><use href="#i-plus"/></svg>Criar projeto</button>
-      <button type="button" class="btn" id="openExternalProjectBtn" title="Abrir arquivo de projeto .json de qualquer pasta"><svg><use href="#i-folder"/></svg>Abrir .json...</button>
+      <button type="button" class="btn" id="openExternalProjectBtn" title="Abrir arquivo de projeto .json de qualquer pasta"><svg><use href="#i-folder"/></svg>Abrir .json</button>
       <input type="file" id="externalProjectFileInput" accept=".json" style="display:none">
     </div>
     <ul class="project-list" id="projectList"></ul>
@@ -503,7 +519,7 @@
 <dialog class="dialog wide" id="dlgLogs">
   <form method="dialog" class="dialog-body">
     <header class="dialog-head">
-      <h2>Registros e Diagnóstico de Erros</h2>
+      <h2>Registros e Diagnóstico</h2>
       <button type="button" class="btn icon" id="btnCloseLogsX" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
     </header>
     <p class="dialog-text">Histórico completo de erros de execução do editor, mensagens de console e registros do servidor local. Use o botão <b>Copiar registros</b> para enviar um relatório detalhado de suporte.</p>
@@ -511,8 +527,8 @@
       <pre class="log-viewer" id="logsViewer">Carregando registros...</pre>
     </div>
     <footer class="dialog-foot">
-      <button type="button" class="btn ghost danger" id="btnClearLogs"><svg><use href="#i-trash"/></svg>Limpar registros</button>
-      <button type="button" class="btn ghost" id="btnOpenLogsFolder"><svg><use href="#i-folder"/></svg>Abrir pasta de registros</button>
+      <button type="button" class="btn ghost danger" id="btnClearLogs"><svg><use href="#i-trash"/></svg>Limpar</button>
+      <button type="button" class="btn ghost" id="btnOpenLogsFolder"><svg><use href="#i-folder"/></svg>Abrir pasta</button>
       <button type="button" class="btn primary" id="btnCopyLogs"><svg><use href="#i-copy"/></svg>Copiar registros</button>
       <button type="button" class="btn" id="btnCloseLogs" value="close">Fechar</button>
     </footer>
@@ -560,7 +576,7 @@
         </div>
 
         <button type="button" class="btn primary block" id="btnApplySelectedAnim" style="margin-top: auto; padding: 9px; font-size: 13px; font-weight: 600;" disabled>
-          <svg><use href="#i-check"/></svg>Aplicar esta animação
+          <svg><use href="#i-check"/></svg>Aplicar animação
         </button>
       </div>
     </div>
@@ -580,7 +596,7 @@
     <header class="dialog-head">
       <div style="display: flex; align-items: center; gap: 10px;">
         <svg style="width: 20px; height: 20px; color: var(--gold-400);"><use href="#i-user"/></svg>
-        <h2 style="margin: 0; font-size: 16px;">Selecionar Skin do Actor (0 a 311)</h2>
+        <h2 style="margin: 0; font-size: 16px;">Galeria de Skins (0 a 311)</h2>
         <span id="skinPickerCount" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--asphalt-600); color: var(--paper-dim);">312 skins</span>
       </div>
       <button type="button" class="btn icon" id="btnCloseSkinPickerX" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
@@ -605,11 +621,11 @@
           <div id="prevSkinSub" style="font-size: 11px; color: var(--paper-dim); margin-top: 4px; font-family: monospace;">Modelo DFF: fam1</div>
         </div>
         <div style="background: var(--asphalt-900); padding: 8px 10px; border-radius: var(--radius-s); font-family: monospace; font-size: 11px; color: var(--paper-dim);">
-          <div style="color: #888; margin-bottom: 2px;">Pawn open.mp:</div>
+          <div style="color: #888; margin-bottom: 2px;">Código Pawn:</div>
           <div id="prevSkinCode" style="color: var(--accent, #f0a630);">CreateActor(0, ...);</div>
         </div>
         <button type="button" class="btn primary block" id="btnApplySelectedSkin" style="margin-top: auto; padding: 10px; font-size: 13px; font-weight: bold;">
-          <svg><use href="#i-check"/></svg> Aplicar Skin no Actor
+          <svg><use href="#i-check"/></svg> Aplicar Skin
         </button>
       </div>
     </div>
@@ -625,7 +641,7 @@
     <header class="dialog-head">
       <div style="display: flex; align-items: center; gap: 10px;">
         <svg style="width: 20px; height: 20px; color: var(--gold-400);"><use href="#i-image"/></svg>
-        <h2 style="margin: 0; font-size: 16px;">Galeria de Sprites Oficiais (Font 4 / open.mp)</h2>
+        <h2 style="margin: 0; font-size: 16px;">Galeria de Sprites</h2>
         <span id="spritePickerCount" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--asphalt-600); color: var(--paper-dim);">449 sprites</span>
       </div>
       <button type="button" class="btn icon" id="btnCloseSpritePickerX" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
@@ -649,11 +665,11 @@
           <div id="prevSpriteSub" style="font-size: 11px; color: var(--paper-dim); margin-top: 4px; font-family: monospace;">Biblioteca TXD: hud.txd</div>
         </div>
         <div style="background: var(--asphalt-900); padding: 8px 10px; border-radius: var(--radius-s); font-family: monospace; font-size: 11px; color: var(--paper-dim);">
-          <div style="color: #888; margin-bottom: 2px;">Formato TextDraw open.mp:</div>
+          <div style="color: #888; margin-bottom: 2px;">Código Pawn:</div>
           <div id="prevSpriteCode" style="color: var(--accent, #f0a630); word-break: break-all;">TextDrawSetString(td, "hud:arrow");</div>
         </div>
         <button type="button" class="btn primary block" id="btnApplySelectedSprite" style="margin-top: auto; padding: 10px; font-size: 13px; font-weight: bold;">
-          <svg><use href="#i-check"/></svg> Usar esta Sprite
+          <svg><use href="#i-check"/></svg> Usar Sprite
         </button>
       </div>
     </div>
@@ -666,7 +682,7 @@
 
 <dialog class="dialog wide" id="dlgGangZones" style="max-width: 1560px; width: 96vw; height: 92vh;">
   <div class="dialog-head">
-    <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-map"/></svg><span>Editor de GangZones (GTA SA Radar Map)</span></div>
+    <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-map"/></svg><span>Editor de GangZones</span></div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="gz-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
@@ -676,7 +692,7 @@
         <button type="button" class="btn small ghost" id="gzZoomOut" title="Afastar">-</button>
         <button type="button" class="btn small ghost" id="gzResetView" title="Ajustar tela">Enquadrar</button>
         <span class="divider"></span>
-        <label class="check" style="font-size: 11px; margin: 0;"><input type="checkbox" id="gzChkSnap" checked> Alinhamento Magnético (Snap às bordas)</label>
+        <label class="check" style="font-size: 11px; margin: 0;"><input type="checkbox" id="gzChkSnap" checked> Alinhamento Magnético</label>
         <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;" id="gzHudCoords">X: 0.0 | Y: 0.0</span>
       </div>
       <div id="gzCanvasWrap" style="flex: 1; position: relative; overflow: hidden; cursor: crosshair;">
@@ -716,7 +732,7 @@
         <div id="gzPresets" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;"></div>
 
         <div style="display: flex; gap: 6px; margin-top: 12px;">
-          <button type="button" class="btn small ghost" id="gzBtnFocus3D" style="flex: 1;" title="Centraliza o mapa e a câmera 3D na GangZone selecionada"><svg><use href="#i-pin"/></svg>Focar na gangzone</button>
+          <button type="button" class="btn small ghost" id="gzBtnFocus3D" style="flex: 1;" title="Centraliza o mapa na GangZone selecionada"><svg><use href="#i-pin"/></svg>Focar na gangzone</button>
           <button type="button" class="btn small danger" id="gzBtnDelete" title="Excluir esta GangZone"><svg><use href="#i-trash"/></svg></button>
         </div>
       </div>
@@ -735,7 +751,7 @@
 
 <dialog class="dialog wide" id="dlgTextDraw" style="max-width: 1560px; width: 96vw; height: 92vh;">
   <div class="dialog-head">
-    <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-text"/></svg><span>Editor Visual de TextDraws (640x480)</span></div>
+    <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-text"/></svg><span>Editor de TextDraws</span></div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="td-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
@@ -826,52 +842,11 @@
         </div>
 
         <div id="tdSpritePanel" style="display: none; background: rgba(0,200,100,0.08); border: 1px solid rgba(0,200,100,0.25); border-radius: 4px; padding: 6px; margin-top: 4px;">
-          <div class="pop-title" style="margin: 0 0 4px 0;">Sprites Oficiais (Font 4 / open.mp)</div>
-          <button type="button" class="btn small primary block" id="btnOpenSpritePicker" style="margin-bottom: 6px; font-weight: 600;"><svg><use href="#i-image"/></svg> Abrir Galeria de Sprites (449 itens)...</button>
-          <label style="font-size: 11px; color: var(--paper-dim);">Ou escolha diretamente da lista rápida:</label>
-          <select id="tdSpriteSelect" style="width: 100%; margin-top: 4px; font-family: monospace; font-size: 11.5px;">
-            <option value="">-- Selecionar sprite da lista rápida --</option>
-            <optgroup label="HUD & Radar">
-              <option value="hud:arrow">hud:arrow (Seta Padrão)</option>
-              <option value="hud:fist">hud:fist (Soco / Punho)</option>
-              <option value="hud:radardisc">hud:radardisc (Disco do Radar)</option>
-              <option value="hud:radar_hospital">hud:radar_hospital (Hospital)</option>
-              <option value="hud:radar_police">hud:radar_police (Polícia)</option>
-              <option value="hud:radar_fire">hud:radar_fire (Bombeiros)</option>
-              <option value="hud:radar_ammugun">hud:radar_ammugun (Ammu-Nation)</option>
-              <option value="hud:radar_burgerShot">hud:radar_burgerShot (Burger Shot)</option>
-              <option value="hud:radar_CJ">hud:radar_CJ (Casa do CJ)</option>
-              <option value="hud:radar_waypoint">hud:radar_waypoint (Destino/Waypoint)</option>
-            </optgroup>
-            <optgroup label="Formas & Caixas (LD_*)">
-              <option value="LD_BEAT:chit">LD_BEAT:chit (Caixa arredondada)</option>
-              <option value="LD_SPAC:white">LD_SPAC:white (Retângulo liso)</option>
-              <option value="LD_CHAT:thumbup">LD_CHAT:thumbup (Polegar positivo)</option>
-              <option value="LD_CHAT:thumbdn">LD_CHAT:thumbdn (Polegar negativo)</option>
-              <option value="LD_GRAV:crosshair">LD_GRAV:crosshair (Mira)</option>
-              <option value="LD_DUAL:white">LD_DUAL:white (Branco duplo)</option>
-            </optgroup>
-            <optgroup label="Setas e Menus">
-              <option value="samenu:arrow_up">samenu:arrow_up (Seta Cima)</option>
-              <option value="samenu:arrow_down">samenu:arrow_down (Seta Baixo)</option>
-              <option value="samenu:arrow_left">samenu:arrow_left (Seta Esquerda)</option>
-              <option value="samenu:arrow_right">samenu:arrow_right (Seta Direita)</option>
-            </optgroup>
-            <optgroup label="Cassino e Jogos">
-              <option value="LD_SLOT:cherry">LD_SLOT:cherry (Cereja)</option>
-              <option value="LD_SLOT:bell">LD_SLOT:bell (Sino)</option>
-              <option value="LD_SLOT:grape">LD_SLOT:grape (Uva)</option>
-              <option value="LD_SLOT:bar1">LD_SLOT:bar1 (Bar)</option>
-              <option value="LD_CARD:cd1c">LD_CARD:cd1c (Carta Ás)</option>
-              <option value="LD_CARD:back">LD_CARD:back (Verso de carta)</option>
-              <option value="LD_POOL:ball1">LD_POOL:ball1 (Bola de Sinuca)</option>
-              <option value="LD_ROUL:roul1">LD_ROUL:roul1 (Roleta)</option>
-            </optgroup>
-          </select>
+          <button type="button" class="btn small primary block" id="btnOpenSpritePicker" style="font-weight: 600;"><svg><use href="#i-image"/></svg> Abrir Galeria de Sprites</button>
         </div>
 
         <div id="tdModelPreviewPanel" style="display: none; background: rgba(0,102,255,0.08); border: 1px solid rgba(0,102,255,0.25); border-radius: 4px; padding: 6px; margin-top: 4px;">
-          <div class="pop-title" style="margin: 0 0 4px 0;">Configurações do Modelo 3D (Font 5)</div>
+          <div class="pop-title" style="margin: 0 0 4px 0;">Configurações do Modelo 3D</div>
           <div class="pair">
             <label>Modelo (ID)<input type="number" id="tdPreviewModel" value="411"></label>
             <label>Zoom <input type="number" id="tdPreviewZoom" step="0.1" value="1.0"></label>

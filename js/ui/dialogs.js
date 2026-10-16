@@ -249,11 +249,21 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       lines.push(`G|${minx.toFixed(4)}|${miny.toFixed(4)}|${maxx.toFixed(4)}|${maxy.toFixed(4)}|${colorInt}`);
     }
     for (const td of p.textDraws || []) {
+      const align = td.align ?? td.alignment ?? 1;
+      const isTextNoBox = (td.font <= 3) && !td.useBox;
+      const sizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
+      const sizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 100.0);
       const cInt = signed(td.color ?? 0xFFFFFFFF);
       const bInt = signed(td.boxColor ?? 0x00000080);
-      const bgInt = signed(td.backgroundColor ?? 0x000000FF);
-      const textEsc = String(td.text || '').replace(/\\n/g, '\n').replace(/\r?\n/g, '\\n').replace(/\r/g, '');
-      lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${(td.letterSizeX ?? 0.48).toFixed(2)}|${(td.letterSizeY ?? 1.12).toFixed(2)}|${(td.textSizeX ?? 100).toFixed(2)}|${(td.textSizeY ?? 100).toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${td.alignment ?? 1}|${td.useBox ? 1 : 0}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${(td.previewRotX || 0).toFixed(2)}|${(td.previewRotY || 0).toFixed(2)}|${(td.previewRotZ || 0).toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
+      const bgRaw = td.font === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0x00000000) : (td.backgroundColor ?? 0x000000FF);
+      const bgInt = signed(bgRaw);
+      const useBoxVal = (td.font === 4 || td.font === 5) ? 0 : (td.useBox ? 1 : 0);
+      const hasRot = Boolean(td.previewRotX || td.previewRotY || td.previewRotZ);
+      const rotX = (td.font === 5 && !hasRot) ? -16.0 : (td.previewRotX || 0);
+      const rotY = (td.font === 5 && !hasRot) ? 0.0 : (td.previewRotY || 0);
+      const rotZ = (td.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
+      const textEsc = String(td.text || '_').replace(/\\n/g, '\n').replace(/\r?\n/g, '~n~').replace(/\r/g, '');
+      lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${(td.letterSizeX ?? 0.35).toFixed(2)}|${(td.letterSizeY ?? 1.4).toFixed(2)}|${sizeX.toFixed(2)}|${sizeY.toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${align}|${useBoxVal}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
     }
   }
   return lines.join('\n') + '\n';
@@ -306,8 +316,8 @@ export function setupTest() {
     const notes = [];
     if (i.serverExe && i.builtin) notes.push(`Usando o servidor da pasta <b>Servidor de Teste</b> do programa (<b>${esc(i.serverExe)}</b>).`);
     else if (i.serverExe) notes.push(`Servidor encontrado: <b>${esc(i.serverExe)}</b>. Ao testar, ele é copiado para a pasta <b>Servidor de Teste</b> do programa (seu servidor não é alterado).`);
-    else notes.push('<span class="warn">Não achei um servidor. Coloque os arquivos do open.mp server (omp-server.exe, as .dll e a pasta components) na pasta "Servidor de Teste" do programa, ou escolha aqui a pasta de um servidor.</span>');
-    if (!i.client) notes.push('<span class="warn">Não achei o samp.exe na pasta do GTA. Instale o cliente SA-MP ou o open.mp launcher e conecte em 127.0.0.1:' + i.port + '.</span>');
+    else notes.push('<span class="warn">Não achei um servidor. Coloque os arquivos do servidor na pasta "Servidor de Teste" do programa, ou escolha aqui a pasta de um servidor.</span>');
+    if (!i.client) notes.push('<span class="warn">Não achei o samp.exe na pasta do GTA. Instale o cliente multiplayer e conecte em 127.0.0.1:' + i.port + '.</span>');
     if (i.error) notes.push(`<span class="warn">${esc(i.error)}</span>`);
     $('#testServerInfo').innerHTML = notes.join('<br>');
     $('#testStop').hidden = !i.running;

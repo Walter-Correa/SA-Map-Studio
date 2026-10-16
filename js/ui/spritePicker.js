@@ -1,5 +1,4 @@
-// Seletor Modal de Sprites para TextDraws (Font 4) com Galeria Visual Completa
-// Contém todas as 449 sprites oficiais do open.mp / SA-MP: https://open.mp/docs/scripting/resources/textdrawsprites
+// Seletor Modal de Sprites para TextDraws com Galeria Visual Completa
 import { $, $$, esc, toast } from './common.js';
 import { TEXTDRAW_SPRITES } from '../data/sprites.js';
 
@@ -10,19 +9,19 @@ let activeLib = 'todas';
 let initialized = false;
 
 const POPULAR_LIBS = [
-  { id: 'todas', label: '🌐 Todas (449)' },
-  { id: 'hud', label: '🎯 HUD & Radar (132)' },
-  { id: 'fonts', label: '🔤 Fonts (2)' },
-  { id: 'samaps', label: '🗺️ Mapas (32)' },
-  { id: 'LD_BEAT', label: '🔘 LD_BEAT (Formas)' },
-  { id: 'LD_CARD', label: '🃏 LD_CARD (Baralho)' },
-  { id: 'LD_POKE', label: '♠️ LD_POKE (Pôquer)' },
-  { id: 'LD_ROUL', label: '🎲 LD_ROUL (Roleta)' },
-  { id: 'LD_SLOT', label: '🎰 LD_SLOT (Caça-Níquel)' },
-  { id: 'LD_TATT', label: '🐉 LD_TATT (Tatuagens)' },
-  { id: 'LD_CHAT', label: '💬 LD_CHAT' },
-  { id: 'LD_OTB', label: '🐎 LD_OTB' },
-  { id: 'splash', label: '🖼️ Splash & Intros' },
+  { id: 'todas', label: '🌐 Todas' },
+  { id: 'hud', label: '🎯 HUD & Radar' },
+  { id: 'fonts', label: '🔤 Fontes' },
+  { id: 'samaps', label: '🗺️ Mapas' },
+  { id: 'LD_BEAT', label: '🔘 Formas (LD_BEAT)' },
+  { id: 'LD_CARD', label: '🃏 Baralho (LD_CARD)' },
+  { id: 'LD_POKE', label: '♠️ Pôquer (LD_POKE)' },
+  { id: 'LD_ROUL', label: '🎲 Roleta (LD_ROUL)' },
+  { id: 'LD_SLOT', label: '🎰 Caça-Níquel (LD_SLOT)' },
+  { id: 'LD_TATT', label: '🐉 Tatuagens (LD_TATT)' },
+  { id: 'LD_CHAT', label: '💬 Chat (LD_CHAT)' },
+  { id: 'LD_OTB', label: '🐎 Corrida (LD_OTB)' },
+  { id: 'splash', label: '🖼️ Telas & Intros' },
 ];
 
 export function setupSpritePicker() {
@@ -102,7 +101,7 @@ function filterSprites() {
     if (activeLib !== 'todas') {
       if (activeLib === 'splash') {
         const l = sp.lib.toLowerCase();
-        if (!l.startsWith('splash') && !l.startsWith('intro') && !l.startsWith('outro')) return false;
+        if (!l.startsWith('splash') && !l.startsWith('intro') && !l.startsWith('outro') && !l.startsWith('loadscs') && !l.startsWith('ld_loadscs')) return false;
       } else if (sp.lib.toLowerCase() !== activeLib.toLowerCase()) {
         return false;
       }
@@ -136,7 +135,7 @@ function renderSpriteGrid() {
     return `
       <div class="sprite-card${isSel ? ' selected' : ''}" data-sprite="${esc(sp.value)}" title="${esc(sp.value)}">
         <div class="sprite-card-thumb-wrap">
-          <img src="${sp.thumb}" alt="${esc(sp.name)}" loading="lazy" onerror="this.onerror=null; this.src='https://assets.open.mp/assets/images/sprites/${sp.lib}/${sp.name}.png';">
+          <img src="${sp.thumb}" alt="${esc(sp.name)}" loading="lazy">
         </div>
         <div class="sprite-card-lib">${esc(sp.lib)}</div>
         <div class="sprite-card-name">${esc(sp.name)}</div>
@@ -163,8 +162,8 @@ function renderSpriteGrid() {
 
 function updateSpritePreview(spriteVal) {
   const [lib, name] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];
-  const thumbUrl = `/cache/sprites/${lib.toLowerCase()}/${name.toLowerCase()}.png`;
-  const remoteUrl = `https://assets.open.mp/assets/images/sprites/${lib}/${name}.png`;
+  const normLib = lib.toLowerCase() === 'ld_loadscs' ? 'loadscs' : lib.toLowerCase();
+  const thumbUrl = `/cache/sprites/${normLib}/${name.toLowerCase()}.png`;
 
   const prevImg = $('#prevSpriteImg');
   const prevTitle = $('#prevSpriteTitle');
@@ -173,11 +172,8 @@ function updateSpritePreview(spriteVal) {
   const btnApply = $('#btnApplySelectedSprite');
 
   if (prevImg) {
+    prevImg.onerror = null;
     prevImg.src = thumbUrl;
-    prevImg.onerror = () => {
-      prevImg.onerror = null;
-      prevImg.src = remoteUrl;
-    };
   }
   if (prevTitle) prevTitle.textContent = name;
   if (prevSub) prevSub.textContent = `Biblioteca TXD: ${lib}.txd · Textura: ${name}`;

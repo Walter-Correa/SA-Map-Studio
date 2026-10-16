@@ -1,5 +1,5 @@
 // Suporte completo a 3D Text Labels (Create3DTextLabel e CreateDynamic3DTextLabel)
-// Conforme especificação do open.mp: https://open.mp/docs/scripting/functions/Create3DTextLabel
+// Conforme especificação : 
 import * as THREE from 'three';
 
 export const STANDARD_LABEL_COLORS = [

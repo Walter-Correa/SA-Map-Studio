@@ -47,6 +47,17 @@ export class Editor extends EventTarget {
     this.slotHiddenMat = new THREE.MeshBasicMaterial({ visible: false });
     this.slotMat = new THREE.MeshBasicMaterial({ color: 0xf0a630, transparent: true, opacity: 0.38, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    this.selOverlayMat = new THREE.MeshBasicMaterial({
+      color: 0xff5555,
+      transparent: true,
+      opacity: 0.38,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
+    this.selOverlays = [];
     this.removeLodToo = true;
 
     // Gizmo
@@ -804,17 +815,36 @@ export class Editor extends EventTarget {
 
   refreshSelectionBoxes() {
     this.selBoxes.clear();
+    for (const ov of this.selOverlays || []) {
+      ov.parent?.remove(ov);
+    }
+    this.selOverlays = [];
+
+    const addHighlightOverlay = (rootObj) => {
+      if (!rootObj) return;
+      rootObj.traverse(mesh => {
+        if (!mesh.isMesh || !mesh.geometry || mesh.userData.selOverlay || mesh.userData.slotOverlay) return;
+        const ov = new THREE.Mesh(mesh.geometry, this.selOverlayMat);
+        ov.userData.noPick = true;
+        ov.userData.selOverlay = true;
+        ov.raycast = () => {};
+        mesh.add(ov);
+        this.selOverlays.push(ov);
+      });
+    };
+
     const add = (obj, color) => {
       const box = new THREE.Box3().setFromObject(obj);
       if (box.isEmpty()) return;
       const h = new THREE.Box3Helper(box, color);
       h.userData.noPick = true;
       this.selBoxes.add(h);
+      addHighlightOverlay(obj);
     };
-    for (const u of this.selection) { const n = this.nodes.get(u); if (n) add(n, 0xf0a630); }
+    for (const u of this.selection) { const n = this.nodes.get(u); if (n) add(n, 0xff5555); }
     for (const inst of this.worldSelection) {
       const obj = this.streamer.shown.get(inst.index);
-      if (obj) add(obj, 0xff3b30);
+      if (obj) add(obj, 0xff5555);
     }
   }
 

@@ -212,7 +212,7 @@ stock SAMS_CarregarMapa()
     new File:arquivo = fopen(SAMS_ARQUIVO, io_read);
     if (!arquivo)
     {
-        print("[SA Map Studio] Nao encontrei " SAMS_ARQUIVO);
+        print("[SA Map Studio] Não encontrei " SAMS_ARQUIVO);
         return 0;
     }
     new linha[1024], tipo[4], txd[64], textura[64], fonte[64], texto[900];
@@ -523,17 +523,26 @@ stock SAMS_CarregarMapa()
                 new Float:tdzoom = SAMS_Float(linha, 21);
                 SAMS_Resto(linha, 22, texto, sizeof(texto));
 
-                new Text:td = TextDrawCreate(tdx, tdy, texto);
+                new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : "_");
                 if (td != Text:INVALID_TEXT_DRAW)
                 {
                     TextDrawFont(td, tdfont);
-                    TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.48), (tdlety > 0.0 ? tdlety : 1.12));
-                    TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 1280.0), (tdsizey > 0.0 ? tdsizey : 1280.0));
+                    TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
+                    if (tdfont <= 3 && !tdusebox)
+                    {
+                        new Float:wrapX = (tdalign == 3) ? 0.0 : (tdsizex > 0.0 ? tdsizex : 640.0);
+                        new Float:wrapY = (tdalign == 2) ? (tdsizey > 0.0 ? tdsizey : 640.0) : 480.0;
+                        TextDrawTextSize(td, wrapX, wrapY);
+                    }
+                    else
+                    {
+                        TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 80.0), (tdsizey > 0.0 ? tdsizey : 80.0));
+                    }
                     TextDrawColor(td, tdcol);
                     TextDrawSetOutline(td, tdoutline);
                     TextDrawSetShadow(td, tdshadow);
                     TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
-                    if (tdusebox)
+                    if (tdusebox && tdfont != 5)
                     {
                         TextDrawUseBox(td, true);
                         TextDrawBoxColor(td, tdboxcol);
@@ -545,6 +554,7 @@ stock SAMS_CarregarMapa()
                     {
                         TextDrawSetPreviewModel(td, tdmodel);
                         TextDrawSetPreviewRot(td, tdrotx, tdroty, tdrotz, (tdzoom > 0.0 ? tdzoom : 1.0));
+                        TextDrawSetPreviewVehCol(td, 1, 1);
                     }
                     gTextDraws[gTotalTextDraws] = td;
                     gTotalTextDraws++;
@@ -562,9 +572,9 @@ stock SAMS_CarregarMapa()
         gHasMapCenter = true;
     }
 
-    printf("[SA Map Studio] %d objetos, %d predios removidos, %d veiculos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws (Streamer: %s)",
+    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws (Streamer: %s)",
         gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalTextDraws, gUseStreamer ? "ATIVO" : "DESATIVADO");
-    printf("[SA Map Studio] Clima: %d, Horario: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
+    printf("[SA Map Studio] Clima: %d, Horário: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
 
@@ -581,7 +591,7 @@ public OnGameModeInit()
     return 1;
 }
 
-// Pre-carrega todas as bibliotecas IFP necessarias no cliente do jogador
+// Pré-carrega todas as bibliotecas IFP necessárias no cliente do jogador
 stock SAMS_PreloadAllAnims(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
@@ -592,7 +602,7 @@ stock SAMS_PreloadAllAnims(playerid)
     return 1;
 }
 
-// Sincroniza e reaplica as animacoes de todos os actors para o jogador
+// Sincroniza e reaplica as animações de todos os actors para o jogador
 forward SAMS_SyncActorAnims(playerid);
 public SAMS_SyncActorAnims(playerid)
 {
@@ -610,7 +620,7 @@ public SAMS_SyncActorAnims(playerid)
     return 1;
 }
 
-// Quando um actor entra na area visivel (stream-in) de um jogador, assegura a animacao ativa
+// Quando um actor entra na área visível (stream-in) de um jogador, assegura a animação ativa
 public OnActorStreamIn(actorid, forplayerid)
 {
     for (new i = 0; i < gTotalActors; i++)
@@ -868,13 +878,13 @@ public SAMS_RestaurarPosVoo(playerid)
     SetCameraBehindPlayer(playerid);
     gReturningFromFly[playerid] = false;
     SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
-    SendClientMessage(playerid, SAMS_COR_INFO, "Modo voo desativado. Voce retornou a posicao onde o voo foi ativado.");
+    SendClientMessage(playerid, SAMS_COR_INFO, "Modo voo desativado. Você retornou à posição onde o voo foi ativado.");
     return 1;
 }
 
 public OnPlayerCommandText(playerid, cmdtext[])
 {
-    // Ativa / Desativa o modo voo da camera
+    // Ativa / Desativa o modo voo da câmera
     if (!strcmp(cmdtext, "/fly", true) || !strcmp(cmdtext, "/voar", true))
     {
         if (gNoClip[playerid][noclip_cameramode] == CAMERA_MODE_FLY)
@@ -888,11 +898,11 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // Sincroniza e reaplica animacoes dos actors
+    // Sincroniza e reaplica animações dos actors
     if (!strcmp(cmdtext, "/anim", true) || !strcmp(cmdtext, "/reanim", true) || !strcmp(cmdtext, "/animar", true))
     {
         SAMS_SyncActorAnims(playerid);
-        SendClientMessage(playerid, SAMS_COR_OK, "Animacoes dos actors sincronizadas e reaplicadas.");
+        SendClientMessage(playerid, SAMS_COR_OK, "Animações dos actors sincronizadas e reaplicadas.");
         return 1;
     }
 
@@ -903,7 +913,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             StopPlayerObject(playerid, gNoClip[playerid][noclip_flyobject]);
             SetPlayerObjectPos(playerid, gNoClip[playerid][noclip_flyobject], gMapCenter[0], gMapCenter[1], gMapCenter[2]);
-            SendClientMessage(playerid, SAMS_COR_OK, "Camera teleportada para o centro do mapa.");
+            SendClientMessage(playerid, SAMS_COR_OK, "Câmera teleportada para o centro do mapa.");
             return 1;
         }
 
@@ -941,7 +951,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new Float:x, Float:y, Float:z, Float:a, msg[128];
         GetPlayerPos(playerid, x, y, z);
         GetPlayerFacingAngle(playerid, a);
-        format(msg, sizeof(msg), "Posicao: %.4f, %.4f, %.4f  Angulo: %.1f  Interior: %d", x, y, z, a, GetPlayerInterior(playerid));
+        format(msg, sizeof(msg), "Posição: %.4f, %.4f, %.4f  Ângulo: %.1f  Interior: %d", x, y, z, a, GetPlayerInterior(playerid));
         SendClientMessage(playerid, SAMS_COR_OK, msg);
         printf("[SA Map Studio] %s", msg);
         return 1;
@@ -987,7 +997,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new novoClima = strval(cmdtext[paramIdx]);
         if (novoClima < 0 || novoClima > 255)
         {
-            SendClientMessage(playerid, SAMS_COR_INFO, "ID de clima invalido! Escolha um valor entre 0 e 45.");
+            SendClientMessage(playerid, SAMS_COR_INFO, "ID de clima inválido! Escolha um valor entre 0 e 45.");
             return 1;
         }
 
@@ -1005,7 +1015,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
-    // Altera o horario do servidor e jogadores (/t [hora] [minuto], /time, /hora, /tempo)
+    // Altera o horário do servidor e jogadores (/t [hora] [minuto], /time, /hora, /tempo)
     if ((!strcmp(cmdtext, "/t", true, 2) && (cmdtext[2] == ' ' || cmdtext[2] == EOS)) ||
         (!strcmp(cmdtext, "/time", true, 5) && (cmdtext[5] == ' ' || cmdtext[5] == EOS)) ||
         (!strcmp(cmdtext, "/hora", true, 5) && (cmdtext[5] == ' ' || cmdtext[5] == EOS)) ||
@@ -1022,7 +1032,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         if (cmdtext[paramIdx] == EOS)
         {
             new msg[128];
-            format(msg, sizeof(msg), "Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horario atual: %02d:%02d", gHora, gMinuto);
+            format(msg, sizeof(msg), "Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horário atual: %02d:%02d", gHora, gMinuto);
             SendClientMessage(playerid, SAMS_COR_INFO, msg);
             return 1;
         }
@@ -1055,7 +1065,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59)
         {
-            SendClientMessage(playerid, SAMS_COR_INFO, "Horario invalido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
+            SendClientMessage(playerid, SAMS_COR_INFO, "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
             return 1;
         }
 
@@ -1068,9 +1078,9 @@ public OnPlayerCommandText(playerid, cmdtext[])
         }
 
         new msg[128];
-        format(msg, sizeof(msg), "Horario alterado para %02d:%02d.", gHora, gMinuto);
+        format(msg, sizeof(msg), "Horário alterado para %02d:%02d.", gHora, gMinuto);
         SendClientMessage(playerid, SAMS_COR_OK, msg);
-        printf("[SA Map Studio] Horario alterado para %02d:%02d por player %d.", gHora, gMinuto, playerid);
+        printf("[SA Map Studio] Horário alterado para %02d:%02d por player %d.", gHora, gMinuto, playerid);
         return 1;
     }
 
@@ -1078,12 +1088,12 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (!strcmp(cmdtext, "/ajuda", true) || !strcmp(cmdtext, "/help", true) || !strcmp(cmdtext, "/comandos", true))
     {
         SendClientMessage(playerid, SAMS_COR_INFO, "Comandos do servidor de teste:");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /fly (/voar) - Alternar voo livre da camera");
+        SendClientMessage(playerid, SAMS_COR_OK, "  /fly (/voar) - Alternar voo livre da câmera");
         SendClientMessage(playerid, SAMS_COR_OK, "  /map (/mapa) - Teleportar ao centro do mapa em teste");
         SendClientMessage(playerid, SAMS_COR_OK, "  /w [0-45] - Alterar clima (ex: /w 10)");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /t [0-23] [min] - Alterar horario (ex: /t 12 ou /t 22:30)");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /v [modelo] - Criar veiculo (ex: /v 411)");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /anim - Ressincronizar animacoes dos actors");
+        SendClientMessage(playerid, SAMS_COR_OK, "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)");
+        SendClientMessage(playerid, SAMS_COR_OK, "  /v [modelo] - Criar veículo (ex: /v 411)");
+        SendClientMessage(playerid, SAMS_COR_OK, "  /anim - Ressincronizar animações dos actors");
         SendClientMessage(playerid, SAMS_COR_OK, "  /jetpack, /spawn, /pos - Utilidades gerais");
         return 1;
     }

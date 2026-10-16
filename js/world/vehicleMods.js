@@ -1,9 +1,9 @@
 // Suporte completo a veículos: cores do carcols.dat, paintjobs e tuning (AddVehicleComponent)
-// Conforme a especificação do Open.MP e SA-MP: https://open.mp/docs/scripting/functions/AddVehicleComponent
+// Conforme a especificação : 
 // e regras oficiais de compatibilidade do servidor.
 
 // Suporte completo a veículos: cores do carcols.dat, paintjobs e tuning (AddVehicleComponent)
-// Conforme a especificação do Open.MP e SA-MP: https://open.mp/docs/scripting/functions/AddVehicleComponent
+// Conforme a especificação : 
 
 export const CAR_COLORS = [
   [0,0,0], [245,245,245], [42,119,161], [132,4,16], [38,55,57], [134,68,110], [215,142,16], [76,117,183],
@@ -65,7 +65,7 @@ export const COMPONENT_TYPES = {
   15: 'Grade / Bullbar Traseira',
 };
 
-// Mapeamento completo de componentes Open.MP / SA-MP
+// Mapeamento completo de componentes
 
 export const VEHICLE_COMPONENTS = {
   // Spoilers (0)

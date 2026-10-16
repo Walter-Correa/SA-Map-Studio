@@ -89,7 +89,7 @@ export class GameData {
       if (!this.modelByName.has(s.model)) this.modelByName.set(s.model, def);
     }
 
-    // Registra todas as armas de open.mp / GTA SA (321 a 372)
+    // Registra todas as armas  (321 a 372)
     for (const w of ALL_WEAPONS) {
       if (!this.models.has(w.id)) {
         const def = {

@@ -39,10 +39,10 @@ export class Thumbnails extends EventTarget {
     } catch { return { obj: [], tex: [] }; }
   }
 
-  url(id) { return this.have.has(id) ? `/thumbs/obj/${id}.webp` : null; }
+  url(id) { return this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null; }
 
   request(id, cb) {
-    if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp`); return; }
+    if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=3`); return; }
     if (this.waiting.has(id)) { this.waiting.get(id).push(cb); return; }
     this.waiting.set(id, [cb]);
     this.queue.push(id);
@@ -85,7 +85,7 @@ export class Thumbnails extends EventTarget {
               if (res.ok) this.have.add(id);
             } catch (_) {}
           }
-          const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp` : null;
+          const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
           if (this.background.ids?.delete(id)) { this.background.done++; this.dispatchEvent(new Event('progress')); }
           this.finish(id, diskUrl);
           // Modelos carregados só para a miniatura saem imediatamente da memória
@@ -140,9 +140,10 @@ export class Thumbnails extends EventTarget {
       const radius = Math.max(0.3, box.getBoundingSphere(new THREE.Sphere()).radius);
       const dist = radius / Math.sin((this.camera.fov / 2) * Math.PI / 180) * 1.05;
       const def = this.models?.gd?.models?.get(id);
-      const isCarOrPed = def?.type === 'cars' || def?.type === 'peds';
-      const dirX = isCarOrPed ? -0.75 : 0.75;
-      const dir = new THREE.Vector3(dirX, -1, 0.65).normalize();
+      const isCarOrPed = def?.type === 'cars' || def?.type === 'peds' || (id >= 0 && id <= 311) || (id >= 400 && id <= 611);
+      const dir = isCarOrPed
+        ? new THREE.Vector3(0.75, 1.0, 0.65).normalize()
+        : new THREE.Vector3(0.75, -1.0, 0.65).normalize();
       this.camera.position.copy(center).addScaledVector(dir, dist);
       this.camera.near = dist / 100; this.camera.far = dist * 4;
       this.camera.up.set(0, 0, 1);

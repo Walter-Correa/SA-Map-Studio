@@ -1,5 +1,5 @@
 // Suporte completo a GangZones (GangZoneCreate)
-// Conforme especificação do open.mp: https://open.mp/pt-BR/docs/scripting/functions/GangZoneCreate
+// Conforme especificação : 
 import * as THREE from 'three';
 
 export const DEFAULT_GANGZONE_COLORS = [

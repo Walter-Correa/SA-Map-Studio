@@ -1,6 +1,6 @@
-// Suporte a Actors do SA-MP/Open.MP: skins, animações e presets
-// Documentação: https://open.mp/docs/scripting/functions/CreateActor
-//               https://open.mp/docs/scripting/functions/ApplyActorAnimation
+// Suporte a Actors : skins, animações e presets
+// Documentação: 
+//               
 
 export const POPULAR_ANIMATIONS = [
   { label: 'Conversando (Chat)', lib: 'PED', name: 'IDLE_chat', loop: 1, freeze: 0 },

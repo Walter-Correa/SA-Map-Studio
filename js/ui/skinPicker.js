@@ -1,5 +1,5 @@
 // Seletor Modal de Skins para Actors com Prévia Visual e Categorias
-// Suporta todas as 312 skins do GTA SA / SA-MP / open.mp (IDs 0 a 311)
+// Suporta todas as 312 skins do jogo (IDs 0 a 311)
 import { $, $$, esc, toast } from './common.js';
 import { ALL_SKINS, POPULAR_SKINS, getSkinLabel } from '../world/actors.js';
 
@@ -10,14 +10,14 @@ let activeCategory = 'todas';
 let initialized = false;
 
 const CATEGORIES = [
-  { id: 'todas', label: '🌐 Todas (312)' },
+  { id: 'todas', label: '🌐 Todas' },
   { id: 'populares', label: '⭐ Populares' },
   { id: 'grove', label: '🟢 Grove Street' },
   { id: 'gangues', label: '🟣 Outras Gangues' },
   { id: 'policia', label: '👮 Polícia & Serviços' },
   { id: 'mulheres', label: '👩 Mulheres' },
   { id: 'homens', label: '👨 Civis' },
-  { id: 'especiais', label: '👑 Especiais / História' },
+  { id: 'especiais', label: '👑 Especiais' },
 ];
 
 function classifySkin(skin) {
@@ -149,7 +149,7 @@ function renderSkinGrid() {
     return `
       <div class="skin-card${isSel ? ' selected' : ''}" data-skin-id="${s.id}" title="${esc(s.name)} (ID ${s.id})">
         <div class="skin-card-thumb-wrap">
-          <img src="${thumbUrl}" alt="Skin ${s.id}" loading="lazy" onerror="this.onerror=null; this.src='https://assets.open.mp/assets/images/skins/${s.id}.png';">
+          <img src="${thumbUrl}" alt="Skin ${s.id}" loading="lazy" onerror="this.onerror=null; this.src='/thumbs/obj/${s.id}.webp?v=3';">
         </div>
         <div class="skin-card-badge">ID ${s.id}</div>
         <div class="skin-card-name">${esc(s.name)}</div>
@@ -188,7 +188,7 @@ function updateSkinPreview(id) {
     prevImg.src = `/cache/skins/${id}.png`;
     prevImg.onerror = () => {
       prevImg.onerror = null;
-      prevImg.src = `https://assets.open.mp/assets/images/skins/${id}.png`;
+      prevImg.src = `/thumbs/obj/${id}.webp?v=3`;
     };
   }
   if (prevTitle) prevTitle.textContent = skin.name;
@@ -197,7 +197,7 @@ function updateSkinPreview(id) {
   if (prevCode) prevCode.textContent = `CreateActor(${id}, x, y, z, rz);`;
   if (btnApply) {
     btnApply.disabled = false;
-    btnApply.innerHTML = `<svg><use href="#i-check"/></svg> Aplicar Skin ${id} (${esc(skin.name.split(' ')[0])})`;
+    btnApply.innerHTML = `<svg><use href="#i-check"/></svg> Aplicar Skin ${id}`;
   }
 }
 

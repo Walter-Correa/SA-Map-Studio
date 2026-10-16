@@ -1,5 +1,4 @@
-// Lista completa de 449 sprites oficiais do open.mp / SA-MP
-// Referência: https://open.mp/docs/scripting/resources/textdrawsprites
+// Catálogo completo de 449 sprites para TextDraws
 
 export const TEXTDRAW_SPRITES = [
   {
@@ -2535,118 +2534,118 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/ld_tatt/9rasta.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "eax",
-    "value": "LD_LOADSCS:eax",
-    "thumb": "/cache/sprites/ld_loadscs/eax.png"
+    "value": "loadscs:eax",
+    "thumb": "/cache/sprites/loadscs/eax.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc0",
-    "value": "LD_LOADSCS:loadsc0",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc0.png"
+    "value": "loadscs:loadsc0",
+    "thumb": "/cache/sprites/loadscs/loadsc0.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc1",
-    "value": "LD_LOADSCS:loadsc1",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc1.png"
+    "value": "loadscs:loadsc1",
+    "thumb": "/cache/sprites/loadscs/loadsc1.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc10",
-    "value": "LD_LOADSCS:loadsc10",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc10.png"
+    "value": "loadscs:loadsc10",
+    "thumb": "/cache/sprites/loadscs/loadsc10.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc11",
-    "value": "LD_LOADSCS:loadsc11",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc11.png"
+    "value": "loadscs:loadsc11",
+    "thumb": "/cache/sprites/loadscs/loadsc11.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc12",
-    "value": "LD_LOADSCS:loadsc12",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc12.png"
+    "value": "loadscs:loadsc12",
+    "thumb": "/cache/sprites/loadscs/loadsc12.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc13",
-    "value": "LD_LOADSCS:loadsc13",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc13.png"
+    "value": "loadscs:loadsc13",
+    "thumb": "/cache/sprites/loadscs/loadsc13.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc14",
-    "value": "LD_LOADSCS:loadsc14",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc14.png"
+    "value": "loadscs:loadsc14",
+    "thumb": "/cache/sprites/loadscs/loadsc14.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc2",
-    "value": "LD_LOADSCS:loadsc2",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc2.png"
+    "value": "loadscs:loadsc2",
+    "thumb": "/cache/sprites/loadscs/loadsc2.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc3",
-    "value": "LD_LOADSCS:loadsc3",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc3.png"
+    "value": "loadscs:loadsc3",
+    "thumb": "/cache/sprites/loadscs/loadsc3.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc4",
-    "value": "LD_LOADSCS:loadsc4",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc4.png"
+    "value": "loadscs:loadsc4",
+    "thumb": "/cache/sprites/loadscs/loadsc4.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc5",
-    "value": "LD_LOADSCS:loadsc5",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc5.png"
+    "value": "loadscs:loadsc5",
+    "thumb": "/cache/sprites/loadscs/loadsc5.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc6",
-    "value": "LD_LOADSCS:loadsc6",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc6.png"
+    "value": "loadscs:loadsc6",
+    "thumb": "/cache/sprites/loadscs/loadsc6.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc7",
-    "value": "LD_LOADSCS:loadsc7",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc7.png"
+    "value": "loadscs:loadsc7",
+    "thumb": "/cache/sprites/loadscs/loadsc7.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc8",
-    "value": "LD_LOADSCS:loadsc8",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc8.png"
+    "value": "loadscs:loadsc8",
+    "thumb": "/cache/sprites/loadscs/loadsc8.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "loadsc9",
-    "value": "LD_LOADSCS:loadsc9",
-    "thumb": "/cache/sprites/ld_loadscs/loadsc9.png"
+    "value": "loadscs:loadsc9",
+    "thumb": "/cache/sprites/loadscs/loadsc9.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "nvidia",
-    "value": "LD_LOADSCS:nvidia",
-    "thumb": "/cache/sprites/ld_loadscs/nvidia.png"
+    "value": "loadscs:nvidia",
+    "thumb": "/cache/sprites/loadscs/nvidia.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "title_pc_EU",
-    "value": "LD_LOADSCS:title_pc_EU",
-    "thumb": "/cache/sprites/ld_loadscs/title_pc_eu.png"
+    "value": "loadscs:title_pc_EU",
+    "thumb": "/cache/sprites/loadscs/title_pc_eu.png"
   },
   {
-    "lib": "LD_LOADSCS",
+    "lib": "loadscs",
     "name": "title_pc_US",
-    "value": "LD_LOADSCS:title_pc_US",
-    "thumb": "/cache/sprites/ld_loadscs/title_pc_us.png"
+    "value": "loadscs:title_pc_US",
+    "thumb": "/cache/sprites/loadscs/title_pc_us.png"
   },
   {
     "lib": "outro",

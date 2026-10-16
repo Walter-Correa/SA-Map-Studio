@@ -18,12 +18,12 @@ export function setupCatalog() {
   for (const c of new Set(catalog.map(c => c.category))) if (!cats.includes(c)) cats.push(c);
   cats.sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const catSel = $('#catalogCategory');
-  catSel.innerHTML = `<option value="">Todas as categorias (${catalog.filter(c => !c.isLod).length.toLocaleString('pt-BR')})</option>` +
+  catSel.innerHTML = `<option value="">Categorias</option>` +
     cats.map(c => [c, count('category', c)]).filter(([, n]) => n).map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n.toLocaleString('pt-BR')})</option>`).join('');
   const regs = [...REGIONS];
   for (const r of new Set(catalog.map(c => c.region))) if (!regs.includes(r)) regs.push(r);
   const regSel = $('#catalogRegion');
-  regSel.innerHTML = '<option value="">Qualquer origem</option>' +
+  regSel.innerHTML = '<option value="">Origens</option>' +
     regs.map(r => [r, count('region', r)]).filter(([, n]) => n).map(([r, n]) => `<option value="${esc(r)}">${esc(r)} (${n.toLocaleString('pt-BR')})</option>`).join('');
   if (![...catSel.options].some(o => o.value === category)) category = '';
   if (![...regSel.options].some(o => o.value === region)) region = '';

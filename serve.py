@@ -581,7 +581,7 @@ def tail_log(lines=30):
         full = os.path.join(TEST_DIR, name)
         if os.path.isfile(full):
             try:
-                with open(full, "r", encoding="cp1252", errors="replace") as f:
+                with open(full, "r", encoding="utf-8", errors="replace") as f:
                     return "".join(f.readlines()[-lines:])
             except OSError:
                 pass
@@ -615,7 +615,7 @@ def copy_if_newer(src, dst):
 
 
 def port_free(port):
-    """True se ninguém está usando a porta UDP do SA-MP neste computador."""
+    """True se ninguém está usando a porta UDP neste computador."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.bind(("0.0.0.0", port))
@@ -630,7 +630,7 @@ def start_test(body):
     info = test_info()
     exe = server_exe_in(info["serverPath"])
     if not exe:
-        return {"ok": False, "error": "Escolha a pasta de um servidor open.mp ou SA-MP (onde fica o omp-server.exe ou o samp-server.exe)."}
+        return {"ok": False, "error": "Escolha a pasta de um servidor (onde fica o executável do servidor)."}
     amx = os.path.join(APP_DIR, "servidor-teste", "samapstudio.amx")
     if not os.path.isfile(amx):
         return {"ok": False, "error": "O gamemode de teste não foi encontrado na instalação do editor."}
@@ -638,7 +638,7 @@ def start_test(body):
     if not port_free(TEST_PORT):
         time.sleep(1.0)  # o servidor de teste anterior pode estar terminando de fechar
     if not port_free(TEST_PORT):
-        return {"ok": False, "error": "A porta %d está em uso, provavelmente por outro servidor SA-MP/open.mp aberto "
+        return {"ok": False, "error": "A porta %d está em uso, provavelmente por outro servidor aberto "
                                       "no seu computador. Feche esse servidor e tente de novo." % TEST_PORT}
     src = os.path.dirname(exe)
     is_omp = os.path.basename(exe).lower().startswith("omp")
@@ -693,15 +693,15 @@ def start_test(body):
             shutil.copy2(amx, os.path.join(td, "gamemodes", "samapstudio.amx"))
             if streamer_src:
                 copy_if_newer(streamer_src, os.path.join(td, "plugins", "streamer.dll"))
-            with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="cp1252", errors="replace", newline="\r\n") as f:
+            with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="utf-8", errors="replace", newline="\r\n") as f:
                 f.write(body.get("map", ""))
             load_streamer = bool(streamer_src or use_streamer)
             plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
-            with open(os.path.join(td, "server.cfg"), "w", encoding="cp1252", newline="\r\n") as f:
+            with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
                 f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 8\nport %d\n"
                         "hostname SA Map Studio - teste\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
                         "%s"
-                        "query 1\nchatlogging 0\nweburl open.mp\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
+                        "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
                         "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage Portugues\n" % (rcon, TEST_PORT, plugins_line))
             cfg = {
                 "name": "SA Map Studio - teste", "max_players": 8, "announce": False, "enable_query": True,
@@ -747,7 +747,7 @@ def start_test(body):
 
 
 # ---------------------------------------------------------------------------
-# Gerenciamento de Vídeos e Cache de Animações (open.mp)
+# Gerenciamento de Vídeos e Cache de Animações
 # ---------------------------------------------------------------------------
 class AnimCacheManager:
     is_downloading = False
@@ -1084,9 +1084,20 @@ class Handler(SimpleHTTPRequestHandler):
             return self.get_thumb(path[len("/thumbs/"):])
         if path.startswith("/cache/"):
             sub = path[len("/cache/"):].lstrip("/")
-            full = os.path.join(CACHE_DIR, sub.replace("/", os.sep))
-            if os.path.isfile(full):
-                return self.send_file(full, cache="public, max-age=86400")
+            rel_sub = sub.replace("/", os.sep)
+            for cdir in (CACHE_DIR, os.path.join(APP_DIR, "Dados", "cache"), os.path.join(os.path.dirname(BASE_DIR), "Dados", "cache")):
+                full = os.path.join(cdir, rel_sub)
+                if os.path.isfile(full):
+                    return self.send_file(full, cache="public, max-age=86400")
+                low_rel = rel_sub.lower()
+                if low_rel.startswith("sprites" + os.sep + "loadscs" + os.sep):
+                    alt = os.path.join(cdir, "sprites", "ld_loadscs", os.path.basename(rel_sub))
+                    if os.path.isfile(alt):
+                        return self.send_file(alt, cache="public, max-age=86400")
+                elif low_rel.startswith("sprites" + os.sep + "ld_loadscs" + os.sep):
+                    alt = os.path.join(cdir, "sprites", "loadscs", os.path.basename(rel_sub))
+                    if os.path.isfile(alt):
+                        return self.send_file(alt, cache="public, max-age=86400")
             return self.send_error(404, "Arquivo de cache nao encontrado")
         if path == "/api/ping":
             State.last_ping = time.time()
@@ -1211,12 +1222,12 @@ class Handler(SimpleHTTPRequestHandler):
             folder = (body.get("path") or "").strip().strip('"')
             if body.get("browse"):
                 folder = browse_folder(load_config().get("server_path") or os.path.expanduser("~"),
-                                       "Escolha a pasta do servidor open.mp ou SA-MP")
+                                       "Escolha a pasta do servidor")
                 if not folder:
                     return self.send_json(test_info())
             if not server_exe_in(folder):
                 info = test_info()
-                info["error"] = "Não achei omp-server.exe nem samp-server.exe nessa pasta."
+                info["error"] = "Não achei o executável do servidor nessa pasta."
                 return self.send_json(info)
             update_config(server_path=folder)
             return self.send_json(test_info())
@@ -1497,7 +1508,7 @@ def get_initial_window_geometry():
 
 
 def open_window(url, httpd):
-    """Abre o editor numa janela própria (pywebview/WebView2) centralizada e dentro dos limites da tela. Retorna False se não der."""
+    """Abre o editor numa janela própria (pywebview/WebView2) já maximizada. Retorna False se não der."""
     try:
         import webview  # pywebview
     except ImportError:
@@ -1519,6 +1530,7 @@ def open_window(url, httpd):
                                              width=win_w, height=win_h,
                                              x=win_x, y=win_y,
                                              min_size=min_size,
+                                             maximized=True,
                                              background_color="#1c2228", text_select=True)
         try:
             webview.start(private_mode=False, storage_path=WEBVIEW_DIR)

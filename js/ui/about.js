@@ -7,10 +7,10 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.0.0', date: '15/10/2026', items: [
-      'Filtragem Inteligente de Tuning, Paintjobs e Cores de Veículos: compatibilidade rigorosa com o modelo do veículo baseada nas regras oficiais do SA-MP/open.mp (IsVehicleValidForColor, IsVehicleValidForModding, IsPaintjobValidForVehicle e IsModValidForVehicle). No inspetor de veículos, agora são exibidos exclusivamente os componentes de tuning (spoilers, capôs, tetos, saias, escapamentos, nitro, rodas, som estéreo, hidráulica), paintjobs (0 a 2) e seletores de cor compatíveis com o modelo selecionado.',
+      'Filtragem Inteligente de Tuning, Paintjobs e Cores de Veículos: compatibilidade rigorosa com o modelo do veículo baseada nas regras oficiais  (IsVehicleValidForColor, IsVehicleValidForModding, IsPaintjobValidForVehicle e IsModValidForVehicle). No inspetor de veículos, agora são exibidos exclusivamente os componentes de tuning (spoilers, capôs, tetos, saias, escapamentos, nitro, rodas, som estéreo, hidráulica), paintjobs (0 a 2) e seletores de cor compatíveis com o modelo selecionado.',
       'Aplicação Real de Tuning e Paintjobs no Servidor de Teste: integração de AddVehicleComponent e ChangeVehiclePaintjob no gamemode do servidor de teste (samapstudio.pwn/amx). Ao testar o mapa no jogo, todos os veículos surgem com os componentes de modding instalados e os paintjobs perfeitamente aplicados.',
       'Suporte Completo a Textos 3D (3D Text Labels): criação visual de labels 3D (Create3DTextLabel / CreateDynamic3DTextLabel) na cena com efeito billboard voltado para a câmera, suporte a múltiplas linhas (\\n), tags de cores embutidas ({RRGGBB}), paleta oficial SA-MP e seletor hexadecimal, ajuste de distância de visão (draw distance), teste de linha de visão (testLOS), mundo virtual e interior, salvamento/carregamento no projeto, importação/exportação Pawn e sincronização automática no servidor de teste.',
-      'Suporte Completo a Pickups (CreatePickup / CreateDynamicPickup): catálogo categorizado de pickups pré-definidos do open.mp e SA-MP (vida, colete, dinheiro, propriedades, armas IDs 321 a 372 e itens), malha 3D animada com rotação contínua na viewport, inspetor com seleção de tipo de pickup, tempo de respawn, mundo e interior, salvamento/carregamento no projeto, importação/exportação Pawn e sincronização no servidor de teste.',
+      'Suporte Completo a Pickups (CreatePickup / CreateDynamicPickup): catálogo categorizado de pickups pré-definidos  (vida, colete, dinheiro, propriedades, armas IDs 321 a 372 e itens), malha 3D animada com rotação contínua na viewport, inspetor com seleção de tipo de pickup, tempo de respawn, mundo e interior, salvamento/carregamento no projeto, importação/exportação Pawn e sincronização no servidor de teste.',
       'Novo Editor Interativo de GangZones com Radar Map: diálogo modal completo exibindo o mapa de radar oficial do GTA San Andreas (-3000 a +3000), navegação por pan/zoom, desenho de zonas arrastando o mouse, sistema magnético inteligente de encaixe/alinhamento de bordas (snap) entre zonas adjacentes com guias visuais ciano, seletor de cores RGBA com controle de transparência/opacidade, projeção plana 3D da zona no chão do mundo, salvamento/carregamento no projeto, exportação Pawn (GangZoneCreate / GangZoneShowForAll) e renderização no servidor de teste.',
       'Novo Editor Visual de TextDraws (TextDraw Editor): ambiente de edição de TextDraws na resolução nativa 640x480 do SA-MP com guias de margem segura, suporte a textos e caixas com cores e opacidade personalizadas, seleção de fontes (0 a 5), sombra (shadow), contorno (outline), alinhamento (left, center, right), espaçamento de letras (letter size), tamanho de texto/caixa (text size), pré-visualização real de modelos 3D com miniaturas para Font 5 (veículos, skins e objetos com rotação e zoom configuráveis), arrastar e redimensionar interativo por alças visuais e exportação limpa de scripts Pawn prontos para uso.',
       'Otimização Inteligente de CPU e Taxa de Quadros (Dynamic FPS Throttling): eliminação do desperdício de CPU ao limitar dinamicamente os quadros da viewport (60 FPS durante movimentação suave da câmera, 30 FPS em repouso com animação fluida de pickups, 5 FPS com modais abertos e 2 FPS em segundo plano/minimizado), reduzindo o consumo de CPU de ~15% para patamares mínimos e ecológicos.',
@@ -28,7 +28,7 @@ const CHANGELOG = [
   },
   {
     version: '2.9.0', date: '15/10/2026', items: [
-      'Catálogo Completo de Armas do open.mp e GTA SA: inclusão de 46 armas e itens especiais (IDs 321 a 372) com miniaturas 3D e categoria dedicada "Armas", com ordenação alfabética completa das categorias.',
+      'Catálogo Completo de Armas : inclusão de 46 armas e itens especiais (IDs 321 a 372) com miniaturas 3D e categoria dedicada "Armas", com ordenação alfabética completa das categorias.',
       'Ajuste Fino com Setas Direcionais nos Eixos (▲ / ▼): botões interativos de passo para Posição (X, Y, Z) e Rotação (RX, RY, RZ) com suporte a clique contínuo (auto-repeat), Shift (passo fino 0.1x), Ctrl (passo rápido 5.0x) e histórico completo de Desfazer/Refazer.',
       'Recurso Tornar Invisível em Materiais: botão para remover a textura de qualquer índice tornando a respectiva parte da malha 100% invisível no 3D e exportando o formato canônico SetObjectMaterial(..., 0, "none", "none", 0).',
       'Formatação Rigorosa de Coordenadas Pawn: valores float com valor zero depois do ponto agora são exportados de forma limpa como 180.0 e 0.0, preservando integralmente a representação bruta para dados importados não editados.',
@@ -42,7 +42,7 @@ const CHANGELOG = [
   {
     version: '2.8.0', date: '14/10/2026', items: [
       'Novo Seletor de Animações com Split View: painel dividido interativo com player de vídeo integrado para visualização imediata da animação em execução.',
-      'Transmissão e Cache Local de Vídeos: streaming dinâmico direto do open.mp em formato WebM leve com armazenamento local automático em cache para acesso offline instantâneo.',
+      'Transmissão e Cache Local de Vídeos: streaming dinâmico direto  em formato WebM leve com armazenamento local automático em cache para acesso offline instantâneo.',
       'Recurso Baixar Pacote Offline: download em lote em segundo plano de todas as animações (~320 MB) com progresso em tempo real, percentual e opção de pausar.',
       'Categorização Inteligente de Animações: abas por contexto ("Populares", "Conversas & Gestos", "Sentado & Deitado", "Danças", "Polícia & Segurança", "Combate & Armas", "Esportes & Academia", "Bar, Fumo & Lazer", "Todas") com busca rápida.',
       'Seleção Firme e Fixada: seleção estável ao clicar nos cards sem interferência do movimento do cursor do mouse, com aplicação direta ou por duplo clique.',
@@ -52,7 +52,7 @@ const CHANGELOG = [
   },
   {
     version: '2.7.0', date: '14/10/2026', items: [
-      'Catálogo completo de animações do open.mp: 1.812 presets organizados por biblioteca com campo de busca em tempo real (nome, lib e ação) no painel de Actors.',
+      'Catálogo completo de animações : 1.812 presets organizados por biblioteca com campo de busca em tempo real (nome, lib e ação) no painel de Actors.',
       'Posicionamento e centralização inteligente da janela na tela: dimensionamento dinâmico que se adapta à área útil de trabalho (work area), evitando cortes ou bordas ocultas em qualquer monitor.',
       'Orientação dos eixos do manipulador esclarecida: botão "Eixos: Mundo" vs "Eixos: Objeto" com tooltips detalhados explicando o impacto da manipulação global vs local alinhada à rotação dos objetos.',
       'Opção "Trocar pasta do GTA" relocalizada para o menu "Testar no jogo", mantendo todas as configurações de inicialização e teste integradas em um só diálogo.',
@@ -63,7 +63,7 @@ const CHANGELOG = [
   {
     version: '2.6.0', date: '14/10/2026', items: [
       'Menu "Ir para" totalmente reestruturado e dividido em duas abas: "Locais no mundo" e "Interiores", com busca em tempo real e filtros rápidos por categoria.',
-      'Lista completa de interiores do GTA San Andreas e SA-MP/open.mp integrada com coordenadas precisas de teleporte, identificação do Interior ID e ativação automática do modo de interiores.',
+      'Lista completa de interiores do GTA San Andreas e integrada com coordenadas precisas de teleporte, identificação do Interior ID e ativação automática do modo de interiores.',
       'Configuração de clima (0 a 45, padrão 10) e horário com minutos (padrão 10:00) diretamente no diálogo "Testar o mapa no jogo", sincronizados com o servidor de teste e o jogador.',
       'Configuração de clima e horário adicionada ao menu Visão, refletindo instantaneamente na viewport 3D do editor (céu dinâmico, ciclo dia/noite, névoa volumétrica e iluminação do sol e ambiente) em sincronia total com o modo de teste.',
       'Novos comandos /fly e /voar no servidor de teste para alternar o voo livre da câmera (noclip suave por teclado/mouse), retornando à posição e ângulo exatos onde foi ativado ao sair.',
@@ -80,7 +80,7 @@ const CHANGELOG = [
       'Novo campo copiável "Coordenadas do clique do mouse" no topo do menu lateral direito, exibindo em tempo real as coordenadas clicadas no mapa com botão de cópia rápida.',
       'Desfazer e Refazer (Undo/Redo) com suporte global inteligente: reverte e reaplica alterações no projeto principal ou projetos coexistentes editáveis de acordo com a ordem das modificações.',
       'Posicionamento de câmera otimizado ao carregar e importar mapas: enquadramento próximo e equilibrado sobre o centro do mapa/itens.',
-      'Suporte completo a Actors no servidor de teste open.mp: criação automática via CreateActor e ApplyActorAnimation.',
+      'Suporte completo a Actors no servidor de teste: criação automática via CreateActor e ApplyActorAnimation.',
       'Novo ícone oficial do projeto com visão frontal perfeitamente centralizada e limpa do forno mkwalloven1, sem badges de ID.',
       'Inclusão dos direitos reservados e créditos oficiais abaixo da barra de progresso na tela de inicialização (boot splash).',
       'Sistema dinâmico de versões exibindo a data e hora exata da compilação.'],
@@ -91,7 +91,7 @@ const CHANGELOG = [
       'Importação fiel de mapas Pawn (.pwn) de qualquer padrão: preserva 100% dos comentários (// e /* */), anotações no fim das linhas de código, linhas em branco, cabeçalhos (#include), cores de materiais em hexadecimal (0xAARRGGBB), parâmetros de textos, draw/stream distance, interior e mundo virtual.',
       'Câmera centralizada automaticamente olhando para baixo sobre o mapa ao carregar ou alternar projetos.',
       'Correção na orientação e spawn dos Actors: surgem perfeitamente eretos/em pé e apoiados com os pés na superfície.',
-      'Servidor de teste open.mp com omp-server.exe, DLLs e componentes empacotados na raiz da distribuição e sincronização em tempo real das alterações do editor.',
+      'Servidor de teste com omp-server.exe, DLLs e componentes empacotados na raiz da distribuição e sincronização em tempo real das alterações do editor.',
     ],
   },
   {
@@ -190,7 +190,7 @@ const FEATURES = [
   ]],
   ['Veículos, Tuning e Cores', [
     'Tuning completo de veículos em tempo real no 3D com salvamento dos componentes (AddVehicleComponent).',
-    'Paleta de cores com todos os 256 IDs de cores do SA-MP/open.mp (incluindo as novas cores a partir do ID 128).',
+    'Paleta de cores com todos os 256 IDs de cores  (incluindo as novas cores a partir do ID 128).',
     'Pré-visualização e seleção de paintjobs em tempo real diretamente no veículo.',
   ]],
   ['Actors e Dinâmicos', [
@@ -224,7 +224,7 @@ const FEATURES = [
     'O código das câmeras vai na exportação, sem warnings.',
   ]],
   ['Testar no jogo', [
-    'Sobe um servidor de teste local integrado (open.mp omp-server com DLLs e componentes) e abre o SA-MP já conectado.',
+    'Sobe um servidor de teste local integrado ( omp-server com DLLs e componentes) e abre o SA-MP já conectado.',
     'Sincronização em tempo real das alterações do mapa com o servidor de teste.',
     'Comandos no jogo: /jetpack, /v [modelo], /spawn e /pos.',
   ]],

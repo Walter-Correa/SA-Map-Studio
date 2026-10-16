@@ -75,7 +75,7 @@ function pushRecentCarColor(id) {
   store.set('recentCarColors', list.slice(0, 16));
 }
 
-// Paleta dedicada para as 256 cores de veículos (0 a 255) do SA-MP / Open.MP
+// Paleta dedicada para as 256 cores de veículos (0 a 255)
 export function vehicleColorPalette(el, { value = -1, onChange }) {
   let cur = parseInt(value, 10);
   if (!Number.isFinite(cur)) cur = -1;
@@ -104,9 +104,9 @@ export function vehicleColorPalette(el, { value = -1, onChange }) {
         <button type="button" class="btn small${isNone ? ' on' : ''}" data-none style="font-size:11px; padding:3px 6px;">Aleatória (-1)</button>
       </div>
       <div style="margin: 0 0 6px;">
-        <input class="pal-search" type="search" placeholder="Filtrar por ID (0-255)..." value="${esc(filter)}" style="width:100%; font-size:12px; padding:4px 8px; border-radius:4px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.15); color:#fff;">
+        <input class="pal-search" type="search" placeholder="Filtrar por ID (0-255)" value="${esc(filter)}" style="width:100%; font-size:12px; padding:4px 8px; border-radius:4px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.15); color:#fff;">
       </div>
-      <div class="pal-sub" style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Cores SA-MP / Open.MP (${swatches.length} de 256)</div>
+      <div class="pal-sub" style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Cores de veículos (${swatches.length} de 256)</div>
       <div class="pal-grid" style="max-height:160px; overflow-y:auto; display:grid; grid-template-columns:repeat(8, 1fr); gap:3px; padding-right:4px;">
         ${swatches.map(id => `<button type="button" class="sw${id === cur ? ' on' : ''}" data-car-id="${id}" style="--c:${carColorHex(id)}; width:100%; aspect-ratio:1; border-radius:3px; border:1px solid rgba(255,255,255,0.12); cursor:pointer;" title="ID ${id} (${carColorHex(id)})" aria-label="ID ${id}"></button>`).join('')}
       </div>

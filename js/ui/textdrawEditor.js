@@ -1,4 +1,4 @@
-// Editor visual e interativo de TextDraws para SA-MP / open.mp (TextDrawCreate / CreatePlayerTextDraw)
+// Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela de visualização com resolução clássica 640x480, arrasto interativo,
 // fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
 import { makeTextDraw } from '../editor/project.js';
@@ -18,15 +18,20 @@ let gameBgImg = null;
 const spriteImageCache = new Map();
 
 function getSpriteImage(lib, name) {
-  const key = `${(lib || 'hud').toLowerCase()}:${(name || '').toLowerCase()}`;
+  const libLower = (lib || 'hud').toLowerCase();
+  const nameLower = (name || '').toLowerCase();
+  const key = `${libLower}:${nameLower}`;
   if (spriteImageCache.has(key)) return spriteImageCache.get(key);
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = `/cache/sprites/${(lib || 'hud').toLowerCase()}/${(name || '').toLowerCase()}.png`;
+  img.src = `/cache/sprites/${libLower}/${nameLower}.png`;
   img.onerror = () => {
-    if (!img._fallback) {
-      img._fallback = true;
-      img.src = `https://assets.open.mp/assets/images/sprites/${lib}/${name}.png`;
+    if (!img._altTried) {
+      img._altTried = true;
+      const altLib = libLower === 'loadscs' ? 'ld_loadscs' : (libLower === 'ld_loadscs' ? 'loadscs' : null);
+      if (altLib) {
+        img.src = `/cache/sprites/${altLib}/${nameLower}.png`;
+      }
     }
   };
   img.onload = () => {
@@ -46,14 +51,14 @@ function loadGameBg() {
   }
 }
 
-// Cores padrão do SA-MP
+// Cores padrão
 const DEFAULT_TD_COLORS = [
   { name: 'Branco', val: 0xFFFFFFFF },
   { name: 'Preto', val: 0x000000FF },
-  { name: 'Amarelo SA-MP', val: 0xFFFF00FF },
-  { name: 'Verde SA-MP', val: 0x33AA33FF },
-  { name: 'Azul SA-MP', val: 0x33CCFFFF },
-  { name: 'Vermelho SA-MP', val: 0xFF3333FF },
+  { name: 'Amarelo', val: 0xFFFF00FF },
+  { name: 'Verde', val: 0x33AA33FF },
+  { name: 'Azul', val: 0x33CCFFFF },
+  { name: 'Vermelho', val: 0xFF3333FF },
   { name: 'Laranja', val: 0xFF9900FF },
   { name: 'Cinza Escuro', val: 0x222222FF },
 ];
@@ -65,7 +70,7 @@ function toHexRgba(num) {
   const b = (val >>> 8) & 0xFF;
   const a = (val & 0xFF) / 255;
   const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
-  return { hex, alpha: a, r, g, b, css: `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})` };
+  return { hex, alpha: a, a, r, g, b, css: `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})` };
 }
 
 function hexAndAlphaToTdColor(hexStr, alpha = 1.0) {
@@ -203,20 +208,11 @@ function bindFieldInputs() {
       const td = getSelectedTd();
       if (!td) return;
       td.font = +selFont.value;
+      if (td.font === 4 || td.font === 5) {
+        if (!td.textSizeX || td.textSizeX > 400) td.textSizeX = 80;
+        if (!td.textSizeY || td.textSizeY > 400) td.textSizeY = 80;
+      }
       updateSidebarFields();
-      updateSidebarList();
-      redrawCanvas();
-    };
-  }
-
-  const selSprite = dialogEl.querySelector('#tdSpriteSelect');
-  if (selSprite) {
-    selSprite.onchange = () => {
-      const td = getSelectedTd();
-      if (!td || !selSprite.value) return;
-      td.text = selSprite.value;
-      const txt = dialogEl.querySelector('#tdText');
-      if (txt) txt.value = td.text;
       updateSidebarList();
       redrawCanvas();
     };
@@ -227,13 +223,12 @@ function bindFieldInputs() {
     btnOpenSprite.onclick = () => {
       const td = getSelectedTd();
       openSpritePicker({
-        currentSprite: td?.text || 'hud:arrow',
+        currentSprite: td?.text || 'hud:radardisc',
         onSelect: (val) => {
           if (td) {
             td.text = val;
             const txt = dialogEl.querySelector('#tdText');
             if (txt) txt.value = val;
-            if (selSprite) selSprite.value = val;
             updateSidebarList();
             redrawCanvas();
           }
@@ -247,7 +242,8 @@ function bindFieldInputs() {
     selAlign.onchange = () => {
       const td = getSelectedTd();
       if (!td) return;
-      td.alignment = +selAlign.value;
+      td.align = +selAlign.value;
+      td.alignment = td.align;
       redrawCanvas();
     };
   }
@@ -336,8 +332,29 @@ function getOrLoadModelThumbnail(modelId) {
   if (modelImgCache.has(id)) {
     return modelImgCache.get(id);
   }
-  const entry = { img: new Image(), loaded: false, failed: false };
+  const entry = { img: new Image(), cleanCanvas: null, loaded: false, failed: false };
+  entry.img.crossOrigin = 'anonymous';
   entry.img.onload = () => {
+    try {
+      const w = entry.img.naturalWidth || entry.img.width;
+      const h = entry.img.naturalHeight || entry.img.height;
+      if (w > 0 && h > 0) {
+        const off = document.createElement('canvas');
+        off.width = w;
+        off.height = h;
+        const octx = off.getContext('2d');
+        octx.drawImage(entry.img, 0, 0);
+        const imgData = octx.getImageData(0, 0, w, h);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          if (Math.abs(d[i] - 43) <= 10 && Math.abs(d[i + 1] - 51) <= 10 && Math.abs(d[i + 2] - 59) <= 10) {
+            d[i + 3] = 0;
+          }
+        }
+        octx.putImageData(imgData, 0, 0);
+        entry.cleanCanvas = off;
+      }
+    } catch (_) {}
     entry.loaded = true;
     redrawCanvas();
   };
@@ -356,7 +373,7 @@ function getOrLoadModelThumbnail(modelId) {
       redrawCanvas();
     }
   };
-  entry.img.src = `/thumbs/obj/${id}.webp`;
+  entry.img.src = `/thumbs/obj/${id}.webp?v=3`;
   modelImgCache.set(id, entry);
   return entry;
 }
@@ -460,21 +477,20 @@ function setupCanvasEvents() {
       const newW = Math.max(10, Math.round(isDraggingTd.origW + dx));
       const newH = Math.max(10, Math.round(isDraggingTd.origH + dy));
 
-      if (td.font === 5) {
-        // Prévia de modelo 3D: textSizeX e textSizeY são largura e altura da caixa
+      if (td.font === 4 || td.font === 5) {
+        // Sprite (Font 4) e Prévia de modelo 3D (Font 5): textSizeX e textSizeY são largura e altura
         td.textSizeX = newW;
         td.textSizeY = newH;
       } else if (td.useBox) {
-        // Caixa padrão SA-MP: textSizeX é a coordenada X final da caixa (td.x + newW), textSizeY é altura
+        // Caixa padrão: textSizeX é a coordenada X final da caixa (td.x + newW), textSizeY é altura
         td.textSizeX = Math.round(td.x + newW);
         td.textSizeY = newH;
       } else {
-        // Texto normal: escala letterSizeX e letterSizeY proporcionalmente
-        const lines = String(td.text || '').split(/\r?\n/);
-        const lineCount = Math.max(1, lines.length);
-        const maxChars = Math.max(...lines.map(l => l.replace(/\{[A-Fa-f0-9]{6}\}/g, '').length), 1);
-        td.letterSizeX = Number(Math.max(0.1, (newW / maxChars) / 18).toFixed(2));
-        td.letterSizeY = Number(Math.max(0.2, (newH / lineCount) / 20).toFixed(2));
+        // Texto normal: escala letterSizeX e letterSizeY proporcionalmente ao arrasto da caixa
+        const ratioX = newW / Math.max(10, isDraggingTd.origW);
+        const ratioY = newH / Math.max(10, isDraggingTd.origH);
+        td.letterSizeX = Number(Math.max(0.08, (isDraggingTd.origLetterX || 0.35) * ratioX).toFixed(2));
+        td.letterSizeY = Number(Math.max(0.2, (isDraggingTd.origLetterY || 1.4) * ratioY).toFixed(2));
       }
     } else {
       const dx = sx - isDraggingTd.startX;
@@ -482,7 +498,7 @@ function setupCanvasEvents() {
       const newX = Math.round(Math.max(0, Math.min(640, isDraggingTd.origX + dx)));
       const newY = Math.round(Math.max(0, Math.min(480, isDraggingTd.origY + dy)));
 
-      if (td.useBox && td.font !== 5 && isDraggingTd.origSizeX > isDraggingTd.origX) {
+      if (td.useBox && td.font !== 4 && td.font !== 5 && isDraggingTd.origSizeX > isDraggingTd.origX) {
         // Mantém a largura da caixa ao arrastá-la de posição
         const boxW = isDraggingTd.origSizeX - isDraggingTd.origX;
         td.x = newX;
@@ -508,31 +524,55 @@ function setupCanvasEvents() {
   });
 }
 
+function getTdAlign(td) {
+  return td.align !== undefined ? td.align : (td.alignment !== undefined ? td.alignment : 1);
+}
+
 function getTextDrawBounds(td) {
-  const fontH = (td.letterSizeY || 1.12) * 20;
-  const lines = String(td.text || '').split(/\r?\n/);
+  const letterY = td.letterSizeY || 1.4;
+  const letterX = td.letterSizeX || 0.35;
+  const fontH = letterY * 20;
+  const lines = String(td.text || '').split(/(?:\r?\n|~n~)/);
   const lineCount = Math.max(1, lines.length);
+
+  if (td.font === 4 || td.font === 5) {
+    const w = td.textSizeX > 0 ? td.textSizeX : 80;
+    const h = td.textSizeY > 0 ? td.textSizeY : 80;
+    return { x: td.x, y: td.y, w, h };
+  }
 
   let w = 100;
   let h = 100;
 
-  if (td.font === 5) {
-    w = td.textSizeX > 0 ? td.textSizeX : 100;
-    h = td.textSizeY > 0 ? td.textSizeY : 100;
-  } else if (td.useBox) {
+  if (td.useBox) {
     w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(30, td.textSizeX || 100);
-    h = (td.textSizeY > 0) ? td.textSizeY : (lineCount * fontH);
+    h = (td.textSizeY > 0) ? td.textSizeY : Math.max(18, Math.round(lineCount * fontH));
   } else {
-    // Estimativa de largura do texto baseada na fonte e letterSizeX
-    const charW = (td.letterSizeX || 0.48) * 18;
-    const maxChars = Math.max(...lines.map(l => l.replace(/\{[A-Fa-f0-9]{6}\}/g, '').length), 1);
-    w = Math.max(20, Math.round(maxChars * charW));
+    const fontFam = getFontFamily(td.font);
+    const fontSize = Math.max(8, Math.round(letterY * 18));
+    const scaleX = Math.max(0.25, (letterX * 4.0) / letterY);
+    let maxLineW = 20;
+    if (ctx) {
+      ctx.save();
+      ctx.font = `bold ${fontSize}px ${fontFam}`;
+      for (const l of lines) {
+        const clean = stripColorTags(l);
+        const mw = ctx.measureText(clean).width * scaleX;
+        if (mw > maxLineW) maxLineW = mw;
+      }
+      ctx.restore();
+    } else {
+      const maxChars = Math.max(...lines.map(l => stripColorTags(l).length), 1);
+      maxLineW = maxChars * fontSize * 0.6 * scaleX;
+    }
+    w = Math.max(20, Math.round(maxLineW));
     h = Math.max(14, Math.round(lineCount * fontH));
   }
 
+  const align = getTdAlign(td);
   let x = td.x;
-  if (td.alignment === 2) x -= w / 2; // Centro
-  else if (td.alignment === 3) x -= w; // Direita
+  if (align === 2) x -= w / 2; // Centro
+  else if (align === 3) x -= w; // Direita
 
   return { x, y: td.y, w, h };
 }
@@ -621,6 +661,7 @@ function drawGrid() {
 
   // Indicador de canto "SAFE ZONE (600x440)" posicionado acima da borda safe (y < 20)
   ctx.font = 'bold 9px "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
   ctx.lineWidth = 2.5;
@@ -643,9 +684,9 @@ function renderTextDraw(td, isSelected) {
 
   // 2. Se for Font 5 (Prévia de Modelo 3D)
   if (td.font === 5) {
-    renderModelPreview(td, bounds);
+    renderModelPreview(td, bounds, isSelected);
   } else if (td.font === 4) {
-    // 3. Se for Font 4 (Sprite open.mp / SA-MP)
+    // 3. Se for Font 4 (Sprite)
     renderSpriteTextDraw(td, bounds);
   } else {
     // 4. Renderiza Texto normal
@@ -672,41 +713,63 @@ function renderTextDraw(td, isSelected) {
 }
 
 function renderTextDrawString(td, bounds) {
+  const letterY = td.letterSizeY || 1.4;
+  const letterX = td.letterSizeX || 0.35;
   const fontFam = getFontFamily(td.font);
-  const fontSize = Math.max(8, Math.round((td.letterSizeY || 1.12) * 18));
+  const fontSize = Math.max(8, Math.round(letterY * 18));
+  const scaleX = Math.max(0.25, (letterX * 4.0) / letterY);
+  const align = getTdAlign(td);
+
+  ctx.save();
   ctx.font = `bold ${fontSize}px ${fontFam}`;
   ctx.textBaseline = 'top';
 
-  if (td.alignment === 2) ctx.textAlign = 'center';
-  else if (td.alignment === 3) ctx.textAlign = 'right';
-  else ctx.textAlign = 'left';
-
-  const lines = String(td.text || '').split(/\r?\n/);
-  const lineH = (td.letterSizeY || 1.12) * 20;
+  const lines = String(td.text || '').split(/(?:\r?\n|~n~)/);
+  const lineH = letterY * 20;
 
   lines.forEach((line, lineIdx) => {
     const curY = td.y + lineIdx * lineH;
-    let startX = td.x;
+    const startX = td.x;
+
+    ctx.save();
+    ctx.translate(startX, curY);
+    ctx.scale(scaleX, 1);
+
+    if (align === 2) ctx.textAlign = 'center';
+    else if (align === 3) ctx.textAlign = 'right';
+    else ctx.textAlign = 'left';
 
     // Sombra ou Contorno
     const bgCol = toHexRgba(td.backgroundColor ?? 0x000000FF);
     if (td.outline > 0) {
       ctx.strokeStyle = bgCol.css;
       ctx.lineWidth = td.outline * 2;
-      ctx.strokeText(stripColorTags(line), startX, curY);
+      ctx.strokeText(stripColorTags(line), 0, 0);
     } else if (td.shadow > 0) {
       ctx.fillStyle = bgCol.css;
-      ctx.fillText(stripColorTags(line), startX + td.shadow, curY + td.shadow);
+      ctx.fillText(stripColorTags(line), td.shadow, td.shadow);
     }
 
     // Texto com suporte a tags {RRGGBB}
-    drawFormattedLine(line, startX, curY, toHexRgba(td.color ?? 0xE1E1E1FF).css);
+    drawFormattedLine(line, 0, 0, toHexRgba(td.color ?? 0xE1E1E1FF).css, align);
+    ctx.restore();
   });
+  ctx.restore();
 }
 
-function drawFormattedLine(line, x, y, defaultColor) {
+function drawFormattedLine(line, x, y, defaultColor, align = 1) {
   const parts = parseColorTags(line, defaultColor);
+  if (parts.length <= 1) {
+    ctx.fillStyle = parts[0]?.color || defaultColor;
+    ctx.fillText(parts[0]?.text || '', x, y);
+    return;
+  }
+
+  ctx.textAlign = 'left';
+  const totalW = parts.reduce((acc, p) => acc + ctx.measureText(p.text).width, 0);
   let curX = x;
+  if (align === 2) curX -= totalW / 2;
+  else if (align === 3) curX -= totalW;
 
   for (const part of parts) {
     ctx.fillStyle = part.color;
@@ -751,7 +814,7 @@ function getFontFamily(fontId) {
 }
 
 function renderSpriteTextDraw(td, bounds) {
-  const sprite = (td.text || 'hud:arrow').trim();
+  const sprite = (td.text || 'hud:radardisc').trim();
   const col = toHexRgba(td.color ?? 0xFFFFFFFF);
   const [lib, name] = sprite.includes(':') ? sprite.split(':') : ['hud', sprite];
 
@@ -807,17 +870,18 @@ function renderSpriteTextDraw(td, bounds) {
   ctx.restore();
 }
 
-function renderModelPreview(td, bounds) {
-  // Fundo com contorno indicando o modelo 3D
-  ctx.fillStyle = td.useBox ? toHexRgba(td.boxColor ?? 0x00000080).css : '#151b26';
-  ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
-  ctx.strokeStyle = '#384860';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+function renderModelPreview(td, bounds, isSelected = false) {
+  // Se não estiver selecionado e não tiver caixa ativa, desenha apenas contorno discreto
+  if (!isSelected && !td.useBox) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  }
 
   const modelId = td.previewModel || 411;
   const thumb = getOrLoadModelThumbnail(modelId);
   const zoom = Math.max(0.2, Math.min(5.0, Number(td.previewZoom) || 1.0));
+  const invZoom = 1.0 / zoom; // No GTA SA, zoom menor aproxima o modelo e zoom maior afasta
 
   if (thumb && thumb.loaded && thumb.img.width > 0) {
     ctx.save();
@@ -830,21 +894,16 @@ function renderModelPreview(td, bounds) {
     const cy = bounds.y + bounds.h / 2;
     ctx.translate(cx, cy);
 
-    // Rotação Z do preview
-    if (td.previewRotZ) {
-      ctx.rotate((td.previewRotZ * Math.PI) / 180);
-    }
-
     // Calcula dimensão da imagem mantendo proporção
     const imgAspect = thumb.img.width / thumb.img.height;
-    let drawW = bounds.w * 0.9 * zoom;
+    let drawW = bounds.w * 0.92 * invZoom;
     let drawH = drawW / imgAspect;
-    if (drawH > bounds.h * 0.9 * zoom) {
-      drawH = bounds.h * 0.9 * zoom;
+    if (drawH > bounds.h * 0.92 * invZoom) {
+      drawH = bounds.h * 0.92 * invZoom;
       drawW = drawH * imgAspect;
     }
 
-    ctx.drawImage(thumb.img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.drawImage(thumb.cleanCanvas || thumb.img, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
   } else {
     // Se ainda está carregando ou não tem miniatura, exibe texto indicativo
@@ -855,12 +914,14 @@ function renderModelPreview(td, bounds) {
     ctx.fillText(`MODELO 3D: #${modelId}`, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   }
 
-  // Tag do Modelo no canto superior
-  ctx.font = '9px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`#${modelId} (${zoom.toFixed(1)}x)`, bounds.x + 4, bounds.y + 4);
+  // Tag do Modelo no canto superior apenas quando selecionado
+  if (isSelected) {
+    ctx.font = '9px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`#${modelId}`, bounds.x + 4, bounds.y + 4);
+  }
 }
 
 function updateSidebarList() {
@@ -925,7 +986,7 @@ function updateSidebarFields() {
   setVal('#tdSizeX', td.textSizeX);
   setVal('#tdSizeY', td.textSizeY);
   setVal('#tdFont', td.font);
-  setVal('#tdAlign', td.alignment);
+  setVal('#tdAlign', getTdAlign(td));
   setVal('#tdOutline', td.outline);
   setVal('#tdShadow', td.shadow);
   setChk('#tdUseBox', td.useBox);
@@ -949,8 +1010,6 @@ function updateSidebarFields() {
   const spritePanel = dialogEl.querySelector('#tdSpritePanel');
   if (spritePanel) {
     spritePanel.style.display = td.font === 4 ? 'block' : 'none';
-    const selSprite = dialogEl.querySelector('#tdSpriteSelect');
-    if (selSprite) selSprite.value = td.text || '';
   }
 
   // Controles específicos de Font 5 (Model Preview)
@@ -972,9 +1031,12 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
     x: 320,
     y: 200,
     font: 1,
-    letterSizeX: 0.48,
-    letterSizeY: 1.12,
+    letterSizeX: 0.35,
+    letterSizeY: 1.4,
+    textSizeX: 640,
+    textSizeY: 480,
     color: 0xFFFFFFFF,
+    align: 2,
     alignment: 2,
     shadow: 1,
     outline: 0,
@@ -991,7 +1053,7 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
 function createNewBox() {
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const td = makeTextDraw({
-    text: '',
+    text: '_',
     x: 200,
     y: 150,
     useBox: 1,
@@ -1019,10 +1081,13 @@ function createNewModelPreview() {
     previewRotX: -16.0,
     previewRotY: 0.0,
     previewRotZ: -55.0,
-    textSizeX: 100,
+    previewColor1: 1,
+    previewColor2: 1,
+    textSizeX: 110,
     textSizeY: 100,
-    useBox: 1,
-    boxColor: 0x00000040,
+    useBox: 0,
+    boxColor: 0x00000060,
+    backgroundColor: 0x00000000,
   });
   appRef.project.textDraws.push(td);
   selectedIdx = appRef.project.textDraws.length - 1;
@@ -1035,12 +1100,12 @@ function createNewModelPreview() {
 function createNewSprite() {
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const td = makeTextDraw({
-    text: 'LD_BEAT:chit',
+    text: 'hud:radardisc',
     x: 290,
     y: 210,
     font: 4,
-    textSizeX: 60,
-    textSizeY: 60,
+    textSizeX: 64,
+    textSizeY: 64,
     color: 0xFFFFFFFF,
     useBox: 0,
   });
@@ -1086,18 +1151,23 @@ function copyTextDrawsPawn() {
   tds.forEach((td, i) => {
     const varName = `td_${i}`;
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
+    const align = getTdAlign(td);
     const cHex = '0x' + (Number(td.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const bHex = '0x' + (Number(td.boxColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const bgHex = '0x' + (Number(td.backgroundColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
+    const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    const isTextNoBox = (td.font <= 3) && !td.useBox;
+    const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
+    const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 480.0);
 
-    lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || ''}");`);
+    lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || '_'}");`);
     lines.push(`TextDrawFont(${varName}, ${td.font ?? 1});`);
-    lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.48).toFixed(2)}, ${(td.letterSizeY ?? 1.12).toFixed(2)});`);
-    lines.push(`TextDrawTextSize(${varName}, ${(td.textSizeX ?? 1280).toFixed(1)}, ${(td.textSizeY ?? 1280).toFixed(1)});`);
+    lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.35).toFixed(2)}, ${(td.letterSizeY ?? 1.4).toFixed(2)});`);
+    lines.push(`TextDrawTextSize(${varName}, ${Number(expSizeX).toFixed(1)}, ${Number(expSizeY).toFixed(1)});`);
     lines.push(`TextDrawColor(${varName}, ${cHex});`);
     lines.push(`TextDrawSetOutline(${varName}, ${td.outline ?? 0});`);
     lines.push(`TextDrawSetShadow(${varName}, ${td.shadow ?? 1});`);
-    lines.push(`TextDrawAlignment(${varName}, ${td.alignment ?? 1});`);
+    lines.push(`TextDrawAlignment(${varName}, ${align});`);
     if (td.useBox) {
       lines.push(`TextDrawUseBox(${varName}, 1);`);
       lines.push(`TextDrawBoxColor(${varName}, ${bHex});`);
@@ -1107,7 +1177,8 @@ function copyTextDrawsPawn() {
     if (td.selectable) lines.push(`TextDrawSetSelectable(${varName}, 1);`);
     if (td.font === 5 && td.previewModel) {
       lines.push(`TextDrawSetPreviewModel(${varName}, ${td.previewModel});`);
-      lines.push(`TextDrawSetPreviewRot(${varName}, ${(td.previewRotX || 0).toFixed(1)}, ${(td.previewRotY || 0).toFixed(1)}, ${(td.previewRotZ || 0).toFixed(1)}, ${(td.previewZoom || 1).toFixed(1)});`);
+      lines.push(`TextDrawSetPreviewRot(${varName}, ${(td.previewRotX ?? -16).toFixed(1)}, ${(td.previewRotY ?? 0).toFixed(1)}, ${(td.previewRotZ ?? -55).toFixed(1)}, ${(td.previewZoom || 1).toFixed(1)});`);
+      lines.push(`TextDrawSetPreviewVehCol(${varName}, ${td.previewColor1 ?? 1}, ${td.previewColor2 ?? 1});`);
     }
     lines.push('');
   });

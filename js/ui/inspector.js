@@ -157,8 +157,8 @@ const vecInputs = (prefix, labels, values, step) => `<div class="vec">${labels.m
 const titleBlock = (model, sub) => `<div class="insp-title"><img class="thumb empty" alt="" width="64" height="64"><div><div class="insp-name">${esc(modelLabel(model))}</div><div class="insp-sub">${sub}</div></div></div>`;
 
 const actionGrid = () => `<div class="btn-grid">
-      <button type="button" class="btn" data-act="resetRot" title="Zerar rotação (X: 0°, Y: 0°, Z: 0°)"><svg><use href="#i-rotate"/></svg>Resetar rotação</button>
-      <button type="button" class="btn" data-act="ground" title="Colocar em cima da superfície ou objeto logo abaixo"><svg><use href="#i-ground"/></svg>Na superfície</button>
+      <button type="button" class="btn" data-act="resetRot" title="Zerar rotação (X: 0°, Y: 0°, Z: 0°)"><svg><use href="#i-rotate"/></svg>Zerar giro</button>
+      <button type="button" class="btn" data-act="ground" title="Colocar em cima da superfície ou objeto logo abaixo"><svg><use href="#i-ground"/></svg>Superfície</button>
       <button type="button" class="btn" data-act="dup" title="Cria uma cópia no mesmo lugar, já com o gizmo de mover (Ctrl+D)"><svg><use href="#i-copy"/></svg>Duplicar</button>
       <button type="button" class="btn" data-act="focus"><svg><use href="#i-focus"/></svg>Focar</button>
     </div>`;
@@ -166,7 +166,7 @@ const actionGrid = () => `<div class="btn-grid">
 function speedSection() {
   const sp = app.editor.transformSpeed || { move: 1.0, rotate: 1.0 };
   return `<div class="insp-section">
-    <div class="insp-label">Velocidades de manipulação <span class="tag">0.001x a 10.0x</span></div>
+    <div class="insp-label">Velocidade <span class="tag">0.001x a 10.0x</span></div>
     <div class="pair">
       <label>Movimento<input type="number" step="0.1" min="0.001" max="10.0" data-speed="move" value="${fmt(sp.move ?? 1.0, 3)}"></label>
       <label>Rotação<input type="number" step="0.1" min="0.001" max="10.0" data-speed="rotate" value="${fmt(sp.rotate ?? 1.0, 3)}"></label>
@@ -182,8 +182,8 @@ function objectInspector(o) {
   return `${titleBlock(o.model, `ID ${o.model} <span class="tag">${esc(def ? categoryOf(def) : 'Não existe no jogo')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar objeto</button>
     <div class="scope-toggle">
-      <button type="button" class="btn small active" data-scope="sel">Objeto selecionado</button>
-      <button type="button" class="btn small" data-scope="all">Todo o projeto (${total})</button>
+      <button type="button" class="btn small active" data-scope="sel">Selecionado</button>
+      <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
     </div>
     ${first ? mats : ''}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [o.x, o.y, o.z], 0.1)}</div>
@@ -214,7 +214,7 @@ function objectInspector(o) {
           <button type="button" class="btn primary small" data-move-act="test" title="Testar animação em tempo real no mapa"><svg><use href="#i-play"/></svg>Testar</button>
           <button type="button" class="btn small" data-move-act="stop" title="Parar animação"><svg><use href="#i-stop"/></svg>Parar</button>
           <button type="button" class="btn small" data-move-act="reset" title="Resetar posição"><svg><use href="#i-restore"/></svg>Resetar</button>
-          <button type="button" class="btn small" data-move-act="settarg" title="Usar coordenadas atuais do objeto como alvo"><svg><use href="#i-pin"/></svg>Copiar posição atual</button>
+          <button type="button" class="btn small" data-move-act="settarg" title="Usar coordenadas atuais do objeto como alvo"><svg><use href="#i-pin"/></svg>Posição atual</button>
         </div>
       ` : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>'}
     </div>
@@ -226,7 +226,7 @@ function objectInspector(o) {
       ${o.attach ? `
         <label style="margin-bottom:6px; display:block;">Objeto Pai (Parent)
           <select id="selAttachParent" style="width:100%;">
-            <option value="">Selecione um objeto...</option>
+            <option value="">Selecione um objeto</option>
             ${app.project.objects.filter(x => x.uid !== o.uid).map(x => `<option value="${x.uid}" ${o.attach.to === x.uid ? 'selected' : ''}>${esc(modelLabel(x.model))} (ID ${x.model}) - ${x.uid.slice(0, 8)}</option>`).join('')}
           </select>
         </label>
@@ -242,7 +242,7 @@ function objectInspector(o) {
         </div>
         <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkSyncRot" ${o.attach.syncRot !== 0 ? 'checked' : ''}> Sincronizar rotação (SyncRotation)</label>
         <div class="mini-actions" style="margin-top:8px;">
-          <button type="button" class="btn small" data-attach-act="calc" title="Calcula os offsets relativos da posição atual no mundo 3D"><svg><use href="#i-focus"/></svg>Calcular da posição atual</button>
+          <button type="button" class="btn small" data-attach-act="calc" title="Calcula os offsets relativos da posição atual no mundo 3D"><svg><use href="#i-focus"/></svg>Calcular posição</button>
           <button type="button" class="btn danger small" data-attach-act="detach"><svg><use href="#i-trash"/></svg>Desanexar</button>
         </div>
         <div class="insp-note" style="margin-top:6px;">Dica: você também pode mover e girar o objeto diretamente no mapa com as setas para ajustar o acoplamento em tempo real.</div>
@@ -278,8 +278,8 @@ function vehicleInspector(v) {
   return `${titleBlock(v.model, `Veículo ${v.model} <span class="tag">${esc(def?.model || '')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar veículo</button>
     <div class="scope-toggle">
-      <button type="button" class="btn small active" data-scope="sel">Veículo selecionado</button>
-      <button type="button" class="btn small" data-scope="all">Todo o projeto (${total})</button>
+      <button type="button" class="btn small active" data-scope="sel">Selecionado</button>
+      <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
     </div>
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [v.x, v.y, v.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Ângulo e respawn</div>
@@ -290,25 +290,25 @@ function vehicleInspector(v) {
 
     <!-- Cores -->
     <div class="insp-section">
-      <div class="insp-label">Cores do veículo (carcols.dat: 0 a 255)</div>
+      <div class="insp-label">Cores do veículo (0 a 255)</div>
       ${isVehicleValidForColor(v.model) ? `
       <div class="pair">
         <label>Cor 1
           <div style="display:flex; gap:6px; align-items:center;">
-            <button type="button" class="slot-swatch" id="btnVehColor1" style="width:26px; height:26px; background:${c1Hex}; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="Abrir paleta de 256 cores SA-MP"></button>
+            <button type="button" class="slot-swatch" id="btnVehColor1" style="width:26px; height:26px; background:${c1Hex}; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="Abrir paleta de 256 cores"></button>
             <input type="number" step="1" min="-1" max="255" data-field="color1" value="${v.color1}">
           </div>
         </label>
         <label>Cor 2
           <div style="display:flex; gap:6px; align-items:center;">
-            <button type="button" class="slot-swatch" id="btnVehColor2" style="width:26px; height:26px; background:${c2Hex}; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="Abrir paleta de 256 cores SA-MP"></button>
+            <button type="button" class="slot-swatch" id="btnVehColor2" style="width:26px; height:26px; background:${c2Hex}; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="Abrir paleta de 256 cores"></button>
             <input type="number" step="1" min="-1" max="255" data-field="color2" value="${v.color2}">
           </div>
         </label>
       </div>
       <div class="insp-note">-1 significa cor aleatória. Clique no quadrado para abrir a paleta de 256 cores.</div>
       ` : `
-      <div class="insp-note warn">Este modelo de veículo não suporta alteração de cores no SA-MP (IsVehicleValidForColor = 0).</div>
+      <div class="insp-note warn">Este modelo de veículo não suporta alteração de cores.</div>
       `}
     </div>
     <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
@@ -325,9 +325,9 @@ function vehicleInspector(v) {
         ${isPaintjobValidForVehicle(1, v.model) ? `<option value="1" ${v.paintjob === 1 ? 'selected' : ''}>Paintjob 2 (1)</option>` : ''}
         ${isPaintjobValidForVehicle(2, v.model) ? `<option value="2" ${v.paintjob === 2 ? 'selected' : ''}>Paintjob 3 (2)</option>` : ''}
       </select>
-      <div class="insp-note">Veículo compatível com ${getCompatiblePaintjobs(v.model).length} paintjob(s) no SA-MP.</div>
+      <div class="insp-note">Veículo compatível com ${getCompatiblePaintjobs(v.model).length} paintjob(s).</div>
       ` : `
-      <div class="insp-note">Este modelo não suporta paintjobs no SA-MP (IsPaintjobValidForVehicle = 0).</div>
+      <div class="insp-note">Este modelo não suporta paintjobs.</div>
       `}
     </div>
 
@@ -346,9 +346,9 @@ function vehicleInspector(v) {
       </div>
       ${isVehicleValidForModding(v.model) ? `
       <div style="margin-top:8px;">
-        <label>Adicionar componente (compatíveis com o modelo)
+        <label>Adicionar componente
           <select id="selAddComp" style="width:100%;">
-            <option value="">Escolha um componente...</option>
+            <option value="">Escolha um componente</option>
             ${Object.entries(COMPONENT_TYPES).map(([typeId, typeName]) => {
               const items = Object.entries(VEHICLE_COMPONENTS).filter(([cId, c]) => c.type === +typeId && !comps.includes(+cId) && isModValidForVehicle(+cId, v.model));
               if (!items.length) return '';
@@ -360,7 +360,7 @@ function vehicleInspector(v) {
         </label>
       </div>
       ` : `
-      <div class="insp-note warn" style="margin-top:8px;">Este modelo não suporta modificações de tuning no SA-MP (IsVehicleValidForModding = 0).</div>
+      <div class="insp-note warn" style="margin-top:8px;">Este modelo não suporta modificações de tuning.</div>
       `}
       <details class="pawn-preview" style="margin-top:8px;"><summary>Código Pawn deste veículo</summary><pre class="code small" id="vehCode"></pre>
         <button type="button" class="btn small" data-vehcopy><svg><use href="#i-copy"/></svg>Copiar</button></details>
@@ -387,8 +387,8 @@ function actorInspector(a) {
   return `${titleBlock(a.skin ?? 0, `Skin ${a.skin ?? 0} <span class="tag">${esc(skinName)}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar actor</button>
     <div class="scope-toggle">
-      <button type="button" class="btn small active" data-scope="sel">Actor selecionado</button>
-      <button type="button" class="btn small" data-scope="all">Todo o projeto (${total})</button>
+      <button type="button" class="btn small active" data-scope="sel">Selecionado</button>
+      <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
     </div>
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [a.x, a.y, a.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Ângulo (FacingAngle)</div>
@@ -403,12 +403,12 @@ function actorInspector(a) {
         <label>ID da Skin<input type="number" step="1" min="0" max="311" data-field="skin" value="${a.skin ?? 0}"></label>
         <label>Selecionar skin
           <select id="selPopularSkin">
-            <option value="">Escolha uma skin (${ALL_SKINS.length})...</option>
+            <option value="">Escolha uma skin (${ALL_SKINS.length})</option>
             ${ALL_SKINS.map(s => `<option value="${s.id}" ${s.id === (a.skin ?? 0) ? 'selected' : ''}>${s.id} - ${esc(s.name)}</option>`).join('')}
           </select>
         </label>
       </div>
-      <button type="button" class="btn small primary block" id="btnOpenSkinPicker" style="margin-top:6px; font-weight:600;" title="Abrir galeria com prévia visual de todas as 312 skins"><svg><use href="#i-user"/></svg> Escolher Skin pelo Preview Visual...</button>
+      <button type="button" class="btn small primary block" id="btnOpenSkinPicker" style="margin-top:6px; font-weight:600;" title="Abrir galeria com prévia visual de todas as skins"><svg><use href="#i-user"/></svg> Abrir Galeria de Skins</button>
     </div>
 
     <!-- Propriedades -->
@@ -425,7 +425,7 @@ function actorInspector(a) {
       <div class="insp-label">Animação (ApplyActorAnimation)</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkActorAnim" ${a.anim ? 'checked' : ''}> Ativar animação</label>
       ${a.anim ? `
-        <button type="button" class="btn small block" id="btnOpenAnimPicker" style="margin: 6px 0 8px;"><svg><use href="#i-search"/></svg> Escolher animação...</button>
+        <button type="button" class="btn small block" id="btnOpenAnimPicker" style="margin: 6px 0 8px;"><svg><use href="#i-search"/></svg> Abrir Galeria de Animações</button>
         <div style="padding: 7px 10px; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-s); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
           <div style="min-width: 0;">
             <div style="font-weight: 600; font-size: 12px; color: var(--gold-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(currentAnimTitle)}</div>
@@ -472,8 +472,8 @@ function multiInspector(items, objs) {
     <h3>${isAll ? 'Todo o projeto' : `${items.length} itens selecionados`}</h3>
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar ${items.length} itens</button>
     <div class="scope-toggle">
-      <button type="button" class="btn small ${isAll ? '' : 'active'}" data-scope="sel">Selecionados (${items.length})</button>
-      <button type="button" class="btn small ${isAll ? 'active' : ''}" data-scope="all">Todo o projeto (${total})</button>
+      <button type="button" class="btn small ${isAll ? '' : 'active'}" data-scope="sel">Seleção (${items.length})</button>
+      <button type="button" class="btn small ${isAll ? 'active' : ''}" data-scope="all">Projeto (${total})</button>
     </div>
     <p>Ajuste as coordenadas para mover tudo junto em tempo real ou use o gizmo.</p>
   </div>
@@ -501,7 +501,7 @@ function worldInspector(inst) {
   const deg = (r) => fmt(((r * 180 / Math.PI) % 360 + 360) % 360, 2);
   const lod = inst.lodRef ? `<div class="stat-line"><span>LOD</span><b>${esc(inst.lodRef.def.model)} (${inst.lodRef.id})</b></div>` : '';
   return `${titleBlock(inst.id, `ID ${inst.id} <span class="tag world">Objeto do mapa</span>`)}
-    <button type="button" class="btn danger block" data-act="wremove" style="margin: 8px 0 10px;"><svg><use href="#i-demolish"/></svg>Remover objeto do mapa</button>
+    <button type="button" class="btn danger block" data-act="wremove" style="margin: 8px 0 10px;"><svg><use href="#i-demolish"/></svg>Remover do mapa</button>
     <div class="insp-section">
       <div class="stat-line"><span>Posição</span><b>${fmt(inst.x, 3)}, ${fmt(inst.y, 3)}, ${fmt(inst.z, 3)}</b></div>
       <div class="stat-line"><span>Rotação</span><b>${deg(e.x)}, ${deg(e.y)}, ${deg(e.z)}</b></div>
@@ -509,10 +509,10 @@ function worldInspector(inst) {
       ${inst.interior ? `<div class="stat-line"><span>Interior</span><b>${inst.interior}</b></div>` : ''}
       ${lod}
     </div>
-    <button type="button" class="btn primary block" data-act="wadd" title="Cria uma cópia em cima do original, já com o gizmo de mover"><svg><use href="#i-plus"/></svg>Posicionar outro igual</button>
+    <button type="button" class="btn primary block" data-act="wadd" title="Cria uma cópia em cima do original, já com o gizmo de mover"><svg><use href="#i-plus"/></svg>Posicionar cópia</button>
     <button type="button" class="btn block" data-act="wconvert"><svg><use href="#i-edit"/></svg>Tornar editável</button>
-    <button type="button" class="btn block" data-act="wcopy"><svg><use href="#i-copy"/></svg>Copiar RemoveBuildingForPlayer</button>
-    <div class="insp-note">"Tornar editável" remove o original e coloca uma cópia no projeto. "Posicionar outro igual" deixa o original e cria a cópia no mesmo lugar.</div>`;
+    <button type="button" class="btn block" data-act="wcopy"><svg><use href="#i-copy"/></svg>Copiar código</button>
+    <div class="insp-note">"Tornar editável" remove o original e coloca uma cópia no projeto. "Posicionar cópia" deixa o original e cria a cópia no mesmo lugar.</div>`;
 }
 
 function worldMultiInspector(insts) {
@@ -527,14 +527,14 @@ function worldMultiInspector(insts) {
         <div class="insp-sub">${sub}</div>
       </div>
     </div>
-    <button type="button" class="btn danger block" data-act="wremove" style="margin: 8px 0 10px;"><svg><use href="#i-demolish"/></svg>Remover ${insts.length} objetos do mapa</button>
+    <button type="button" class="btn danger block" data-act="wremove" style="margin: 8px 0 10px;"><svg><use href="#i-demolish"/></svg>Remover ${insts.length} objetos</button>
     <div class="insp-section">
       <div class="stat-line"><span>Total selecionado</span><b>${insts.length} objetos</b></div>
       <div class="stat-line"><span>Modelos</span><b>${models.slice(0, 8).join(', ')}${models.length > 8 ? '...' : ''}</b></div>
     </div>
-    <button type="button" class="btn primary block" data-act="wadd" title="Cria cópias em cima dos originais, já com o gizmo de mover"><svg><use href="#i-plus"/></svg>Posicionar cópias iguais (${insts.length})</button>
-    <button type="button" class="btn block" data-act="wconvert"><svg><use href="#i-edit"/></svg>Tornar todos editáveis (${insts.length})</button>
-    <button type="button" class="btn block" data-act="wcopy"><svg><use href="#i-copy"/></svg>Copiar RemoveBuildingForPlayer de todos</button>
+    <button type="button" class="btn primary block" data-act="wadd" title="Cria cópias em cima dos originais, já com o gizmo de mover"><svg><use href="#i-plus"/></svg>Duplicar (${insts.length})</button>
+    <button type="button" class="btn block" data-act="wconvert"><svg><use href="#i-edit"/></svg>Tornar editáveis (${insts.length})</button>
+    <button type="button" class="btn block" data-act="wcopy"><svg><use href="#i-copy"/></svg>Copiar código de todos</button>
     <div class="insp-note">Segure Shift ou Ctrl e clique no mapa para selecionar múltiplos objetos. Aperte Delete para remover todos juntos.</div>`;
 }
 
@@ -2171,7 +2171,7 @@ function gangZoneInspector(gz) {
         <label>Max X<input type="number" step="1" id="gzMaxX" value="${fmt(gz.maxx, 2)}"></label>
         <label>Max Y<input type="number" step="1" id="gzMaxY" value="${fmt(gz.maxy, 2)}"></label>
       </div>
-      <button type="button" class="btn primary small block" id="btnOpenGzMap" style="margin-top:8px;"><svg><use href="#i-pin"/></svg>Abrir / Editar no Mapa do GTA</button>
+      <button type="button" class="btn primary small block" id="btnOpenGzMap" style="margin-top:8px;"><svg><use href="#i-pin"/></svg>Editar no Mapa</button>
     </div>
 
     <div class="insp-section">
