@@ -39,9 +39,13 @@ export class Thumbnails extends EventTarget {
     } catch { return { obj: [], tex: [] }; }
   }
 
-  url(id) { return this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null; }
+  url(id) {
+    if (id === 0 || id === '0') return '/cache/skins/0.png';
+    return this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
+  }
 
   request(id, cb) {
+    if (id === 0 || id === '0') { cb('/cache/skins/0.png'); return; }
     if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=3`); return; }
     if (this.waiting.has(id)) { this.waiting.get(id).push(cb); return; }
     this.waiting.set(id, [cb]);

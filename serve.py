@@ -677,6 +677,7 @@ def start_test(body):
     for cand in (
         os.path.join(APP_DIR, "servidor-teste", "plugins", "streamer.dll"),
         os.path.join(BASE_DIR, "servidor-teste", "plugins", "streamer.dll"),
+        os.path.join(BASE_DIR, "omp-server-source", "plugins", "streamer.dll"),
         os.path.join(TEST_DIR, "plugins", "streamer.dll"),
         os.path.join(src, "plugins", "streamer.dll"),
     ):
@@ -1344,6 +1345,11 @@ class Handler(SimpleHTTPRequestHandler):
         kind, _, key = rel.partition("/")
         if key.endswith(".webp"):
             key = key[:-5]
+        if kind == "obj" and key == "0":
+            for sdir in (os.path.join(DATA_DIR, "cache", "skins"), os.path.join(APP_DIR, "Dados", "cache", "skins")):
+                cj_skin = os.path.join(sdir, "0.png")
+                if os.path.isfile(cj_skin):
+                    return self.send_file(cj_skin, cache="max-age=86400")
         full = thumb_file(kind, key)
         if not full or not os.path.isfile(full):
             return self.send_error(HTTPStatus.NOT_FOUND)
@@ -1367,6 +1373,8 @@ class Handler(SimpleHTTPRequestHandler):
         d = os.path.join(THUMBS_DIR, "objetos")
         if os.path.isdir(d):
             objs = [int(n[:-5]) for n in os.listdir(d) if n.endswith(".webp") and n[:-5].isdigit()]
+        if 0 not in objs:
+            objs.append(0)
         d = os.path.join(THUMBS_DIR, "texturas")
         if os.path.isdir(d):
             for txd in os.listdir(d):

@@ -880,22 +880,30 @@ export function exportPawn(project, options = {}) {
   const textDraws = project.textDraws || [];
   for (let idx = 0; idx < textDraws.length; idx++) {
     const td = textDraws[idx];
-    const align = td.align ?? td.alignment ?? 1;
+    const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
     const isTextNoBox = (td.font <= 3) && !td.useBox;
-    const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
-    const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 100.0);
+    const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0));
+    const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? (td.font === 4 ? 64.0 : 100.0));
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
-    const escText = JSON.stringify(td.text || '_');
-    const cHex = '0x' + (Number(td.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    const rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
+    const escText = JSON.stringify(rawText);
+    let colVal = td.color ?? 0xFFFFFFFF;
+    if (td.font === 4 && (colVal & 0xFF) === 0) colVal = (colVal | 0xFF) >>> 0;
+    const cHex = '0x' + (Number(colVal) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const bHex = '0x' + (Number(td.boxColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
     const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const tdVar = `td_${idx}`;
     textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
     textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
-    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(td.letterSizeX ?? 0.35, null)}, ${formatCoord(td.letterSizeY ?? 1.4, null)});`);
+    if (td.font === 4) {
+      textDrawLines.push(`TextDrawSetString(${tdVar}, ${escText});`);
+    }
+    const letX = td.font === 4 ? 0.0 : (td.letterSizeX ?? 0.35);
+    const letY = td.font === 4 ? 0.0 : (td.letterSizeY ?? 1.4);
+    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);
     textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);
     textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);

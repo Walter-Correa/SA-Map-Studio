@@ -98,7 +98,7 @@ export function renderInspector() {
   } else if (kind === 'actors') {
     el.innerHTML = actorInspector(item);
     bindActor(item);
-    titleThumb(item.skin ?? 0);
+    titleThumb(item.skin ?? 0, true);
   } else if (kind === 'labels') {
     el.innerHTML = labelInspector(item);
     bindLabel(item);
@@ -117,7 +117,12 @@ export function renderInspector() {
   }
 }
 
-function titleThumb(model) {
+function titleThumb(model, isActor = false) {
+  if (isActor && (model === 0 || model === '0')) {
+    const img = $('#inspector .insp-title img');
+    if (img) { img.src = '/cache/skins/0.png'; img.classList.remove('empty'); }
+    return;
+  }
   app.thumbs.request(model, (url) => { const img = $('#inspector .insp-title img'); if (img && url) { img.src = url; img.classList.remove('empty'); } });
 }
 
@@ -154,7 +159,11 @@ const vecInputs = (prefix, labels, values, step) => `<div class="vec">${labels.m
      </div>
    </label>`).join('')}</div>`;
 
-const titleBlock = (model, sub) => `<div class="insp-title"><img class="thumb empty" alt="" width="64" height="64"><div><div class="insp-name">${esc(modelLabel(model))}</div><div class="insp-sub">${sub}</div></div></div>`;
+const titleBlock = (model, sub, initialSrc = null) => {
+  const isSkin0 = (model === 0 || model === '0');
+  const src = initialSrc || (isSkin0 ? '/cache/skins/0.png' : '');
+  return `<div class="insp-title"><img class="thumb${src ? '' : ' empty'}" ${src ? `src="${src}"` : ''} alt="" width="64" height="64"><div><div class="insp-name">${esc(modelLabel(model))}</div><div class="insp-sub">${sub}</div></div></div>`;
+};
 
 const actionGrid = () => `<div class="btn-grid">
       <button type="button" class="btn" data-act="resetRot" title="Zerar rotação (X: 0°, Y: 0°, Z: 0°)"><svg><use href="#i-rotate"/></svg>Zerar giro</button>

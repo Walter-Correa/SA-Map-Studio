@@ -1,4 +1,8 @@
-# Programa compilado e arquivos gerados
+# ==============================================================================
+# SA Map Studio - Git Ignore
+# ==============================================================================
+
+# Executaveis e distribuicoes geradas
 dist/
 dist-limpo/
 build/
@@ -8,24 +12,54 @@ build-info.json
 *.zip
 *.7z
 
-# Ambiente Python
+# Ambiente Python e compilacao
 .venv-build/
 __pycache__/
 *.pyc
+*.pyo
 
-# Dados de quem usa o editor (nunca vão para o repositório)
+# Dados do usuario e configuracoes locais
 Dados/
 Projetos/
 Exportados/
 projetos/
 exportados/
 Servidor de Teste/
-config.json
-sa-map-studio.log
 dados-da-janela/
 cache/
 scratch/
 scratch_*.png
 bans.json
+config.json
+sa-map-studio.log
+
+# Banco de dados local do open.mp (mantido localmente na raiz, nao versionar)
+omp-server-source/
+
+# Pasta de testes e scripts temporarios (mantem a pasta testing/, ignora o conteudo)
+testing/*
+!testing/.gitkeep
+
+# Arquivos de execucao e registros do servidor de testes
+servidor-teste/scriptfiles/
+servidor-teste/server_log.txt
+servidor-teste/omp-server.log
+servidor-teste/omp-server.json
+servidor-teste/server.cfg
+servidor-teste/config.json
+server_log.txt
+omp-server.log
+omp-server.json
+server.cfg
 log.txt
 *.dmp
+*.pdb
+
+# Editores e sistema operacional
+.vscode/
+.idea/
+*.tmp
+*.bak
+Thumbs.db
+desktop.ini
+.DS_Store

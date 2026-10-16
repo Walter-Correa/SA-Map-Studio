@@ -249,11 +249,13 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       lines.push(`G|${minx.toFixed(4)}|${miny.toFixed(4)}|${maxx.toFixed(4)}|${maxy.toFixed(4)}|${colorInt}`);
     }
     for (const td of p.textDraws || []) {
-      const align = td.align ?? td.alignment ?? 1;
+      const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
       const isTextNoBox = (td.font <= 3) && !td.useBox;
-      const sizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
-      const sizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 100.0);
-      const cInt = signed(td.color ?? 0xFFFFFFFF);
+      const sizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0));
+      const sizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? (td.font === 4 ? 64.0 : 100.0));
+      let colVal = td.color ?? 0xFFFFFFFF;
+      if (td.font === 4 && (colVal & 0xFF) === 0) colVal = (colVal | 0xFF) >>> 0;
+      const cInt = signed(colVal);
       const bInt = signed(td.boxColor ?? 0x00000080);
       const bgRaw = td.font === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0x00000000) : (td.backgroundColor ?? 0x000000FF);
       const bgInt = signed(bgRaw);
@@ -262,7 +264,8 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       const rotX = (td.font === 5 && !hasRot) ? -16.0 : (td.previewRotX || 0);
       const rotY = (td.font === 5 && !hasRot) ? 0.0 : (td.previewRotY || 0);
       const rotZ = (td.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
-      const textEsc = String(td.text || '_').replace(/\\n/g, '\n').replace(/\r?\n/g, '~n~').replace(/\r/g, '');
+      const rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
+      const textEsc = rawText.replace(/\\n/g, '\n').replace(/\r?\n/g, '~n~').replace(/\r/g, '');
       lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${(td.letterSizeX ?? 0.35).toFixed(2)}|${(td.letterSizeY ?? 1.4).toFixed(2)}|${sizeX.toFixed(2)}|${sizeY.toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${align}|${useBoxVal}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
     }
   }

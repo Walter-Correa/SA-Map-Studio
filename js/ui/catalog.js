@@ -174,7 +174,7 @@ export function renderCatalogRows() {
     const displayTitle = alias || baseLabel;
     const catLabel = pkDef ? 'Pickups' : c.category;
     const displaySub = alias ? `${esc(baseLabel)} · ${c.id} · ${esc(catLabel)}` : `${c.id} · ${esc(catLabel)}`;
-    const known = app.thumbs.url(c.id);
+    const known = (c.def?.type === 'peds' && (c.id === 0 || c.id === '0')) ? '/cache/skins/0.png' : app.thumbs.url(c.id);
     row.innerHTML = `<img class="thumb${known ? '' : ' empty'}" alt="" width="72" height="72" ${known ? `src="${known}"` : ''} decoding="async">
       <div class="row-text">
         <div class="row-name" title="${esc(baseLabel)}">${esc(displayTitle)}</div>

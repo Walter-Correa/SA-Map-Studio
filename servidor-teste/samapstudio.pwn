@@ -250,6 +250,28 @@ stock SAMS_LimparLinha(linha[])
     }
 }
 
+stock SAMS_CleanSprite(texto[])
+{
+    new start = 0;
+    while (texto[start] == ' ' || texto[start] == '\t' || texto[start] == '"' || texto[start] == '\'') start++;
+    if (start > 0)
+    {
+        new i = 0;
+        while (texto[start + i] != EOS)
+        {
+            texto[i] = texto[start + i];
+            i++;
+        }
+        texto[i] = EOS;
+    }
+    new len = strlen(texto);
+    while (len > 0 && (texto[len - 1] == ' ' || texto[len - 1] == '\t' || texto[len - 1] == '"' || texto[len - 1] == '\'' || texto[len - 1] == '\r' || texto[len - 1] == '\n'))
+    {
+        len--;
+        texto[len] = EOS;
+    }
+}
+
 stock SAMS_CarregarMapa()
 {
     new File:arquivo = fopen(SAMS_ARQUIVO, io_read);
@@ -570,17 +592,23 @@ stock SAMS_CarregarMapa()
 
                 if (tdfont == 4)
                 {
-                    new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : "hud:radardisc");
+                    SAMS_CleanSprite(texto);
+                    new const defaultSprite[] = "hud:radardisc";
+                    new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : defaultSprite);
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
                         TextDrawFont(td, 4);
+                        TextDrawSetString(td, texto[0] != EOS ? texto : defaultSprite);
+                        TextDrawLetterSize(td, 0.0, 0.0);
                         TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
+                        if ((tdcol & 0xFF) == 0) tdcol |= 0xFF;
                         TextDrawColor(td, tdcol);
                         TextDrawSetOutline(td, 0);
                         TextDrawSetShadow(td, 0);
-                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
+                        TextDrawAlignment(td, 1);
                         TextDrawBackgroundColor(td, (tdbgcol & 0xFF) == 0 ? 0x000000FF : tdbgcol);
-                        TextDrawSetProportional(td, bool:tdprop);
+                        TextDrawSetProportional(td, true);
+                        TextDrawUseBox(td, false);
                         if (tdselect) TextDrawSetSelectable(td, true);
                         gTextDraws[gTotalTextDraws] = td;
                         gTotalTextDraws++;
@@ -809,6 +837,7 @@ public SAMS_ShowAllTextDraws(playerid)
     if (!IsPlayerConnected(playerid)) return 0;
     for (new i = 0; i < gTotalTextDraws; i++)
     {
+        TextDrawHideForPlayer(playerid, gTextDraws[i]);
         TextDrawShowForPlayer(playerid, gTextDraws[i]);
     }
     return 1;
