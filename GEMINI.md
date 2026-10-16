@@ -4,7 +4,7 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 
 ## 1. Compilação da Versão Final (Obrigatório)
 - **Sempre compile a versão final** executando `Compilar EXE limpo.bat` ao final de cada tarefa/ciclo de alterações.
-- A distribuição limpa gerada em `dist-limpo\SA Map Studio\` deve sempre refletir com exatidão todos os arquivos atualizados (código-fonte, assets, modelos e scripts).
+- A distribuição limpa gerada em `compiled\SA Map Studio\` deve sempre refletir com exatidão todos os arquivos atualizados (código-fonte, assets, modelos e scripts).
 
 ## 2. Controle de Versão (Git)
 - **Sempre realizar commit e push ao final de cada tarefa**.

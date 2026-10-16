@@ -3,24 +3,19 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 set "SRC=%~dp0"
 
-rem Modo: sem parametro = mantem os dados | "limpo" = pasta nova, sem nenhum dado
+rem Modo: sem parametro = mantem os dados | "limpo" = remove dados de usuario antigos
 set "MODO=%~1"
-if /i "%MODO%"=="limpo" (
-    title Compilando o SA Map Studio - versao limpa
-    set "OUT=%~dp0dist-limpo\SA Map Studio"
-) else (
-    title Compilando o SA Map Studio
-    set "OUT=%~dp0dist\SA Map Studio"
-)
-set "DADOS=%~dp0dist\SA Map Studio"
+title Compilando o SA Map Studio
+set "OUT=%~dp0compiled\SA Map Studio"
+set "DADOS=%~dp0compiled\SA Map Studio"
 
 echo ============================================================
 if /i "%MODO%"=="limpo" (
 echo  Compilando o SA Map Studio - VERSAO LIMPA
-echo  Resultado: dist-limpo\SA Map Studio\  ^(sem projetos, cache ou configuracao^)
+echo  Resultado: compiled\SA Map Studio\  ^(sem projetos ou dados antigos^)
 ) else (
-echo  Compilando o SA Map Studio
-echo  Resultado: dist\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
+echo  Compilando o SA Map Studio - VERSAO NORMAL
+echo  Resultado: compiled\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
 )
 echo ============================================================
 
@@ -103,7 +98,12 @@ rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
 set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;." --add-data "%SRC%anim_list.json;.""
-set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts" --add-data "%SRC%models;models""
+set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts""
+if exist "%SRC%compile-sources\models" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
+) else if exist "%SRC%models" (
+    set "ARGS=%ARGS% --add-data "%SRC%models;models""
+)
 set "ARGS=%ARGS% --add-data "%SRC%servidor-teste;servidor-teste""
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
@@ -111,8 +111,14 @@ echo Gerando o programa...
 "%VPY%" -m PyInstaller %ARGS% "%SRC%serve.py"
 if errorlevel 1 goto erro
 
-rem A versao limpa sempre comeca do zero
-if /i "%MODO%"=="limpo" if exist "%OUT%" rmdir /s /q "%OUT%"
+rem A versao limpa limpa os dados de usuario antigos da pasta compilada
+if /i "%MODO%"=="limpo" if exist "%OUT%" (
+    if exist "%OUT%\Projetos" rmdir /s /q "%OUT%\Projetos" 2>nul
+    if exist "%OUT%\Exportados" rmdir /s /q "%OUT%\Exportados" 2>nul
+    if exist "%OUT%\Dados\config.json" del /q "%OUT%\Dados\config.json" 2>nul
+    if exist "%OUT%\Dados\navegador" rmdir /s /q "%OUT%\Dados\navegador" 2>nul
+    if exist "%OUT%\Dados\registros" rmdir /s /q "%OUT%\Dados\registros" 2>nul
+)
 
 echo Copiando o programa...
 if not exist "%OUT%" mkdir "%OUT%"
@@ -130,9 +136,10 @@ copy /y "servidor-teste\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
 copy /y "servidor-teste\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
 del /q "%ST%\LEIA-ME.txt" 2>nul
 
-rem Arquivos do servidor: primeiro da pasta servidor-teste, senao os que ja estao na pasta do programa
+rem Arquivos do servidor: primeiro da pasta servidor-teste, senao omp-server-source, senao os que ja estao na pasta do programa
 set "SRVSRC="
 if exist "servidor-teste\omp-server.exe" set "SRVSRC=servidor-teste"
+if not defined SRVSRC if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
 if not defined SRVSRC if exist "%DADOS%\Servidor de Teste\omp-server.exe" set "SRVSRC=%DADOS%\Servidor de Teste"
 if not defined SRVSRC if exist "%DADOS%\Servidor de Teste\samp-server.exe" set "SRVSRC=%DADOS%\Servidor de Teste"
 if not defined SRVSRC if exist "%DADOS%\Dados\config.json" (
@@ -145,57 +152,69 @@ if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if exist "servidor-teste\plugins" robocopy "servidor-teste\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
-rem Copia tambem para a raiz da dist (dist\Servidor de Teste) para garantir acesso em ambos os caminhos
-if /i not "%MODO%"=="limpo" (
-    set "STRoot=%~dp0dist\Servidor de Teste"
-    robocopy "%ST%" "%STRoot%" /MIR /NFL /NDL /NJH /NJS /NP >nul
-)
 if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "Servidor de Teste".
 
-rem ---------------- Miniaturas do Catalogo (leitura direta da pasta local em Dados\cache\miniaturas)
+rem ---------------- Miniaturas do Catalogo (leitura de compile-sources\cache\miniaturas ou Dados\cache\miniaturas)
 set "THUMBSRC="
-if exist "%SRC%Dados\cache\miniaturas\objetos" set "THUMBSRC=%SRC%Dados\cache\miniaturas"
-if not defined THUMBSRC if exist "%DADOS%\Dados\cache\miniaturas\objetos" set "THUMBSRC=%DADOS%\Dados\cache\miniaturas"
-if not defined THUMBSRC if exist "%~dp0dist-limpo\SA Map Studio\Dados\cache\miniaturas\objetos" set "THUMBSRC=%~dp0dist-limpo\SA Map Studio\Dados\cache\miniaturas"
+if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
+if not defined THUMBSRC if exist "%SRC%compile-sources\Dados\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\Dados\cache\miniaturas"
+if not defined THUMBSRC if exist "%SRC%Dados\cache\miniaturas\objetos" set "THUMBSRC=%SRC%Dados\cache\miniaturas"
+if not defined THUMBSRC if exist "%OUT%\Dados\cache\miniaturas\objetos" set "THUMBSRC=%OUT%\Dados\cache\miniaturas"
 if defined THUMBSRC (
-    echo Copiando miniaturas do catalogo para a pasta local Dados\cache\miniaturas...
+    echo Copiando miniaturas do catalogo de: "%THUMBSRC%"...
     if not exist "%OUT%\Dados\cache\miniaturas" mkdir "%OUT%\Dados\cache\miniaturas"
     robocopy "%THUMBSRC%" "%OUT%\Dados\cache\miniaturas" /E /NFL /NDL /NJH /NJS /NP >nul
 )
-if exist "%SRC%Dados\cache\sprites" (
-    echo Copiando sprites para a pasta local Dados\cache\sprites...
+
+rem ---------------- Sprites
+set "SPRITESRC="
+if exist "%SRC%compile-sources\cache\sprites" set "SPRITESRC=%SRC%compile-sources\cache\sprites"
+if not defined SPRITESRC if exist "%SRC%compile-sources\Dados\cache\sprites" set "SPRITESRC=%SRC%compile-sources\Dados\cache\sprites"
+if not defined SPRITESRC if exist "%SRC%Dados\cache\sprites" set "SPRITESRC=%SRC%Dados\cache\sprites"
+if not defined SPRITESRC if exist "%OUT%\Dados\cache\sprites" set "SPRITESRC=%OUT%\Dados\cache\sprites"
+if defined SPRITESRC (
+    echo Copiando sprites de: "%SPRITESRC%"...
     if not exist "%OUT%\Dados\cache\sprites" mkdir "%OUT%\Dados\cache\sprites"
-    robocopy "%SRC%Dados\cache\sprites" "%OUT%\Dados\cache\sprites" /E /NFL /NDL /NJH /NJS /NP >nul
-)
-if exist "%SRC%Dados\cache\skins" (
-    echo Copiando skins para a pasta local Dados\cache\skins...
-    if not exist "%OUT%\Dados\cache\skins" mkdir "%OUT%\Dados\cache\skins"
-    robocopy "%SRC%Dados\cache\skins" "%OUT%\Dados\cache\skins" /E /NFL /NDL /NJH /NJS /NP >nul
-)
-if exist "%SRC%Dados\cache\radarmap.png" (
-    if not exist "%OUT%\Dados\cache" mkdir "%OUT%\Dados\cache"
-    copy /y "%SRC%Dados\cache\radarmap.png" "%OUT%\Dados\cache\radarmap.png" >nul
-)
-if exist "%SRC%models" (
-    echo Copiando modelos para a pasta do programa...
-    if not exist "%OUT%\models" mkdir "%OUT%\models"
-    robocopy "%SRC%models" "%OUT%\models" /E /NFL /NDL /NJH /NJS /NP >nul
+    robocopy "%SPRITESRC%" "%OUT%\Dados\cache\sprites" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 
-rem ---------------- So na versao normal: traz os dados da versao antiga (um .exe solto em dist)
-if /i not "%MODO%"=="limpo" (
-    for %%D in (projetos exportados cache dados-da-janela) do (
-        if exist "dist\%%D\" (
-            echo Movendo dist\%%D para a pasta do programa...
-            robocopy "dist\%%D" "%OUT%\%%D" /E /MOVE /XO /NFL /NDL /NJH /NJS /NP >nul
-            if exist "dist\%%D\" rmdir /s /q "dist\%%D" 2>nul
-        )
-    )
-    for %%F in (config.json sa-map-studio.log) do (
-        if exist "dist\%%F" if not exist "%OUT%\%%F" if not exist "%OUT%\Dados\%%F" move /y "dist\%%F" "%OUT%\%%F" >nul
-    )
-    if exist "dist\SA Map Studio.exe" del /q "dist\SA Map Studio.exe"
+rem ---------------- Skins
+set "SKINSRC="
+if exist "%SRC%compile-sources\cache\skins" set "SKINSRC=%SRC%compile-sources\cache\skins"
+if not defined SKINSRC if exist "%SRC%compile-sources\Dados\cache\skins" set "SKINSRC=%SRC%compile-sources\Dados\cache\skins"
+if not defined SKINSRC if exist "%SRC%Dados\cache\skins" set "SKINSRC=%SRC%Dados\cache\skins"
+if not defined SKINSRC if exist "%OUT%\Dados\cache\skins" set "SKINSRC=%OUT%\Dados\cache\skins"
+if defined SKINSRC (
+    echo Copiando skins de: "%SKINSRC%"...
+    if not exist "%OUT%\Dados\cache\skins" mkdir "%OUT%\Dados\cache\skins"
+    robocopy "%SKINSRC%" "%OUT%\Dados\cache\skins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
+
+rem ---------------- Radarmap
+set "RADARSRC="
+if exist "%SRC%compile-sources\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\cache\radarmap.png"
+if not defined RADARSRC if exist "%SRC%compile-sources\Dados\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\Dados\cache\radarmap.png"
+if not defined RADARSRC if exist "%SRC%Dados\cache\radarmap.png" set "RADARSRC=%SRC%Dados\cache\radarmap.png"
+if not defined RADARSRC if exist "%OUT%\Dados\cache\radarmap.png" set "RADARSRC=%OUT%\Dados\cache\radarmap.png"
+if defined RADARSRC (
+    if not exist "%OUT%\Dados\cache" mkdir "%OUT%\Dados\cache"
+    copy /y "%RADARSRC%" "%OUT%\Dados\cache\radarmap.png" >nul
+)
+
+rem ---------------- Modelos 3D
+set "MODELSRC="
+if exist "%SRC%compile-sources\models" set "MODELSRC=%SRC%compile-sources\models"
+if not defined MODELSRC if exist "%SRC%models" set "MODELSRC=%SRC%models"
+if not defined MODELSRC if exist "%OUT%\models" set "MODELSRC=%OUT%\models"
+if defined MODELSRC (
+    echo Copiando modelos de: "%MODELSRC%"...
+    if not exist "%OUT%\models" mkdir "%OUT%\models"
+    robocopy "%MODELSRC%" "%OUT%\models" /E /NFL /NDL /NJH /NJS /NP >nul
+)
+
+rem Limpa pastas legadas se existirem
+if exist "dist\" rmdir /s /q "dist" 2>nul
+if exist "dist-limpo\" rmdir /s /q "dist-limpo" 2>nul
 rmdir /s /q "build" 2>nul
 del /q "build-info.json" 2>nul
 

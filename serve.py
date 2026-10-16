@@ -47,6 +47,11 @@ EXPORTS_DIR = os.path.join(BASE_DIR, "Exportados")
 DATA_DIR = os.path.join(BASE_DIR, "Dados")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
+COMPILE_SOURCES_DIR = os.path.join(BASE_DIR, "compile-sources")
+COMPILE_CACHE_DIR = os.path.join(COMPILE_SOURCES_DIR, "cache")
+COMPILE_MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
+if not FROZEN and not os.path.isdir(CACHE_DIR) and os.path.isdir(COMPILE_CACHE_DIR):
+    CACHE_DIR = COMPILE_CACHE_DIR
 THUMBS_DIR = os.path.join(CACHE_DIR, "miniaturas")
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animacoes")
 WEBVIEW_DIR = os.path.join(DATA_DIR, "navegador")
@@ -57,7 +62,6 @@ IS_WINDOWS = os.name == "nt"
 
 def migrate_old_layout():
     """Move os arquivos das versões anteriores para as pastas organizadas."""
-    os.makedirs(DATA_DIR, exist_ok=True)
     moves = [
         ("config.json", CONFIG_FILE),
         ("cache", CACHE_DIR),
@@ -98,10 +102,6 @@ def migrate_old_layout():
                 pass
 
 
-migrate_old_layout()
-for _d in (PROJECTS_DIR, EXPORTS_DIR, DATA_DIR, CACHE_DIR, LOGS_DIR):
-    os.makedirs(_d, exist_ok=True)
-
 LOG_FILE_PATH = os.path.join(LOGS_DIR, "sa-map-studio.log")
 
 def append_to_log(message, prefix="LOG"):
@@ -109,6 +109,7 @@ def append_to_log(message, prefix="LOG"):
     now_str = time.strftime("[%Y-%m-%d %H:%M:%S]")
     line = f"{now_str} [{prefix}] {message}\n"
     try:
+        os.makedirs(LOGS_DIR, exist_ok=True)
         with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
             f.write(line)
     except Exception:
@@ -136,17 +137,22 @@ class TeeLogger:
             except Exception:
                 pass
 
-# No .exe sem console não existe stdout/stderr: manda as mensagens para um arquivo de registro
-if sys.stdout is None or sys.stderr is None:
-    try:
-        _log = open(LOG_FILE_PATH, "a", encoding="utf-8", buffering=1)
-    except OSError:
-        _log = open(os.devnull, "w")
-    sys.stdout = sys.stdout or _log
-    sys.stderr = sys.stderr or _log
-else:
-    sys.stdout = TeeLogger(LOG_FILE_PATH, sys.stdout)
-    sys.stderr = TeeLogger(LOG_FILE_PATH, sys.stderr)
+
+def setup_logging():
+    """Configura o redirecionamento de logs para o arquivo de registros."""
+    global LOG_FILE_PATH
+    if sys.stdout is None or sys.stderr is None:
+        try:
+            os.makedirs(LOGS_DIR, exist_ok=True)
+            _log = open(LOG_FILE_PATH, "a", encoding="utf-8", buffering=1)
+        except OSError:
+            _log = open(os.devnull, "w")
+        sys.stdout = sys.stdout or _log
+        sys.stderr = sys.stderr or _log
+    elif not isinstance(sys.stdout, TeeLogger):
+        sys.stdout = TeeLogger(LOG_FILE_PATH, sys.stdout)
+        sys.stderr = TeeLogger(LOG_FILE_PATH, sys.stderr)
+
 
 
 COMMON_GTA_PATHS = [
@@ -321,12 +327,28 @@ def thumb_file(kind, key):
     if kind == "obj":
         if not key.isdigit():
             return None
-        return os.path.join(THUMBS_DIR, "objetos", key + ".webp")
+        p = os.path.join(THUMBS_DIR, "objetos", key + ".webp")
+        if not os.path.isfile(p):
+            for alt in (
+                os.path.join(COMPILE_CACHE_DIR, "miniaturas", "objetos", key + ".webp"),
+                os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "objetos", key + ".webp")
+            ):
+                if os.path.isfile(alt):
+                    return alt
+        return p
     if kind == "tex":
         parts = key.split("/", 1)
         if len(parts) != 2 or not parts[0] or not parts[1]:
             return None
-        return os.path.join(THUMBS_DIR, "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
+        p = os.path.join(THUMBS_DIR, "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
+        if not os.path.isfile(p):
+            for alt in (
+                os.path.join(COMPILE_CACHE_DIR, "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
+                os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
+            ):
+                if os.path.isfile(alt):
+                    return alt
+        return p
     return None
 
 
@@ -550,10 +572,11 @@ def test_info():
     # Servidor que já está dentro da pasta do programa ("Servidor de Teste") tem prioridade
     candidates = [
         TEST_DIR,
-        os.path.join(os.path.dirname(BASE_DIR), "Servidor de Teste"),
-        os.path.join(BASE_DIR, "dist", "Servidor de Teste"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste"),
+        os.path.join(BASE_DIR, "compiled", "Servidor de Teste"),
         os.path.join(BASE_DIR, "servidor-teste"),
         os.path.join(APP_DIR, "servidor-teste"),
+        os.path.join(BASE_DIR, "omp-server-source"),
     ]
     for c in candidates:
         if server_exe_in(c):
@@ -668,7 +691,7 @@ def start_test(body):
     target_dirs = {TEST_DIR}
     if info.get("serverPath"):
         target_dirs.add(info["serverPath"])
-    dist_root_st = os.path.join(os.path.dirname(BASE_DIR), "Servidor de Teste") if os.path.basename(BASE_DIR) == "SA Map Studio" else os.path.join(BASE_DIR, "dist", "Servidor de Teste")
+    dist_root_st = os.path.join(os.path.dirname(BASE_DIR), "Servidor de Teste") if os.path.basename(BASE_DIR) == "SA Map Studio" else os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste")
     if os.path.isdir(dist_root_st):
         target_dirs.add(dist_root_st)
 
@@ -1205,6 +1228,7 @@ class Handler(SimpleHTTPRequestHandler):
             body = self.read_json()
             if not body or "content" not in body:
                 return self.send_json({"ok": False, "error": "Conteúdo vazio"}, 400)
+            os.makedirs(EXPORTS_DIR, exist_ok=True)
             name = safe_name(body.get("filename") or "mapa.pwn")
             full = os.path.join(EXPORTS_DIR, name)
             with open(full, "w", encoding="cp1252" if body.get("ansi") else "utf-8", errors="replace", newline="\r\n") as f:
@@ -1288,8 +1312,9 @@ class Handler(SimpleHTTPRequestHandler):
                 "gta": State.gta_path
             }
             target = folder_map.get(which, LOGS_DIR)
-            if IS_WINDOWS and target and os.path.isdir(target):
+            if IS_WINDOWS and target:
                 try:
+                    os.makedirs(target, exist_ok=True)
                     os.startfile(target)
                     return self.send_json({"ok": True, "path": target})
                 except Exception as e:
@@ -1322,7 +1347,15 @@ class Handler(SimpleHTTPRequestHandler):
     def get_gta(self, rel):
         low_rel = rel.replace("\\", "/").lower()
         if low_rel in ("models/cj.dff", "models/cj.txd", "cj.dff", "cj.txd", "dados/models/cj.dff", "dados/models/cj.txd"):
-            for mdir in (os.path.join(BASE_DIR, "models"), os.path.join(APP_DIR, "models"), os.path.join(DATA_DIR, "models"), os.path.join(APP_DIR, "Dados", "models"), os.path.join(BASE_DIR, "Dados", "models")):
+            for mdir in (
+                os.path.join(BASE_DIR, "compile-sources", "models"),
+                os.path.join(APP_DIR, "compile-sources", "models"),
+                os.path.join(BASE_DIR, "models"),
+                os.path.join(APP_DIR, "models"),
+                os.path.join(DATA_DIR, "models"),
+                os.path.join(APP_DIR, "Dados", "models"),
+                os.path.join(BASE_DIR, "Dados", "models")
+            ):
                 candidate = os.path.join(mdir, os.path.basename(rel))
                 if os.path.isfile(candidate):
                     return self.send_file(candidate, cache="max-age=86400")
@@ -1330,7 +1363,13 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_error(HTTPStatus.SERVICE_UNAVAILABLE, "Pasta do GTA não configurada")
         full = resolve_ci(State.gta_path, rel)
         if not full or not os.path.isfile(full):
-            for fdir in (os.path.join(BASE_DIR, "models"), os.path.join(APP_DIR, "models"), os.path.join(DATA_DIR, "models")):
+            for fdir in (
+                os.path.join(BASE_DIR, "compile-sources", "models"),
+                os.path.join(APP_DIR, "compile-sources", "models"),
+                os.path.join(BASE_DIR, "models"),
+                os.path.join(APP_DIR, "models"),
+                os.path.join(DATA_DIR, "models")
+            ):
                 local_fallback = os.path.join(fdir, os.path.basename(rel))
                 if os.path.isfile(local_fallback):
                     return self.send_file(local_fallback, cache="max-age=86400")
@@ -1346,7 +1385,12 @@ class Handler(SimpleHTTPRequestHandler):
         if key.endswith(".webp"):
             key = key[:-5]
         if kind == "obj" and key == "0":
-            for sdir in (os.path.join(DATA_DIR, "cache", "skins"), os.path.join(APP_DIR, "Dados", "cache", "skins")):
+            for sdir in (
+                os.path.join(DATA_DIR, "cache", "skins"),
+                os.path.join(COMPILE_CACHE_DIR, "skins"),
+                os.path.join(APP_DIR, "Dados", "cache", "skins"),
+                os.path.join(APP_DIR, "compile-sources", "cache", "skins")
+            ):
                 cj_skin = os.path.join(sdir, "0.png")
                 if os.path.isfile(cj_skin):
                     return self.send_file(cj_skin, cache="max-age=86400")
@@ -1370,28 +1414,43 @@ class Handler(SimpleHTTPRequestHandler):
 
     def thumbs_index(self):
         objs, texs = [], []
-        d = os.path.join(THUMBS_DIR, "objetos")
-        if os.path.isdir(d):
-            objs = [int(n[:-5]) for n in os.listdir(d) if n.endswith(".webp") and n[:-5].isdigit()]
+        d_candidates = [
+            os.path.join(THUMBS_DIR, "objetos"),
+            os.path.join(COMPILE_CACHE_DIR, "miniaturas", "objetos"),
+            os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "objetos")
+        ]
+        for d in d_candidates:
+            if os.path.isdir(d):
+                objs = [int(n[:-5]) for n in os.listdir(d) if n.endswith(".webp") and n[:-5].isdigit()]
+                if objs:
+                    break
         if 0 not in objs:
             objs.append(0)
-        d = os.path.join(THUMBS_DIR, "texturas")
-        if os.path.isdir(d):
-            for txd in os.listdir(d):
-                sub = os.path.join(d, txd)
-                if os.path.isdir(sub):
-                    t = unquote(txd)
-                    texs += [t + "/" + unquote(n[:-5]) for n in os.listdir(sub) if n.endswith(".webp")]
+        d_candidates_tex = [
+            os.path.join(THUMBS_DIR, "texturas"),
+            os.path.join(COMPILE_CACHE_DIR, "miniaturas", "texturas"),
+            os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "texturas")
+        ]
+        for d in d_candidates_tex:
+            if os.path.isdir(d):
+                for txd in os.listdir(d):
+                    sub = os.path.join(d, txd)
+                    if os.path.isdir(sub):
+                        t = unquote(txd)
+                        texs += [t + "/" + unquote(n[:-5]) for n in os.listdir(sub) if n.endswith(".webp")]
+                if texs:
+                    break
         self.send_json({"obj": objs, "tex": texs})
 
     # ---------- projetos ----------
     def list_projects(self):
         items = []
-        for n in os.listdir(PROJECTS_DIR):
-            if n.lower().endswith(".json"):
-                full = os.path.join(PROJECTS_DIR, n)
-                items.append({"name": n[:-5], "modified": os.path.getmtime(full), "size": os.path.getsize(full)})
-        items.sort(key=lambda i: -i["modified"])
+        if os.path.isdir(PROJECTS_DIR):
+            for n in os.listdir(PROJECTS_DIR):
+                if n.lower().endswith(".json"):
+                    full = os.path.join(PROJECTS_DIR, n)
+                    items.append({"name": n[:-5], "modified": os.path.getmtime(full), "size": os.path.getsize(full)})
+            items.sort(key=lambda i: -i["modified"])
         self.send_json({"projects": items, "folder": PROJECTS_DIR})
 
     def get_project(self, name):
@@ -1406,6 +1465,7 @@ class Handler(SimpleHTTPRequestHandler):
             json.loads(body.decode("utf-8"))
         except ValueError:
             return self.send_json({"ok": False, "error": "JSON inválido"}, 400)
+        os.makedirs(PROJECTS_DIR, exist_ok=True)
         full = os.path.join(PROJECTS_DIR, safe_name(name) + ".json")
         tmp = full + ".tmp"
         with State.lock:
@@ -1564,6 +1624,10 @@ def open_window(url, httpd):
 
 
 def main():
+    setup_logging()
+    migrate_old_layout()
+    os.makedirs(DATA_DIR, exist_ok=True)
+
     ap = argparse.ArgumentParser(description="SA Map Studio - servidor local")
     ap.add_argument("--gta", help="pasta do GTA San Andreas")
     ap.add_argument("--port", type=int, default=None)

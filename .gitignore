@@ -3,6 +3,7 @@
 # ==============================================================================
 
 # Executaveis e distribuicoes geradas
+compiled/
 dist/
 dist-limpo/
 build/
@@ -35,6 +36,9 @@ sa-map-studio.log
 
 # Banco de dados local do open.mp (mantido localmente na raiz, nao versionar)
 omp-server-source/
+
+# Fontes de compilacao pesadas (cache de miniaturas/texturas geradas)
+compile-sources/cache/
 
 # Pasta de testes e scripts temporarios (mantem a pasta testing/, ignora o conteudo)
 testing/*
