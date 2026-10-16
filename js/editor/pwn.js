@@ -893,14 +893,8 @@ export function exportPawn(project, options = {}) {
     const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
     const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const tdVar = `td_${idx}`;
-    if (td.font === 4) {
-      textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, "_");${cmt}`);
-      textDrawLines.push(`TextDrawFont(${tdVar}, 4);`);
-      textDrawLines.push(`TextDrawSetString(${tdVar}, ${escText});`);
-    } else {
-      textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
-      textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
-    }
+    textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
+    textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
     textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(td.letterSizeX ?? 0.35, null)}, ${formatCoord(td.letterSizeY ?? 1.4, null)});`);
     textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);

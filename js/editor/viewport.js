@@ -86,10 +86,10 @@ export class FlyCamera {
       this.updateCursorVisibility();
       setMoving(false);
     });
-    window.addEventListener('mouseup', () => {
-      if (this.looking || this.panning) {
+    window.addEventListener('mouseup', (e) => {
+      if ((e.button === 2 || e.button === undefined) && this.looking) {
         this.looking = false;
-        this.panning = false;
+        this._edgeDir = 0;
         if (document.exitPointerLock && document.pointerLockElement === dom) {
           try { document.exitPointerLock(); } catch (_) {}
         }
@@ -97,14 +97,16 @@ export class FlyCamera {
         setMoving(false);
         this.updateCursorVisibility();
       }
-    });
-    document.addEventListener('pointerlockchange', () => {
-      const isLocked = document.pointerLockElement === dom;
-      if (!isLocked && this.looking) {
-        this.looking = false;
+      if ((e.button === 1 || e.button === undefined) && this.panning) {
+        this.panning = false;
+        try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
+        this.centerCursor();
         setMoving(false);
         this.updateCursorVisibility();
       }
+    });
+    document.addEventListener('pointerlockchange', () => {
+      // Não cancela looking caso o lock falhe ou mude
     });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('pointerdown', (e) => {
@@ -183,9 +185,39 @@ export class FlyCamera {
           dy = 0;
         }
         this._lockedInitial = false;
+        this._edgeDir = 0;
       } else {
-        dx = (e.movementX !== undefined && e.movementX !== 0) ? e.movementX : (this.lastX !== undefined ? e.clientX - this.lastX : 0);
-        dy = (e.movementY !== undefined && e.movementY !== 0) ? e.movementY : (this.lastY !== undefined ? e.clientY - this.lastY : 0);
+        const rawDx = (e.movementX !== undefined && e.movementX !== 0) ? e.movementX : (this.lastX !== undefined ? e.clientX - this.lastX : 0);
+        const rawDy = (e.movementY !== undefined && e.movementY !== 0) ? e.movementY : (this.lastY !== undefined ? e.clientY - this.lastY : 0);
+        if (this._recentering || Math.abs(rawDx) > 120 || Math.abs(rawDy) > 120) {
+          dx = 0;
+          dy = 0;
+          this._recentering = false;
+        } else {
+          dx = rawDx;
+          dy = rawDy;
+        }
+        if (this.looking) {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          const edgeMargin = 20;
+          if (e.clientX <= edgeMargin) {
+            this._edgeDir = -1;
+            this._edgeSpeed = Math.max(3.5, Math.abs(rawDx) * 0.3 || 3.5);
+            this.scheduleRecenter();
+          } else if (e.clientX >= w - edgeMargin) {
+            this._edgeDir = 1;
+            this._edgeSpeed = Math.max(3.5, Math.abs(rawDx) * 0.3 || 3.5);
+            this.scheduleRecenter();
+          } else {
+            this._edgeDir = 0;
+            const cx = w / 2;
+            const cy = h / 2;
+            if (Math.hypot(e.clientX - cx, e.clientY - cy) > 260) {
+              this.scheduleRecenter();
+            }
+          }
+        }
       }
       this.lastX = e.clientX;
       this.lastY = e.clientY;
@@ -218,6 +250,17 @@ export class FlyCamera {
       setMoving(false);
     }, { passive: false });
     this.apply();
+  }
+
+  scheduleRecenter() {
+    if (this._recenterPending) return;
+    this._recenterPending = true;
+    setTimeout(() => {
+      this._recenterPending = false;
+      if (!this.looking && !this.panning) return;
+      this._recentering = true;
+      this.centerCursor();
+    }, 16);
   }
 
   centerCursor() {
@@ -263,7 +306,15 @@ export class FlyCamera {
   }
 
   update(dt) {
-    if (!this.enabled || !this.keys.size) return false;
+    if (!this.enabled) return false;
+    let moved = false;
+    if (this.looking && this._edgeDir) {
+      this.yaw -= this._edgeDir * (this._edgeSpeed || 2.5) * dt;
+      this.apply();
+      this.onMove?.();
+      moved = true;
+    }
+    if (!this.keys.size) return moved;
     const k = this.keys;
     let mult = 1;
     if (k.has('ShiftLeft') || k.has('ShiftRight')) mult = 4;

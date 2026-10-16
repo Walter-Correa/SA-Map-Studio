@@ -120,7 +120,7 @@ robocopy "build\saida\SA Map Studio\Sistema" "%OUT%\Sistema" /MIR /NFL /NDL /NJH
 if errorlevel 8 goto erro
 copy /y "build\saida\SA Map Studio\SA Map Studio.exe" "%OUT%\SA Map Studio.exe" >nul
 if errorlevel 1 goto erro
-copy /y "LEIA-ME.md" "%OUT%\LEIA-ME.txt" >nul
+del /q "%OUT%\LEIA-ME.txt" 2>nul
 
 rem ---------------- Servidor de Teste (dentro da pasta do programa)
 set "ST=%OUT%\Servidor de Teste"
@@ -128,9 +128,7 @@ if not exist "%ST%\gamemodes" mkdir "%ST%\gamemodes"
 if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 copy /y "servidor-teste\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
 copy /y "servidor-teste\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
-> "%ST%\LEIA-ME.txt" echo Servidor usado pelo botao "Testar no jogo" do SA Map Studio.
->> "%ST%\LEIA-ME.txt" echo Coloque aqui os arquivos do open.mp server (omp-server.exe, as .dll e a pasta components)
->> "%ST%\LEIA-ME.txt" echo ou do SA-MP server (samp-server.exe). O editor cria o server.cfg e o mapa sozinho.
+del /q "%ST%\LEIA-ME.txt" 2>nul
 
 rem Arquivos do servidor: primeiro da pasta servidor-teste, senao os que ja estao na pasta do programa
 set "SRVSRC="

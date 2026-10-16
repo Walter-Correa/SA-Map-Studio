@@ -16,3 +16,7 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 - **Janela inicial**: O editor deve abrir por padrão maximizado.
 - **Formatação de Cores**: Cores de Textos 3D (Create3DTextLabel) devem usar alpha total (`0x...FF`, não `0x...AA`).
 - **Codificação**: Todos os arquivos de texto, scripts pawn e gamemodes do servidor de teste devem permanecer estritamente em UTF-8.
+
+## 4. Arquivos e Compilação
+- **Sem LEIA-ME.txt**: Nunca incluir o arquivo `LEIA-ME.txt` em lugar algum ao compilar o projeto (`Compilar EXE.bat` / `Compilar EXE limpo.bat`).
+- **Organização e Pasta testing**: A pasta raiz do projeto deve permanecer sempre limpa e organizada, contendo apenas os arquivos e pastas estruturais do projeto. Todos os testes, scripts temporários e arquivos de verificação devem ser criados e executados exclusivamente dentro da pasta `testing/`.

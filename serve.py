@@ -1533,6 +1533,7 @@ def open_window(url, httpd):
             os.environ["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = (
                 "--js-flags=--max-old-space-size=512 "
                 "--disable-features=Translate,MediaRouter,OptimizationHints "
+                "--enable-features=PointerLockOptions "
                 "--disk-cache-size=104857600"
             )
         win_w, win_h, win_x, win_y, min_size = get_initial_window_geometry()

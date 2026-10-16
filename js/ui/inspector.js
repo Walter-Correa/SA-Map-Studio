@@ -98,7 +98,7 @@ export function renderInspector() {
   } else if (kind === 'actors') {
     el.innerHTML = actorInspector(item);
     bindActor(item);
-    titleThumb(item.skin ?? 0, true);
+    titleThumb(item.skin ?? 0);
   } else if (kind === 'labels') {
     el.innerHTML = labelInspector(item);
     bindLabel(item);
@@ -117,17 +117,8 @@ export function renderInspector() {
   }
 }
 
-function titleThumb(model, isPed = false) {
-  const img = $('#inspector .insp-title img');
-  if (isPed) {
-    if (img) {
-      img.src = `/cache/skins/${model}.png`;
-      img.classList.remove('empty');
-      img.onerror = () => { img.onerror = null; img.src = `/thumbs/obj/${model}.webp?v=3`; };
-    }
-    return;
-  }
-  app.thumbs.request(model, (url) => { if (img && url) { img.src = url; img.classList.remove('empty'); } });
+function titleThumb(model) {
+  app.thumbs.request(model, (url) => { const img = $('#inspector .insp-title img'); if (img && url) { img.src = url; img.classList.remove('empty'); } });
 }
 
 function emptyInspector() {

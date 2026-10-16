@@ -570,12 +570,10 @@ stock SAMS_CarregarMapa()
 
                 if (tdfont == 4)
                 {
-                    new Text:td = TextDrawCreate(tdx, tdy, "_");
+                    new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : "hud:radardisc");
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
                         TextDrawFont(td, 4);
-                        TextDrawSetString(td, texto[0] != EOS ? texto : "hud:radardisc");
-                        TextDrawLetterSize(td, 0.0, 0.0);
                         TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
                         TextDrawColor(td, tdcol);
                         TextDrawSetOutline(td, 0);
