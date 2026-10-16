@@ -893,15 +893,21 @@ export function exportPawn(project, options = {}) {
     const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
     const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const tdVar = `td_${idx}`;
-    textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
-    textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
+    if (td.font === 4) {
+      textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, "_");${cmt}`);
+      textDrawLines.push(`TextDrawFont(${tdVar}, 4);`);
+      textDrawLines.push(`TextDrawSetString(${tdVar}, ${escText});`);
+    } else {
+      textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
+      textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
+    }
     textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(td.letterSizeX ?? 0.35, null)}, ${formatCoord(td.letterSizeY ?? 1.4, null)});`);
     textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);
-    textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${td.outline ?? 0});`);
-    textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${td.shadow ?? 1});`);
+    textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
+    textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
     textDrawLines.push(`TextDrawAlignment(${tdVar}, ${align});`);
-    if (td.useBox && td.font !== 5) {
+    if (td.useBox && td.font !== 5 && td.font !== 4) {
       textDrawLines.push(`TextDrawUseBox(${tdVar}, 1);`);
       textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${bHex});`);
     }
@@ -1138,3 +1144,5 @@ export function cameraFunctions(cameras) {
   }
   return { code: out.join('\n'), usage };
 }
+if (typeof window !== 'undefined') window.exportPawn = exportPawn;
+

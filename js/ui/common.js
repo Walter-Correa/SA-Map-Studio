@@ -18,6 +18,7 @@ export const app = {
   emit(type, detail) { this.bus.dispatchEvent(new CustomEvent(type, { detail })); },
   on(type, fn) { this.bus.addEventListener(type, (e) => fn(e.detail)); },
 };
+if (typeof window !== 'undefined') window.app = app;
 
 export function toast(msg, kind = 'ok', ms = 2800) {
   const el = document.createElement('div');

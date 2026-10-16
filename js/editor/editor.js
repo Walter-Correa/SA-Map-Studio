@@ -841,7 +841,13 @@ export class Editor extends EventTarget {
       this.selBoxes.add(h);
       addHighlightOverlay(obj);
     };
-    for (const u of this.selection) { const n = this.nodes.get(u); if (n) add(n, 0xff5555); }
+    for (const u of this.selection) {
+      const p = this.findProjectOf(u);
+      if (p?.kindOf(u) === 'labels') continue;
+      const n = this.nodes.get(u);
+      if (n?.userData?.isLabel || n?.userData?.kind === 'labels') continue;
+      if (n) add(n, 0xff5555);
+    }
     for (const inst of this.worldSelection) {
       const obj = this.streamer.shown.get(inst.index);
       if (obj) add(obj, 0xff5555);

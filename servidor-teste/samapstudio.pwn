@@ -197,6 +197,49 @@ stock SAMS_HexOrInt(const linha[], campo)
     return strval(valor);
 }
 
+stock SAMS_DecodeUTF8(str[])
+{
+    new r = 0, w = 0;
+    while (str[r] != EOS)
+    {
+        new b1 = str[r] & 0xFF;
+        new b2 = str[r + 1] & 0xFF;
+        if (b1 == 0xC2 && b2 >= 0x80 && b2 <= 0xBF)
+        {
+            str[w++] = b2;
+            r += 2;
+        }
+        else if (b1 == 0xC3 && b2 >= 0x80 && b2 <= 0xBF)
+        {
+            str[w++] = b2 + 0x40;
+            r += 2;
+        }
+        else if (b1 == 0xE2 && b2 == 0x80)
+        {
+            new b3 = str[r + 2] & 0xFF;
+            if (b3 == 0x98 || b3 == 0x99) str[w++] = '\'';
+            else if (b3 == 0x9C || b3 == 0x9D) str[w++] = '"';
+            else if (b3 == 0x93 || b3 == 0x94) str[w++] = '-';
+            else str[w++] = ' ';
+            r += 3;
+        }
+        else
+        {
+            str[w++] = b1;
+            r++;
+        }
+    }
+    str[w] = EOS;
+}
+
+stock SAMS_SendClientMessage(playerid, color, const msg[])
+{
+    new buf[256];
+    format(buf, sizeof(buf), "%s", msg);
+    SAMS_DecodeUTF8(buf);
+    return SendClientMessage(playerid, color, buf);
+}
+
 stock SAMS_LimparLinha(linha[])
 {
     new n = strlen(linha);
@@ -312,6 +355,7 @@ stock SAMS_CarregarMapa()
                 if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
                 SAMS_Campo(linha, 9, fonte, sizeof(fonte));
                 SAMS_Resto(linha, 10, texto, sizeof(texto));
+                SAMS_DecodeUTF8(texto);
                 if (gUseStreamer)
                 {
                     SetDynamicObjectMaterialText(STREAMER_TAG_OBJECT:gObjetos[indice], SAMS_Int(linha, 2), texto, SAMS_Int(linha, 3), fonte,
@@ -447,6 +491,7 @@ stock SAMS_CarregarMapa()
                 new lworld = SAMS_Int(linha, 6);
                 new ltestlos = SAMS_Int(linha, 7);
                 SAMS_Resto(linha, 8, texto, sizeof(texto));
+                SAMS_DecodeUTF8(texto);
                 if (gUseStreamer)
                 {
                     new Text3D:lbl = Text3D:CreateDynamic3DTextLabel(texto, lcolor, lx, ly, lz, ldist, INVALID_PLAYER_ID, INVALID_VEHICLE_ID, ltestlos, lworld);
@@ -487,9 +532,9 @@ stock SAMS_CarregarMapa()
                 new Float:gminx = SAMS_Float(linha, 1);
                 new Float:gminy = SAMS_Float(linha, 2);
                 new Float:gmaxx = SAMS_Float(linha, 3);
-                new Float:gmaxy = SAMS_Float(linha, 4);
+                new Float:maxy = SAMS_Float(linha, 4);
                 new gcolor = SAMS_HexOrInt(linha, 5);
-                new gz = GangZoneCreate(gminx, gminy, gmaxx, gmaxy);
+                new gz = GangZoneCreate(gminx, gminy, gmaxx, maxy);
                 if (gz != -1)
                 {
                     gGangZones[gTotalGangZones] = gz;
@@ -523,41 +568,89 @@ stock SAMS_CarregarMapa()
                 new Float:tdzoom = SAMS_Float(linha, 21);
                 SAMS_Resto(linha, 22, texto, sizeof(texto));
 
-                new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : "_");
-                if (td != Text:INVALID_TEXT_DRAW)
+                if (tdfont == 4)
                 {
-                    TextDrawFont(td, tdfont);
-                    TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
-                    if (tdfont <= 3 && !tdusebox)
+                    new Text:td = TextDrawCreate(tdx, tdy, "_");
+                    if (td != Text:INVALID_TEXT_DRAW)
                     {
-                        new Float:wrapX = (tdalign == 3) ? 0.0 : (tdsizex > 0.0 ? tdsizex : 640.0);
-                        new Float:wrapY = (tdalign == 2) ? (tdsizey > 0.0 ? tdsizey : 640.0) : 480.0;
-                        TextDrawTextSize(td, wrapX, wrapY);
+                        TextDrawFont(td, 4);
+                        TextDrawSetString(td, texto[0] != EOS ? texto : "hud:radardisc");
+                        TextDrawLetterSize(td, 0.0, 0.0);
+                        TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
+                        TextDrawColor(td, tdcol);
+                        TextDrawSetOutline(td, 0);
+                        TextDrawSetShadow(td, 0);
+                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
+                        TextDrawBackgroundColor(td, (tdbgcol & 0xFF) == 0 ? 0x000000FF : tdbgcol);
+                        TextDrawSetProportional(td, bool:tdprop);
+                        if (tdselect) TextDrawSetSelectable(td, true);
+                        gTextDraws[gTotalTextDraws] = td;
+                        gTotalTextDraws++;
                     }
-                    else
+                }
+                else if (tdfont == 5)
+                {
+                    new Text:td = TextDrawCreate(tdx, tdy, "_");
+                    if (td != Text:INVALID_TEXT_DRAW)
                     {
+                        TextDrawFont(td, 5);
+                        TextDrawLetterSize(td, 0.0, 0.0);
                         TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 80.0), (tdsizey > 0.0 ? tdsizey : 80.0));
+                        TextDrawColor(td, tdcol);
+                        TextDrawSetOutline(td, 0);
+                        TextDrawSetShadow(td, 0);
+                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
+                        if (tdusebox)
+                        {
+                            TextDrawUseBox(td, true);
+                            TextDrawBoxColor(td, tdboxcol);
+                        }
+                        TextDrawBackgroundColor(td, tdbgcol);
+                        TextDrawSetProportional(td, bool:tdprop);
+                        if (tdselect) TextDrawSetSelectable(td, true);
+                        if (tdmodel > 0)
+                        {
+                            TextDrawSetPreviewModel(td, tdmodel);
+                            TextDrawSetPreviewRot(td, tdrotx, tdroty, tdrotz, (tdzoom > 0.0 ? tdzoom : 1.0));
+                            TextDrawSetPreviewVehCol(td, 1, 1);
+                        }
+                        gTextDraws[gTotalTextDraws] = td;
+                        gTotalTextDraws++;
                     }
-                    TextDrawColor(td, tdcol);
-                    TextDrawSetOutline(td, tdoutline);
-                    TextDrawSetShadow(td, tdshadow);
-                    TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
-                    if (tdusebox && tdfont != 5)
+                }
+                else
+                {
+                    SAMS_DecodeUTF8(texto);
+                    new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : "_");
+                    if (td != Text:INVALID_TEXT_DRAW)
                     {
-                        TextDrawUseBox(td, true);
-                        TextDrawBoxColor(td, tdboxcol);
+                        TextDrawFont(td, tdfont);
+                        TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
+                        if (!tdusebox)
+                        {
+                            new Float:wrapX = (tdalign == 3) ? 0.0 : (tdsizex > 0.0 ? tdsizex : 640.0);
+                            new Float:wrapY = (tdalign == 2) ? (tdsizey > 0.0 ? tdsizey : 640.0) : 480.0;
+                            TextDrawTextSize(td, wrapX, wrapY);
+                        }
+                        else
+                        {
+                            TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 80.0), (tdsizey > 0.0 ? tdsizey : 80.0));
+                        }
+                        TextDrawColor(td, tdcol);
+                        TextDrawSetOutline(td, tdoutline);
+                        TextDrawSetShadow(td, tdshadow);
+                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
+                        if (tdusebox)
+                        {
+                            TextDrawUseBox(td, true);
+                            TextDrawBoxColor(td, tdboxcol);
+                        }
+                        TextDrawBackgroundColor(td, tdbgcol);
+                        TextDrawSetProportional(td, bool:tdprop);
+                        if (tdselect) TextDrawSetSelectable(td, true);
+                        gTextDraws[gTotalTextDraws] = td;
+                        gTotalTextDraws++;
                     }
-                    TextDrawBackgroundColor(td, tdbgcol);
-                    TextDrawSetProportional(td, bool:tdprop);
-                    if (tdselect) TextDrawSetSelectable(td, true);
-                    if (tdfont == 5 && tdmodel > 0)
-                    {
-                        TextDrawSetPreviewModel(td, tdmodel);
-                        TextDrawSetPreviewRot(td, tdrotx, tdroty, tdrotz, (tdzoom > 0.0 ? tdzoom : 1.0));
-                        TextDrawSetPreviewVehCol(td, 1, 1);
-                    }
-                    gTextDraws[gTotalTextDraws] = td;
-                    gTotalTextDraws++;
                 }
             }
         }
@@ -712,6 +805,17 @@ stock SAMS_IrParaSpawn(playerid)
     if (gJetpack) SetPlayerSpecialAction(playerid, SPECIAL_ACTION_USEJETPACK);
 }
 
+forward SAMS_ShowAllTextDraws(playerid);
+public SAMS_ShowAllTextDraws(playerid)
+{
+    if (!IsPlayerConnected(playerid)) return 0;
+    for (new i = 0; i < gTotalTextDraws; i++)
+    {
+        TextDrawShowForPlayer(playerid, gTextDraws[i]);
+    }
+    return 1;
+}
+
 public OnPlayerSpawn(playerid)
 {
     if (gReturningFromFly[playerid])
@@ -731,15 +835,13 @@ public OnPlayerSpawn(playerid)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
     }
-    for (new i = 0; i < gTotalTextDraws; i++)
-    {
-        TextDrawShowForPlayer(playerid, gTextDraws[i]);
-    }
+    SAMS_ShowAllTextDraws(playerid);
+    SetTimerEx("SAMS_ShowAllTextDraws", 400, false, "i", playerid);
     SAMS_PreloadAllAnims(playerid);
     SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
     SetTimerEx("SAMS_SyncActorAnims", 1500, false, "i", playerid);
-    SendClientMessage(playerid, SAMS_COR_INFO, "SA Map Studio: teste do mapa.");
-    SendClientMessage(playerid, SAMS_COR_OK, "Comandos: /fly (/voar)  /map (/mapa)  /w [clima]  /t [hora]  /anim  /jetpack  /v [modelo]  /spawn  /pos");
+    SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "SA Map Studio: teste do mapa.");
+    SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Comandos: /fly (/voar)  /map (/mapa)  /w [clima]  /t [hora]  /anim  /jetpack  /v [modelo]  /spawn  /pos");
     return 1;
 }
 
@@ -852,7 +954,7 @@ stock IniciarFlyMode(playerid)
     gNoClip[playerid][noclip_udold] = 0;
     gNoClip[playerid][noclip_lrold] = 0;
 
-    SendClientMessage(playerid, SAMS_COR_OK, "Modo voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.");
+    SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Modo voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.");
     return 1;
 }
 
@@ -878,7 +980,8 @@ public SAMS_RestaurarPosVoo(playerid)
     SetCameraBehindPlayer(playerid);
     gReturningFromFly[playerid] = false;
     SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
-    SendClientMessage(playerid, SAMS_COR_INFO, "Modo voo desativado. Você retornou à posição onde o voo foi ativado.");
+    SetTimerEx("SAMS_ShowAllTextDraws", 300, false, "i", playerid);
+    SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Modo voo desativado. Você retornou à posição onde o voo foi ativado.");
     return 1;
 }
 
@@ -902,7 +1005,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (!strcmp(cmdtext, "/anim", true) || !strcmp(cmdtext, "/reanim", true) || !strcmp(cmdtext, "/animar", true))
     {
         SAMS_SyncActorAnims(playerid);
-        SendClientMessage(playerid, SAMS_COR_OK, "Animações dos actors sincronizadas e reaplicadas.");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Animações dos actors sincronizadas e reaplicadas.");
         return 1;
     }
 
@@ -913,7 +1016,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             StopPlayerObject(playerid, gNoClip[playerid][noclip_flyobject]);
             SetPlayerObjectPos(playerid, gNoClip[playerid][noclip_flyobject], gMapCenter[0], gMapCenter[1], gMapCenter[2]);
-            SendClientMessage(playerid, SAMS_COR_OK, "Câmera teleportada para o centro do mapa.");
+            SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Câmera teleportada para o centro do mapa.");
             return 1;
         }
 
@@ -931,7 +1034,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SetPlayerPos(playerid, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
             SetCameraBehindPlayer(playerid);
         }
-        SendClientMessage(playerid, SAMS_COR_OK, "Teleportado para o centro do mapa em teste.");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Teleportado para o centro do mapa em teste.");
         return 1;
     }
 
@@ -952,7 +1055,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         GetPlayerPos(playerid, x, y, z);
         GetPlayerFacingAngle(playerid, a);
         format(msg, sizeof(msg), "Posição: %.4f, %.4f, %.4f  Ângulo: %.1f  Interior: %d", x, y, z, a, GetPlayerInterior(playerid));
-        SendClientMessage(playerid, SAMS_COR_OK, msg);
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, msg);
         printf("[SA Map Studio] %s", msg);
         return 1;
     }
@@ -961,7 +1064,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new modelo = (cmdtext[2] == ' ') ? strval(cmdtext[3]) : 411;
         if (modelo < 400 || modelo > 611)
         {
-            SendClientMessage(playerid, SAMS_COR_INFO, "Use /v [modelo], de 400 a 611.");
+            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Use /v [modelo], de 400 a 611.");
             return 1;
         }
         new Float:x, Float:y, Float:z, Float:a;
@@ -990,14 +1093,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             new msg[128];
             format(msg, sizeof(msg), "Uso: /w [0 a 45] (ou /weather, /clima) - Clima atual: %d", gClima);
-            SendClientMessage(playerid, SAMS_COR_INFO, msg);
+            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, msg);
             return 1;
         }
 
         new novoClima = strval(cmdtext[paramIdx]);
         if (novoClima < 0 || novoClima > 255)
         {
-            SendClientMessage(playerid, SAMS_COR_INFO, "ID de clima inválido! Escolha um valor entre 0 e 45.");
+            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "ID de clima inválido! Escolha um valor entre 0 e 45.");
             return 1;
         }
 
@@ -1010,7 +1113,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         new msg[128];
         format(msg, sizeof(msg), "Clima alterado para %d.", gClima);
-        SendClientMessage(playerid, SAMS_COR_OK, msg);
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, msg);
         printf("[SA Map Studio] Clima alterado para %d por player %d.", gClima, playerid);
         return 1;
     }
@@ -1033,7 +1136,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             new msg[128];
             format(msg, sizeof(msg), "Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horário atual: %02d:%02d", gHora, gMinuto);
-            SendClientMessage(playerid, SAMS_COR_INFO, msg);
+            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, msg);
             return 1;
         }
 
@@ -1065,7 +1168,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59)
         {
-            SendClientMessage(playerid, SAMS_COR_INFO, "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
+            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
             return 1;
         }
 
@@ -1079,7 +1182,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         new msg[128];
         format(msg, sizeof(msg), "Horário alterado para %02d:%02d.", gHora, gMinuto);
-        SendClientMessage(playerid, SAMS_COR_OK, msg);
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, msg);
         printf("[SA Map Studio] Horário alterado para %02d:%02d por player %d.", gHora, gMinuto, playerid);
         return 1;
     }
@@ -1087,14 +1190,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
     // Ajuda e lista de comandos
     if (!strcmp(cmdtext, "/ajuda", true) || !strcmp(cmdtext, "/help", true) || !strcmp(cmdtext, "/comandos", true))
     {
-        SendClientMessage(playerid, SAMS_COR_INFO, "Comandos do servidor de teste:");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /fly (/voar) - Alternar voo livre da câmera");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /map (/mapa) - Teleportar ao centro do mapa em teste");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /w [0-45] - Alterar clima (ex: /w 10)");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /v [modelo] - Criar veículo (ex: /v 411)");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /anim - Ressincronizar animações dos actors");
-        SendClientMessage(playerid, SAMS_COR_OK, "  /jetpack, /spawn, /pos - Utilidades gerais");
+        SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Comandos do servidor de teste:");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /fly (/voar) - Alternar voo livre da câmera");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /map (/mapa) - Teleportar ao centro do mapa em teste");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /w [0-45] - Alterar clima (ex: /w 10)");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /v [modelo] - Criar veículo (ex: /v 411)");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /anim - Ressincronizar animações dos actors");
+        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /jetpack, /spawn, /pos - Utilidades gerais");
         return 1;
     }
     return 0;

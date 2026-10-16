@@ -1160,15 +1160,21 @@ function copyTextDrawsPawn() {
     const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
     const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 480.0);
 
-    lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || '_'}");`);
-    lines.push(`TextDrawFont(${varName}, ${td.font ?? 1});`);
+    if (td.font === 4) {
+      lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "_");`);
+      lines.push(`TextDrawFont(${varName}, 4);`);
+      lines.push(`TextDrawSetString(${varName}, "${td.text || 'hud:radardisc'}");`);
+    } else {
+      lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || '_'}");`);
+      lines.push(`TextDrawFont(${varName}, ${td.font ?? 1});`);
+    }
     lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.35).toFixed(2)}, ${(td.letterSizeY ?? 1.4).toFixed(2)});`);
     lines.push(`TextDrawTextSize(${varName}, ${Number(expSizeX).toFixed(1)}, ${Number(expSizeY).toFixed(1)});`);
     lines.push(`TextDrawColor(${varName}, ${cHex});`);
-    lines.push(`TextDrawSetOutline(${varName}, ${td.outline ?? 0});`);
-    lines.push(`TextDrawSetShadow(${varName}, ${td.shadow ?? 1});`);
+    lines.push(`TextDrawSetOutline(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
+    lines.push(`TextDrawSetShadow(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
     lines.push(`TextDrawAlignment(${varName}, ${align});`);
-    if (td.useBox) {
+    if (td.useBox && td.font !== 5 && td.font !== 4) {
       lines.push(`TextDrawUseBox(${varName}, 1);`);
       lines.push(`TextDrawBoxColor(${varName}, ${bHex});`);
     }
