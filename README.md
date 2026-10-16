@@ -96,7 +96,7 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
   O código gerado compila **sem warnings**.
 
 ### Projetos
-- Salvos sozinhos na pasta `Projetos`; abrir outro projeto salva e fecha o que estava aberto.
+- Salvos sozinhos na pasta `projects`; abrir outro projeto salva e fecha o que estava aberto.
 
 ---
 
@@ -116,7 +116,7 @@ cd SA-MAP-STUDIO
 python serve.py
 ```
 
-Ou dê dois cliques em **`Iniciar SA Map Studio.bat`**.
+Ou dê dois cliques em **`start.bat`**.
 
 O editor procura o GTA sozinho (registro do Windows, Steam e pastas comuns). Para indicar a pasta:
 
@@ -132,17 +132,17 @@ Outras opções: `--port 8777`, `--no-browser` e `--navegador` (abre no navegado
 
 | Arquivo | Resultado | Para quê |
 |---|---|---|
-| `Compilar EXE.bat` | `dist\SA Map Studio\` | Uso no dia a dia: atualiza o programa **mantendo** projetos, exportações, configuração, cache e miniaturas. |
-| `Compilar EXE limpo.bat` | `dist-limpo\SA Map Studio\` | Cópia **limpa**, sem nenhum dado carregado, pronta para enviar a outra pessoa. |
+| `build.bat` | `compiled\sa-map-studio\` | Uso no dia a dia: atualiza o programa **mantendo** projetos, exportações, configuração, cache e miniaturas. |
+| `build-clean.bat` | `compiled\sa-map-studio\` | Cópia **limpa**, sem nenhum dado carregado, pronta para enviar a outra pessoa. |
 
-Os dois criam um ambiente Python separado (`.venv-build`), instalam as versões mais recentes do
+Os dois criam um ambiente Python separado (`compile-sources\.venv-build`), instalam as versões mais recentes do
 PyInstaller e do pywebview, gravam a data e a hora da compilação (aparecem em *Novidades* dentro do
-programa) e montam a pasta `Servidor de Teste` com o gamemode e o seu servidor open.mp / SA-MP.
+programa) e montam a pasta `test-server` com o gamemode e o seu servidor open.mp / SA-MP.
 
 ```powershell
-Stop-Process -Name "SA Map Studio" -Force -ErrorAction SilentlyContinue
-& ".\Compilar EXE.bat"          # mantém seus dados
-& ".\Compilar EXE limpo.bat"    # cópia limpa
+Stop-Process -Name "sa-map-studio" -Force -ErrorAction SilentlyContinue
+& ".\build.bat"          # mantém seus dados
+& ".\build-clean.bat"    # cópia limpa
 ```
 
 > Na primeira vez, o Windows pode mostrar "O Windows protegeu o computador", porque o programa não tem
@@ -155,13 +155,13 @@ Stop-Process -Name "SA Map Studio" -Force -ErrorAction SilentlyContinue
 Depois de compilado, tudo fica numa pasta só:
 
 ```
-SA Map Studio\
-├── SA Map Studio.exe     o programa
-├── Projetos\             seus mapas (salvos sozinhos)
-├── Exportados\           .pwn / .ipl exportados
-├── Dados\                configuração, cache de texturas, miniaturas e registros
-├── Servidor de Teste\    servidor usado pelo "Testar no jogo"
-└── Sistema\              arquivos internos do programa
+sa-map-studio\
+├── sa-map-studio.exe     o programa
+├── projects\             seus mapas (salvos sozinhos)
+├── exported\             .pwn / .ipl exportados
+├── data\                 configuração, cache de texturas, miniaturas e registros
+├── test-server\          servidor usado pelo "Testar no jogo"
+└── system\               arquivos internos do programa
 ```
 
 A pasta inteira pode ser movida ou copiada para outro computador.
@@ -201,10 +201,11 @@ js/editor/               núcleo: editor, projeto, materiais, importação, expo
 js/world/                dados do jogo, streaming do mapa, modelos, categorias, workers
 js/formats/              leitores dos formatos do GTA (IMG, IDE, IPL, DFF, TXD)
 js/vendor/               Three.js r186
-servidor-teste/          gamemode do "Testar no jogo" (samapstudio.pwn / .amx)
+compile-sources/         recursos de compilacao, modelos, icones e gamemode
 fonts/                   fonte Barlow (SIL Open Font License)
-Compilar EXE.bat         compila mantendo os dados
-Compilar EXE limpo.bat   compila uma cópia limpa
+build.bat                compila mantendo os dados
+build-clean.bat          compila uma versao limpa
+start.bat                inicia o servidor e editor via Python
 ```
 
 A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece no editor é o que aparece no servidor.

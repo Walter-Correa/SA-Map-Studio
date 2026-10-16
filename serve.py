@@ -12,10 +12,10 @@ Uso:
     python serve.py --navegador          (abre no navegador mesmo com o pywebview instalado)
 
 Pastas (ao lado do .exe, ou desta pasta quando roda pelo Python):
-    Projetos/     projetos salvos (.json)
-    Exportados/   arquivos .pwn / .ipl gerados
-    Dados/        configuração, cache de texturas e miniaturas, dados da janela e registros
-    Servidor de Teste/  servidor open.mp/SA-MP usado pelo "Testar no jogo"
+    projects/     projetos salvos (.json)
+    exported/     arquivos .pwn / .ipl gerados
+    data/         configuração, cache de texturas e miniaturas, dados da janela e registros
+    test-server/  servidor open.mp/SA-MP usado pelo "Testar no jogo"
 """
 import argparse
 import base64
@@ -38,13 +38,13 @@ from urllib.parse import quote, unquote, urlparse, parse_qs
 
 VERSION = "3.0.0"
 FROZEN = getattr(sys, "frozen", False)
-# Arquivos do editor (html/js/css); no .exe ficam na pasta Sistema
+# Arquivos do editor (html/js/css); no .exe ficam na pasta system
 APP_DIR = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
 # Pasta principal do programa (onde fica o .exe)
 BASE_DIR = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.abspath(__file__))
-PROJECTS_DIR = os.path.join(BASE_DIR, "Projetos")
-EXPORTS_DIR = os.path.join(BASE_DIR, "Exportados")
-DATA_DIR = os.path.join(BASE_DIR, "Dados")
+PROJECTS_DIR = os.path.join(BASE_DIR, "projects")
+EXPORTS_DIR = os.path.join(BASE_DIR, "exported")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
 COMPILE_SOURCES_DIR = os.path.join(BASE_DIR, "compile-sources")
@@ -54,36 +54,26 @@ if not FROZEN and not os.path.isdir(CACHE_DIR) and os.path.isdir(COMPILE_CACHE_D
     CACHE_DIR = COMPILE_CACHE_DIR
 THUMBS_DIR = os.path.join(CACHE_DIR, "miniaturas")
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animacoes")
-WEBVIEW_DIR = os.path.join(DATA_DIR, "navegador")
-LOGS_DIR = os.path.join(DATA_DIR, "registros")
-TEST_DIR = os.path.join(BASE_DIR, "Servidor de Teste")  # servidor de teste fica dentro da pasta do programa
+WEBVIEW_DIR = os.path.join(DATA_DIR, "browser")
+LOGS_DIR = os.path.join(DATA_DIR, "logs")
+TEST_DIR = os.path.join(BASE_DIR, "test-server")  # servidor de teste fica dentro da pasta do programa
 IS_WINDOWS = os.name == "nt"
 
 
 def migrate_old_layout():
-    """Move os arquivos das versões anteriores para as pastas organizadas."""
-    moves = [
-        ("config.json", CONFIG_FILE),
-        ("cache", CACHE_DIR),
-        ("dados-da-janela", WEBVIEW_DIR),
-        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
-    ]
-    for old, new in moves:
-        src = os.path.join(BASE_DIR, old)
-        if os.path.exists(src) and not os.path.exists(new):
-            try:
-                os.makedirs(os.path.dirname(new), exist_ok=True)
-                shutil.move(src, new)
-            except OSError:
-                pass
-    old_test = os.path.join(DATA_DIR, "teste")
-    if os.path.isdir(old_test) and not os.path.exists(TEST_DIR):
-        try:
-            shutil.move(old_test, TEST_DIR)
-        except OSError:
-            pass
-    # Pastas em minúsculas de versões antigas (no Windows o nome não diferencia maiúsculas)
-    for old, new in (("projetos", PROJECTS_DIR), ("exportados", EXPORTS_DIR)):
+    """Move os arquivos das versões anteriores para as pastas organizadas em inglês."""
+    # Migra pastas legadas em português da raiz se existirem
+    for old, new in (
+        ("Dados", DATA_DIR),
+        ("dados", DATA_DIR),
+        ("Servidor de Teste", TEST_DIR),
+        ("servidor-teste", TEST_DIR),
+        ("teste", TEST_DIR),
+        ("Projetos", PROJECTS_DIR),
+        ("projetos", PROJECTS_DIR),
+        ("Exportados", EXPORTS_DIR),
+        ("exportados", EXPORTS_DIR),
+    ):
         src = os.path.join(BASE_DIR, old)
         if os.path.isdir(src) and not os.path.exists(new):
             try:
@@ -94,10 +84,36 @@ def migrate_old_layout():
             try:
                 if not os.path.samefile(src, new):
                     for n in os.listdir(src):
-                        if not os.path.exists(os.path.join(new, n)):
-                            shutil.move(os.path.join(src, n), os.path.join(new, n))
+                        s_f = os.path.join(src, n)
+                        d_f = os.path.join(new, n)
+                        if not os.path.exists(d_f):
+                            shutil.move(s_f, d_f)
                     if not os.listdir(src):
                         os.rmdir(src)
+            except OSError:
+                pass
+
+    moves = [
+        ("config.json", CONFIG_FILE),
+        ("cache", CACHE_DIR),
+        ("dados-da-janela", WEBVIEW_DIR),
+        ("navegador", WEBVIEW_DIR),
+        ("registros", LOGS_DIR),
+        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
+    ]
+    for old, new in moves:
+        src = os.path.join(BASE_DIR, old)
+        if os.path.exists(src) and not os.path.exists(new):
+            try:
+                os.makedirs(os.path.dirname(new), exist_ok=True)
+                shutil.move(src, new)
+            except OSError:
+                pass
+        sub_src = os.path.join(DATA_DIR, old)
+        if os.path.exists(sub_src) and not os.path.exists(new):
+            try:
+                os.makedirs(os.path.dirname(new), exist_ok=True)
+                shutil.move(sub_src, new)
             except OSError:
                 pass
 
@@ -331,6 +347,8 @@ def thumb_file(kind, key):
         if not os.path.isfile(p):
             for alt in (
                 os.path.join(COMPILE_CACHE_DIR, "miniaturas", "objetos", key + ".webp"),
+                os.path.join(DATA_DIR, "cache", "miniaturas", "objetos", key + ".webp"),
+                os.path.join(APP_DIR, "data", "cache", "miniaturas", "objetos", key + ".webp"),
                 os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "objetos", key + ".webp")
             ):
                 if os.path.isfile(alt):
@@ -344,6 +362,8 @@ def thumb_file(kind, key):
         if not os.path.isfile(p):
             for alt in (
                 os.path.join(COMPILE_CACHE_DIR, "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
+                os.path.join(DATA_DIR, "cache", "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
+                os.path.join(APP_DIR, "data", "cache", "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
                 os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
             ):
                 if os.path.isfile(alt):
@@ -575,6 +595,7 @@ def find_samapstudio_amx():
         os.path.join(BASE_DIR, "samapstudio.amx"),
         os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
         os.path.join(BASE_DIR, "omp-server-source", "gamemodes", "samapstudio.amx"),
+        os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server", "gamemodes", "samapstudio.amx"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "gamemodes", "samapstudio.amx"),
     ):
         if os.path.isfile(cand):
@@ -585,11 +606,11 @@ def find_samapstudio_amx():
 def test_info():
     cfg = load_config()
     server = cfg.get("server_path") or ""
-    # Servidor que já está dentro da pasta do programa ("Servidor de Teste") tem prioridade
+    # Servidor que já está dentro da pasta do programa ("test-server") tem prioridade
     candidates = [
         TEST_DIR,
+        os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste"),
-        os.path.join(BASE_DIR, "compiled", "Servidor de Teste"),
         os.path.join(BASE_DIR, "omp-server-source"),
     ]
     for c in candidates:
@@ -705,7 +726,7 @@ def start_test(body):
     target_dirs = {TEST_DIR}
     if info.get("serverPath"):
         target_dirs.add(info["serverPath"])
-    dist_root_st = os.path.join(os.path.dirname(BASE_DIR), "Servidor de Teste") if os.path.basename(BASE_DIR) == "SA Map Studio" else os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste")
+    dist_root_st = os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server") if not FROZEN else TEST_DIR
     if os.path.isdir(dist_root_st):
         target_dirs.add(dist_root_st)
 
@@ -716,6 +737,7 @@ def start_test(body):
         os.path.join(TEST_DIR, "plugins", "streamer.dll"),
         os.path.join(APP_DIR, "plugins", "streamer.dll"),
         os.path.join(src, "plugins", "streamer.dll"),
+        os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server", "plugins", "streamer.dll"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "plugins", "streamer.dll"),
     ):
         if os.path.isfile(cand):
@@ -1127,7 +1149,7 @@ class Handler(SimpleHTTPRequestHandler):
         if path.startswith("/cache/"):
             sub = path[len("/cache/"):].lstrip("/")
             rel_sub = sub.replace("/", os.sep)
-            for cdir in (CACHE_DIR, os.path.join(APP_DIR, "Dados", "cache"), os.path.join(os.path.dirname(BASE_DIR), "Dados", "cache")):
+            for cdir in (CACHE_DIR, COMPILE_CACHE_DIR, os.path.join(APP_DIR, "data", "cache"), os.path.join(APP_DIR, "Dados", "cache"), os.path.join(os.path.dirname(BASE_DIR), "data", "cache"), os.path.join(os.path.dirname(BASE_DIR), "Dados", "cache")):
                 full = os.path.join(cdir, rel_sub)
                 if os.path.isfile(full):
                     return self.send_file(full, cache="public, max-age=86400")
@@ -1364,13 +1386,15 @@ class Handler(SimpleHTTPRequestHandler):
 
     def get_gta(self, rel):
         low_rel = rel.replace("\\", "/").lower()
-        if low_rel in ("models/cj.dff", "models/cj.txd", "cj.dff", "cj.txd", "dados/models/cj.dff", "dados/models/cj.txd"):
+        if low_rel in ("models/cj.dff", "models/cj.txd", "cj.dff", "cj.txd", "data/models/cj.dff", "data/models/cj.txd", "dados/models/cj.dff", "dados/models/cj.txd"):
             for mdir in (
                 os.path.join(BASE_DIR, "compile-sources", "models"),
                 os.path.join(APP_DIR, "compile-sources", "models"),
                 os.path.join(BASE_DIR, "models"),
                 os.path.join(APP_DIR, "models"),
                 os.path.join(DATA_DIR, "models"),
+                os.path.join(APP_DIR, "data", "models"),
+                os.path.join(BASE_DIR, "data", "models"),
                 os.path.join(APP_DIR, "Dados", "models"),
                 os.path.join(BASE_DIR, "Dados", "models")
             ):
@@ -1406,6 +1430,7 @@ class Handler(SimpleHTTPRequestHandler):
             for sdir in (
                 os.path.join(DATA_DIR, "cache", "skins"),
                 os.path.join(COMPILE_CACHE_DIR, "skins"),
+                os.path.join(APP_DIR, "data", "cache", "skins"),
                 os.path.join(APP_DIR, "Dados", "cache", "skins"),
                 os.path.join(APP_DIR, "compile-sources", "cache", "skins")
             ):
@@ -1435,6 +1460,7 @@ class Handler(SimpleHTTPRequestHandler):
         d_candidates = [
             os.path.join(THUMBS_DIR, "objetos"),
             os.path.join(COMPILE_CACHE_DIR, "miniaturas", "objetos"),
+            os.path.join(APP_DIR, "data", "cache", "miniaturas", "objetos"),
             os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "objetos")
         ]
         for d in d_candidates:
@@ -1447,6 +1473,7 @@ class Handler(SimpleHTTPRequestHandler):
         d_candidates_tex = [
             os.path.join(THUMBS_DIR, "texturas"),
             os.path.join(COMPILE_CACHE_DIR, "miniaturas", "texturas"),
+            os.path.join(APP_DIR, "data", "cache", "miniaturas", "texturas"),
             os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "texturas")
         ]
         for d in d_candidates_tex:

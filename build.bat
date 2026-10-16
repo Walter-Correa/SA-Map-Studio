@@ -5,17 +5,20 @@ set "SRC=%~dp0"
 
 rem Modo: sem parametro = mantem os dados | "limpo" = remove dados de usuario antigos
 set "MODO=%~1"
-title Compilando o SA Map Studio
-set "OUT=%~dp0compiled\SA Map Studio"
-set "DADOS=%~dp0compiled\SA Map Studio"
+title Compilando o sa-map-studio
+set "OUT=%~dp0compiled\sa-map-studio"
+set "DADOS=%~dp0compiled\sa-map-studio"
+
+if /i "%MODO%"=="clean" set "MODO=clean"
+if /i "%MODO%"=="limpo" set "MODO=clean"
 
 echo ============================================================
-if /i "%MODO%"=="limpo" (
-echo  Compilando o SA Map Studio - VERSAO LIMPA
-echo  Resultado: compiled\SA Map Studio\  ^(sem projetos ou dados antigos^)
+if /i "%MODO%"=="clean" (
+echo  Compilando o sa-map-studio - VERSAO LIMPA
+echo  Resultado: compiled\sa-map-studio\  ^(sem projetos ou dados antigos^)
 ) else (
-echo  Compilando o SA Map Studio - VERSAO NORMAL
-echo  Resultado: compiled\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
+echo  Compilando o sa-map-studio - VERSAO NORMAL
+echo  Resultado: compiled\sa-map-studio\  ^(seus projetos e dados sao mantidos^)
 )
 echo ============================================================
 
@@ -90,8 +93,10 @@ if errorlevel 1 goto erro
 "%VPY%" -m pip install --upgrade --quiet pywebview
 if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no navegador.
 
-echo Fechando o SA Map Studio, se estiver aberto...
+echo Fechando o sa-map-studio, se estiver aberto...
+taskkill /im "sa-map-studio.exe" /f >nul 2>nul
 taskkill /im "SA Map Studio.exe" /f >nul 2>nul
+powershell -NoProfile -Command "Stop-Process -Name 'sa-map-studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 taskkill /im "omp-server.exe" /f >nul 2>nul
 taskkill /im "samp-server.exe" /f >nul 2>nul
@@ -101,12 +106,12 @@ rem Data e hora desta compilacao (aparece em "Novidades" dentro do programa)
 for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'dd/MM/yyyy HH:mm:ss'"`) do set "BUILDTIME=%%T"
 > "build-info.json" echo {"builtAt": "%BUILDTIME%"}
 
-rem Compila numa pasta temporaria (assim Projetos, Exportados e Dados nunca sao apagados)
+rem Compila numa pasta temporaria (assim projects, exported e data nunca sao apagados)
 if exist "build" rmdir /s /q "build"
-set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory Sistema"
+set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory system"
 set "ICONFILE=%SRC%compile-sources\icon.ico"
 if not exist "%ICONFILE%" set "ICONFILE=%SRC%icon.ico"
-set "ARGS=%ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
+set "ARGS=%ARGS% --name "sa-map-studio" --icon "%ICONFILE%""
 rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
 set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
@@ -138,24 +143,29 @@ echo Gerando o programa...
 if errorlevel 1 goto erro
 
 rem A versao limpa limpa os dados de usuario antigos da pasta compilada
-if /i "%MODO%"=="limpo" if exist "%OUT%" (
+if /i "%MODO%"=="clean" if exist "%OUT%" (
+    if exist "%OUT%\projects" rmdir /s /q "%OUT%\projects" 2>nul
+    if exist "%OUT%\exported" rmdir /s /q "%OUT%\exported" 2>nul
+    if exist "%OUT%\data\config.json" del /q "%OUT%\data\config.json" 2>nul
+    if exist "%OUT%\data\browser" rmdir /s /q "%OUT%\data\browser" 2>nul
+    if exist "%OUT%\data\logs" rmdir /s /q "%OUT%\data\logs" 2>nul
     if exist "%OUT%\Projetos" rmdir /s /q "%OUT%\Projetos" 2>nul
     if exist "%OUT%\Exportados" rmdir /s /q "%OUT%\Exportados" 2>nul
-    if exist "%OUT%\Dados\config.json" del /q "%OUT%\Dados\config.json" 2>nul
-    if exist "%OUT%\Dados\navegador" rmdir /s /q "%OUT%\Dados\navegador" 2>nul
-    if exist "%OUT%\Dados\registros" rmdir /s /q "%OUT%\Dados\registros" 2>nul
+    if exist "%OUT%\Dados" rmdir /s /q "%OUT%\Dados" 2>nul
+    if exist "%OUT%\Servidor de Teste" rmdir /s /q "%OUT%\Servidor de Teste" 2>nul
+    if exist "%OUT%\Sistema" rmdir /s /q "%OUT%\Sistema" 2>nul
 )
 
 echo Copiando o programa...
 if not exist "%OUT%" mkdir "%OUT%"
-robocopy "build\saida\SA Map Studio\Sistema" "%OUT%\Sistema" /MIR /NFL /NDL /NJH /NJS /NP >nul
+robocopy "build\saida\sa-map-studio\system" "%OUT%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto erro
-copy /y "build\saida\SA Map Studio\SA Map Studio.exe" "%OUT%\SA Map Studio.exe" >nul
+copy /y "build\saida\sa-map-studio\sa-map-studio.exe" "%OUT%\sa-map-studio.exe" >nul
 if errorlevel 1 goto erro
 del /q "%OUT%\LEIA-ME.txt" 2>nul
 
-rem ---------------- Servidor de Teste (dentro da pasta do programa)
-set "ST=%OUT%\Servidor de Teste"
+rem ---------------- test-server (dentro da pasta do programa)
+set "ST=%OUT%\test-server"
 if not exist "%ST%\gamemodes" mkdir "%ST%\gamemodes"
 if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
@@ -165,8 +175,12 @@ del /q "%ST%\LEIA-ME.txt" 2>nul
 rem Arquivos do servidor: carregados da base omp-server-source
 set "SRVSRC="
 if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
+if not defined SRVSRC if exist "%DADOS%\test-server\omp-server.exe" set "SRVSRC=%DADOS%\test-server"
+if not defined SRVSRC if exist "%DADOS%\test-server\samp-server.exe" set "SRVSRC=%DADOS%\test-server"
 if not defined SRVSRC if exist "%DADOS%\Servidor de Teste\omp-server.exe" set "SRVSRC=%DADOS%\Servidor de Teste"
-if not defined SRVSRC if exist "%DADOS%\Servidor de Teste\samp-server.exe" set "SRVSRC=%DADOS%\Servidor de Teste"
+if not defined SRVSRC if exist "%DADOS%\data\config.json" (
+    for /f "usebackq delims=" %%S in (`powershell -NoProfile -Command "try { (Get-Content -Raw -LiteralPath '%DADOS%\data\config.json' | ConvertFrom-Json).server_path } catch { }"`) do set "SRVSRC=%%S"
+)
 if not defined SRVSRC if exist "%DADOS%\Dados\config.json" (
     for /f "usebackq delims=" %%S in (`powershell -NoProfile -Command "try { (Get-Content -Raw -LiteralPath '%DADOS%\Dados\config.json' | ConvertFrom-Json).server_path } catch { }"`) do set "SRVSRC=%%S"
 )
@@ -177,53 +191,50 @@ if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if exist "omp-server-source\plugins" robocopy "omp-server-source\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
-if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "Servidor de Teste".
+if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "test-server".
 
-rem ---------------- Miniaturas do Catalogo (leitura de compile-sources\cache\miniaturas ou Dados\cache\miniaturas)
+rem ---------------- Miniaturas do Catalogo (leitura de compile-sources\cache\miniaturas ou data\cache\miniaturas)
 set "THUMBSRC="
 if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
-if not defined THUMBSRC if exist "%SRC%compile-sources\Dados\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\Dados\cache\miniaturas"
-if not defined THUMBSRC if exist "%SRC%Dados\cache\miniaturas\objetos" set "THUMBSRC=%SRC%Dados\cache\miniaturas"
+if not defined THUMBSRC if exist "%SRC%compile-sources\cache\thumbnails\objects" set "THUMBSRC=%SRC%compile-sources\cache\thumbnails"
+if not defined THUMBSRC if exist "%OUT%\data\cache\miniaturas\objetos" set "THUMBSRC=%OUT%\data\cache\miniaturas"
 if not defined THUMBSRC if exist "%OUT%\Dados\cache\miniaturas\objetos" set "THUMBSRC=%OUT%\Dados\cache\miniaturas"
 if defined THUMBSRC (
     echo Copiando miniaturas do catalogo de: "%THUMBSRC%"...
-    if not exist "%OUT%\Dados\cache\miniaturas" mkdir "%OUT%\Dados\cache\miniaturas"
-    robocopy "%THUMBSRC%" "%OUT%\Dados\cache\miniaturas" /E /NFL /NDL /NJH /NJS /NP >nul
+    if not exist "%OUT%\data\cache\miniaturas" mkdir "%OUT%\data\cache\miniaturas"
+    robocopy "%THUMBSRC%" "%OUT%\data\cache\miniaturas" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 
 rem ---------------- Sprites
 set "SPRITESRC="
 if exist "%SRC%compile-sources\cache\sprites" set "SPRITESRC=%SRC%compile-sources\cache\sprites"
-if not defined SPRITESRC if exist "%SRC%compile-sources\Dados\cache\sprites" set "SPRITESRC=%SRC%compile-sources\Dados\cache\sprites"
-if not defined SPRITESRC if exist "%SRC%Dados\cache\sprites" set "SPRITESRC=%SRC%Dados\cache\sprites"
+if not defined SPRITESRC if exist "%OUT%\data\cache\sprites" set "SPRITESRC=%OUT%\data\cache\sprites"
 if not defined SPRITESRC if exist "%OUT%\Dados\cache\sprites" set "SPRITESRC=%OUT%\Dados\cache\sprites"
 if defined SPRITESRC (
     echo Copiando sprites de: "%SPRITESRC%"...
-    if not exist "%OUT%\Dados\cache\sprites" mkdir "%OUT%\Dados\cache\sprites"
-    robocopy "%SPRITESRC%" "%OUT%\Dados\cache\sprites" /E /NFL /NDL /NJH /NJS /NP >nul
+    if not exist "%OUT%\data\cache\sprites" mkdir "%OUT%\data\cache\sprites"
+    robocopy "%SPRITESRC%" "%OUT%\data\cache\sprites" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 
 rem ---------------- Skins
 set "SKINSRC="
 if exist "%SRC%compile-sources\cache\skins" set "SKINSRC=%SRC%compile-sources\cache\skins"
-if not defined SKINSRC if exist "%SRC%compile-sources\Dados\cache\skins" set "SKINSRC=%SRC%compile-sources\Dados\cache\skins"
-if not defined SKINSRC if exist "%SRC%Dados\cache\skins" set "SKINSRC=%SRC%Dados\cache\skins"
+if not defined SKINSRC if exist "%OUT%\data\cache\skins" set "SKINSRC=%OUT%\data\cache\skins"
 if not defined SKINSRC if exist "%OUT%\Dados\cache\skins" set "SKINSRC=%OUT%\Dados\cache\skins"
 if defined SKINSRC (
     echo Copiando skins de: "%SKINSRC%"...
-    if not exist "%OUT%\Dados\cache\skins" mkdir "%OUT%\Dados\cache\skins"
-    robocopy "%SKINSRC%" "%OUT%\Dados\cache\skins" /E /NFL /NDL /NJH /NJS /NP >nul
+    if not exist "%OUT%\data\cache\skins" mkdir "%OUT%\data\cache\skins"
+    robocopy "%SKINSRC%" "%OUT%\data\cache\skins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 
 rem ---------------- Radarmap
 set "RADARSRC="
 if exist "%SRC%compile-sources\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\cache\radarmap.png"
-if not defined RADARSRC if exist "%SRC%compile-sources\Dados\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\Dados\cache\radarmap.png"
-if not defined RADARSRC if exist "%SRC%Dados\cache\radarmap.png" set "RADARSRC=%SRC%Dados\cache\radarmap.png"
+if not defined RADARSRC if exist "%OUT%\data\cache\radarmap.png" set "RADARSRC=%OUT%\data\cache\radarmap.png"
 if not defined RADARSRC if exist "%OUT%\Dados\cache\radarmap.png" set "RADARSRC=%OUT%\Dados\cache\radarmap.png"
 if defined RADARSRC (
-    if not exist "%OUT%\Dados\cache" mkdir "%OUT%\Dados\cache"
-    copy /y "%RADARSRC%" "%OUT%\Dados\cache\radarmap.png" >nul
+    if not exist "%OUT%\data\cache" mkdir "%OUT%\data\cache"
+    copy /y "%RADARSRC%" "%OUT%\data\cache\radarmap.png" >nul
 )
 
 rem ---------------- Modelos 3D
@@ -238,6 +249,7 @@ if defined MODELSRC (
 )
 
 rem Limpa pastas legadas se existirem
+if exist "%~dp0compiled\SA Map Studio\" rmdir /s /q "%~dp0compiled\SA Map Studio" 2>nul
 if exist "dist\" rmdir /s /q "dist" 2>nul
 if exist "dist-limpo\" rmdir /s /q "dist-limpo" 2>nul
 rmdir /s /q "build" 2>nul
@@ -246,14 +258,14 @@ del /q "build-info.json" 2>nul
 echo.
 echo ============================================================
 echo  Pronto! Pasta do programa: %OUT%
-echo    SA Map Studio.exe   - abra este
-echo    Servidor de Teste\  - servidor do "Testar no jogo"
-echo    Sistema\            - arquivos do programa (nao mexa)
-if /i "%MODO%"=="limpo" (
-echo  Versao limpa: Projetos, Exportados e Dados sao criados vazios na
+echo    sa-map-studio.exe   - abra este
+echo    test-server\        - servidor do "Testar no jogo"
+echo    system\             - arquivos do programa (nao mexa)
+if /i "%MODO%"=="clean" (
+echo  Versao limpa: projects, exported e data sao criados vazios na
 echo  primeira vez que o programa abrir. Pronta para enviar a outra pessoa.
 ) else (
-echo    Projetos\, Exportados\, Dados\ - seus mapas e configuracoes ^(mantidos^)
+echo    projects\, exported\, data\ - seus mapas e configuracoes ^(mantidos^)
 )
 echo ============================================================
 explorer "%OUT%"

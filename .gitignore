@@ -20,6 +20,10 @@ __pycache__/
 *.pyo
 
 # Dados do usuario e configuracoes locais
+data/
+projects/
+exported/
+test-server/
 Dados/
 Projetos/
 Exportados/
