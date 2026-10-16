@@ -149,6 +149,8 @@ if /i "%MODO%"=="clean" if exist "%OUT%" (
     if exist "%OUT%\data\config.json" del /q "%OUT%\data\config.json" 2>nul
     if exist "%OUT%\data\browser" rmdir /s /q "%OUT%\data\browser" 2>nul
     if exist "%OUT%\data\logs" rmdir /s /q "%OUT%\data\logs" 2>nul
+    if exist "%OUT%\data\cache\miniaturas" rmdir /s /q "%OUT%\data\cache\miniaturas" 2>nul
+    if exist "%OUT%\data\cache\texturas.json" del /q "%OUT%\data\cache\texturas.json" 2>nul
     if exist "%OUT%\Projetos" rmdir /s /q "%OUT%\Projetos" 2>nul
     if exist "%OUT%\Exportados" rmdir /s /q "%OUT%\Exportados" 2>nul
     if exist "%OUT%\Dados" rmdir /s /q "%OUT%\Dados" 2>nul
@@ -193,16 +195,26 @@ if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
 if exist "omp-server-source\plugins" robocopy "omp-server-source\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "test-server".
 
-rem ---------------- Miniaturas do Catalogo (leitura de compile-sources\cache\miniaturas ou data\cache\miniaturas)
+rem ---------------- Miniaturas do Catalogo (leitura de compile-sources\cache\thumbnails ou data\cache\thumbnails)
 set "THUMBSRC="
-if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
-if not defined THUMBSRC if exist "%SRC%compile-sources\cache\thumbnails\objects" set "THUMBSRC=%SRC%compile-sources\cache\thumbnails"
+if exist "%SRC%compile-sources\cache\thumbnails\objects" set "THUMBSRC=%SRC%compile-sources\cache\thumbnails"
+if not defined THUMBSRC if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
+if not defined THUMBSRC if exist "%OUT%\data\cache\thumbnails\objects" set "THUMBSRC=%OUT%\data\cache\thumbnails"
 if not defined THUMBSRC if exist "%OUT%\data\cache\miniaturas\objetos" set "THUMBSRC=%OUT%\data\cache\miniaturas"
 if not defined THUMBSRC if exist "%OUT%\Dados\cache\miniaturas\objetos" set "THUMBSRC=%OUT%\Dados\cache\miniaturas"
 if defined THUMBSRC (
     echo Copiando miniaturas do catalogo de: "%THUMBSRC%"...
-    if not exist "%OUT%\data\cache\miniaturas" mkdir "%OUT%\data\cache\miniaturas"
-    robocopy "%THUMBSRC%" "%OUT%\data\cache\miniaturas" /E /NFL /NDL /NJH /NJS /NP >nul
+    if not exist "%OUT%\data\cache\thumbnails" mkdir "%OUT%\data\cache\thumbnails"
+    robocopy "%THUMBSRC%" "%OUT%\data\cache\thumbnails" /E /NFL /NDL /NJH /NJS /NP >nul
+)
+
+rem ---------------- Texturas do Catalogo
+set "TEXSRC="
+if exist "%SRC%compile-sources\cache\textures.json" set "TEXSRC=%SRC%compile-sources\cache\textures.json"
+if not defined TEXSRC if exist "%SRC%compile-sources\cache\texturas.json" set "TEXSRC=%SRC%compile-sources\cache\texturas.json"
+if defined TEXSRC (
+    if not exist "%OUT%\data\cache" mkdir "%OUT%\data\cache"
+    copy /y "%TEXSRC%" "%OUT%\data\cache\textures.json" >nul
 )
 
 rem ---------------- Sprites

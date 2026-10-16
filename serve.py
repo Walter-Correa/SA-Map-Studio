@@ -52,8 +52,8 @@ COMPILE_CACHE_DIR = os.path.join(COMPILE_SOURCES_DIR, "cache")
 COMPILE_MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
 if not FROZEN and not os.path.isdir(CACHE_DIR) and os.path.isdir(COMPILE_CACHE_DIR):
     CACHE_DIR = COMPILE_CACHE_DIR
-THUMBS_DIR = os.path.join(CACHE_DIR, "miniaturas")
-ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animacoes")
+THUMBS_DIR = os.path.join(CACHE_DIR, "thumbnails") if os.path.isdir(os.path.join(CACHE_DIR, "thumbnails")) or not os.path.isdir(os.path.join(CACHE_DIR, "miniaturas")) else os.path.join(CACHE_DIR, "miniaturas")
+ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.join(CACHE_DIR, "animations")) or not os.path.isdir(os.path.join(CACHE_DIR, "animacoes")) else os.path.join(CACHE_DIR, "animacoes")
 WEBVIEW_DIR = os.path.join(DATA_DIR, "browser")
 LOGS_DIR = os.path.join(DATA_DIR, "logs")
 TEST_DIR = os.path.join(BASE_DIR, "test-server")  # servidor de teste fica dentro da pasta do programa
@@ -340,12 +340,16 @@ def safe_name(name):
 def thumb_file(kind, key):
     """Caminho da miniatura em disco. kind = obj | tex; key = id do modelo ou "txd/textura"."""
     key = str(key).lower()
-    if kind == "obj":
+    if kind in ("obj", "objects"):
         if not key.isdigit():
             return None
-        p = os.path.join(THUMBS_DIR, "objetos", key + ".webp")
+        p = os.path.join(THUMBS_DIR, "objects", key + ".webp")
         if not os.path.isfile(p):
             for alt in (
+                os.path.join(COMPILE_CACHE_DIR, "thumbnails", "objects", key + ".webp"),
+                os.path.join(DATA_DIR, "cache", "thumbnails", "objects", key + ".webp"),
+                os.path.join(APP_DIR, "data", "cache", "thumbnails", "objects", key + ".webp"),
+                os.path.join(THUMBS_DIR, "objetos", key + ".webp"),
                 os.path.join(COMPILE_CACHE_DIR, "miniaturas", "objetos", key + ".webp"),
                 os.path.join(DATA_DIR, "cache", "miniaturas", "objetos", key + ".webp"),
                 os.path.join(APP_DIR, "data", "cache", "miniaturas", "objetos", key + ".webp"),
@@ -354,13 +358,17 @@ def thumb_file(kind, key):
                 if os.path.isfile(alt):
                     return alt
         return p
-    if kind == "tex":
+    if kind in ("tex", "textures"):
         parts = key.split("/", 1)
         if len(parts) != 2 or not parts[0] or not parts[1]:
             return None
-        p = os.path.join(THUMBS_DIR, "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
+        p = os.path.join(THUMBS_DIR, "textures", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
         if not os.path.isfile(p):
             for alt in (
+                os.path.join(COMPILE_CACHE_DIR, "thumbnails", "textures", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
+                os.path.join(DATA_DIR, "cache", "thumbnails", "textures", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
+                os.path.join(APP_DIR, "data", "cache", "thumbnails", "textures", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
+                os.path.join(THUMBS_DIR, "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
                 os.path.join(COMPILE_CACHE_DIR, "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
                 os.path.join(DATA_DIR, "cache", "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
                 os.path.join(APP_DIR, "data", "cache", "miniaturas", "texturas", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp"),
@@ -1185,10 +1193,14 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_file(png_path, cache="public, max-age=86400")
             return self.send_json({"error": "Mapa do radar nao disponivel"}, 404)
         if path.startswith("/api/cache/"):
-            full = os.path.join(CACHE_DIR, safe_name(path[len("/api/cache/"):]) + ".json")
-            if not os.path.isfile(full):
-                return self.send_json({"missing": True})
-            return self.send_file(full)
+            name = safe_name(path[len("/api/cache/"):])
+            alt_name = "textures" if name == "texturas" else ("texturas" if name == "textures" else name)
+            for cdir in (CACHE_DIR, COMPILE_CACHE_DIR, os.path.join(APP_DIR, "data", "cache"), os.path.join(APP_DIR, "Dados", "cache")):
+                for n in (name, alt_name):
+                    full = os.path.join(cdir, n + ".json")
+                    if os.path.isfile(full):
+                        return self.send_file(full)
+            return self.send_json({"missing": True})
         if path == "/api/test/info":
             return self.send_json(test_info())
         if path == "/api/logs":
@@ -1248,9 +1260,12 @@ class Handler(SimpleHTTPRequestHandler):
             update_config(gta_path=p)
             return self.send_json({"ok": True, "gtaPath": p})
         if path.startswith("/api/cache/"):
+            name = safe_name(path[len("/api/cache/"):])
+            if name == "texturas":
+                name = "textures"
             body = self.read_body()
             os.makedirs(CACHE_DIR, exist_ok=True)
-            full = os.path.join(CACHE_DIR, safe_name(path[len("/api/cache/"):]) + ".json")
+            full = os.path.join(CACHE_DIR, name + ".json")
             with open(full + ".tmp", "wb") as f:
                 f.write(body)
             os.replace(full + ".tmp", full)
@@ -1458,8 +1473,13 @@ class Handler(SimpleHTTPRequestHandler):
     def thumbs_index(self):
         objs, texs = [], []
         d_candidates = [
+            os.path.join(THUMBS_DIR, "objects"),
+            os.path.join(COMPILE_CACHE_DIR, "thumbnails", "objects"),
+            os.path.join(DATA_DIR, "cache", "thumbnails", "objects"),
+            os.path.join(APP_DIR, "data", "cache", "thumbnails", "objects"),
             os.path.join(THUMBS_DIR, "objetos"),
             os.path.join(COMPILE_CACHE_DIR, "miniaturas", "objetos"),
+            os.path.join(DATA_DIR, "cache", "miniaturas", "objetos"),
             os.path.join(APP_DIR, "data", "cache", "miniaturas", "objetos"),
             os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "objetos")
         ]
@@ -1471,8 +1491,13 @@ class Handler(SimpleHTTPRequestHandler):
         if 0 not in objs:
             objs.append(0)
         d_candidates_tex = [
+            os.path.join(THUMBS_DIR, "textures"),
+            os.path.join(COMPILE_CACHE_DIR, "thumbnails", "textures"),
+            os.path.join(DATA_DIR, "cache", "thumbnails", "textures"),
+            os.path.join(APP_DIR, "data", "cache", "thumbnails", "textures"),
             os.path.join(THUMBS_DIR, "texturas"),
             os.path.join(COMPILE_CACHE_DIR, "miniaturas", "texturas"),
+            os.path.join(DATA_DIR, "cache", "miniaturas", "texturas"),
             os.path.join(APP_DIR, "data", "cache", "miniaturas", "texturas"),
             os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "texturas")
         ]

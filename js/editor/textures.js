@@ -62,7 +62,7 @@ export class TextureLibrary extends EventTarget {
   async tryCache() {
     const sig = this.signature(this.txdEntries());
     try {
-      const res = await fetch('/api/cache/texturas');
+      const res = await fetch('/api/cache/textures');
       if (!res.ok) return false;
       const data = await res.json();
       if (!data.items || data.signature !== sig) return false;
@@ -91,7 +91,7 @@ export class TextureLibrary extends EventTarget {
       for (const t of data.data) for (const [name, w, h, a] of t.tex) items.push([t.txd, name, w, h, a]);
       this.progress = { done: entries.length, total: entries.length };
       this.setIndex(items);
-      fetch('/api/cache/texturas', { method: 'POST', body: JSON.stringify({ signature: sig, items }) }).catch(() => {});
+      fetch('/api/cache/textures', { method: 'POST', body: JSON.stringify({ signature: sig, items }) }).catch(() => {});
       return;
     } catch { /* servidor antigo: lê no navegador */ }
     this.indexWorker = new Worker(new URL('../world/textures.worker.js', import.meta.url), { type: 'module' });
@@ -103,7 +103,7 @@ export class TextureLibrary extends EventTarget {
         for (const t of m.data) for (const [name, w, h, a] of t.tex) items.push([t.txd, name, w, h, a]);
         this.indexWorker.terminate(); this.indexWorker = null;
         this.setIndex(items);
-        fetch('/api/cache/texturas', { method: 'POST', body: JSON.stringify({ signature: sig, items }) }).catch(() => {});
+        fetch('/api/cache/textures', { method: 'POST', body: JSON.stringify({ signature: sig, items }) }).catch(() => {});
       } else if (m.type === 'cancelled') {
         this.state = wasReady ? 'ready' : 'none'; this.emit('state');
         this.indexWorker.terminate(); this.indexWorker = null;
