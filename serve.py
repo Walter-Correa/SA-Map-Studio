@@ -566,6 +566,22 @@ def samp_client():
     return exe if exe and os.path.isfile(exe) else None
 
 
+def find_samapstudio_amx():
+    """Localiza o arquivo samapstudio.amx nas fontes de compilacao ou instalacao."""
+    for cand in (
+        os.path.join(APP_DIR, "compile-sources", "samapstudio.amx"),
+        os.path.join(BASE_DIR, "compile-sources", "samapstudio.amx"),
+        os.path.join(APP_DIR, "samapstudio.amx"),
+        os.path.join(BASE_DIR, "samapstudio.amx"),
+        os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
+        os.path.join(BASE_DIR, "omp-server-source", "gamemodes", "samapstudio.amx"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "gamemodes", "samapstudio.amx"),
+    ):
+        if os.path.isfile(cand):
+            return cand
+    return ""
+
+
 def test_info():
     cfg = load_config()
     server = cfg.get("server_path") or ""
@@ -574,8 +590,6 @@ def test_info():
         TEST_DIR,
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste"),
         os.path.join(BASE_DIR, "compiled", "Servidor de Teste"),
-        os.path.join(BASE_DIR, "servidor-teste"),
-        os.path.join(APP_DIR, "servidor-teste"),
         os.path.join(BASE_DIR, "omp-server-source"),
     ]
     for c in candidates:
@@ -588,12 +602,12 @@ def test_info():
         if server:
             update_config(server_path=server)
     exe = server_exe_in(server)
-    amx = os.path.join(APP_DIR, "servidor-teste", "samapstudio.amx")
+    amx = find_samapstudio_amx()
     running = State.test_proc is not None and State.test_proc.poll() is None
     return {
         "serverPath": server, "serverExe": os.path.basename(exe) if exe else "",
         "client": samp_client() or "", "running": running, "port": TEST_PORT,
-        "gamemode": os.path.isfile(amx), "log": tail_log(),
+        "gamemode": bool(amx), "log": tail_log(),
         "builtin": os.path.normcase(os.path.abspath(server)) == os.path.normcase(os.path.abspath(TEST_DIR)) if server else False,
         "testDir": TEST_DIR,
     }
@@ -654,8 +668,8 @@ def start_test(body):
     exe = server_exe_in(info["serverPath"])
     if not exe:
         return {"ok": False, "error": "Escolha a pasta de um servidor (onde fica o executável do servidor)."}
-    amx = os.path.join(APP_DIR, "servidor-teste", "samapstudio.amx")
-    if not os.path.isfile(amx):
+    amx = find_samapstudio_amx()
+    if not amx or not os.path.isfile(amx):
         return {"ok": False, "error": "O gamemode de teste não foi encontrado na instalação do editor."}
     stop_test()
     if not port_free(TEST_PORT):
@@ -698,11 +712,11 @@ def start_test(body):
     use_streamer = bool(body.get("streamer", False))
     streamer_src = None
     for cand in (
-        os.path.join(APP_DIR, "servidor-teste", "plugins", "streamer.dll"),
-        os.path.join(BASE_DIR, "servidor-teste", "plugins", "streamer.dll"),
         os.path.join(BASE_DIR, "omp-server-source", "plugins", "streamer.dll"),
         os.path.join(TEST_DIR, "plugins", "streamer.dll"),
+        os.path.join(APP_DIR, "plugins", "streamer.dll"),
         os.path.join(src, "plugins", "streamer.dll"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "plugins", "streamer.dll"),
     ):
         if os.path.isfile(cand):
             streamer_src = cand

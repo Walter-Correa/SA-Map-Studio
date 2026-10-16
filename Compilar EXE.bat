@@ -104,7 +104,12 @@ if exist "%SRC%compile-sources\models" (
 ) else if exist "%SRC%models" (
     set "ARGS=%ARGS% --add-data "%SRC%models;models""
 )
-set "ARGS=%ARGS% --add-data "%SRC%servidor-teste;servidor-teste""
+if exist "%SRC%compile-sources\samapstudio.amx" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\samapstudio.amx;compile-sources""
+)
+if exist "%SRC%compile-sources\samapstudio.pwn" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\samapstudio.pwn;compile-sources""
+)
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
 echo Gerando o programa...
@@ -132,14 +137,13 @@ rem ---------------- Servidor de Teste (dentro da pasta do programa)
 set "ST=%OUT%\Servidor de Teste"
 if not exist "%ST%\gamemodes" mkdir "%ST%\gamemodes"
 if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
-copy /y "servidor-teste\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
-copy /y "servidor-teste\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
+if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
+if exist "%SRC%compile-sources\samapstudio.pwn" copy /y "%SRC%compile-sources\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
 del /q "%ST%\LEIA-ME.txt" 2>nul
 
-rem Arquivos do servidor: primeiro da pasta servidor-teste, senao omp-server-source, senao os que ja estao na pasta do programa
+rem Arquivos do servidor: carregados da base omp-server-source
 set "SRVSRC="
-if exist "servidor-teste\omp-server.exe" set "SRVSRC=servidor-teste"
-if not defined SRVSRC if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
+if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
 if not defined SRVSRC if exist "%DADOS%\Servidor de Teste\omp-server.exe" set "SRVSRC=%DADOS%\Servidor de Teste"
 if not defined SRVSRC if exist "%DADOS%\Servidor de Teste\samp-server.exe" set "SRVSRC=%DADOS%\Servidor de Teste"
 if not defined SRVSRC if exist "%DADOS%\Dados\config.json" (
@@ -151,7 +155,7 @@ if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
     if exist "%SRVSRC%\components" robocopy "%SRVSRC%\components" "%ST%\components" /E /NFL /NDL /NJH /NJS /NP >nul
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
-if exist "servidor-teste\plugins" robocopy "servidor-teste\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
+if exist "omp-server-source\plugins" robocopy "omp-server-source\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "Servidor de Teste".
 
 rem ---------------- Miniaturas do Catalogo (leitura de compile-sources\cache\miniaturas ou Dados\cache\miniaturas)

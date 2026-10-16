@@ -45,12 +45,6 @@ testing/*
 !testing/.gitkeep
 
 # Arquivos de execucao e registros do servidor de testes
-servidor-teste/scriptfiles/
-servidor-teste/server_log.txt
-servidor-teste/omp-server.log
-servidor-teste/omp-server.json
-servidor-teste/server.cfg
-servidor-teste/config.json
 server_log.txt
 omp-server.log
 omp-server.json
