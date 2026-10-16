@@ -93,12 +93,22 @@ for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -For
 rem Compila numa pasta temporaria (assim Projetos, Exportados e Dados nunca sao apagados)
 if exist "build" rmdir /s /q "build"
 set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory Sistema"
-set "ARGS=%ARGS% --name "SA Map Studio" --icon "%SRC%icon.ico""
+set "ICONFILE=%SRC%compile-sources\icon.ico"
+if not exist "%ICONFILE%" set "ICONFILE=%SRC%icon.ico"
+set "ARGS=%ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
 rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
 set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
-set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;." --add-data "%SRC%anim_list.json;.""
+set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;.""
 set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts""
+if exist "%SRC%compile-sources\anim-list.json" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;compile-sources""
+) else if exist "%SRC%anim-list.json" (
+    set "ARGS=%ARGS% --add-data "%SRC%anim-list.json;.""
+) else if exist "%SRC%anim_list.json" (
+    set "ARGS=%ARGS% --add-data "%SRC%anim_list.json;.""
+)
 if exist "%SRC%compile-sources\models" (
     set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
 ) else if exist "%SRC%models" (

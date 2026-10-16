@@ -798,6 +798,10 @@ class AnimCacheManager:
     @classmethod
     def get_anim_list(cls):
         candidates = [
+            os.path.join(COMPILE_SOURCES_DIR, "anim-list.json"),
+            os.path.join(APP_DIR, "compile-sources", "anim-list.json"),
+            os.path.join(APP_DIR, "anim-list.json"),
+            os.path.join(BASE_DIR, "anim-list.json"),
             os.path.join(APP_DIR, "anim_list.json"),
             os.path.join(BASE_DIR, "anim_list.json"),
             os.path.join(BASE_DIR, "scratch", "parsed_anims.json"),
