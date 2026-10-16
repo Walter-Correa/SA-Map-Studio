@@ -174,8 +174,10 @@ export function renderCatalogRows() {
     const displayTitle = alias || baseLabel;
     const catLabel = pkDef ? 'Pickups' : c.category;
     const displaySub = alias ? `${esc(baseLabel)} · ${c.id} · ${esc(catLabel)}` : `${c.id} · ${esc(catLabel)}`;
-    const known = app.thumbs.url(c.id);
-    row.innerHTML = `<img class="thumb${known ? '' : ' empty'}" alt="" width="72" height="72" ${known ? `src="${known}"` : ''} decoding="async">
+    const isPed = c.def.type === 'peds';
+    const skinImg = isPed ? `/cache/skins/${c.id}.png` : null;
+    const known = skinImg || app.thumbs.url(c.id);
+    row.innerHTML = `<img class="thumb${known ? '' : ' empty'}" alt="" width="72" height="72" ${known ? `src="${known}"` : ''} decoding="async"${isPed ? ` onerror="this.onerror=null; this.src='/thumbs/obj/${c.id}.webp?v=3';"` : ''}>
       <div class="row-text">
         <div class="row-name" title="${esc(baseLabel)}">${esc(displayTitle)}</div>
         <div class="row-sub">${displaySub}</div>
@@ -184,7 +186,7 @@ export function renderCatalogRows() {
         <button type="button" class="btn-alias${alias ? ' has-alias' : ''}" data-act="alias" title="${alias ? 'Apelido: ' + esc(alias) : 'Definir apelido'}" aria-label="Definir apelido"><svg><use href="#i-edit"/></svg></button>
         <button type="button" class="fav${favs.has(c.id) ? ' on' : ''}" title="Favoritar" aria-label="Favoritar ${esc(c.name)}"><svg><use href="#i-star"/></svg></button>
       </div>`;
-    if (!known) {
+    if (!known && !isPed) {
       const img = row.firstElementChild;
       app.thumbs.request(c.id, (url) => { if (url && img.isConnected) { img.src = url; img.classList.remove('empty'); } });
     }

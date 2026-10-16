@@ -80,6 +80,9 @@ export class FlyCamera {
       this.keys.clear();
       this.looking = false;
       this.panning = false;
+      if (document.exitPointerLock && document.pointerLockElement === dom) {
+        try { document.exitPointerLock(); } catch (_) {}
+      }
       this.updateCursorVisibility();
       setMoving(false);
     });
@@ -87,7 +90,18 @@ export class FlyCamera {
       if (this.looking || this.panning) {
         this.looking = false;
         this.panning = false;
+        if (document.exitPointerLock && document.pointerLockElement === dom) {
+          try { document.exitPointerLock(); } catch (_) {}
+        }
         this.centerCursor();
+        setMoving(false);
+        this.updateCursorVisibility();
+      }
+    });
+    document.addEventListener('pointerlockchange', () => {
+      const isLocked = document.pointerLockElement === dom;
+      if (!isLocked && this.looking) {
+        this.looking = false;
         setMoving(false);
         this.updateCursorVisibility();
       }
@@ -99,7 +113,19 @@ export class FlyCamera {
         this.looking = true;
         this.lastX = e.clientX;
         this.lastY = e.clientY;
-        try { dom.setPointerCapture(e.pointerId); } catch (_) {}
+        this._lockedInitial = true;
+        if (dom.requestPointerLock) {
+          try {
+            const p = dom.requestPointerLock();
+            if (p && p.catch) p.catch(() => {
+              try { dom.setPointerCapture(e.pointerId); } catch (_) {}
+            });
+          } catch (_) {
+            try { dom.setPointerCapture(e.pointerId); } catch (_) {}
+          }
+        } else {
+          try { dom.setPointerCapture(e.pointerId); } catch (_) {}
+        }
         setMoving(true);
         this.updateCursorVisibility();
       }
@@ -116,6 +142,9 @@ export class FlyCamera {
     dom.addEventListener('pointerup', (e) => {
       if (e.button === 2) {
         this.looking = false;
+        if (document.exitPointerLock && document.pointerLockElement === dom) {
+          try { document.exitPointerLock(); } catch (_) {}
+        }
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
         this.centerCursor();
         setMoving(false);
@@ -133,6 +162,9 @@ export class FlyCamera {
       if (this.looking || this.panning) {
         this.looking = false;
         this.panning = false;
+        if (document.exitPointerLock && document.pointerLockElement === dom) {
+          try { document.exitPointerLock(); } catch (_) {}
+        }
         try { dom.releasePointerCapture(e.pointerId); } catch (_) {}
         this.centerCursor();
         setMoving(false);
@@ -140,8 +172,21 @@ export class FlyCamera {
       }
     });
     dom.addEventListener('pointermove', (e) => {
-      const dx = (e.movementX !== undefined && e.movementX !== 0) ? e.movementX : (this.lastX !== undefined ? e.clientX - this.lastX : 0);
-      const dy = (e.movementY !== undefined && e.movementY !== 0) ? e.movementY : (this.lastY !== undefined ? e.clientY - this.lastY : 0);
+      let dx = 0;
+      let dy = 0;
+      const isLocked = document.pointerLockElement === dom;
+      if (isLocked) {
+        dx = e.movementX || 0;
+        dy = e.movementY || 0;
+        if (this._lockedInitial && (Math.abs(dx) > 200 || Math.abs(dy) > 200)) {
+          dx = 0;
+          dy = 0;
+        }
+        this._lockedInitial = false;
+      } else {
+        dx = (e.movementX !== undefined && e.movementX !== 0) ? e.movementX : (this.lastX !== undefined ? e.clientX - this.lastX : 0);
+        dy = (e.movementY !== undefined && e.movementY !== 0) ? e.movementY : (this.lastY !== undefined ? e.clientY - this.lastY : 0);
+      }
       this.lastX = e.clientX;
       this.lastY = e.clientY;
 

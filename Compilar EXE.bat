@@ -102,7 +102,7 @@ rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
 set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;." --add-data "%SRC%anim_list.json;.""
-set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts""
+set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts" --add-data "%SRC%models;models""
 set "ARGS=%ARGS% --add-data "%SRC%servidor-teste;servidor-teste""
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
@@ -176,6 +176,11 @@ if exist "%SRC%Dados\cache\skins" (
 if exist "%SRC%Dados\cache\radarmap.png" (
     if not exist "%OUT%\Dados\cache" mkdir "%OUT%\Dados\cache"
     copy /y "%SRC%Dados\cache\radarmap.png" "%OUT%\Dados\cache\radarmap.png" >nul
+)
+if exist "%SRC%models" (
+    echo Copiando modelos para a pasta do programa...
+    if not exist "%OUT%\models" mkdir "%OUT%\models"
+    robocopy "%SRC%models" "%OUT%\models" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 
 rem ---------------- So na versao normal: traz os dados da versao antiga (um .exe solto em dist)

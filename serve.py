@@ -1319,10 +1319,20 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_file(full, cache="no-cache")
 
     def get_gta(self, rel):
+        low_rel = rel.replace("\\", "/").lower()
+        if low_rel in ("models/cj.dff", "models/cj.txd", "cj.dff", "cj.txd", "dados/models/cj.dff", "dados/models/cj.txd"):
+            for mdir in (os.path.join(BASE_DIR, "models"), os.path.join(APP_DIR, "models"), os.path.join(DATA_DIR, "models"), os.path.join(APP_DIR, "Dados", "models"), os.path.join(BASE_DIR, "Dados", "models")):
+                candidate = os.path.join(mdir, os.path.basename(rel))
+                if os.path.isfile(candidate):
+                    return self.send_file(candidate, cache="max-age=86400")
         if not State.gta_path:
             return self.send_error(HTTPStatus.SERVICE_UNAVAILABLE, "Pasta do GTA não configurada")
         full = resolve_ci(State.gta_path, rel)
         if not full or not os.path.isfile(full):
+            for fdir in (os.path.join(BASE_DIR, "models"), os.path.join(APP_DIR, "models"), os.path.join(DATA_DIR, "models")):
+                local_fallback = os.path.join(fdir, os.path.basename(rel))
+                if os.path.isfile(local_fallback):
+                    return self.send_file(local_fallback, cache="max-age=86400")
             return self.send_error(HTTPStatus.NOT_FOUND)
         if full.lower().endswith(".img") and not self.headers.get("Range"):
             # Os .img têm centenas de MB: só pedaços (Range) são enviados

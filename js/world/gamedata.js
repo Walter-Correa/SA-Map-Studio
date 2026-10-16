@@ -131,6 +131,10 @@ export class GameData {
       }
     }
 
+    // Registra modelo e textura padrão de Carl Johnson (Skin 0 / CJ)
+    this.entries.set('cj.dff', { img: 'models/cj.dff', offset: 0, size: 0 });
+    this.entries.set('cj.txd', { img: 'models/cj.txd', offset: 0, size: 0 });
+
     // ---- IPL texto ----
     const iplList = [...gtaDat.ipl.filter(p => !SKIP_IPL.test(p)), 'SAMP/SAMP.ipl'];
     const textIpl = new Map(); // nome-base -> {start, count}

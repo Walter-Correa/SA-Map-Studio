@@ -92,8 +92,8 @@ export const POPULAR_SKINS = [
 export const ALL_SKINS = [
   {
     "id": 0,
-    "model": "fam1",
-    "txd": "fam1",
+    "model": "cj",
+    "txd": "cj",
     "name": "Carl CJ Johnson (Main Character)"
   },
   {

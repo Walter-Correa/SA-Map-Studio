@@ -846,15 +846,15 @@
         </div>
 
         <div id="tdModelPreviewPanel" style="display: none; background: rgba(0,102,255,0.08); border: 1px solid rgba(0,102,255,0.25); border-radius: 4px; padding: 6px; margin-top: 4px;">
-          <div class="pop-title" style="margin: 0 0 4px 0;">Configurações do Modelo 3D</div>
-          <div class="pair">
-            <label>Modelo (ID)<input type="number" id="tdPreviewModel" value="411"></label>
-            <label>Zoom <input type="number" id="tdPreviewZoom" step="0.1" value="1.0"></label>
+          <div class="pop-title" style="margin: 0 0 6px 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-hi);">Configurações do Modelo 3D</div>
+          <div class="pair" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 11px;">Modelo (ID)<input type="number" id="tdPreviewModel" value="411" min="0" style="width: 100%; box-sizing: border-box;"></label>
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 11px;">Zoom<input type="number" id="tdPreviewZoom" step="0.1" value="1.0" style="width: 100%; box-sizing: border-box;"></label>
           </div>
-          <div style="display: flex; gap: 4px; margin-top: 4px;">
-            <label style="flex:1;">Rot X <input type="number" id="tdPreviewRotX" step="5"></label>
-            <label style="flex:1;">Rot Y <input type="number" id="tdPreviewRotY" step="5"></label>
-            <label style="flex:1;">Rot Z <input type="number" id="tdPreviewRotZ" step="5"></label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px;">
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 11px;">Rot X<input type="number" id="tdPreviewRotX" step="5" value="0" style="width: 100%; box-sizing: border-box;"></label>
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 11px;">Rot Y<input type="number" id="tdPreviewRotY" step="5" value="0" style="width: 100%; box-sizing: border-box;"></label>
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 11px;">Rot Z<input type="number" id="tdPreviewRotZ" step="5" value="0" style="width: 100%; box-sizing: border-box;"></label>
           </div>
         </div>
 
