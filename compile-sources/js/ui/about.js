@@ -6,6 +6,16 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.1.0', date: '17/10/2026', items: [
+      'Catálogo de Sons Oficial (PlayerPlaySound): catálogo completo com 2.620 áudios oficiais, reprodução e prévia com extração de bancos GENRL/SA-MP, 9 categorias temáticas e cabeçalho fixo com rolagem independente.',
+      'Suporte Completo a Checkpoints e Race Checkpoints: suporte a Checkpoints normais proporcionais e Race Checkpoints (tipos 0 a 4), argolas aéreas com torus, setas direcionais dinâmicas conectadas ao próximo ponto, cilindros e discos de chegada quadriculados, duplicação direcional e preservação estrita de modelo.',
+      'Editor Interativo de MapIcons (SetPlayerMapIcon): janela de edição visual com mapa de radar de San Andreas, 64 ícones (IDs 0 a 63), estilos (0 a 3), posicionamento automático na superfície do terreno, atalhos de histórico (Desfazer/Refazer com Ctrl+Z/Ctrl+Y) e exclusão por Delete.',
+      'Tuning de Veículos Aperfeiçoado: alinhamento geométrico e tabela oficial de pares de saias laterais do GTA San Andreas (carregando malhas nativas sem distorções), sincronização de aerofólios no servidor de teste (open.mp) e destaque visual integrado de todos os componentes com o veículo.',
+      'Alternador de Modos do Gizmo (Mover / Girar): botão flutuante translúcido na cena com área de clique ativa em 100% da superfície do botão e atalhos rápidos G e R.',
+      'Barra Superior Responsiva e Adaptável: exibição completa de todos os botões e rótulos em tela cheia/maximizada com ajuste progressivo e fluido conforme o tamanho da janela é reduzido.',
+    ],
+  },
+  {
     version: '3.0.0', date: '15/10/2026', items: [
       'Filtragem Inteligente de Tuning, Paintjobs e Cores de Veículos: compatibilidade rigorosa com o modelo do veículo baseada nas regras oficiais  (IsVehicleValidForColor, IsVehicleValidForModding, IsPaintjobValidForVehicle e IsModValidForVehicle). No inspetor de veículos, agora são exibidos exclusivamente os componentes de tuning (spoilers, capôs, tetos, saias, escapamentos, nitro, rodas, som estéreo, hidráulica), paintjobs (0 a 2) e seletores de cor compatíveis com o modelo selecionado.',
       'Aplicação Real de Tuning e Paintjobs no Servidor de Teste: integração de AddVehicleComponent e ChangeVehiclePaintjob no gamemode do servidor de teste (samapstudio.pwn/amx). Ao testar o mapa no jogo, todos os veículos surgem com os componentes de modding instalados e os paintjobs perfeitamente aplicados.',

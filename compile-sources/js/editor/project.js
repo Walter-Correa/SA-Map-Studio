@@ -1,6 +1,7 @@
 // Projeto: objetos criados, veículos e prédios removidos, com desfazer/refazer.
 import { isVehicleModel } from './pwn.js';
 import { normalizeMaterial } from './materials.js';
+import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
 
 let uidCounter = 1;
 let _globalOpSeq = 0;
@@ -187,6 +188,7 @@ export function makeCheckpoint(data) {
   return {
     uid: data.uid || newUid(),
     kind: 'checkpoints',
+    cpKind: isRace ? 'race' : 'normal',
     isRace,
     type: Math.max(0, Math.min(4, data.type !== undefined ? (data.type | 0) : 0)),
     x, y, z,
@@ -367,6 +369,9 @@ export class Project {
     const op = this.undoStack.pop();
     if (!op) return null;
     this.applyStates(op.before);
+    if (this.checkpoints && this.checkpoints.length) {
+      updateRaceCheckpointsChain(this.checkpoints);
+    }
     op._redoSeq = ++_globalOpSeq;
     this.redoStack.push(op);
     this.emit({ type: 'undo', label: op.label, uids: op.before.map(s => s.uid) });
@@ -377,6 +382,9 @@ export class Project {
     const op = this.redoStack.pop();
     if (!op) return null;
     this.applyStates(op.after);
+    if (this.checkpoints && this.checkpoints.length) {
+      updateRaceCheckpointsChain(this.checkpoints);
+    }
     op._seq = ++_globalOpSeq;
     this.undoStack.push(op);
     this.emit({ type: 'redo', label: op.label, uids: op.after.map(s => s.uid) });

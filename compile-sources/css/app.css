@@ -60,14 +60,33 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
 }
 .topbar {
   grid-column: 1 / -1;
-  display: flex; align-items: center; gap: clamp(3px, 0.45vw, 6px);
-  padding: 0 8px;
+  display: flex; align-items: center; gap: clamp(2px, 0.35vw, 5px);
+  padding: 0 6px;
   background: var(--asphalt-700);
   border-bottom: 1px solid var(--line);
   min-width: 0;
   overflow: visible !important;
   position: relative;
   z-index: 100;
+}
+.topbar .btn {
+  height: 28px;
+  padding: 0 5px;
+  gap: 4px;
+  font-size: 11.5px;
+}
+.topbar .btn.icon {
+  width: 28px;
+  padding: 0;
+}
+.topbar svg {
+  width: 14px;
+  height: 14px;
+}
+.topbar .seg-btn {
+  height: 26px;
+  padding: 0 5px;
+  font-size: 11.5px;
 }
 .sidebar { background: var(--asphalt-700); min-height: 0; display: flex; flex-direction: column; position: relative; overflow-x: hidden !important; }
 .sidebar.left { border-right: 1px solid var(--line); grid-column: 1; grid-row: 2; width: var(--left-sb-width); overflow-x: hidden !important; }
@@ -82,16 +101,16 @@ body.cursor-hidden * {
 }
 
 /* ---------------------------------------------------------------- topo */
-.brand { display: flex; align-items: center; gap: 6px; font-family: var(--font-cond); font-weight: 700; font-size: 16.5px; white-space: nowrap; flex-shrink: 0; }
-.brand-mark { width: 25px; height: 25px; fill: var(--sign); stroke: var(--sign-edge); stroke-width: 1.6; }
+.brand { display: flex; align-items: center; gap: 5px; font-family: var(--font-cond); font-weight: 700; font-size: 14.5px; white-space: nowrap; flex-shrink: 0; }
+.brand-mark { width: 22px; height: 22px; fill: var(--sign); stroke: var(--sign-edge); stroke-width: 1.6; }
 .brand-mark path:last-child { fill: none; }
-.project-box { display: flex; align-items: center; gap: 5px; min-width: 0; padding-left: clamp(4px, 0.7vw, 10px); border-left: 1px solid var(--line); flex-shrink: 0; }
+.project-box { display: flex; align-items: center; gap: 4px; min-width: 0; padding-left: 6px; border-left: 1px solid var(--line); flex-shrink: 0; }
 .project-name {
-  width: 138px; min-width: 115px; flex-shrink: 0;
+  width: 100px; min-width: 80px; flex-shrink: 0;
   color: var(--paper);
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--line); border-radius: var(--radius-s);
-  padding: 4px 8px; font-weight: 600; font-size: 13px;
+  padding: 2px 6px; font-weight: 600; font-size: 12px; height: 26px;
 }
 .project-name:hover { border-color: var(--paper-dim); background: rgba(0, 0, 0, 0.35); }
 .project-name:focus { background: var(--asphalt-900); border-color: var(--sodium); outline: none; }
@@ -100,7 +119,7 @@ body.cursor-hidden * {
 .save-state.error { color: var(--danger); }
 .tools { display: flex; align-items: center; gap: clamp(2px, 0.25vw, 4px); flex-shrink: 0; margin-left: auto; }
 .actions { display: flex; align-items: center; gap: clamp(2px, 0.25vw, 4px); flex-shrink: 0; min-width: 0; }
-.actions .btn { padding: 0 6px; flex-shrink: 0; }
+.actions .btn { padding: 0 5px; flex-shrink: 0; }
 .divider { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
 
 /* ---------------------------------------------------------------- botões */
@@ -524,27 +543,38 @@ legend.sub { margin-top: 8px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* ---------------------------------------------------------------- telas menores / responsividade */
-.lbl2 { display: none; }
-@media (min-width: 2200px) {
-  .lbl2 { display: inline; }
-}
-@media (max-width: 1550px) {
-  .lbl { display: none; }
+.lbl, .lbl2, .lbl-seg, .lbl-keep, .lbl-export, .lbl-test { display: inline; }
+
+@media (max-width: 1420px) {
   .lbl-seg { display: none; }
-  .project-name { max-width: 120px; }
+  .actions .btn { padding: 0 4px; gap: 3px; font-size: 11px; }
+  .actions { gap: 2px; }
+  .tools { gap: 2px; }
 }
-@media (max-width: 1350px) {
-  .lbl-export { display: none; }
-  .project-name { max-width: 105px; }
-}
-@media (max-width: 1150px) {
+@media (max-width: 1280px) {
+  .lbl { display: none; }
   .lbl-keep { display: none; }
-  .lbl-test { display: none; }
+  .project-name { max-width: 85px; }
+}
+@media (max-width: 1160px) {
+  #btn3DText .lbl2, #btnTextDraws .lbl2, #btnGangZones .lbl2, #btnSounds .lbl2, #btnImport .lbl2 { display: none; }
+  .actions .btn { padding: 0 3px; }
+}
+@media (max-width: 1000px) {
+  .lbl2 { display: none; }
+  .project-name { max-width: 70px; }
   .brand span { display: none; }
   .save-state { display: none; }
-  .btn { padding: 0 5px; font-size: 12px; }
-  .seg-btn { padding: 0 4px; font-size: 11px; }
-  .project-name { max-width: 85px; font-size: 11.5px; }
+}
+@media (max-width: 850px) {
+  .lbl-export { display: none; }
+  .actions { gap: 1px; }
+  .tools { gap: 1px; }
+}
+@media (max-width: 720px) {
+  .lbl-test { display: none; }
+  .btn { padding: 0 3px; font-size: 11px; }
+  .seg-btn { padding: 0 2px; font-size: 10px; }
 }
 
 /* Botão flutuante nas setas do Gizmo para alternar Mover / Girar */
@@ -570,6 +600,9 @@ legend.sub { margin-top: 8px; }
   opacity: 0.65;
   transition: background .12s, transform .1s, border-color .12s, opacity .12s;
   white-space: nowrap;
+}
+.gizmo-mode-toggle * {
+  pointer-events: none !important;
 }
 .gizmo-mode-toggle:hover {
   opacity: 1;

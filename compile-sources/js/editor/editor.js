@@ -552,12 +552,14 @@ export class Editor extends EventTarget {
               rObj.applyMatrix4(rightMat);
               markComp(rObj);
               m.add(rObj);
+              if (this.selection.includes(o.uid)) this.refreshSelectionBoxes();
             };
             if (this.models.ready.has(rightCompId)) {
               attachRightMesh(this.models.instantiate(rightCompId));
             } else {
               this.models.getModel(rightCompId).then(() => {
                 attachRightMesh(this.models.instantiate(rightCompId));
+                if (this.selection.includes(o.uid)) this.refreshSelectionBoxes();
               }).catch(() => {});
             }
           } else if (rightMat) {
@@ -565,6 +567,7 @@ export class Editor extends EventTarget {
             rClone.applyMatrix4(rightMat);
             markComp(rClone);
             m.add(rClone);
+            if (this.selection.includes(o.uid)) this.refreshSelectionBoxes();
           }
           return;
         } else if (cName.startsWith('wg_r_')) {
@@ -645,6 +648,7 @@ export class Editor extends EventTarget {
     if (!node || !item) return;
     const m = node.children.find(c => c.name && !c.userData.missing && !c.userData.isVehicleComp) || node.children[0];
     if (m) this.applyVehicleVisuals(m, item);
+    if (this.selection.includes(uid)) this.refreshSelectionBoxes();
   }
 
   // Esconde do mapa os prédios removidos no projeto
@@ -1139,7 +1143,16 @@ export class Editor extends EventTarget {
       if (p?.kindOf(u) === 'labels') continue;
       const n = this.nodes.get(u);
       if (n?.userData?.isLabel || n?.userData?.kind === 'labels') continue;
-      if (n) add(n, 0xff5555);
+      if (n) {
+        add(n, 0xff5555);
+        // Destaca também objetos anexados a este veículo / objeto (AttachObjectToObject / AttachObjectToVehicle)
+        for (const [otherUid, otherNode] of this.nodes) {
+          const otherItem = this.findProjectOf(otherUid)?.find(otherUid);
+          if (otherItem?.attach?.to === u) {
+            add(otherNode, 0xff5555);
+          }
+        }
+      }
     }
     for (const inst of this.worldSelection) {
       const obj = this.streamer.shown.get(inst.index);
@@ -1334,12 +1347,31 @@ export class Editor extends EventTarget {
         const itemCopy = JSON.parse(JSON.stringify(s.item));
         delete itemCopy.uid;
         if (s.kind === 'checkpoints') {
-          itemCopy.x += 2.0;
-          itemCopy.y += 2.0;
+          const dir = new THREE.Vector3();
+          if (itemCopy.nextx !== undefined && (itemCopy.nextx !== itemCopy.x || itemCopy.nexty !== itemCopy.y)) {
+            dir.set(itemCopy.nextx - itemCopy.x, itemCopy.nexty - itemCopy.y, (itemCopy.nextz ?? itemCopy.z) - itemCopy.z);
+          }
+          if (dir.lengthSq() < 0.001) {
+            dir.set(1, 0, 0);
+          }
+          dir.normalize();
+
+          const cpSize = Math.max(0.5, +itemCopy.size || 4.0);
+          const dist = Math.max(cpSize * 2.0, cpSize + 6.0, 12.0);
+          itemCopy.x = Math.round((itemCopy.x + dir.x * dist) * 100) / 100;
+          itemCopy.y = Math.round((itemCopy.y + dir.y * dist) * 100) / 100;
+          itemCopy.z = Math.round((itemCopy.z + dir.z * dist) * 100) / 100;
+
+          itemCopy.nextx = Math.round((itemCopy.x + dir.x * dist) * 100) / 100;
+          itemCopy.nexty = Math.round((itemCopy.y + dir.y * dist) * 100) / 100;
+          itemCopy.nextz = Math.round((itemCopy.z + dir.z * dist) * 100) / 100;
         }
         return { ...itemCopy, kind: s.kind };
       });
       const uids = p.addItems(pItems.length > 1 ? `Duplicar ${pItems.length} itens` : 'Duplicar', data);
+      if (pItems.some(s => s.kind === 'checkpoints')) {
+        updateRaceCheckpointsChain(p.checkpoints);
+      }
       createdUids.push(...uids);
     }
     this.cancelPlacing();
@@ -1772,9 +1804,12 @@ export class Editor extends EventTarget {
             this.gizmoToggleBtn.style.left = `${screenX}px`;
             this.gizmoToggleBtn.style.top = `${screenY}px`;
             this.gizmoToggleBtn.style.display = 'inline-flex';
-            const nextLabel = this.mode === 'translate' ? 'Girar (R)' : 'Mover (G)';
-            const nextIcon = this.mode === 'translate' ? 'i-rotate' : 'i-move';
-            this.gizmoToggleBtn.innerHTML = `<svg><use href="#${nextIcon}"/></svg><span>${nextLabel}</span>`;
+            if (this._lastGizmoMode !== this.mode) {
+              this._lastGizmoMode = this.mode;
+              const nextLabel = this.mode === 'translate' ? 'Girar (R)' : 'Mover (G)';
+              const nextIcon = this.mode === 'translate' ? 'i-rotate' : 'i-move';
+              this.gizmoToggleBtn.innerHTML = `<svg><use href="#${nextIcon}"/></svg><span>${nextLabel}</span>`;
+            }
           }
         }
       }

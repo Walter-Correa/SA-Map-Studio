@@ -2765,7 +2765,7 @@ function bindCheckpointCreate(d) {
 }
 
 function checkpointInspector(cp) {
-  const isRace = cp.cpKind === 'race';
+  const isRace = Boolean(cp.isRace || cp.cpKind === 'race');
   return `
     <div class="insp-title">
       <div style="width:48px; height:48px; background:rgba(239,68,68,0.2); border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:16px; font-weight:bold;">${isRace ? 'RCP' : 'CP'}</div>
