@@ -1159,6 +1159,26 @@ class Handler(SimpleHTTPRequestHandler):
             pass
 
     # ---------- utilidades ----------
+    def __getattr__(self, name):
+        if name.startswith("do_"):
+            clean = name[3:].upper()
+            if hasattr(self, "do_" + clean):
+                return getattr(self, "do_" + clean)
+        raise AttributeError(name)
+
+    def do_HEAD(self):
+        return self.do_GET()
+
+    def send_error(self, code, message=None, explain=None):
+        self.close_connection = True
+        cmd = getattr(self, "command", "UNKNOWN")
+        path = getattr(self, "path", "UNKNOWN")
+        try:
+            sys.stderr.write(f"[{time.strftime('%H:%M:%S')}] {path} -> {code} ({message}) [{cmd}]\n")
+        except Exception:
+            pass
+        super().send_error(code, message=message, explain=explain)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -1291,10 +1311,25 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/thumbs/index":
             return self.thumbs_index()
         if path == "/api/radarmap":
-            png_path = os.path.join(CACHE_DIR, "radarmap.png")
-            if not os.path.isfile(png_path):
-                ensure_radarmap(State.gta_path, png_path)
-            if os.path.isfile(png_path):
+            png_path = ""
+            for cdir in (
+                CACHE_DIR,
+                COMPILE_CACHE_DIR,
+                os.path.join(DATA_DIR, "cache"),
+                os.path.join(BASE_DIR, "data", "cache"),
+                os.path.join(ROOT_DIR, "data", "cache"),
+                os.path.join(APP_DIR, "data", "cache"),
+                os.path.join(ROOT_DIR, "compile-sources", "cache"),
+            ):
+                cand = os.path.join(cdir, "radarmap.png")
+                if os.path.isfile(cand):
+                    png_path = cand
+                    break
+            if not png_path:
+                target_path = os.path.join(CACHE_DIR, "radarmap.png")
+                if ensure_radarmap(State.gta_path, target_path):
+                    png_path = target_path
+            if png_path and os.path.isfile(png_path):
                 return self.send_file(png_path, cache="public, max-age=86400")
             return self.send_json({"error": "Mapa do radar nao disponivel"}, 404)
         if path.startswith("/api/cache/"):

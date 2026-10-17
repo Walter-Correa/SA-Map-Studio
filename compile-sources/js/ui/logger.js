@@ -1,11 +1,41 @@
 // Sistema de logs, rastreamento de erros e diagnóstico do SA Map Studio
 import { $, $$, esc, toast, copyText } from './common.js';
 
+function isServerRelevantError(line) {
+  if (!line || typeof line !== 'string') return false;
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+
+  // Ignorar banners, delimitadores e mensagens puramente informativas
+  if (trimmed.startsWith('===') || trimmed.startsWith('---') || trimmed.startsWith('***')) return false;
+  if (/^SA Map Studio/i.test(trimmed)) return false;
+  if (/^Endereço:\s*http/i.test(trimmed)) return false;
+  if (/^Pasta do (GTA|programa):/i.test(trimmed)) return false;
+  if (/\[INFO\]/i.test(trimmed)) return false;
+  if (/Servidor iniciado/i.test(trimmed)) return false;
+  if (/Nenhum erro/i.test(trimmed)) return false;
+
+  // Status HTTP de erro 4xx / 5xx (ex: "-> 501", "-> 404", "-> 500")
+  if (/->\s*[45]\d{2}\b/.test(trimmed)) return true;
+
+  // Tags explícitas de erro/aviso
+  if (/\[(ERROR|ERRO|WARN|WARNING|AVISO|FAIL|FATAL)\]/i.test(trimmed)) return true;
+
+  // Exceções e tracebacks do Python
+  if (/^(Traceback|Exception|Error:|SyntaxError|TypeError|ValueError|IndexError|KeyError|NameError|FileNotFoundError|OSError|RuntimeError)/i.test(trimmed)) return true;
+  if (/^\s*File\s+".*",\s*line\s+\d+/i.test(trimmed)) return true;
+
+  // Palavras-chave críticas de falha
+  if (/\b(erro|error|falha|failed|crash|exception)\b/i.test(trimmed)) return true;
+
+  return false;
+}
+
 class LoggerSystem {
   constructor() {
     this.logs = [];
     this.maxLogs = 300;
-    this.errorCount = 0;
+    this.backendErrors = [];
     this.storageKey = 'samapstudio_error_logs';
     this.loadPersistedLogs();
     this.installGlobalHooks();
@@ -18,7 +48,6 @@ class LoggerSystem {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           this.logs = parsed.slice(-100);
-          this.errorCount = this.logs.filter(l => l.level === 'ERROR').length;
         }
       }
     } catch {
@@ -105,8 +134,7 @@ class LoggerSystem {
       this.logs.shift();
     }
 
-    if (item.level === 'ERROR') {
-      this.errorCount++;
+    if (item.level === 'ERROR' || item.level === 'WARN') {
       this.updateBadge();
     }
 
@@ -133,69 +161,96 @@ class LoggerSystem {
     } catch {}
   }
 
+  async syncBackendLogs() {
+    try {
+      const res = await (await fetch('/api/logs')).json();
+      if (res && Array.isArray(res.lines)) {
+        this.backendErrors = res.lines.filter(l => isServerRelevantError(l));
+        this.updateBadge();
+      }
+    } catch {}
+  }
+
+  get alertCount() {
+    const frontendAlerts = this.logs.filter(l => l.level === 'ERROR' || l.level === 'WARN').length;
+    return frontendAlerts + this.backendErrors.length;
+  }
+
+  get hasErrors() {
+    const hasFrontError = this.logs.some(l => l.level === 'ERROR');
+    const hasBackError = this.backendErrors.some(l => /->\s*5\d{2}\b|\[(ERROR|ERRO|FATAL)\]|Exception|Traceback/i.test(l));
+    return hasFrontError || hasBackError;
+  }
+
   updateBadge() {
     const badge = $('#logBadge');
+    const btn = $('#btnLogs');
     if (!badge) return;
-    if (this.errorCount > 0) {
-      badge.textContent = this.errorCount > 99 ? '99+' : this.errorCount;
+    const count = this.alertCount;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : String(count);
       badge.hidden = false;
+      if (this.hasErrors) {
+        badge.style.background = '#e0533c'; // vermelho para erros
+      } else {
+        badge.style.background = '#f59e0b'; // âmbar para avisos
+      }
+      if (btn) {
+        btn.title = this.hasErrors
+          ? `${count} erro(s) ou alerta(s) no sistema. Clique para ver diagnóstico.`
+          : `${count} aviso(s) no sistema. Clique para ver diagnóstico.`;
+      }
     } else {
       badge.hidden = true;
+      if (btn) {
+        btn.title = 'Registros de erros e diagnóstico do sistema';
+      }
     }
   }
 
-  clear() {
+  async clear() {
     this.logs = [];
-    this.errorCount = 0;
+    this.backendErrors = [];
     try { localStorage.removeItem(this.storageKey); } catch {}
     this.updateBadge();
     try {
-      fetch('/api/logs/clear', { method: 'POST' }).catch(() => {});
+      await fetch('/api/logs/clear', { method: 'POST' });
     } catch {}
+    this.updateBadge();
   }
 
   async buildDiagnosticReport() {
-    const now = new Date().toLocaleString('pt-BR');
-    const ua = navigator.userAgent;
-    const screenSize = `${window.screen.width}x${window.screen.height} (janela: ${window.innerWidth}x${window.innerHeight})`;
-    let cfgInfo = 'N/A';
-    try {
-      const cfg = await (await fetch('/api/config')).json();
-      cfgInfo = JSON.stringify(cfg, null, 2);
-    } catch {}
+    await this.syncBackendLogs();
 
-    let backendLogs = [];
-    try {
-      const r = await (await fetch('/api/logs')).json();
-      if (r && r.lines) backendLogs = r.lines;
-    } catch {}
+    const frontendErrors = this.logs.filter(l => l.level === 'ERROR' || l.level === 'WARN');
+    const backendErrors = this.backendErrors;
 
-    let rep = `=== DIAGNÓSTICO DO SA MAP STUDIO ===\n`;
-    rep += `Data/Hora: ${now}\n`;
-    rep += `Resolução: ${screenSize}\n`;
-    rep += `Navegador/WebView: ${ua}\n`;
-    rep += `Configuração do Sistema:\n${cfgInfo}\n\n`;
+    if (frontendErrors.length === 0 && backendErrors.length === 0) {
+      return 'Nenhum erro foi detectado e reportado até o momento.';
+    }
 
-    rep += `=== REGISTROS DE ERROS DO FRONTEND (${this.logs.length} entradas) ===\n`;
-    if (this.logs.length === 0) {
-      rep += `Nenhum erro registrado no frontend.\n`;
-    } else {
-      for (const l of this.logs) {
-        rep += `[${l.time}] [${l.level}] ${l.message}`;
-        if (l.source) rep += ` (${l.source})`;
-        rep += '\n';
-        if (l.stack) rep += `  Stack:\n${l.stack.split('\n').map(s => '    ' + s).join('\n')}\n`;
+    const sections = [];
+
+    if (frontendErrors.length > 0) {
+      let fText = `=== ERROS E AVISOS DO FRONTEND (${frontendErrors.length}) ===\n`;
+      for (const l of frontendErrors) {
+        fText += `[${l.time}] [${l.level}] ${l.message}`;
+        if (l.source) fText += ` (${l.source})`;
+        fText += '\n';
+        if (l.stack) {
+          fText += `  Stack:\n${l.stack.split('\n').map(s => '    ' + s).join('\n')}\n`;
+        }
       }
+      sections.push(fText.trimEnd());
     }
 
-    rep += `\n=== REGISTROS DO SERVIDOR LOCAL (sa-map-studio.log) ===\n`;
-    if (backendLogs.length === 0) {
-      rep += `Nenhum registro encontrado no servidor local.\n`;
-    } else {
-      rep += backendLogs.join('\n') + '\n';
+    if (backendErrors.length > 0) {
+      let bText = `=== ERROS DO SERVIDOR LOCAL (${backendErrors.length}) ===\n`;
+      bText += backendErrors.join('\n');
+      sections.push(bText.trimEnd());
     }
 
-    return rep;
+    return sections.join('\n\n');
   }
 }
 
@@ -210,6 +265,10 @@ export function setupLogsDialog() {
   const btnOpenFolder = $('#btnOpenLogsFolder');
 
   AppLogger.updateBadge();
+  AppLogger.syncBackendLogs();
+  setInterval(() => {
+    AppLogger.syncBackendLogs();
+  }, 10000);
 
   const refreshViewer = async () => {
     if (!viewer) return;
@@ -234,13 +293,13 @@ export function setupLogsDialog() {
     btnCopy.onclick = async () => {
       const text = viewer ? viewer.textContent : await AppLogger.buildDiagnosticReport();
       await copyText(text);
-      toast('Registros de erro copiados para a área de transferência!', 'ok', 3500);
+      toast('Registros copiados para a área de transferência!', 'ok', 3500);
     };
   }
 
   if (btnClear) {
     btnClear.onclick = async () => {
-      AppLogger.clear();
+      await AppLogger.clear();
       await refreshViewer();
       toast('Registros limpos com sucesso.', 'info', 2500);
     };

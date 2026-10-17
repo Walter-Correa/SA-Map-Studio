@@ -253,6 +253,18 @@ function speedSection() {
   </div>`;
 }
 
+function scopeSection() {
+  const total = getTotalProjectItems();
+  return `
+    <div class="insp-section" style="margin-bottom: 8px;">
+      <div class="insp-label" style="margin-bottom: 6px;">Mover ou rotacionar vários itens</div>
+      <div class="scope-toggle">
+        <button type="button" class="btn small active" data-scope="sel">Selecionados</button>
+        <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
+      </div>
+    </div>`;
+}
+
 function objectInspector(o) {
   const def = app.gd.models.get(o.model);
   const mats = materialSection([o]);
@@ -260,10 +272,7 @@ function objectInspector(o) {
   const total = getTotalProjectItems();
   return `${titleBlock(o.model, `ID ${o.model} <span class="tag">${esc(def ? categoryOf(def) : 'Não existe no jogo')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar objeto</button>
-    <div class="scope-toggle">
-      <button type="button" class="btn small active" data-scope="sel">Selecionado</button>
-      <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
-    </div>
+    ${scopeSection()}
     ${first ? mats : ''}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [o.x, o.y, o.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Rotação (graus)</div>${vecInputs('r', ['x', 'y', 'z'], [o.rx, o.ry, o.rz], 1)}</div>
@@ -356,10 +365,7 @@ function vehicleInspector(v) {
 
   return `${titleBlock(v.model, `Veículo ${v.model} <span class="tag">${esc(def?.model || '')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar veículo</button>
-    <div class="scope-toggle">
-      <button type="button" class="btn small active" data-scope="sel">Selecionado</button>
-      <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
-    </div>
+    ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [v.x, v.y, v.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Ângulo e respawn</div>
       <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(v.rz)}"></label><label>Respawn (s)<input type="number" step="10" min="-1" data-field="respawn" value="${v.respawn}"></label></div>
@@ -465,10 +471,7 @@ function actorInspector(a) {
 
   return `${titleBlock(a.skin ?? 0, `Skin ${a.skin ?? 0} <span class="tag">${esc(skinName)}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar actor</button>
-    <div class="scope-toggle">
-      <button type="button" class="btn small active" data-scope="sel">Selecionado</button>
-      <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
-    </div>
+    ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [a.x, a.y, a.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Ângulo (FacingAngle)</div>
       <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(a.rz)}"></label></div>
@@ -550,9 +553,12 @@ function multiInspector(items, objs) {
   return `<div class="insp-empty">
     <h3>${isAll ? 'Todo o projeto' : `${items.length} itens selecionados`}</h3>
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar ${items.length} itens</button>
-    <div class="scope-toggle">
-      <button type="button" class="btn small ${isAll ? '' : 'active'}" data-scope="sel">Seleção (${items.length})</button>
-      <button type="button" class="btn small ${isAll ? 'active' : ''}" data-scope="all">Projeto (${total})</button>
+    <div class="insp-section" style="margin-bottom: 8px;">
+      <div class="insp-label" style="margin-bottom: 6px;">Mover ou rotacionar vários itens</div>
+      <div class="scope-toggle">
+        <button type="button" class="btn small ${isAll ? '' : 'active'}" data-scope="sel">Selecionados (${items.length})</button>
+        <button type="button" class="btn small ${isAll ? 'active' : ''}" data-scope="all">Projeto (${total})</button>
+      </div>
     </div>
     <p>Ajuste as coordenadas para mover tudo junto em tempo real ou use o gizmo.</p>
   </div>
@@ -625,6 +631,9 @@ function bindCommon() {
     else if (a === 'dup') ed.duplicateSelection();
     else if (a === 'focus') ed.focusSelection();
     else if (a === 'del') ed.deleteSelection();
+  });
+  $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
+    if (b.dataset.scope === 'all') app.editor.selectAll(false);
   });
 }
 
@@ -1660,6 +1669,7 @@ function labelInspector(l) {
       </div>
     </div>
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar Texto 3D</button>
+    ${scopeSection()}
 
     <div class="insp-section">
       <div class="insp-label" style="display:flex; justify-content:space-between; align-items:center;">
@@ -2141,6 +2151,7 @@ function pickupInspector(p) {
   return `
     ${titleBlock(p.model, `Pickup <span class="tag">ID ${p.model}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar Pickup</button>
+    ${scopeSection()}
 
     <div class="insp-section">
       <div class="insp-label">Modelo do Pickup (${esc(label)})</div>

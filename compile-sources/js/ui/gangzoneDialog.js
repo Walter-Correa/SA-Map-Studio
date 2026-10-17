@@ -763,7 +763,7 @@ function fitMapToView() {
 
 function loadRadarMap() {
   radarImg = new Image();
-  radarImg.src = (window.location.origin || '') + '/api/radarmap?v=' + Date.now();
+  let retried = false;
   radarImg.onload = () => {
     imgLoaded = true;
     if (canvasEl) canvasEl.dataset.imgLoaded = 'true';
@@ -771,10 +771,20 @@ function loadRadarMap() {
     redrawCanvas();
   };
   radarImg.onerror = () => {
+    if (!retried) {
+      retried = true;
+      setTimeout(() => {
+        if (!imgLoaded && radarImg) {
+          radarImg.src = '/api/radarmap';
+        }
+      }, 300);
+      return;
+    }
     console.warn('[GangZones] Não foi possível carregar /api/radarmap');
     imgLoaded = false;
     redrawCanvas();
   };
+  radarImg.src = '/api/radarmap?v=' + Date.now();
 }
 
 function redrawCanvas() {
