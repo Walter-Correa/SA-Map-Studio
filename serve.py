@@ -837,7 +837,7 @@ def start_test(body):
             shutil.copy2(amx, os.path.join(td, "gamemodes", "samapstudio.amx"))
             if streamer_src:
                 copy_if_newer(streamer_src, os.path.join(td, "plugins", "streamer.dll"))
-            with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="utf-8", errors="replace", newline="\r\n") as f:
+            with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="cp1252", errors="replace", newline="\r\n") as f:
                 f.write(body.get("map", ""))
             load_streamer = bool(streamer_src or use_streamer)
             plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"

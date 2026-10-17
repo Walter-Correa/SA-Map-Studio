@@ -16,7 +16,7 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 - **Fontes e citações**: Nunca citar fontes externas em lugar nenhum da interface ou do projeto.
 - **Janela inicial**: O editor deve abrir por padrão maximizado.
 - **Formatação de Cores**: Cores de Textos 3D (Create3DTextLabel) devem usar alpha total (`0x...FF`, não `0x...AA`).
-- **Codificação**: Todos os arquivos de texto, scripts pawn e gamemodes do servidor de teste devem permanecer estritamente em UTF-8.
+- **Codificação**: Os scripts pawn e arquivos de mapa do servidor de teste (como `samapstudio.pwn` e `mapa.txt`) devem ser escritos e salvos estritamente em ANSI (Windows-1252), padrão nativo do SA-MP/GTA SA para acentuação e caracteres sem corrupção. Os demais arquivos de código-fonte web/sistema (HTML, JS, CSS, Python) permanecem em UTF-8.
 
 ## 4. Arquivos e Compilação
 - **Sem LEIA-ME.txt**: Nunca incluir o arquivo `LEIA-ME.txt` em lugar algum ao compilar o projeto (`build.bat` / `build-clean.bat`).
