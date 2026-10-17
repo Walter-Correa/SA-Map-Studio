@@ -3166,6 +3166,8 @@ export const SOUND_IDS = [
   }
 ];
 
+export const SOUND_CATALOG = SOUND_IDS;
+
 export function getSoundInfo(id) {
   return SOUND_IDS.find(s => s.id === (id | 0)) || { id: id | 0, name: `SOUND_${id}`, desc: `Som ID ${id}`, cat: 'Efeitos e Interface' };
 }

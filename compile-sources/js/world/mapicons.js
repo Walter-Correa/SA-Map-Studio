@@ -88,9 +88,9 @@ export function getMapIconUrl(id) {
 const iconTexCache = new Map();
 
 export function createMapIconNode(mi) {
+  const mType = Math.max(0, Math.min(63, (mi.type ?? mi.markertype ?? 0) | 0));
   const group = new THREE.Group();
-  group.name = `mapicon_${mi.markertype}`;
-  const mType = Math.max(0, Math.min(63, mi.markertype | 0));
+  group.name = `mapicon_${mType}`;
 
   // Cria um sprite flutuante + haste vertical para visualização clara no mundo 3D
   const canvas = document.createElement('canvas');

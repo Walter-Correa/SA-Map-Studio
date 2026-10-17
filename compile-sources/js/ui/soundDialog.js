@@ -1,4 +1,4 @@
-// Catálogo completo de sons do SA-MP / open.mp (PlayerPlaySound) com prévia de áudio real do GTA SA
+// Catálogo completo de sons (PlayerPlaySound) com prévia de áudio real do GTA SA
 import { SOUND_CATALOG, SOUND_CATEGORIES, getSoundInfo } from '../world/sounds.js';
 import { makeSound } from '../editor/project.js';
 import { app, $, $$, esc, toast, copyText } from './common.js';
@@ -7,7 +7,7 @@ let dialogEl = null;
 let currentAudio = null;
 let playingSoundId = null;
 let selectedSoundId = 1052;
-let activeCategory = 'Todas';
+let activeCategory = SOUND_CATEGORIES[0] || 'Todos';
 let onSelectCallback = null;
 
 export function playSoundPreview(soundid) {
@@ -214,9 +214,10 @@ function renderSoundList() {
   const q = (dialogEl.querySelector('#sndSearch')?.value || '').trim().toLowerCase();
 
   const filtered = SOUND_CATALOG.filter(s => {
-    if (activeCategory !== 'Todas' && s.category !== activeCategory) return false;
+    const cat = s.category || s.cat || '';
+    if (activeCategory !== 'Todos' && activeCategory !== 'Todas' && cat !== activeCategory) return false;
     if (!q) return true;
-    return String(s.id).includes(q) || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+    return String(s.id).includes(q) || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q) || cat.toLowerCase().includes(q);
   });
 
   const countEl = dialogEl.querySelector('#sndCountLabel');
@@ -227,11 +228,12 @@ function renderSoundList() {
   listEl.innerHTML = filtered.map(s => {
     const isSel = s.id === selectedSoundId;
     const isPlaying = s.id === playingSoundId;
+    const cat = s.category || s.cat || '';
     return `
       <div class="snd-row ${isSel ? 'selected' : ''}" data-snd-row="${s.id}">
         <div class="snd-id-badge">#${s.id}</div>
         <div class="snd-main">
-          <div class="snd-title">${esc(s.desc || s.name)} <span class="tag">${esc(s.category)}</span></div>
+          <div class="snd-title">${esc(s.desc || s.name)} <span class="tag">${esc(cat)}</span></div>
           <div class="snd-sub">${esc(s.name)}</div>
         </div>
         <div class="snd-actions">
