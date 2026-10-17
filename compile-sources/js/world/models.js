@@ -203,6 +203,7 @@ export class ModelCache {
     const entry = this.gd.entry(def.model + '.dff');
     if (!entry) return null;
     const isVehicle = def.type === 'cars';
+    const isCarMod = id >= 1000 && id <= 1193;
     const [dff, chain] = await Promise.all([this.pool.run('dff', entry, { ambient: this.ambient }), this.txdChain(def.txd)]);
     const findTex = (name) => {
       if (!name) return null;
@@ -223,6 +224,7 @@ export class ModelCache {
       world[i] = (f.parent >= 0 && f.parent !== i && f.parent < dff.frames.length) ? frameMatrix(f.parent).clone().multiply(m) : m;
       return world[i];
     };
+    const hasWheelDummies = isVehicle && dff.frames.some(f => /^wheel_[lr][fbm]_dummy$/i.test(f.name || ''));
     // Atomics desenhados (sem versões danificadas ou de baixa qualidade)
     let atomics = dff.atomics.filter(a => !/_dam$|_vlo$|_lo$|^col_|_l[1-3]$/.test(dff.frames[a.frame]?.name || ''));
     if (!atomics.length) atomics = dff.atomics.slice(0, 1);
@@ -231,6 +233,9 @@ export class ModelCache {
     for (const a of atomics) {
       const g = dff.geometries[a.geometry];
       if (!g || !g.positions || used.has(a.geometry + ':' + a.frame)) continue;
+      const fName = (dff.frames[a.frame]?.name || '').toLowerCase();
+      // Se o veículo usa dummies de roda, o atomic template 'wheel' será instanciado apenas em addWheels
+      if (hasWheelDummies && /^wheel$/.test(fName)) continue;
       used.add(a.geometry + ':' + a.frame);
       // Índices de material (o "materialindex" do SetObjectMaterial) e a textura original de cada um
       g.materials.forEach((mt, i) => {
@@ -238,12 +243,26 @@ export class ModelCache {
         const t = mt.texture ? findTex(mt.texture) : null;
         slotInfo[i] = { texture: mt.texture || '', txd: t ? t.txd : '', color: mt.color };
       });
-      const mesh = this.buildMesh(g, def, findTex, isVehicle);
+      const mesh = this.buildMesh(g, def, findTex, isVehicle || isCarMod);
       if (!mesh) continue;
-      if (dff.frames[a.frame]) mesh.applyMatrix4(frameMatrix(a.frame));
+      mesh.name = fName;
+      mesh.userData.frameName = fName;
+      if (isVehicle && /wheel/.test(fName)) mesh.userData.isStockWheel = true;
+      if (dff.frames[a.frame]) {
+        const fm = frameMatrix(a.frame);
+        mesh.userData.frameMatrix = fm.clone();
+        mesh.applyMatrix4(fm);
+      }
       group.add(mesh);
     }
-    if (isVehicle) this.addWheels(dff, group, def, findTex, frameMatrix);
+    if (isVehicle) {
+      this.addWheels(dff, group, def, findTex, frameMatrix);
+      const dummies = {};
+      dff.frames.forEach((f, i) => {
+        if (f.name) dummies[f.name.toLowerCase()] = frameMatrix(i).clone();
+      });
+      group.userData.dummies = dummies;
+    }
     if (!group.children.length) return null;
     const box = new THREE.Box3().setFromObject(group);
     group.userData.box = box;
@@ -295,6 +314,8 @@ export class ModelCache {
     for (const d of dummies) {
       if (dff.atomics.some(a => a.frame === d.i)) continue;
       const w = wheelMesh.clone();
+      w.name = d.f.name.toLowerCase();
+      w.userData = { ...wheelMesh.userData, frameName: d.f.name.toLowerCase(), isStockWheel: true };
       w.applyMatrix4(frameMatrix(d.i));
       if (/_l/.test(d.f.name)) { w.scale.x *= -1; w.updateMatrix(); }
       group.add(w);

@@ -77,14 +77,20 @@ export function setupImport() {
     const labels = parsed.labels || [];
     const pickups = parsed.pickups || [];
     const gangZones = parsed.gangZones || [];
+    const checkpoints = parsed.checkpoints || [];
+    const mapIcons = parsed.mapIcons || [];
+    const sounds = parsed.sounds || [];
     const textDraws = parsed.textDraws || [];
-    const total = objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + textDraws.length;
+    const total = objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + checkpoints.length + mapIcons.length + sounds.length + textDraws.length;
     const parts = [plural(objs.length, 'objeto', 'objetos'), plural(mats - texts, 'textura trocada', 'texturas trocadas'), plural(texts, 'texto', 'textos'),
       plural((parsed.vehicles || []).length, 'veículo', 'veículos')];
     if (actors.length) parts.push(plural(actors.length, 'actor', 'actors'));
     if (labels.length) parts.push(plural(labels.length, 'texto 3D', 'textos 3D'));
     if (pickups.length) parts.push(plural(pickups.length, 'pickup', 'pickups'));
     if (gangZones.length) parts.push(plural(gangZones.length, 'gangzone', 'gangzones'));
+    if (checkpoints.length) parts.push(plural(checkpoints.length, 'checkpoint', 'checkpoints'));
+    if (mapIcons.length) parts.push(plural(mapIcons.length, 'mapicon', 'mapicons'));
+    if (sounds.length) parts.push(plural(sounds.length, 'som', 'sons'));
     if (textDraws.length) parts.push(plural(textDraws.length, 'textdraw', 'textdraws'));
     parts.push(plural((parsed.removed || []).length, 'objeto removido', 'objetos removidos'), plural(cams, 'câmera', 'câmeras'));
     summary.innerHTML = total
@@ -131,14 +137,18 @@ export function setupImport() {
   $('#importGo').onclick = () => {
     if (!parsed) return;
     const project = app.project, ed = app.editor;
+    const keepUid = (u) => (typeof u === 'string' && u.includes('_p_') && !project.find(u)) ? u : undefined;
     const items = [
-      ...(parsed.objects || []).map(o => ({ ...o, kind: 'objects', uid: undefined })),
-      ...(parsed.vehicles || []).map(v => ({ ...v, kind: 'vehicles', uid: undefined })),
+      ...(parsed.objects || []).map(o => ({ ...o, kind: 'objects', uid: keepUid(o.uid) })),
+      ...(parsed.vehicles || []).map(v => ({ ...v, kind: 'vehicles', uid: keepUid(v.uid) })),
       ...(parsed.actors || []).map(a => ({ ...a, kind: 'actors', uid: undefined })),
       ...(parsed.removed || []).map(r => ({ ...r, kind: 'removed', uid: undefined })),
       ...(parsed.labels || []).map(l => ({ ...l, kind: 'labels', uid: undefined })),
       ...(parsed.pickups || []).map(pk => ({ ...pk, kind: 'pickups', uid: undefined })),
       ...(parsed.gangZones || []).map(g => ({ ...g, kind: 'gangZones', uid: undefined })),
+      ...(parsed.checkpoints || []).map(cp => ({ ...cp, kind: 'checkpoints', uid: undefined })),
+      ...(parsed.mapIcons || []).map(mi => ({ ...mi, kind: 'mapIcons', uid: undefined })),
+      ...(parsed.sounds || []).map(s => ({ ...s, kind: 'sounds', uid: undefined })),
       ...(parsed.textDraws || []).map(t => ({ ...t, kind: 'textDraws', uid: undefined })),
     ];
     if ($('#importReplace').checked) {
@@ -150,6 +160,9 @@ export function setupImport() {
         ...(project.labels || []),
         ...(project.pickups || []),
         ...(project.gangZones || []),
+        ...(project.checkpoints || []),
+        ...(project.mapIcons || []),
+        ...(project.sounds || []),
         ...(project.textDraws || []),
       ].map(o => o.uid);
       if (all.length) project.deleteItems('Limpar projeto', all);
@@ -182,7 +195,16 @@ export function setupImport() {
     }
     dlg.close();
     toast(plural(items.length, 'item importado', 'itens importados') + ` (${parsed.format})`);
-    const placed = [...(parsed.objects || []), ...(parsed.vehicles || []), ...(parsed.actors || []), ...(parsed.labels || []), ...(parsed.pickups || [])];
+    const placed = [
+      ...(parsed.objects || []),
+      ...(parsed.vehicles || []),
+      ...(parsed.actors || []),
+      ...(parsed.labels || []),
+      ...(parsed.pickups || []),
+      ...(parsed.checkpoints || []),
+      ...(parsed.mapIcons || []),
+      ...(parsed.sounds || []),
+    ];
     if (placed.length) {
       ed.select(uids.filter(u => project.kindOf(u) !== 'removed' && project.kindOf(u) !== 'textDraws' && project.kindOf(u) !== 'gangZones'));
       positionCameraOverProject({ objects: placed });
@@ -204,9 +226,13 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
   if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}`);
   if (center) lines.push(`C|${center.x.toFixed(4)}|${center.y.toFixed(4)}|${center.z.toFixed(4)}`);
   const allProjects = [project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])];
+  const objUidToIdx = new Map();
+  const vehUidToIdx = new Map();
   let objIdx = 0;
+  let vehIdx = 0;
   for (const p of allProjects) {
     for (const o of p.objects || []) {
+      objUidToIdx.set(o.uid, objIdx);
       lines.push(`O|${o.model}|${o.x.toFixed(5)}|${o.y.toFixed(5)}|${o.z.toFixed(5)}|${o.rx.toFixed(4)}|${o.ry.toFixed(4)}|${o.rz.toFixed(4)}|${(o.drawDist > 0 ? o.drawDist : 300).toFixed(1)}`);
       for (const m of o.materials || []) {
         if (isText(m)) lines.push(`T|${objIdx}|${m.index}|${m.size}|${m.fontSize}|${m.bold ? 1 : 0}|${signed(m.fontColor)}|${signed(m.backColor)}|${m.align}|${clean(m.font)}|${String(m.text).replace(/\r?\n/g, '\\n').replace(/\r/g, '')}`);
@@ -215,8 +241,8 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       objIdx++;
     }
     for (const r of p.removed || []) lines.push(`R|${r.model}|${r.x.toFixed(4)}|${r.y.toFixed(4)}|${r.z.toFixed(4)}|${(r.radius ?? 0.25).toFixed(2)}`);
-    let vehIdx = 0;
     for (const v of p.vehicles || []) {
+      vehUidToIdx.set(v.uid, vehIdx);
       lines.push(`V|${v.model}|${v.x.toFixed(4)}|${v.y.toFixed(4)}|${v.z.toFixed(4)}|${v.rz.toFixed(2)}|${v.color1}|${v.color2}`);
       if (v.paintjob !== undefined && v.paintjob !== null && v.paintjob >= 0) {
         lines.push(`VP|${vehIdx}|${v.paintjob}`);
@@ -225,6 +251,19 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
         lines.push(`VC|${vehIdx}|${c}`);
       }
       vehIdx++;
+    }
+    // Objetos acoplados a veículos (AttachObjectToVehicle) e a objetos (AttachObjectToObject)
+    for (const o of p.objects || []) {
+      if (!o.attach || !o.attach.to) continue;
+      const cIdx = objUidToIdx.get(o.uid);
+      if (cIdx === undefined) continue;
+      if (vehUidToIdx.has(o.attach.to)) {
+        const vIdx = vehUidToIdx.get(o.attach.to);
+        lines.push(`AV|${cIdx}|${vIdx}|${(o.attach.ox || 0).toFixed(4)}|${(o.attach.oy || 0).toFixed(4)}|${(o.attach.oz || 0).toFixed(4)}|${(o.attach.rx || 0).toFixed(2)}|${(o.attach.ry || 0).toFixed(2)}|${(o.attach.rz || 0).toFixed(2)}`);
+      } else if (objUidToIdx.has(o.attach.to)) {
+        const pIdx = objUidToIdx.get(o.attach.to);
+        lines.push(`AO|${cIdx}|${pIdx}|${(o.attach.ox || 0).toFixed(4)}|${(o.attach.oy || 0).toFixed(4)}|${(o.attach.oz || 0).toFixed(4)}|${(o.attach.rx || 0).toFixed(2)}|${(o.attach.ry || 0).toFixed(2)}|${(o.attach.rz || 0).toFixed(2)}|${o.attach.syncRot ?? 1}`);
+      }
     }
     for (const a of p.actors || []) {
       const animStr = a.anim && a.anim.lib && a.anim.name
@@ -247,6 +286,24 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       const maxx = gz.maxx ?? gz.maxX ?? 0;
       const maxy = gz.maxy ?? gz.maxY ?? 0;
       lines.push(`G|${minx.toFixed(4)}|${miny.toFixed(4)}|${maxx.toFixed(4)}|${maxy.toFixed(4)}|${colorInt}`);
+    }
+    for (const cp of p.checkpoints || []) {
+      const isRace = cp.cpKind === 'race' ? 1 : 0;
+      const type = cp.type ?? 0;
+      const size = cp.size || (isRace ? 4.0 : 3.0);
+      const nx = cp.nextx ?? cp.x;
+      const ny = cp.nexty ?? (cp.y + 10);
+      const nz = cp.nextz ?? cp.z;
+      lines.push(`CP|${isRace}|${type}|${cp.x.toFixed(4)}|${cp.y.toFixed(4)}|${cp.z.toFixed(4)}|${nx.toFixed(4)}|${ny.toFixed(4)}|${nz.toFixed(4)}|${size.toFixed(2)}`);
+    }
+    let miIdx = 0;
+    for (const mi of p.mapIcons || []) {
+      const colorInt = signed(mi.color ?? 0xFF0000FF);
+      lines.push(`MI|${mi.iconid !== undefined ? mi.iconid : miIdx}|${mi.x.toFixed(4)}|${mi.y.toFixed(4)}|${mi.z.toFixed(4)}|${mi.type ?? 0}|${colorInt}|${mi.style ?? 0}`);
+      miIdx++;
+    }
+    for (const snd of p.sounds || []) {
+      lines.push(`SND|${snd.soundid ?? 1052}|${snd.x.toFixed(4)}|${snd.y.toFixed(4)}|${snd.z.toFixed(4)}`);
     }
     for (const td of p.textDraws || []) {
       const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);

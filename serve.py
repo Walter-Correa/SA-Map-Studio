@@ -262,12 +262,15 @@ MIME = {
     ".webp": "image/webp",
     ".ico": "image/x-icon",
     ".bmp": "image/bmp",
+    ".gif": "image/gif",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".ttf": "font/ttf",
     ".woff2": "font/woff2",
     ".txt": "text/plain; charset=utf-8",
     ".webm": "video/webm",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
 }
 
 
@@ -1142,6 +1145,171 @@ def ensure_radarmap(gta_path, out_png):
 
 
 # ---------------------------------------------------------------------------
+# Extração de Áudio Real do GTA SA para PlayerPlaySound (/api/sound/<id>)
+# ---------------------------------------------------------------------------
+_GTA_STREAM_XOR = bytes([
+    0xEA, 0x3A, 0xC4, 0xA1, 0x9A, 0xA8, 0x14, 0xF3,
+    0x48, 0xB0, 0xD7, 0x23, 0x9D, 0xE8, 0xFF, 0xF1,
+])
+
+_FRONTEND_STREAM_MAP = {
+    1062: 153,  # SOUND_GOGO_TRACK_START
+    1068: 150,  # SOUND_DUAL_TRACK_START
+    1076: 141,  # SOUND_BEE_TRACK_START
+    1097: 145,  # SOUND_AWARD_TRACK_START
+    1142: 159,  # SOUND_OTB_TRACK_START
+    1183: 149,  # SOUND_DRIVING_AWARD_TRACK_START
+    1185: 142,  # SOUND_BIKE_AWARD_TRACK_START
+    1187: 161,  # SOUND_PILOT_AWARD_TRACK_START
+}
+
+_FRONTEND_GENRL_MAP = {
+    1052: (60, 1),
+    1053: (60, 2),
+    1054: (60, 3),
+    1055: (60, 4),
+    1056: (60, 10),
+    1057: (60, 11),
+    1058: (60, 0),
+    1083: (60, 5),
+    1084: (60, 6),
+    1085: (60, 7),
+    1130: (74, 0),
+    1131: (39, 0),
+    1132: (60, 8),
+    1133: (138, 12),
+    1134: (138, 18),
+    1135: (74, 2),
+    1136: (74, 1),
+    1137: (60, 12),
+    1138: (60, 13),
+    1139: (60, 14),
+    1140: (138, 0),
+    1141: (138, 4),
+    1147: (60, 15),
+    1148: (138, 6),
+    1149: (60, 1),
+    1150: (60, 9),
+    1153: (138, 19),
+    1163: (74, 5),
+    1165: (138, 19),
+    1166: (138, 16),
+    1190: (74, 3),
+}
+
+
+def _extract_sfx_bank_slot(gta_path, global_bank_id, slot_id):
+    bank_lkup = resolve_ci(gta_path, "audio/CONFIG/BankLkup.dat")
+    pak_files = resolve_ci(gta_path, "audio/CONFIG/PakFiles.dat")
+    if not bank_lkup or not pak_files:
+        return None
+    try:
+        with open(bank_lkup, "rb") as f:
+            f.seek(global_bank_id * 12)
+            rec = f.read(12)
+            if len(rec) < 12:
+                return None
+            pak_idx, offset, size = struct.unpack("<B3xII", rec)
+        with open(pak_files, "rb") as f:
+            f.seek(pak_idx * 52)
+            pak_raw = f.read(52)
+            if not pak_raw:
+                return None
+            pak_name = pak_raw.split(b"\x00", 1)[0].decode("latin-1").strip()
+        sfx_path = resolve_ci(gta_path, f"audio/SFX/{pak_name}")
+        if not sfx_path or not os.path.isfile(sfx_path):
+            return None
+        with open(sfx_path, "rb") as f:
+            f.seek(offset)
+            num_sounds = struct.unpack("<I", f.read(4))[0]
+            if slot_id < 0 or slot_id >= num_sounds or num_sounds > 400:
+                return None
+            hdr = f.read(400 * 12)
+            if len(hdr) < 4800:
+                return None
+            slots = [struct.unpack_from("<IiHH", hdr, s * 12) for s in range(num_sounds)]
+            buf_off, _loop_off, sample_rate, _flags = slots[slot_id]
+            next_off = slots[slot_id + 1][0] if (slot_id + 1) < num_sounds else size
+            pcm_len = max(0, min(next_off - buf_off, 8 * 1024 * 1024))
+            if pcm_len <= 0:
+                return None
+            f.seek(offset + 4 + 4800 + buf_off)
+            pcm = f.read(pcm_len)
+        if not pcm:
+            return None
+        sr = sample_rate if 4000 <= sample_rate <= 96000 else 22050
+        byte_rate = sr * 2
+        wav_hdr = struct.pack(
+            "<4sI4s4sIHHIIHH4sI",
+            b"RIFF", 36 + len(pcm), b"WAVE",
+            b"fmt ", 16, 1, 1, sr, byte_rate, 2, 16,
+            b"data", len(pcm),
+        )
+        return wav_hdr + pcm, "audio/wav"
+    except Exception:
+        return None
+
+
+def _extract_stream_track(gta_path, track_id):
+    trak_lkup = resolve_ci(gta_path, "audio/CONFIG/TrakLkup.dat")
+    strm_paks = resolve_ci(gta_path, "audio/CONFIG/StrmPaks.dat")
+    if not trak_lkup or not strm_paks:
+        return None
+    try:
+        with open(trak_lkup, "rb") as f:
+            f.seek(track_id * 12)
+            rec = f.read(12)
+            if len(rec) < 12:
+                return None
+            pak_idx, offset, size = struct.unpack("<B3xII", rec)
+        if size <= 8068:
+            return None
+        with open(strm_paks, "rb") as f:
+            f.seek(pak_idx * 16)
+            pak_raw = f.read(16)
+            if not pak_raw:
+                return None
+            pak_name = pak_raw.split(b"\x00", 1)[0].decode("latin-1").strip()
+        strm_path = resolve_ci(gta_path, f"audio/streams/{pak_name}")
+        if not strm_path or not os.path.isfile(strm_path):
+            return None
+        ogg_start = offset + 8068
+        ogg_len = min(size - 8068, 6 * 1024 * 1024)
+        with open(strm_path, "rb") as f:
+            f.seek(ogg_start)
+            enc = f.read(ogg_len)
+        if not enc:
+            return None
+        key = _GTA_STREAM_XOR
+        dec = bytes(b ^ key[(ogg_start + i) & 15] for i, b in enumerate(enc))
+        if not dec.startswith(b"OggS"):
+            idx = dec.find(b"OggS")
+            if idx < 0:
+                return None
+            dec = dec[idx:]
+        return dec, "audio/ogg"
+    except Exception:
+        return None
+
+
+def extract_gta_sound(gta_path, soundid):
+    if not gta_path or soundid <= 0:
+        return None
+    if soundid >= 2000:
+        bank_id = 147 + (soundid - 2000) // 200
+        slot_id = (soundid - 2000) % 200
+        return _extract_sfx_bank_slot(gta_path, bank_id, slot_id)
+    if 2 <= soundid <= 999:
+        return _extract_stream_track(gta_path, soundid)
+    if 1000 <= soundid <= 1199:
+        if soundid in _FRONTEND_STREAM_MAP:
+            return _extract_stream_track(gta_path, _FRONTEND_STREAM_MAP[soundid])
+        bank_slot = _FRONTEND_GENRL_MAP.get(soundid) or (60, soundid % 25)
+        return _extract_sfx_bank_slot(gta_path, bank_slot[0], bank_slot[1])
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Servidor HTTP
 # ---------------------------------------------------------------------------
 class Handler(SimpleHTTPRequestHandler):
@@ -1270,6 +1438,26 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         url = urlparse(self.path)
         path = unquote(url.path)
+        if path.startswith("/api/sound/"):
+            sid_str = path[len("/api/sound/"):].strip()
+            try:
+                sid = int(sid_str)
+            except ValueError:
+                return self.send_error(400, "Sound ID invalido")
+            res = extract_gta_sound(State.gta_path, sid)
+            if not res:
+                return self.send_error(404, "Audio nao encontrado")
+            audio_bytes, ctype = res
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(audio_bytes)))
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.end_headers()
+            try:
+                self.wfile.write(audio_bytes)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         if path.startswith("/gta/"):
             return self.get_gta(path[5:])
         if path.startswith("/thumbs/"):

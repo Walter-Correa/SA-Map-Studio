@@ -1144,5 +1144,125 @@ legend.sub { margin-top: 8px; }
   text-overflow: ellipsis;
 }
 
+/* ==========================================================================
+   MapIcon Picker (0-63) & Sound Catalog (PlayerPlaySound)
+   ========================================================================== */
+.mi-picker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--asphalt-800);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  color: var(--paper);
+  text-align: center;
+  gap: 5px;
+}
+.mi-picker-card:hover {
+  background: var(--asphalt-700);
+  border-color: var(--accent, #f0a630);
+  transform: translateY(-1px);
+}
+.mi-picker-card.active {
+  background: rgba(240, 166, 48, 0.15);
+  border-color: var(--accent, #f0a630);
+  box-shadow: 0 0 0 1px var(--accent, #f0a630);
+}
+.mi-picker-img-wrap {
+  width: 100%;
+  height: 52px;
+  background: #14181f;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.mi-picker-id {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold-400);
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.mi-picker-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mi-picker-sub {
+  font-size: 9.5px;
+  font-family: monospace;
+  color: var(--paper-dim);
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.snd-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: var(--asphalt-800);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.snd-row:hover {
+  background: var(--asphalt-700);
+}
+.snd-row.selected {
+  background: rgba(240, 166, 48, 0.14);
+  border-color: var(--accent, #f0a630);
+}
+.snd-id-badge {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-400);
+  background: var(--asphalt-900);
+  padding: 3px 7px;
+  border-radius: 4px;
+  min-width: 56px;
+  text-align: center;
+  border: 1px solid var(--line);
+}
+.snd-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.snd-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--paper);
+}
+.snd-sub {
+  font-size: 10.5px;
+  font-family: monospace;
+  color: var(--paper-dim);
+}
+.snd-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 
 

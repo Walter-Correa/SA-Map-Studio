@@ -90,15 +90,15 @@ export const VEHICLE_COMPONENTS = {
   1163: { type: 0, name: 'X-Flow Spoiler (Jester)' },
   1164: { type: 0, name: 'Alien Spoiler (Jester)' },
 
-  // Hoods (1)
+  // Hoods (1) & Hood Vents (12: Right, 13: Left)
   1004: { type: 1, name: 'Fury Hood' },
   1005: { type: 1, name: 'Champ Hood' },
   1011: { type: 1, name: 'Race Hood Scoop' },
   1012: { type: 1, name: 'Worx Hood Scoop' },
-  1142: { type: 1, name: 'Left Oval Hood Vent' },
-  1143: { type: 1, name: 'Right Oval Hood Vent' },
-  1144: { type: 1, name: 'Left Square Hood Vent' },
-  1145: { type: 1, name: 'Right Square Hood Vent' },
+  1142: { type: 13, name: 'Left Oval Hood Vent' },
+  1143: { type: 12, name: 'Right Oval Hood Vent' },
+  1144: { type: 13, name: 'Left Square Hood Vent' },
+  1145: { type: 12, name: 'Right Square Hood Vent' },
 
   // Roof (2)
   1006: { type: 2, name: 'Roof Scoop' },

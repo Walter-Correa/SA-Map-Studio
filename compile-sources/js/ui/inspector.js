@@ -16,13 +16,25 @@ import { openSkinPicker } from './skinPicker.js';
 import { STANDARD_LABEL_COLORS, labelColorToHex, hexToLabelColor, labelColorToPawnHex } from '../world/labels.js';
 import { PREDEFINED_PICKUPS, PICKUP_TYPES, getPickupLabel } from '../world/pickups.js';
 import { DEFAULT_GANGZONE_COLORS, gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor } from '../world/gangzones.js';
+import { RACE_CHECKPOINT_TYPES } from '../world/checkpoints.js';
+import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl } from '../world/mapicons.js';
+import { SOUND_CATALOG, getSoundInfo } from '../world/sounds.js';
+import { openMapIconPickerModal } from './mapiconDialog.js';
+import { openSoundDialog, playSoundPreview, stopSoundPreview } from './soundDialog.js';
+import { makeCheckpoint } from '../editor/project.js';
 
 const round = (v, d = 4) => Math.round((+v || 0) * 10 ** d) / 10 ** d;
 
 export function getTotalProjectItems() {
   const p = app.project;
-  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0);
+  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.checkpoints?.length || 0) + (p.mapIcons?.length || 0) + (p.sounds?.length || 0);
 }
+
+export function getVehicleAttachedObjects(vehicleUid, project = app.project) {
+  if (!project || !project.objects) return [];
+  return project.objects.filter(o => o.attach && o.attach.to === vehicleUid);
+}
+export const MAX_VEHICLE_ATTACHED_OBJECTS = 25;
 
 export function get3DTextCleanLength(text) {
   if (!text) return 0;
@@ -76,9 +88,11 @@ let textDraft = { text: 'Texto', ...TEXT_DEFAULTS };
 let suppress = false;
 let pendingSlots = new Set();
 let creatingLabelDraft = null;
+let creatingCheckpointDraft = null;
 
 export function openCreate3DTextPanel() {
   app.editor.select([]);
+  creatingCheckpointDraft = null;
   creatingLabelDraft = {
     text: 'Novo Texto 3D',
     color: 0x33CCFFFF,
@@ -102,11 +116,28 @@ export function openCreate3DTextPanel() {
   }, 50);
 }
 
+export function openCreateCheckpointPanel() {
+  app.editor.select([]);
+  creatingLabelDraft = null;
+  creatingCheckpointDraft = {
+    cpKind: 'normal',
+    type: 0,
+    size: 4.0,
+    comment: ''
+  };
+  const rightSb = $('#rightSidebar') || document.querySelector('.right-sidebar');
+  if (rightSb && rightSb.classList.contains('collapsed')) {
+    $('#btnToggleRightSidebar')?.click();
+  }
+  renderInspector();
+}
+
 export function setupInspector() {
   const ed = app.editor;
   const rerender = () => { if (!suppress) renderInspector(); };
   ed.addEventListener('selection', () => {
     creatingLabelDraft = null;
+    creatingCheckpointDraft = null;
     rerender();
   });
   ed.addEventListener('slot', rerender);
@@ -127,6 +158,11 @@ export function renderInspector() {
     if (creatingLabelDraft) {
       el.innerHTML = labelCreateInspector(creatingLabelDraft);
       bindLabelCreate(creatingLabelDraft);
+      return;
+    }
+    if (creatingCheckpointDraft) {
+      el.innerHTML = checkpointCreateInspector(creatingCheckpointDraft);
+      bindCheckpointCreate(creatingCheckpointDraft);
       return;
     }
     el.innerHTML = emptyInspector();
@@ -160,6 +196,15 @@ export function renderInspector() {
   } else if (kind === 'gangZones') {
     el.innerHTML = gangZoneInspector(item);
     bindGangZone(item);
+  } else if (kind === 'checkpoints') {
+    el.innerHTML = checkpointInspector(item);
+    bindCheckpoint(item);
+  } else if (kind === 'mapIcons') {
+    el.innerHTML = mapIconInspector(item);
+    bindMapIcon(item);
+  } else if (kind === 'sounds') {
+    el.innerHTML = soundInspector(item);
+    bindSound(item);
   } else {
     el.innerHTML = objectInspector(item);
     bindItem(item);
@@ -180,13 +225,16 @@ function titleThumb(model, isActor = false) {
 function emptyInspector() {
   const p = app.project;
   const c = p.cameras || { shots: [], paths: [] };
-  const total = (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.gangZones?.length || 0);
+  const total = getTotalProjectItems() + (p.gangZones?.length || 0);
   return `<div class="insp-empty"><h3>${esc(p.name)}</h3>
     <div class="stat-line"><span>Objetos</span><b>${p.objects?.length || 0}</b></div>
     <div class="stat-line"><span>Veículos</span><b>${p.vehicles?.length || 0}</b></div>
     <div class="stat-line"><span>Actors</span><b>${p.actors?.length || 0}</b></div>
     <div class="stat-line"><span>Textos 3D</span><b>${p.labels?.length || 0}</b></div>
     <div class="stat-line"><span>Pickups</span><b>${p.pickups?.length || 0}</b></div>
+    <div class="stat-line"><span>Checkpoints</span><b>${p.checkpoints?.length || 0}</b></div>
+    <div class="stat-line"><span>MapIcons</span><b>${p.mapIcons?.length || 0}</b></div>
+    <div class="stat-line"><span>Sons</span><b>${p.sounds?.length || 0}</b></div>
     <div class="stat-line"><span>GangZones</span><b>${p.gangZones?.length || 0}</b></div>
     <div class="stat-line"><span>TextDraws</span><b>${p.textDraws?.length || 0}</b></div>
     <div class="stat-line"><span>Objetos removidos</span><b>${p.removed?.length || 0}</b></div>
@@ -269,7 +317,7 @@ function objectInspector(o) {
   const def = app.gd.models.get(o.model);
   const mats = materialSection([o]);
   const first = app.editor.mode === 'texture';
-  const total = getTotalProjectItems();
+  const attachType = o.attach ? (o.attach.type === 'vehicle' || (app.project.vehicles || []).some(v => v.uid === o.attach.to) ? 'vehicle' : 'object') : 'vehicle';
   return `${titleBlock(o.model, `ID ${o.model} <span class="tag">${esc(def ? categoryOf(def) : 'Não existe no jogo')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar objeto</button>
     ${scopeSection()}
@@ -307,15 +355,29 @@ function objectInspector(o) {
       ` : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>'}
     </div>
 
-    <!-- AttachObjectToObject -->
+    <!-- AttachObjectToVehicle / AttachObjectToObject -->
     <div class="insp-section">
-      <div class="insp-label">Anexar (AttachObjectToObject)</div>
+      <div class="insp-label">Acoplar (AttachObject)</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkAttach" ${o.attach ? 'checked' : ''}> Ativar acoplamento</label>
       ${o.attach ? `
-        <label style="margin-bottom:6px; display:block;">Objeto Pai (Parent)
+        <label style="margin-bottom:6px; display:block;">Acoplar em
+          <select id="selAttachType" style="width:100%;">
+            <option value="vehicle" ${attachType === 'vehicle' ? 'selected' : ''}>Veículo (AttachObjectToVehicle - máx. 25)</option>
+            <option value="object" ${attachType === 'object' ? 'selected' : ''}>Objeto (AttachObjectToObject)</option>
+          </select>
+        </label>
+        <label style="margin-bottom:6px; display:block;">${attachType === 'vehicle' ? 'Veículo Alvo' : 'Objeto Pai (Parent)'}
           <select id="selAttachParent" style="width:100%;">
-            <option value="">Selecione um objeto</option>
-            ${app.project.objects.filter(x => x.uid !== o.uid).map(x => `<option value="${x.uid}" ${o.attach.to === x.uid ? 'selected' : ''}>${esc(modelLabel(x.model))} (ID ${x.model}) - ${x.uid.slice(0, 8)}</option>`).join('')}
+            <option value="">Selecione um ${attachType === 'vehicle' ? 'veículo' : 'objeto'}</option>
+            ${attachType === 'vehicle'
+              ? (app.project.vehicles || []).map(v => {
+                  const cnt = getVehicleAttachedObjects(v.uid).filter(x => x.uid !== o.uid).length;
+                  const isFull = cnt >= MAX_VEHICLE_ATTACHED_OBJECTS && o.attach.to !== v.uid;
+                  const curCnt = o.attach.to === v.uid ? cnt + 1 : cnt;
+                  return `<option value="${v.uid}" ${o.attach.to === v.uid ? 'selected' : ''} ${isFull ? 'disabled' : ''}>${esc(modelLabel(v.model))} (ID ${v.model}) [${curCnt}/${MAX_VEHICLE_ATTACHED_OBJECTS}]${isFull ? ' - CHEIO' : ''}</option>`;
+                }).join('')
+              : (app.project.objects || []).filter(x => x.uid !== o.uid).map(x => `<option value="${x.uid}" ${o.attach.to === x.uid ? 'selected' : ''}>${esc(modelLabel(x.model))} (ID ${x.model}) - ${x.uid.slice(0, 8)}</option>`).join('')
+            }
           </select>
         </label>
         <div class="pair">
@@ -328,13 +390,13 @@ function objectInspector(o) {
           <label>Rot Y<input type="number" step="1" data-attach="ry" value="${fmt(o.attach.ry, 2)}"></label>
           <label>Rot Z<input type="number" step="1" data-attach="rz" value="${fmt(o.attach.rz, 2)}"></label>
         </div>
-        <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkSyncRot" ${o.attach.syncRot !== 0 ? 'checked' : ''}> Sincronizar rotação (SyncRotation)</label>
+        ${attachType === 'object' ? `<label class="check" style="margin-top:6px;"><input type="checkbox" id="chkSyncRot" ${o.attach.syncRot !== 0 ? 'checked' : ''}> Sincronizar rotação (SyncRotation)</label>` : ''}
         <div class="mini-actions" style="margin-top:8px;">
           <button type="button" class="btn small" data-attach-act="calc" title="Calcula os offsets relativos da posição atual no mundo 3D"><svg><use href="#i-focus"/></svg>Calcular posição</button>
-          <button type="button" class="btn danger small" data-attach-act="detach"><svg><use href="#i-trash"/></svg>Desanexar</button>
+          <button type="button" class="btn danger small" data-attach-act="detach"><svg><use href="#i-trash"/></svg>Desacoplar</button>
         </div>
-        <div class="insp-note" style="margin-top:6px;">Dica: você também pode mover e girar o objeto diretamente no mapa com as setas para ajustar o acoplamento em tempo real.</div>
-      ` : '<div class="insp-note">Prende este objeto em outro para que ele se mova e gire acompanhando o objeto pai.</div>'}
+        <div class="insp-note" style="margin-top:6px;">Dica: você pode mover e girar o objeto diretamente no mapa com as setas para ajustar o acoplamento em tempo real.</div>
+      ` : '<div class="insp-note">Acopla este objeto em um veículo (AttachObjectToVehicle, até 25 por veículo) ou em outro objeto (AttachObjectToObject).</div>'}
     </div>
 
     <div class="insp-section"><div class="insp-label">Onde aparece</div>
@@ -358,10 +420,11 @@ function objectInspector(o) {
 
 function vehicleInspector(v) {
   const def = app.gd.models.get(v.model);
-  const total = getTotalProjectItems();
   const c1Hex = carColorHex(v.color1);
   const c2Hex = carColorHex(v.color2);
   const comps = v.components || [];
+  const attachedObjs = getVehicleAttachedObjects(v.uid);
+  const unattachedObjs = (app.project.objects || []).filter(o => !o.attach || o.attach.to !== v.uid);
 
   return `${titleBlock(v.model, `Veículo ${v.model} <span class="tag">${esc(def?.model || '')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar veículo</button>
@@ -425,13 +488,13 @@ function vehicleInspector(v) {
           const slotName = COMPONENT_TYPES[comp.type] || 'Outro';
           return `<div class="slot changed" style="display:flex; justify-content:space-between; align-items:center; padding: 4px 8px;">
             <div style="font-size:12px;"><b>${esc(comp.name)}</b> <small style="color:var(--text-dim);">[${cid}] · ${esc(slotName)}</small></div>
-            <button type="button" class="btn icon small danger" data-del-comp="${cid}" title="Remover"><svg><use href="#i-x"/></svg></button>
+            <button type="button" class="btn icon small danger" data-del-comp="${cid}" title="Desacoplar componente"><svg><use href="#i-x"/></svg></button>
           </div>`;
-        }).join('') || '<div class="insp-note">Nenhum componente de tuning adicionado.</div>'}
+        }).join('') || '<div class="insp-note">Nenhum componente de tuning acoplado.</div>'}
       </div>
       ${isVehicleValidForModding(v.model) ? `
       <div style="margin-top:8px;">
-        <label>Adicionar componente
+        <label>Acoplar componente no veículo
           <select id="selAddComp" style="width:100%;">
             <option value="">Escolha um componente</option>
             ${Object.entries(COMPONENT_TYPES).map(([typeId, typeName]) => {
@@ -447,6 +510,35 @@ function vehicleInspector(v) {
       ` : `
       <div class="insp-note warn" style="margin-top:8px;">Este modelo não suporta modificações de tuning.</div>
       `}
+    </div>
+
+    <!-- Objetos Acoplados ao Veículo (AttachObjectToVehicle) -->
+    <div class="insp-section">
+      <div class="insp-label">Objetos Acoplados <span class="tag">${attachedObjs.length} / ${MAX_VEHICLE_ATTACHED_OBJECTS}</span></div>
+      <div class="slots" style="max-height:160px; overflow-y:auto;">
+        ${attachedObjs.map(obj => `
+          <div class="slot changed" style="display:flex; justify-content:space-between; align-items:center; padding: 4px 8px; gap:4px;">
+            <div style="font-size:12px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;" data-sel-attached="${obj.uid}" title="Clique para selecionar e mover o objeto">
+              <b>${esc(modelLabel(obj.model))}</b> <small style="color:var(--text-dim);">[ID ${obj.model}] (${fmt(obj.attach.ox, 2)}, ${fmt(obj.attach.oy, 2)}, ${fmt(obj.attach.oz, 2)})</small>
+            </div>
+            <div style="display:flex; gap:3px;">
+              <button type="button" class="btn icon tiny" data-sel-attached="${obj.uid}" title="Selecionar e editar offset"><svg><use href="#i-move"/></svg></button>
+              <button type="button" class="btn icon tiny danger" data-detach-obj="${obj.uid}" title="Desacoplar do veículo"><svg><use href="#i-x"/></svg></button>
+            </div>
+          </div>
+        `).join('') || '<div class="insp-note">Nenhum objeto acoplado a este veículo (AttachObjectToVehicle).</div>'}
+      </div>
+      ${attachedObjs.length < MAX_VEHICLE_ATTACHED_OBJECTS ? `
+        ${unattachedObjs.length > 0 ? `
+        <div style="margin-top:8px;">
+          <label>Acoplar objeto existente (${attachedObjs.length}/${MAX_VEHICLE_ATTACHED_OBJECTS})
+            <select id="selAttachObjToVeh" style="width:100%;">
+              <option value="">Escolha um objeto do projeto...</option>
+              ${unattachedObjs.map(obj => `<option value="${obj.uid}">${esc(modelLabel(obj.model))} (ID ${obj.model}) - ${obj.uid.slice(0, 6)}</option>`).join('')}
+            </select>
+          </label>
+        </div>` : '<div class="insp-note" style="margin-top:6px;">Adicione objetos no mapa para acoplá-los a este veículo.</div>'}
+      ` : `<div class="insp-note warn" style="margin-top:6px;">Limite máximo de ${MAX_VEHICLE_ATTACHED_OBJECTS} objetos acoplados atingido neste veículo.</div>`}
       <details class="pawn-preview" style="margin-top:8px;"><summary>Código Pawn deste veículo</summary><pre class="code small" id="vehCode"></pre>
         <button type="button" class="btn small" data-vehcopy><svg><use href="#i-copy"/></svg>Copiar</button></details>
     </div>`;
@@ -843,21 +935,62 @@ function bindItem(item) {
     };
   });
 
-  // AttachObjectToObject binding
+  // AttachObjectToVehicle / AttachObjectToObject binding
   const chkAttach = $('#chkAttach');
   if (chkAttach) {
     chkAttach.onchange = () => {
       project.updateItems('Alterar Attach', [uid], (o) => {
         if (chkAttach.checked) {
-          const firstOther = project.objects.find(x => x.uid !== uid);
-          o.attach = {
-            to: firstOther ? firstOther.uid : '',
-            ox: 0, oy: 0, oz: 1.0,
-            rx: 0, ry: 0, rz: 0,
-            syncRot: 1,
-          };
+          const availVeh = (project.vehicles || []).find(v => getVehicleAttachedObjects(v.uid, project).length < MAX_VEHICLE_ATTACHED_OBJECTS);
+          if (availVeh) {
+            const rel = app.editor.calculateRelativeAttachOffset(uid, availVeh.uid);
+            o.attach = {
+              type: 'vehicle',
+              to: availVeh.uid,
+              ox: rel ? rel.ox : 0,
+              oy: rel ? rel.oy : 0,
+              oz: rel ? rel.oz : 1.0,
+              rx: rel ? rel.rx : 0,
+              ry: rel ? rel.ry : 0,
+              rz: rel ? rel.rz : 0,
+              syncRot: 1,
+            };
+          } else {
+            const firstOther = project.objects.find(x => x.uid !== uid);
+            o.attach = {
+              type: 'object',
+              to: firstOther ? firstOther.uid : '',
+              ox: 0, oy: 0, oz: 1.0,
+              rx: 0, ry: 0, rz: 0,
+              syncRot: 1,
+            };
+          }
         } else {
           o.attach = null;
+        }
+      });
+      app.editor.updateAttachedChildren();
+      renderInspector();
+    };
+  }
+
+  const selAttachType = $('#selAttachType');
+  if (selAttachType) {
+    selAttachType.onchange = () => {
+      const nextType = selAttachType.value === 'vehicle' ? 'vehicle' : 'object';
+      project.updateItems('Alterar Tipo Attach', [uid], (o) => {
+        if (!o.attach) return;
+        o.attach.type = nextType;
+        if (nextType === 'vehicle') {
+          const availVeh = (project.vehicles || []).find(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
+          o.attach.to = availVeh ? availVeh.uid : '';
+          if (availVeh) {
+            const rel = app.editor.calculateRelativeAttachOffset(uid, availVeh.uid);
+            if (rel) Object.assign(o.attach, rel);
+          }
+        } else {
+          const firstOther = project.objects.find(x => x.uid !== uid);
+          o.attach.to = firstOther ? firstOther.uid : '';
         }
       });
       app.editor.updateAttachedChildren();
@@ -868,11 +1001,28 @@ function bindItem(item) {
   const selParent = $('#selAttachParent');
   if (selParent) {
     selParent.onchange = () => {
-      project.updateItems('Alterar Objeto Pai', [uid], (o) => {
+      const targetUid = selParent.value;
+      const cur = project.find(uid);
+      const isVeh = cur?.attach?.type === 'vehicle' || (project.vehicles || []).some(v => v.uid === targetUid);
+      if (isVeh && targetUid) {
+        const cnt = getVehicleAttachedObjects(targetUid, project).filter(x => x.uid !== uid).length;
+        if (cnt >= MAX_VEHICLE_ATTACHED_OBJECTS) {
+          toast(`Este veículo já atingiu o limite máximo de ${MAX_VEHICLE_ATTACHED_OBJECTS} objetos acoplados!`, 'warn');
+          renderInspector();
+          return;
+        }
+      }
+      project.updateItems('Alterar Alvo do Acoplamento', [uid], (o) => {
         if (!o.attach) return;
-        o.attach.to = selParent.value;
+        o.attach.type = isVeh ? 'vehicle' : 'object';
+        o.attach.to = targetUid;
+        if (targetUid) {
+          const rel = app.editor.calculateRelativeAttachOffset(uid, targetUid);
+          if (rel) Object.assign(o.attach, rel);
+        }
       });
       app.editor.updateAttachedChildren();
+      renderInspector();
     };
   }
 
@@ -911,18 +1061,19 @@ function bindItem(item) {
             project.updateItems('Calcular Offsets Attach', [uid], (o) => {
               Object.assign(o.attach, rel);
             });
+            app.editor.updateAttachedChildren();
             toast('Offsets calculados com sucesso da posição 3D atual');
             renderInspector();
           } else {
-            toast('Não foi possível calcular os offsets do objeto pai', 'warn');
+            toast('Não foi possível calcular os offsets do alvo', 'warn');
           }
         } else {
-          toast('Selecione primeiro um objeto pai', 'warn');
+          toast('Selecione primeiro um veículo ou objeto alvo', 'warn');
         }
       } else if (act === 'detach') {
-        project.updateItems('Desanexar Objeto', [uid], (o) => { o.attach = null; });
+        project.updateItems('Desacoplar Objeto', [uid], (o) => { o.attach = null; });
         app.editor.updateAttachedChildren();
-        toast('Objeto desanexado');
+        toast('Objeto desacoplado');
         renderInspector();
       }
     };
@@ -1009,12 +1160,19 @@ function bindVehicle(v) {
     selAddComp.onchange = () => {
       const cid = parseInt(selAddComp.value, 10);
       if (!Number.isFinite(cid) || cid < 1000) return;
-      project.updateItems('Adicionar Componente', [uid], (o) => {
+      const newComp = VEHICLE_COMPONENTS[cid];
+      project.updateItems('Acoplar Componente', [uid], (o) => {
         if (!o.components) o.components = [];
+        if (newComp && newComp.type !== undefined) {
+          o.components = o.components.filter(existingId => {
+            const ec = VEHICLE_COMPONENTS[existingId];
+            return !ec || ec.type !== newComp.type;
+          });
+        }
         if (!o.components.includes(cid)) o.components.push(cid);
       });
       app.editor.syncAll();
-      toast(`Componente ${cid} adicionado`);
+      toast(`Componente ${cid} acoplado no veículo`);
       renderInspector();
     };
   }
@@ -1022,12 +1180,65 @@ function bindVehicle(v) {
   $$('#inspector [data-del-comp]').forEach(btn => {
     btn.onclick = () => {
       const cid = parseInt(btn.dataset.delComp, 10);
-      project.updateItems('Remover Componente', [uid], (o) => {
+      project.updateItems('Desacoplar Componente', [uid], (o) => {
         if (!o.components) return;
         o.components = o.components.filter(c => c !== cid);
       });
       app.editor.syncAll();
-      toast(`Componente ${cid} removido`);
+      toast(`Componente ${cid} desacoplado`);
+      renderInspector();
+    };
+  });
+
+  // Bind AttachObjectToVehicle actions from vehicle inspector
+  const selAttachObj = $('#selAttachObjToVeh');
+  if (selAttachObj) {
+    selAttachObj.onchange = () => {
+      const objUid = selAttachObj.value;
+      if (!objUid) return;
+      const currentAttached = getVehicleAttachedObjects(uid, project);
+      if (currentAttached.length >= MAX_VEHICLE_ATTACHED_OBJECTS) {
+        toast(`Limite máximo de ${MAX_VEHICLE_ATTACHED_OBJECTS} objetos por veículo atingido!`, 'warn');
+        return;
+      }
+      const rel = app.editor.calculateRelativeAttachOffset(objUid, uid);
+      project.updateItems('Acoplar Objeto ao Veículo', [objUid], (o) => {
+        o.attach = {
+          type: 'vehicle',
+          to: uid,
+          ox: rel ? rel.ox : 0,
+          oy: rel ? rel.oy : 0,
+          oz: rel ? rel.oz : 1.0,
+          rx: rel ? rel.rx : 0,
+          ry: rel ? rel.ry : 0,
+          rz: rel ? rel.rz : 0,
+          syncRot: 1,
+        };
+      });
+      app.editor.updateAttachedChildren();
+      toast('Objeto acoplado ao veículo!');
+      renderInspector();
+    };
+  }
+
+  $$('#inspector [data-sel-attached]').forEach(el => {
+    el.onclick = () => {
+      const objUid = el.dataset.selAttached;
+      if (objUid) {
+        app.editor.select([objUid]);
+      }
+    };
+  });
+
+  $$('#inspector [data-detach-obj]').forEach(btn => {
+    btn.onclick = () => {
+      const objUid = btn.dataset.detachObj;
+      if (!objUid) return;
+      project.updateItems('Desacoplar Objeto do Veículo', [objUid], (o) => {
+        o.attach = null;
+      });
+      app.editor.updateAttachedChildren();
+      toast('Objeto desacoplado do veículo');
       renderInspector();
     };
   });
@@ -1043,6 +1254,12 @@ function updateVehCode(v) {
   ];
   if (v.paintjob !== undefined && v.paintjob >= 0) lines.push(`ChangeVehiclePaintjob(vehicleid, ${v.paintjob});`);
   for (const c of (v.components || [])) lines.push(`AddVehicleComponent(vehicleid, ${c});`);
+  const attached = getVehicleAttachedObjects(v.uid).slice(0, MAX_VEHICLE_ATTACHED_OBJECTS);
+  attached.forEach((o, i) => {
+    const a = o.attach;
+    lines.push(`new obj_${i + 1} = CreateObject(${o.model}, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);`);
+    lines.push(`AttachObjectToVehicle(obj_${i + 1}, vehicleid, ${a.ox.toFixed(4)}, ${a.oy.toFixed(4)}, ${a.oz.toFixed(4)}, ${a.rx.toFixed(4)}, ${a.ry.toFixed(4)}, ${a.rz.toFixed(4)});`);
+  });
   code.textContent = lines.join('\n');
   const btn = $('#inspector [data-vehcopy]');
   if (btn) btn.onclick = async () => { await copyText(code.textContent); toast('Código Pawn copiado'); };
@@ -2411,3 +2628,553 @@ function updateGangZoneCode(gz) {
   const varName = (gz.name || 'gGangZone').replace(/[^a-zA-Z0-9_]/g, '');
   codeEl.textContent = `new ${varName} = GangZoneCreate(${gz.minx.toFixed(2)}, ${gz.miny.toFixed(2)}, ${gz.maxx.toFixed(2)}, ${gz.maxy.toFixed(2)});\nGangZoneShowForAll(${varName}, ${hex});`;
 }
+
+// ===========================================================================
+// Checkpoints & Race Checkpoints (Tipos 0-4)
+// ===========================================================================
+function checkpointCreateInspector(d) {
+  return `
+    <div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(239,68,68,0.2); border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:16px; font-weight:bold;">CP</div>
+      <div>
+        <div style="font-weight:bold; font-size:14px;">Novo Checkpoint</div>
+        <span class="tag">${d.cpKind === 'race' ? 'SetPlayerRaceCheckpoint' : 'SetPlayerCheckpoint'}</span>
+      </div>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Categoria do Checkpoint</div>
+      <div class="scope-toggle" style="margin:0;">
+        <button type="button" class="btn small ${d.cpKind !== 'race' ? 'active' : ''}" data-cpdraft-kind="normal">Normal</button>
+        <button type="button" class="btn small ${d.cpKind === 'race' ? 'active' : ''}" data-cpdraft-kind="race">Race (Corrida 0-4)</button>
+      </div>
+    </div>
+
+    ${d.cpKind === 'race' ? `
+    <div class="insp-section">
+      <div class="insp-label">Tipo de Race Checkpoint (0 a 4)</div>
+      <select id="cpDraftType" style="width:100%;">
+        ${RACE_CHECKPOINT_TYPES.map(t => `<option value="${t.id}" ${d.type === t.id ? 'selected' : ''}>${esc(t.name)} — ${esc(t.desc)}</option>`).join('')}
+      </select>
+    </div>` : ''}
+
+    <div class="insp-section">
+      <div class="insp-label">Tamanho (Raio / Diâmetro)</div>
+      <div class="pair">
+        <label>Tamanho (size)<input type="number" step="0.5" min="0.5" max="100" id="cpDraftSize" value="${fmt(d.size ?? 4.0, 2)}"></label>
+        <label>Comentário<input type="text" id="cpDraftComment" placeholder="// Ex: Largada" value="${esc(d.comment || '')}"></label>
+      </div>
+    </div>
+
+    <div class="insp-section" style="display:flex; flex-direction:column; gap:6px;">
+      <button type="button" class="btn primary block" id="btnPlaceCpMap"><svg><use href="#i-pin"/></svg>Clicar no Mapa para Posicionar</button>
+      <button type="button" class="btn block" id="btnPlaceCpCam"><svg><use href="#i-plus"/></svg>Criar na Frente da Câmera</button>
+      <button type="button" class="btn ghost block" id="btnCancelCpDraft">Cancelar</button>
+    </div>
+  `;
+}
+
+function bindCheckpointCreate(d) {
+  $$('#inspector [data-cpdraft-kind]').forEach(btn => {
+    btn.onclick = () => {
+      d.cpKind = btn.dataset.cpdraftKind;
+      renderInspector();
+    };
+  });
+  const selType = $('#cpDraftType');
+  if (selType) selType.onchange = () => { d.type = parseInt(selType.value, 10) || 0; };
+  const inpSize = $('#cpDraftSize');
+  if (inpSize) inpSize.onchange = () => { d.size = Math.max(0.5, parseFloat(inpSize.value) || 4.0); };
+  const inpComm = $('#cpDraftComment');
+  if (inpComm) inpComm.onchange = () => { d.comment = inpComm.value.trim(); };
+
+  const placeAt = (pos) => {
+    const item = makeCheckpoint({
+      cpKind: d.cpKind,
+      type: d.type || 0,
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
+      nextx: pos.x + 15,
+      nexty: pos.y,
+      nextz: pos.z,
+      size: d.size || 4.0,
+      comment: d.comment || ''
+    });
+    creatingCheckpointDraft = null;
+    app.project.addItems('Adicionar Checkpoint', 'checkpoints', [item]);
+    app.editor.syncAll();
+    app.editor.select([item.uid]);
+    toast(d.cpKind === 'race' ? 'Race Checkpoint criado!' : 'Checkpoint criado!', 'ok');
+  };
+
+  const btnMap = $('#btnPlaceCpMap');
+  if (btnMap) {
+    btnMap.onclick = () => {
+      toast('Clique no mapa 3D onde deseja posicionar o Checkpoint (Esc cancela)', 'info', 4000);
+      const canvas = app.editor.renderer.domElement;
+      const onPointerDown = (e) => {
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        cleanup();
+        const pt = app.editor.groundPointFromEvent(e) || app.editor.pointInFront(15);
+        placeAt(pt);
+      };
+      const onKeyDown = (e) => { if (e.key === 'Escape') cleanup(); };
+      const cleanup = () => {
+        canvas.removeEventListener('pointerdown', onPointerDown, true);
+        window.removeEventListener('keydown', onKeyDown, true);
+      };
+      canvas.addEventListener('pointerdown', onPointerDown, true);
+      window.addEventListener('keydown', onKeyDown, true);
+    };
+  }
+
+  const btnCam = $('#btnPlaceCpCam');
+  if (btnCam) {
+    btnCam.onclick = () => {
+      placeAt(app.editor.pointInFront(14));
+    };
+  }
+
+  const btnCancel = $('#btnCancelCpDraft');
+  if (btnCancel) {
+    btnCancel.onclick = () => {
+      creatingCheckpointDraft = null;
+      renderInspector();
+    };
+  }
+}
+
+function checkpointInspector(cp) {
+  const isRace = cp.cpKind === 'race';
+  return `
+    <div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(239,68,68,0.2); border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:16px; font-weight:bold;">${isRace ? 'RCP' : 'CP'}</div>
+      <div>
+        <div class="insp-name">${isRace ? 'Race Checkpoint' : 'Checkpoint'}</div>
+        <div class="insp-sub"><span class="tag">${isRace ? `Tipo ${cp.type ?? 0}` : 'SetPlayerCheckpoint'}</span> · Raio ${fmt(cp.size, 1)}</div>
+      </div>
+    </div>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar checkpoint</button>
+    ${scopeSection()}
+    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [cp.x, cp.y, cp.z], 0.1)}</div>
+    ${speedSection()}
+    ${actionGrid()}
+
+    <div class="insp-section">
+      <div class="insp-label">Categoria e Tamanho</div>
+      <div class="scope-toggle" style="margin-bottom:8px;">
+        <button type="button" class="btn small ${!isRace ? 'active' : ''}" data-cp-kind="normal">Normal</button>
+        <button type="button" class="btn small ${isRace ? 'active' : ''}" data-cp-kind="race">Race (0-4)</button>
+      </div>
+      <div class="pair">
+        <label>Tamanho (size)<input type="number" step="0.5" min="0.5" max="100" data-field="size" value="${fmt(cp.size ?? 4.0, 2)}"></label>
+        <label>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${cp.world ?? -1}"></label>
+      </div>
+    </div>
+
+    ${isRace ? `
+    <div class="insp-section">
+      <div class="insp-label">Race Checkpoint (Tipo 0 a 4 e Seta)</div>
+      <label style="display:block; margin-bottom:6px;">Tipo (0 a 4)
+        <select id="cpRaceType" style="width:100%;">
+          ${RACE_CHECKPOINT_TYPES.map(t => `<option value="${t.id}" ${(cp.type ?? 0) === t.id ? 'selected' : ''}>${esc(t.name)} — ${esc(t.desc)}</option>`).join('')}
+        </select>
+      </label>
+      <div class="insp-label" style="margin-top:8px;">Próximo Ponto (Next X, Y, Z para a seta)</div>
+      <div class="pair">
+        <label>Next X<input type="number" step="0.5" data-field="nextx" value="${fmt(cp.nextx ?? cp.x + 10, 2)}"></label>
+        <label>Next Y<input type="number" step="0.5" data-field="nexty" value="${fmt(cp.nexty ?? cp.y, 2)}"></label>
+        <label>Next Z<input type="number" step="0.5" data-field="nextz" value="${fmt(cp.nextz ?? cp.z, 2)}"></label>
+      </div>
+      <div class="mini-actions" style="margin-top:6px;">
+        <button type="button" class="btn small" id="btnCpNextFromCam" title="Apontar a seta do Race Checkpoint para onde a câmera está olhando"><svg><use href="#i-focus"/></svg>Apontar para câmera</button>
+        <button type="button" class="btn small" id="btnCpNextFromNextCp" title="Apontar automaticamente para o próximo Race Checkpoint da lista"><svg><use href="#i-pin"/></svg>Auto-apontar próximo</button>
+      </div>
+    </div>` : ''}
+
+    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+      <input type="text" data-field-str="comment" placeholder="// Ex: Linha de chegada" value="${esc(cp.comment || '')}" style="width:100%;">
+    </div>
+
+    <div class="insp-section">
+      <details class="pawn-preview" open><summary>Código Pawn deste Checkpoint</summary>
+        <pre class="code small" id="cpCode"></pre>
+        <button type="button" class="btn small" id="btnCpCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
+      </details>
+    </div>
+  `;
+}
+
+function bindCheckpoint(cp) {
+  bindCommon();
+  bindSpeedControls();
+  bindStringFields(cp.uid);
+  const uid = cp.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
+
+  $$('#inspector [data-cp-kind]').forEach(btn => {
+    btn.onclick = () => {
+      const k = btn.dataset.cpKind;
+      project.updateItems('Alterar Categoria Checkpoint', [uid], (o) => {
+        o.cpKind = k;
+        if (k === 'race' && o.nextx === undefined) {
+          o.nextx = o.x + 15;
+          o.nexty = o.y;
+          o.nextz = o.z;
+        }
+      });
+      app.editor.syncAll();
+      renderInspector();
+    };
+  });
+
+  const selRaceType = $('#cpRaceType');
+  if (selRaceType) {
+    selRaceType.onchange = () => {
+      const t = parseInt(selRaceType.value, 10) || 0;
+      project.updateItems('Alterar Tipo Race Checkpoint', [uid], (o) => { o.type = t; });
+      app.editor.syncAll();
+      updateCheckpointCode(project.find(uid));
+    };
+  }
+
+  $$('#inspector [data-field]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const field = inp.dataset.field;
+      let val = parseFloat(inp.value);
+      if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
+      if (['world', 'interior'].includes(field)) val = Math.trunc(val);
+      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      app.editor.syncAll();
+      updateCheckpointCode(project.find(uid));
+    });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+  });
+
+  $$('#inspector [data-scrub]').forEach(sp => {
+    const field = sp.dataset.scrub;
+    let before = null;
+    sp.addEventListener('pointerdown', () => { before = [project.snapshot(uid)]; }, { capture: true });
+    const speed = app.editor.transformSpeed?.move || 1.0;
+    bindScrub(sp, {
+      step: 0.05 * speed,
+      get: () => project.find(uid)?.[field] || 0,
+      set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
+      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+    });
+  });
+
+  const btnNextCam = $('#btnCpNextFromCam');
+  if (btnNextCam) {
+    btnNextCam.onclick = () => {
+      const pt = app.editor.pointInFront(12);
+      project.updateItems('Apontar Race Checkpoint', [uid], (o) => {
+        o.nextx = pt.x;
+        o.nexty = pt.y;
+        o.nextz = pt.z;
+      });
+      app.editor.syncAll();
+      renderInspector();
+      toast('Seta apontada para a posição da câmera');
+    };
+  }
+
+  const btnNextAuto = $('#btnCpNextFromNextCp');
+  if (btnNextAuto) {
+    btnNextAuto.onclick = () => {
+      const list = project.checkpoints || [];
+      const idx = list.findIndex(c => c.uid === uid);
+      const nextCp = list[idx + 1] || list[0];
+      if (nextCp && nextCp.uid !== uid) {
+        project.updateItems('Auto-apontar Race Checkpoint', [uid], (o) => {
+          o.nextx = nextCp.x;
+          o.nexty = nextCp.y;
+          o.nextz = nextCp.z;
+        });
+        app.editor.syncAll();
+        renderInspector();
+        toast('Seta apontada para o próximo Checkpoint!');
+      } else {
+        toast('Crie outro Checkpoint para apontar automaticamente', 'warn');
+      }
+    };
+  }
+
+  updateCheckpointCode(cp);
+  const copyBtn = $('#btnCpCopy');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = $('#cpCode')?.textContent;
+      if (code) { copyText(code); toast('Código Pawn do Checkpoint copiado!'); }
+    };
+  }
+}
+
+function updateCheckpointCode(cp) {
+  const codeEl = $('#cpCode');
+  if (!codeEl || !cp) return;
+  if (cp.cpKind === 'race') {
+    codeEl.textContent = `SetPlayerRaceCheckpoint(playerid, ${cp.type ?? 0}, ${cp.x.toFixed(4)}, ${cp.y.toFixed(4)}, ${cp.z.toFixed(4)}, ${(cp.nextx ?? cp.x).toFixed(4)}, ${(cp.nexty ?? cp.y).toFixed(4)}, ${(cp.nextz ?? cp.z).toFixed(4)}, ${(cp.size ?? 4.0).toFixed(2)});`;
+  } else {
+    codeEl.textContent = `SetPlayerCheckpoint(playerid, ${cp.x.toFixed(4)}, ${cp.y.toFixed(4)}, ${cp.z.toFixed(4)}, ${(cp.size ?? 4.0).toFixed(2)});`;
+  }
+}
+
+// ===========================================================================
+// MapIcons (SetPlayerMapIcon 0-63)
+// ===========================================================================
+function mapIconInspector(mi) {
+  const info = getMapIconInfo(mi.type ?? 0);
+  const iconUrl = getMapIconUrl(mi.type ?? 0);
+  return `
+    <div class="insp-title">
+      <img src="${iconUrl}" alt="" width="44" height="44" style="image-rendering:pixelated; background:var(--asphalt-800); padding:6px; border-radius:8px; border:1px solid var(--line); cursor:pointer;" id="imgMiThumb" title="Clique para trocar o MapIcon">
+      <div>
+        <div class="insp-name">MapIcon #${mi.type ?? 0}</div>
+        <div class="insp-sub"><span class="tag">${esc(info.label)}</span></div>
+      </div>
+    </div>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar MapIcon</button>
+    ${scopeSection()}
+    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [mi.x, mi.y, mi.z], 0.5)}</div>
+    ${speedSection()}
+    ${actionGrid()}
+
+    <div class="insp-section">
+      <div class="insp-label">Ícone do Mapa (ID 0 a 63)</div>
+      <button type="button" class="btn primary small block" id="btnPickMapIcon" style="margin-bottom:8px;"><svg><use href="#i-search"/></svg>Escolher MapIcon (Lista Visual)</button>
+      <button type="button" class="btn small block" id="btnOpenMiRadar" style="margin-bottom:8px;"><svg><use href="#i-pin"/></svg>Abrir Editor 2D de MapIcons</button>
+      <div class="pair">
+        <label>MarkerType (0-63)<input type="number" step="1" min="0" max="63" data-field="type" value="${mi.type ?? 0}"></label>
+        <label>Estilo (0-3)
+          <select id="miStyleSelect" style="width:100%;">
+            ${MAPICON_STYLES.map(s => `<option value="${s.id}" ${(mi.style ?? 0) === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+          </select>
+        </label>
+      </div>
+      <div class="pair" style="margin-top:6px;">
+        <label>Cor Hex (ID 0)<input type="text" id="miColorHex" value="${'0x' + ((mi.color ?? 0xFF0000FF) >>> 0).toString(16).toUpperCase().padStart(8, '0')}" style="font-family:monospace;"></label>
+        <label>Stream Dist.<input type="number" step="10" min="10" data-field="streamDist" value="${mi.streamDist ?? 200}"></label>
+      </div>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+      <input type="text" data-field-str="comment" placeholder="// Ex: Pizzaria" value="${esc(mi.comment || '')}" style="width:100%;">
+    </div>
+
+    <div class="insp-section">
+      <details class="pawn-preview" open><summary>Código Pawn deste MapIcon</summary>
+        <pre class="code small" id="miCode"></pre>
+        <button type="button" class="btn small" id="btnMiCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
+      </details>
+    </div>
+  `;
+}
+
+function bindMapIcon(mi) {
+  bindCommon();
+  bindSpeedControls();
+  bindStringFields(mi.uid);
+  const uid = mi.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
+
+  const openPicker = () => {
+    openMapIconPickerModal(mi.type ?? 0, (newType) => {
+      project.updateItems('Alterar Ícone MapIcon', [uid], (o) => { o.type = newType; });
+      app.editor.syncAll();
+      renderInspector();
+    });
+  };
+  const btnPick = $('#btnPickMapIcon');
+  if (btnPick) btnPick.onclick = openPicker;
+  const imgThumb = $('#imgMiThumb');
+  if (imgThumb) imgThumb.onclick = openPicker;
+
+  const btnRadar = $('#btnOpenMiRadar');
+  if (btnRadar) {
+    btnRadar.onclick = () => {
+      $('#btnMapIcons')?.click();
+    };
+  }
+
+  const styleSel = $('#miStyleSelect');
+  if (styleSel) {
+    styleSel.onchange = () => {
+      const st = parseInt(styleSel.value, 10) || 0;
+      project.updateItems('Alterar Estilo MapIcon', [uid], (o) => { o.style = st; });
+      updateMapIconCode(project.find(uid));
+    };
+  }
+
+  const colInp = $('#miColorHex');
+  if (colInp) {
+    colInp.onchange = () => {
+      let s = colInp.value.trim().replace(/^#/, '0x');
+      if (!s.startsWith('0x') && !s.startsWith('0X')) s = '0x' + s;
+      const num = parseInt(s, 16);
+      if (Number.isFinite(num)) {
+        project.updateItems('Alterar Cor MapIcon', [uid], (o) => { o.color = num >>> 0; });
+        app.editor.syncAll();
+        updateMapIconCode(project.find(uid));
+      }
+    };
+  }
+
+  $$('#inspector [data-field]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const field = inp.dataset.field;
+      let val = parseFloat(inp.value);
+      if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
+      if (field === 'type') val = Math.max(0, Math.min(63, Math.trunc(val)));
+      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      app.editor.syncAll();
+      renderInspector();
+    });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+  });
+
+  $$('#inspector [data-scrub]').forEach(sp => {
+    const field = sp.dataset.scrub;
+    let before = null;
+    sp.addEventListener('pointerdown', () => { before = [project.snapshot(uid)]; }, { capture: true });
+    const speed = app.editor.transformSpeed?.move || 1.0;
+    bindScrub(sp, {
+      step: 0.05 * speed,
+      get: () => project.find(uid)?.[field] || 0,
+      set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
+      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+    });
+  });
+
+  updateMapIconCode(mi);
+  const copyBtn = $('#btnMiCopy');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = $('#miCode')?.textContent;
+      if (code) { copyText(code); toast('Código Pawn do MapIcon copiado!'); }
+    };
+  }
+}
+
+function updateMapIconCode(mi) {
+  const codeEl = $('#miCode');
+  if (!codeEl || !mi) return;
+  const list = app.project.mapIcons || [];
+  const iconIdx = Math.max(0, list.findIndex(x => x.uid === mi.uid)) % 100;
+  const colHex = '0x' + ((mi.color ?? 0) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  codeEl.textContent = `SetPlayerMapIcon(playerid, ${iconIdx}, ${mi.x.toFixed(4)}, ${mi.y.toFixed(4)}, ${mi.z.toFixed(4)}, ${mi.type ?? 0}, ${colHex}, ${mi.style ?? 0});`;
+}
+
+// ===========================================================================
+// PlayerPlaySound (Som no Mapa)
+// ===========================================================================
+function soundInspector(snd) {
+  const info = getSoundInfo(snd.soundid);
+  return `
+    <div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(245,158,11,0.2); border:2px solid #f59e0b; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#f59e0b; font-size:18px; font-weight:bold;">♪</div>
+      <div>
+        <div class="insp-name">Som #${snd.soundid}</div>
+        <div class="insp-sub"><span class="tag">${esc(info.category)}</span> · ${esc(info.desc || info.name)}</div>
+      </div>
+    </div>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar som</button>
+    ${scopeSection()}
+    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [snd.x, snd.y, snd.z], 0.1)}</div>
+    ${speedSection()}
+    ${actionGrid()}
+
+    <div class="insp-section">
+      <div class="insp-label">Som (PlayerPlaySound)</div>
+      <div class="mini-actions" style="margin-bottom:8px;">
+        <button type="button" class="btn primary small" id="btnPlayInspSound"><svg><use href="#i-play"/></svg>Ouvir Prévia</button>
+        <button type="button" class="btn small" id="btnStopInspSound"><svg><use href="#i-stop"/></svg>Parar</button>
+        <button type="button" class="btn small" id="btnPickSoundCat"><svg><use href="#i-search"/></svg>Trocar Som</button>
+      </div>
+      <label>Sound ID
+        <input type="number" step="1" data-field="soundid" value="${snd.soundid}" style="width:100%;">
+      </label>
+    </div>
+
+    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+      <input type="text" data-field-str="comment" placeholder="// Ex: Som de garagem" value="${esc(snd.comment || '')}" style="width:100%;">
+    </div>
+
+    <div class="insp-section">
+      <details class="pawn-preview" open><summary>Código Pawn deste Som</summary>
+        <pre class="code small" id="sndCode"></pre>
+        <button type="button" class="btn small" id="btnSndCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
+      </details>
+    </div>
+  `;
+}
+
+function bindSound(snd) {
+  bindCommon();
+  bindSpeedControls();
+  bindStringFields(snd.uid);
+  const uid = snd.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindVecArrows(uid, project);
+
+  const btnPlay = $('#btnPlayInspSound');
+  if (btnPlay) btnPlay.onclick = () => playSoundPreview(snd.soundid);
+  const btnStop = $('#btnStopInspSound');
+  if (btnStop) btnStop.onclick = () => stopSoundPreview();
+  const btnPick = $('#btnPickSoundCat');
+  if (btnPick) {
+    btnPick.onclick = () => {
+      openSoundDialog({
+        currentSoundId: snd.soundid,
+        onSelect: (newSoundId) => {
+          project.updateItems('Alterar Sound ID', [uid], (o) => { o.soundid = newSoundId; });
+          app.editor.syncAll();
+          renderInspector();
+        }
+      });
+    };
+  }
+
+  $$('#inspector [data-field]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const field = inp.dataset.field;
+      let val = parseFloat(inp.value);
+      if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
+      if (field === 'soundid') val = Math.trunc(val);
+      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      app.editor.syncAll();
+      renderInspector();
+    });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+  });
+
+  $$('#inspector [data-scrub]').forEach(sp => {
+    const field = sp.dataset.scrub;
+    let before = null;
+    sp.addEventListener('pointerdown', () => { before = [project.snapshot(uid)]; }, { capture: true });
+    const speed = app.editor.transformSpeed?.move || 1.0;
+    bindScrub(sp, {
+      step: 0.05 * speed,
+      get: () => project.find(uid)?.[field] || 0,
+      set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
+      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+    });
+  });
+
+  updateSoundCode(snd);
+  const copyBtn = $('#btnSndCopy');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = $('#sndCode')?.textContent;
+      if (code) { copyText(code); toast('Código Pawn de PlayerPlaySound copiado!'); }
+    };
+  }
+}
+
+function updateSoundCode(snd) {
+  const codeEl = $('#sndCode');
+  if (!codeEl || !snd) return;
+  codeEl.textContent = `PlayerPlaySound(playerid, ${snd.soundid}, ${snd.x.toFixed(4)}, ${snd.y.toFixed(4)}, ${snd.z.toFixed(4)});`;
+}
+

@@ -332,6 +332,17 @@ if defined ANIMSRC (
     robocopy "%ANIMSRC%" "%BASE%\data\cache\animations" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
+rem ---------------- MapIcons
+set "MAPICONSRC="
+if exist "%SRC%compile-sources\cache\mapicons" set "MAPICONSRC=%SRC%compile-sources\cache\mapicons"
+if not defined MAPICONSRC if exist "%BASE%\data\cache\mapicons" set "MAPICONSRC=%BASE%\data\cache\mapicons"
+if not defined MAPICONSRC if exist "%OUT%\data\cache\mapicons" set "MAPICONSRC=%OUT%\data\cache\mapicons"
+if defined MAPICONSRC (
+    echo Copiando mapicons de: "%MAPICONSRC%"...
+    if not exist "%BASE%\data\cache\mapicons" mkdir "%BASE%\data\cache\mapicons"
+    robocopy "%MAPICONSRC%" "%BASE%\data\cache\mapicons" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+)
+
 rem ---------------- Radarmap
 set "RADARSRC="
 if exist "%SRC%compile-sources\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\cache\radarmap.png"

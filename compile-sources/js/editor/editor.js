@@ -8,11 +8,14 @@ import { CAR_COLORS } from '../world/vehicleMods.js';
 import { createLabelNode } from '../world/labels.js';
 import { createPickupFallbackMesh } from '../world/pickups.js';
 import { createGangZoneNode } from '../world/gangzones.js';
+import { createCheckpointNode } from '../world/checkpoints.js';
+import { createMapIconNode } from '../world/mapicons.js';
+import { createSoundNode } from '../world/sounds.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
 export function eulerFromItem(o, kind) {
-  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups')
+  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons' || kind === 'sounds')
     ? new THREE.Euler(0, 0, (o.rz || 0) * D2R, 'ZXY')
     : new THREE.Euler((o.rx || 0) * D2R, (o.ry || 0) * D2R, (o.rz || 0) * D2R, 'ZXY');
 }
@@ -58,6 +61,7 @@ export class Editor extends EventTarget {
       polygonOffsetUnits: -1,
     });
     this.selOverlays = [];
+    this.showSelectionBox = false;
     this.removeLodToo = true;
 
     // Gizmo
@@ -173,7 +177,7 @@ export class Editor extends EventTarget {
     const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
     const alive = new Set();
     for (const p of projects) {
-      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones']) {
+      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'sounds']) {
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
           let node = this.nodes.get(o.uid);
@@ -185,6 +189,9 @@ export class Editor extends EventTarget {
           else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
           else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
           else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
+          else if (kind === 'checkpoints') sig = JSON.stringify([o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z]);
+          else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
+          else if (kind === 'sounds') sig = JSON.stringify([o.soundid]);
 
           if (!node || node.userData.model !== modelId || node.userData.matSig !== sig) {
             if (node) this.root.remove(node);
@@ -222,6 +229,21 @@ export class Editor extends EventTarget {
     }
     if (kind === 'gangZones') {
       const node = createGangZoneNode(o);
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
+      return node;
+    }
+    if (kind === 'checkpoints') {
+      const node = createCheckpointNode(o);
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
+      return node;
+    }
+    if (kind === 'mapIcons') {
+      const node = createMapIconNode(o);
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
+      return node;
+    }
+    if (kind === 'sounds') {
+      const node = createSoundNode(o);
       node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
       return node;
     }
@@ -266,11 +288,12 @@ export class Editor extends EventTarget {
     const def = this.models.gd.models.get(o.model);
     const modelName = (def?.model || m.name || '').toLowerCase();
 
-    // 1. Cores 1 e 2
-    if (o.color1 !== undefined || o.color2 !== undefined) {
-      const rgb1 = o.color1 >= 0 ? CAR_COLORS[o.color1 % CAR_COLORS.length] : [235, 235, 235];
-      const rgb2 = o.color2 >= 0 ? CAR_COLORS[o.color2 % CAR_COLORS.length] : [110, 110, 120];
-      m.traverse(child => {
+    const rgb1 = (o.color1 !== undefined && o.color1 >= 0) ? CAR_COLORS[o.color1 % CAR_COLORS.length] : [235, 235, 235];
+    const rgb2 = (o.color2 !== undefined && o.color2 >= 0) ? CAR_COLORS[o.color2 % CAR_COLORS.length] : [110, 110, 120];
+
+    const applyColorsToObj = (rootObj) => {
+      if (!rootObj || (o.color1 === undefined && o.color2 === undefined)) return;
+      rootObj.traverse(child => {
         if (!child.isMesh) return;
         const mats = Array.isArray(child.material) ? [...child.material] : [child.material];
         let changed = false;
@@ -295,9 +318,41 @@ export class Editor extends EventTarget {
         }
         if (changed) child.material = Array.isArray(child.material) ? mats : mats[0];
       });
-    }
+    };
 
-    // 2. Paintjob
+    // 1. Remove componentes anteriores e restaura peças originais do veículo
+    const toRemove = [];
+    m.children.forEach(c => {
+      if (c.userData?.isVehicleComp) toRemove.push(c);
+      else c.visible = true;
+    });
+    toRemove.forEach(c => m.remove(c));
+
+    // 2. Cores 1 e 2 no chassi
+    applyColorsToObj(m);
+
+    // 3. Paintjob
+    let paintjobTex = null;
+    const applyPaintjobToObj = (rootObj, texInfo) => {
+      if (!rootObj || !texInfo) return;
+      rootObj.traverse(child => {
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? [...child.material] : [child.material];
+        let changed = false;
+        for (let i = 0; i < mats.length; i++) {
+          if (mats[i]?.userData?.carColor === 1) {
+            const cln = mats[i].clone();
+            cln.map = texInfo.texture;
+            cln.color.setRGB(1, 1, 1);
+            cln.needsUpdate = true;
+            mats[i] = cln;
+            changed = true;
+          }
+        }
+        if (changed) child.material = Array.isArray(child.material) ? mats : mats[0];
+      });
+    };
+
     if (def && o.paintjob !== undefined && o.paintjob !== null && o.paintjob >= 0) {
       const pjNum = o.paintjob + 1;
       const candidates = [
@@ -315,49 +370,124 @@ export class Editor extends EventTarget {
           if (foundTex) break;
         }
         if (foundTex) {
-          m.traverse(child => {
-            if (!child.isMesh) return;
-            const mats = Array.isArray(child.material) ? [...child.material] : [child.material];
-            let changed = false;
-            for (let i = 0; i < mats.length; i++) {
-              if (mats[i]?.userData?.carColor === 1) {
-                const cln = mats[i].clone();
-                cln.map = foundTex.texture;
-                cln.color.setRGB(1, 1, 1);
-                cln.needsUpdate = true;
-                mats[i] = cln;
-                changed = true;
-              }
-            }
-            if (changed) child.material = Array.isArray(child.material) ? mats : mats[0];
-          });
+          paintjobTex = foundTex;
+          applyPaintjobToObj(m, foundTex);
         }
       }).catch(() => {});
     }
 
-    // 3. Componentes de Tuning
-    const toRemove = [];
-    m.children.forEach(c => { if (c.userData?.isVehicleComp) toRemove.push(c); });
-    toRemove.forEach(c => m.remove(c));
-
+    // 4. Componentes de Tuning (acoplados automaticamente nos dummies corretos do DFF)
     if (o.components && o.components.length) {
-      const attachComp = (compObj) => {
-        if (!compObj) return;
-        compObj.userData.isVehicleComp = true;
-        compObj.traverse(c => {
-          c.userData.noPick = true;
-          c.userData.uid = o.uid;
-          c.userData.isVehicleComp = true;
+      const dummies = m.userData?.dummies || {};
+      const hideVehicleFrames = (names) => {
+        const set = new Set(names);
+        m.children.forEach(c => {
+          if (!c.userData?.isVehicleComp && set.has(c.userData?.frameName)) c.visible = false;
         });
+      };
+
+      const attachComp = (compObj, compId) => {
+        if (!compObj) return;
+        const compDef = this.models.gd.models.get(compId);
+        const cName = (compDef?.model || compObj.name || '').toLowerCase();
+
+        // Reseta a matriz interna de centralização do DFF do componente para usar o espaço local do dummy do carro
+        compObj.children.forEach(cm => {
+          cm.position.set(0, 0, 0);
+          cm.rotation.set(0, 0, 0);
+          cm.scale.set(1, 1, 1);
+          cm.updateMatrix();
+        });
+
+        applyColorsToObj(compObj);
+        if (paintjobTex) applyPaintjobToObj(compObj, paintjobTex);
+
+        const markComp = (obj3d) => {
+          obj3d.userData.isVehicleComp = true;
+          obj3d.userData.compId = compId;
+          obj3d.traverse(c => {
+            c.userData.noPick = true;
+            c.userData.uid = o.uid;
+            c.userData.isVehicleComp = true;
+          });
+        };
+
+        // Rodas: substitui todas as rodas originais e instancia em cada dummy de roda
+        if (cName.startsWith('wheel_')) {
+          m.children.forEach(c => { if (c.userData?.isStockWheel) c.visible = false; });
+          const wDummies = ['wheel_lf_dummy', 'wheel_rf_dummy', 'wheel_lb_dummy', 'wheel_rb_dummy', 'wheel_lm_dummy', 'wheel_rm_dummy'].filter(k => dummies[k]);
+          for (const dKey of wDummies) {
+            const wClone = compObj.clone(true);
+            wClone.applyMatrix4(dummies[dKey]);
+            if (/_l/.test(dKey)) { wClone.scale.x *= -1; wClone.updateMatrix(); }
+            markComp(wClone);
+            m.add(wClone);
+          }
+          return;
+        }
+
+        let targetMat = null;
+        if (cName.startsWith('fbmp_')) {
+          hideVehicleFrames(['bump_front_ok']);
+          targetMat = dummies['bump_front_dummy'] || dummies['bump_front_ok'];
+        } else if (cName.startsWith('rbmp_')) {
+          hideVehicleFrames(['bump_rear_ok']);
+          targetMat = dummies['bump_rear_dummy'] || dummies['bump_rear_ok'];
+        } else if (cName.startsWith('fbb_')) {
+          targetMat = dummies['ug_frontbullbar'] || dummies['bump_front_dummy'];
+        } else if (cName.startsWith('bbb_')) {
+          targetMat = dummies['ug_backbullbar'] || dummies['bump_rear_dummy'];
+        } else if (cName.startsWith('spl_')) {
+          targetMat = dummies['ug_spoiler'] || dummies['boot_dummy'];
+        } else if (cName.startsWith('rf_')) {
+          targetMat = dummies['ug_roof'] || dummies['chassis'];
+        } else if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_')) {
+          targetMat = dummies['ug_wing_left'] || dummies['chassis'];
+        } else if (cName.startsWith('wg_r_')) {
+          targetMat = dummies['ug_wing_right'] || dummies['chassis'];
+        } else if (cName.startsWith('nto_')) {
+          targetMat = dummies['ug_nitro'] || dummies['chassis'];
+        } else if (cName.startsWith('exh_')) {
+          hideVehicleFrames(['exhaust_ok']);
+          if (dummies['exhaust_ok']) {
+            targetMat = dummies['exhaust_ok'];
+          } else if (dummies['exhaust']) {
+            targetMat = dummies['exhaust'].clone();
+            if (cName.startsWith('exh_b_')) {
+              const shift = new THREE.Matrix4().makeTranslation(0, 1.05, 0);
+              targetMat.multiply(shift);
+            }
+          }
+        } else if (cName.startsWith('bnt_lr_')) {
+          hideVehicleFrames(['bonnet_ok']);
+          targetMat = dummies['bonnet_dummy'] || dummies['ug_bonnet'];
+        } else if (cName.startsWith('bnt_b_')) {
+          targetMat = dummies['ug_bonnet'] || dummies['bonnet_dummy'];
+        } else if (cName.startsWith('bntl_')) {
+          targetMat = dummies['ug_bonnet_left'] || dummies['ug_bonnet'] || dummies['bonnet_dummy'];
+        } else if (cName.startsWith('bntr_')) {
+          targetMat = dummies['ug_bonnet_right'] || dummies['ug_bonnet'] || dummies['bonnet_dummy'];
+        } else if (cName.startsWith('lgt_')) {
+          targetMat = dummies['ug_lights'] || dummies['ug_frontbullbar'] || dummies['headlights'];
+        } else if (cName.startsWith('misc_c_')) {
+          hideVehicleFrames(['misc_c']);
+          targetMat = dummies['misc_c'] || dummies['chassis'];
+        }
+
+        if (targetMat) {
+          compObj.applyMatrix4(targetMat);
+        }
+        markComp(compObj);
         m.add(compObj);
       };
 
       for (const compId of o.components) {
         if (this.models.ready.has(compId)) {
-          attachComp(this.models.instantiate(compId));
+          attachComp(this.models.instantiate(compId), compId);
         } else {
           this.models.getModel(compId).then(() => {
-            attachComp(this.models.instantiate(compId));
+            attachComp(this.models.instantiate(compId), compId);
+            this.refreshSelectionBoxes();
           }).catch(() => {});
         }
       }
@@ -438,7 +568,7 @@ export class Editor extends EventTarget {
     const items = this.selectedItems();
     if (!items.length) { this.tc.detach(); return; }
 
-    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0);
+    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0) + (this.project.checkpoints?.length || 0) + (this.project.mapIcons?.length || 0) + (this.project.sounds?.length || 0);
     const isAll = items.length >= totalProjectItems && totalProjectItems > 0;
 
     if (items.length === 1) {
@@ -468,7 +598,7 @@ export class Editor extends EventTarget {
     this.tc.attach(this.pivot);
     this.tc.setMode(this.mode);
     this.tc.setSpace(this.mode === 'rotate' && items.length === 1 ? this.space : this.space);
-    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups');
+    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'sounds');
     this.tc.showX = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showY = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showZ = true;
@@ -505,6 +635,9 @@ export class Editor extends EventTarget {
       ...(this.project.actors || []),
       ...(this.project.labels || []),
       ...(this.project.pickups || []),
+      ...(this.project.checkpoints || []),
+      ...(this.project.mapIcons || []),
+      ...(this.project.sounds || []),
     ].map(o => o.uid);
     if (all.length) {
       const prevActiveUid = this.selection.length ? this.selection[0] : null;
@@ -588,7 +721,7 @@ export class Editor extends EventTarget {
         if (item) {
           item.x = round(node.position.x); item.y = round(node.position.y); item.z = round(node.position.z);
           const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups') item.rz = normDeg(e.z * R2D);
+          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons' || kind === 'sounds') item.rz = normDeg(e.z * R2D);
           else { item.rx = normDeg(e.x * R2D); item.ry = normDeg(e.y * R2D); item.rz = normDeg(e.z * R2D); }
         }
       }
@@ -631,7 +764,7 @@ export class Editor extends EventTarget {
           it.attach.ox = rel.ox;
           it.attach.oy = rel.oy;
           it.attach.oz = rel.oz;
-          if (it.attach.syncRot !== 0) {
+          if (it.attach.type === 'vehicle' || it.attach.syncRot !== 0) {
             it.attach.rx = rel.rx;
             it.attach.ry = rel.ry;
             it.attach.rz = rel.rz;
@@ -687,7 +820,7 @@ export class Editor extends EventTarget {
 
       s.item.x = round(node.position.x); s.item.y = round(node.position.y); s.item.z = round(node.position.z);
       const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-      if (s.kind === 'vehicles' || s.kind === 'actors') s.item.rz = normDeg(e.z * R2D);
+      if (s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'sounds') s.item.rz = normDeg(e.z * R2D);
       else { s.item.rx = normDeg(e.x * R2D); s.item.ry = normDeg(e.y * R2D); s.item.rz = normDeg(e.z * R2D); }
     }
     this.attachGizmo();
@@ -697,33 +830,36 @@ export class Editor extends EventTarget {
     this.emit('change');
   }
 
-  // Anexação de objetos (AttachObjectToObject)
+  // Anexação de objetos (AttachObjectToObject / AttachObjectToVehicle)
   updateAttachedChildren() {
     if (!this.project) return;
-    for (const obj of this.project.objects) {
-      if (!obj.attach || !obj.attach.to) continue;
-      // Se o filho estiver sendo manipulado diretamente pelo gizmo, preserva sua posição no mundo
-      if (this.dragging && this.selection.includes(obj.uid)) continue;
-      const parentNode = this.nodes.get(obj.attach.to);
-      const childNode = this.nodes.get(obj.uid);
-      if (!parentNode || !childNode) continue;
-      const offsetPos = new THREE.Vector3(obj.attach.ox || 0, obj.attach.oy || 0, obj.attach.oz || 0);
-      const offsetRot = new THREE.Euler((obj.attach.rx || 0) * D2R, (obj.attach.ry || 0) * D2R, (obj.attach.rz || 0) * D2R, 'ZXY');
-      const offsetQuat = new THREE.Quaternion().setFromEuler(offsetRot);
-      
-      const childWorldPos = offsetPos.clone().applyQuaternion(parentNode.quaternion).add(parentNode.position);
-      childNode.position.copy(childWorldPos);
-      if (obj.attach.syncRot !== 0) {
-        childNode.quaternion.copy(parentNode.quaternion).multiply(offsetQuat);
-      } else {
-        childNode.quaternion.copy(offsetQuat);
+    const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
+    for (const p of projects) {
+      for (const obj of (p.objects || [])) {
+        if (!obj.attach || !obj.attach.to) continue;
+        // Se o filho estiver sendo manipulado diretamente pelo gizmo, preserva sua posição no mundo
+        if (this.dragging && this.selection.includes(obj.uid)) continue;
+        const parentNode = this.nodes.get(obj.attach.to);
+        const childNode = this.nodes.get(obj.uid);
+        if (!parentNode || !childNode) continue;
+        const offsetPos = new THREE.Vector3(obj.attach.ox || 0, obj.attach.oy || 0, obj.attach.oz || 0);
+        const offsetRot = new THREE.Euler((obj.attach.rx || 0) * D2R, (obj.attach.ry || 0) * D2R, (obj.attach.rz || 0) * D2R, 'ZXY');
+        const offsetQuat = new THREE.Quaternion().setFromEuler(offsetRot);
+
+        const childWorldPos = offsetPos.clone().applyQuaternion(parentNode.quaternion).add(parentNode.position);
+        childNode.position.copy(childWorldPos);
+        if (obj.attach.type === 'vehicle' || obj.attach.syncRot !== 0) {
+          childNode.quaternion.copy(parentNode.quaternion).multiply(offsetQuat);
+        } else {
+          childNode.quaternion.copy(offsetQuat);
+        }
+        childNode.updateMatrixWorld(true);
+        obj.x = round(childNode.position.x);
+        obj.y = round(childNode.position.y);
+        obj.z = round(childNode.position.z);
+        const e = new THREE.Euler().setFromQuaternion(childNode.quaternion, 'ZXY');
+        obj.rx = normDeg(e.x * R2D); obj.ry = normDeg(e.y * R2D); obj.rz = normDeg(e.z * R2D);
       }
-      childNode.updateMatrixWorld(true);
-      obj.x = round(childNode.position.x);
-      obj.y = round(childNode.position.y);
-      obj.z = round(childNode.position.z);
-      const e = new THREE.Euler().setFromQuaternion(childNode.quaternion, 'ZXY');
-      obj.rx = normDeg(e.x * R2D); obj.ry = normDeg(e.y * R2D); obj.rz = normDeg(e.z * R2D);
     }
   }
 
@@ -825,6 +961,7 @@ export class Editor extends EventTarget {
       ov.parent?.remove(ov);
     }
     this.selOverlays = [];
+    if (!this.showSelectionBox) return;
 
     const addHighlightOverlay = (rootObj) => {
       if (!rootObj) return;
@@ -1139,13 +1276,15 @@ export class Editor extends EventTarget {
       let finalOffset = bottomOffset;
       if (s.kind === 'actors' || s.kind === 'pickups' || s.kind === 'labels') {
         finalOffset = 0.98;
+      } else if (s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'sounds') {
+        finalOffset = 0;
       }
       const origin = new THREE.Vector3(s.item.x, s.item.y, Math.max(s.item.z + 1.0, box.max.z + 0.1));
       const rc = new THREE.Raycaster(origin, new THREE.Vector3(0, 0, -1), 0, 1000);
       rc.camera = this.vp.camera;
       const hits = rc.intersectObjects(this.pickTargets(), true).filter(h => {
         if (h.object.userData.noPick) return false;
-        if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup) return false;
+        if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup || h.object.userData?.isCheckpoint || h.object.userData?.isMapIcon || h.object.userData?.isSound) return false;
         if (isDescendant(h.object, node)) return false;
         const hitUid = h.object.userData.uid;
         if (hitUid && selectedUids.has(hitUid)) return false;

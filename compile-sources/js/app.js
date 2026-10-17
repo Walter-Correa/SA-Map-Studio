@@ -15,7 +15,7 @@ import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, 
 import { setupProjects, openInitialProject, saveNow } from './ui/projects.js';
 import { setupCatalog, renderCatalogRows } from './ui/catalog.js';
 import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.js';
-import { setupInspector, openCreate3DTextPanel } from './ui/inspector.js';
+import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel } from './ui/inspector.js';
 import { setupCameras, stopPreview } from './ui/cameras.js';
 import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
 import { setupAbout } from './ui/about.js';
@@ -25,6 +25,8 @@ import { setupSkinPicker } from './ui/skinPicker.js';
 import { setupSpritePicker } from './ui/spritePicker.js';
 import { initGangZoneDialog, openGangZoneDialog } from './ui/gangzoneDialog.js';
 import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
+import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
+import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
 
 let water = null;
 let hintDismissed = false;
@@ -142,6 +144,8 @@ async function start(cfg) {
   setupSpritePicker();
   initGangZoneDialog(app);
   initTextDrawEditor(app);
+  initMapIconDialog();
+  initSoundDialog();
   await openInitialProject();
   $('#overlay').hidden = true;
   for (const w of gd.warnings) toast(w, 'warn', 6000);
@@ -194,6 +198,9 @@ function setupToolbar(cfg) {
   ed.setTransformSpeed(initSpeed);
   $('#btnUndo').onclick = doUndo;
   $('#btnRedo').onclick = doRedo;
+  if ($('#btnCheckpoints')) $('#btnCheckpoints').onclick = () => openCreateCheckpointPanel();
+  if ($('#btnMapIcons')) $('#btnMapIcons').onclick = () => openMapIconDialog();
+  if ($('#btnSounds')) $('#btnSounds').onclick = () => openSoundDialog();
   if ($('#btnGangZones')) $('#btnGangZones').onclick = () => openGangZoneDialog();
   if ($('#btnTextDraws')) $('#btnTextDraws').onclick = () => openTextDrawEditor();
   app.on('project-change', updateUndoButtons);
@@ -202,7 +209,7 @@ function setupToolbar(cfg) {
   ed.on('selection', updateUndoButtons);
 
   // Visão
-  const view = store.get('view', { dist: 600, speed: 25, lod: true, water: true, interiors: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
+  const view = store.get('view', { dist: 600, speed: 25, lod: true, water: true, interiors: false, showSelectionBox: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
   const applyView = () => {
     const v = {
       dist: +$('#viewDist').value,
@@ -210,6 +217,7 @@ function setupToolbar(cfg) {
       lod: $('#showLod').checked,
       water: $('#showWater').checked,
       interiors: $('#showInteriors').checked,
+      showSelectionBox: $('#showSelectionBox')?.checked ?? false,
       removeLod: $('#removeLod').checked,
       autoCollapseSidebars: $('#autoCollapseSidebars')?.checked ?? false,
       weather: Math.max(0, Math.min(45, +($('#viewWeather')?.value ?? 10) || 10)),
@@ -225,6 +233,10 @@ function setupToolbar(cfg) {
     vp.fly.speed = v.speed;
     if (water) water.visible = v.water && !v.interiors;
     ed.removeLodToo = v.removeLod;
+    if (ed.showSelectionBox !== v.showSelectionBox) {
+      ed.showSelectionBox = v.showSelectionBox;
+      ed.refreshSelectionBoxes();
+    }
 
     const timeParts = v.time.split(':').map(Number);
     const hour = isNaN(timeParts[0]) ? 10 : Math.max(0, Math.min(23, timeParts[0]));
@@ -243,12 +255,14 @@ function setupToolbar(cfg) {
   };
   $('#viewDist').value = view.dist; $('#camSpeed').value = view.speed; $('#showLod').checked = view.lod;
   $('#showWater').checked = view.water; $('#showInteriors').checked = view.interiors; $('#removeLod').checked = view.removeLod;
+  if ($('#showSelectionBox')) $('#showSelectionBox').checked = view.showSelectionBox === true;
   if ($('#autoCollapseSidebars')) $('#autoCollapseSidebars').checked = view.autoCollapseSidebars ?? false;
   if ($('#viewWeather')) $('#viewWeather').value = view.weather !== undefined ? view.weather : 10;
   if ($('#viewTime')) $('#viewTime').value = view.time || '10:00';
-  ['#viewDist', '#camSpeed', '#showLod', '#showWater', '#showInteriors', '#removeLod', '#autoCollapseSidebars', '#viewWeather', '#viewTime'].forEach(s => {
+  ['#viewDist', '#camSpeed', '#showLod', '#showWater', '#showInteriors', '#showSelectionBox', '#removeLod', '#autoCollapseSidebars', '#viewWeather', '#viewTime'].forEach(s => {
     const el = $(s);
     if (el) el.addEventListener('input', applyView);
+    if (el) el.addEventListener('change', applyView);
   });
   $('#testWeather')?.addEventListener('input', () => {
     if ($('#viewWeather') && $('#viewWeather').value !== $('#testWeather').value) {
@@ -771,6 +785,9 @@ function setupOutline() {
         if (kind === 'actors') { nameStr = `Skin ${o.skin}`; idVal = o.skin; }
         else if (kind === 'labels') { nameStr = o.text || 'Texto 3D'; idVal = (o.drawDist || 50) + 'm'; }
         else if (kind === 'pickups') { nameStr = `Pickup #${o.model}`; idVal = `Tipo ${o.type || 1}`; }
+        else if (kind === 'checkpoints') { nameStr = o.cpKind === 'race' ? `Race CP (Tipo ${o.type ?? 0})` : 'Checkpoint'; idVal = `R ${o.size ?? 4}`; }
+        else if (kind === 'mapIcons') { nameStr = `MapIcon #${o.type ?? 0}`; idVal = `Estilo ${o.style ?? 0}`; }
+        else if (kind === 'sounds') { nameStr = `Som #${o.soundid}`; idVal = `${o.x.toFixed(0)},${o.y.toFixed(0)}`; }
         else if (kind === 'gangZones') { nameStr = o.name || 'GangZone'; idVal = `${o.minx},${o.miny}`; }
         else if (kind === 'textDraws') { nameStr = o.text || 'TextDraw'; idVal = `Font ${o.font ?? 1}`; }
         const cmtStr = o.comment ? `<span class="ol-comment" style="color:var(--text-dim); font-size:11px; margin-left:4px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(o.comment)}">// ${esc(o.comment)}</span>` : '';
@@ -785,6 +802,9 @@ function setupOutline() {
       group('Actors', 'actors', order(project.actors || []), 'i-actor', 'Nenhum actor criado.') +
       group('Textos 3D', 'labels', order(project.labels || []), 'i-text3d', 'Nenhum texto 3D criado.') +
       group('Pickups', 'pickups', order(project.pickups || []), 'i-diamond', 'Nenhum pickup criado.') +
+      group('Checkpoints', 'checkpoints', order(project.checkpoints || []), 'i-flag', 'Nenhum checkpoint criado.') +
+      group('MapIcons', 'mapIcons', order(project.mapIcons || []), 'i-pin', 'Nenhum mapicon criado.') +
+      group('Sons', 'sounds', order(project.sounds || []), 'i-sound', 'Nenhum som posicionado.') +
       group('GangZones', 'gangZones', order(project.gangZones || []), 'i-map', 'Nenhuma gangzone criada.') +
       group('TextDraws', 'textDraws', order(project.textDraws || []), 'i-text', 'Nenhum textdraw criado.') +
       group('Objetos', 'objects', regularObjs, 'i-cube', 'Nenhum objeto padrão.') +
@@ -798,6 +818,9 @@ function setupOutline() {
       (project.actors?.length || 0) +
       (project.labels?.length || 0) +
       (project.pickups?.length || 0) +
+      (project.checkpoints?.length || 0) +
+      (project.mapIcons?.length || 0) +
+      (project.sounds?.length || 0) +
       (project.gangZones?.length || 0) +
       (project.textDraws?.length || 0) +
       project.removed.length;

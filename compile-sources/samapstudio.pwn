@@ -14,8 +14,11 @@
 #define SAMSP_MAX_ACTORS     250
 #define SAMSP_MAX_LABELS     500
 #define SAMSP_MAX_PICKUPS    500
-#define SAMSP_MAX_GANGZONES  200
-#define SAMSP_MAX_TEXTDRAWS  256
+#define SAMSP_MAX_GANGZONES   200
+#define SAMSP_MAX_TEXTDRAWS   256
+#define SAMSP_MAX_CHECKPOINTS 256
+#define SAMSP_MAX_MAPICONS    200
+#define SAMSP_MAX_SOUNDS      256
 #define SAMSP_COR_INFO       0xF0A630FF
 #define SAMSP_COR_OK         0x57B77AFF
 
@@ -73,6 +76,46 @@ new gGangZoneColors[SAMSP_MAX_GANGZONES];
 new gTotalGangZones;
 new Text:gTextDraws[SAMSP_MAX_TEXTDRAWS];
 new gTotalTextDraws;
+
+enum E_SAMSP_CP
+{
+    bool:cp_isRace,
+    cp_type,
+    Float:cp_x,
+    Float:cp_y,
+    Float:cp_z,
+    Float:cp_nx,
+    Float:cp_ny,
+    Float:cp_nz,
+    Float:cp_size
+}
+new gCheckpoints[SAMSP_MAX_CHECKPOINTS][E_SAMSP_CP];
+new gTotalCheckpoints;
+new gPlayerNormalCPIdx[MAX_PLAYERS];
+new gPlayerRaceCPIdx[MAX_PLAYERS];
+
+enum E_SAMSP_MAPICON
+{
+    mi_iconid,
+    Float:mi_x,
+    Float:mi_y,
+    Float:mi_z,
+    mi_type,
+    mi_color,
+    mi_style
+}
+new gMapIcons[SAMSP_MAX_MAPICONS][E_SAMSP_MAPICON];
+new gTotalMapIcons;
+
+enum E_SAMSP_SOUND
+{
+    snd_id,
+    Float:snd_x,
+    Float:snd_y,
+    Float:snd_z
+}
+new gSounds[SAMSP_MAX_SOUNDS][E_SAMSP_SOUND];
+new gTotalSounds;
 
 enum E_SAMSP_ACTOR_ANIM
 {
@@ -346,6 +389,20 @@ stock SAMSP_CarregarMapa()
             }
             case 'S':
             {
+                if (tipo[1] == 'N' && tipo[2] == 'D')
+                {
+                    if (gTotalSounds >= SAMSP_MAX_SOUNDS) continue;
+                    gSounds[gTotalSounds][snd_id] = SAMSP_Int(linha, 1);
+                    gSounds[gTotalSounds][snd_x] = SAMSP_Float(linha, 2);
+                    gSounds[gTotalSounds][snd_y] = SAMSP_Float(linha, 3);
+                    gSounds[gTotalSounds][snd_z] = SAMSP_Float(linha, 4);
+                    sumX += gSounds[gTotalSounds][snd_x];
+                    sumY += gSounds[gTotalSounds][snd_y];
+                    sumZ += gSounds[gTotalSounds][snd_z];
+                    countCoords++;
+                    gTotalSounds++;
+                    continue;
+                }
                 gSpawn[0] = SAMSP_Float(linha, 1);
                 gSpawn[1] = SAMSP_Float(linha, 2);
                 gSpawn[2] = SAMSP_Float(linha, 3);
@@ -365,6 +422,29 @@ stock SAMSP_CarregarMapa()
             }
             case 'C':
             {
+                if (tipo[1] == 'P')
+                {
+                    if (gTotalCheckpoints >= SAMSP_MAX_CHECKPOINTS) continue;
+                    gCheckpoints[gTotalCheckpoints][cp_isRace] = (SAMSP_Int(linha, 1) != 0);
+                    gCheckpoints[gTotalCheckpoints][cp_type] = SAMSP_Int(linha, 2);
+                    gCheckpoints[gTotalCheckpoints][cp_x] = SAMSP_Float(linha, 3);
+                    gCheckpoints[gTotalCheckpoints][cp_y] = SAMSP_Float(linha, 4);
+                    gCheckpoints[gTotalCheckpoints][cp_z] = SAMSP_Float(linha, 5);
+                    gCheckpoints[gTotalCheckpoints][cp_nx] = SAMSP_Float(linha, 6);
+                    gCheckpoints[gTotalCheckpoints][cp_ny] = SAMSP_Float(linha, 7);
+                    gCheckpoints[gTotalCheckpoints][cp_nz] = SAMSP_Float(linha, 8);
+                    gCheckpoints[gTotalCheckpoints][cp_size] = SAMSP_Float(linha, 9);
+                    if (gCheckpoints[gTotalCheckpoints][cp_size] <= 0.0)
+                    {
+                        gCheckpoints[gTotalCheckpoints][cp_size] = gCheckpoints[gTotalCheckpoints][cp_isRace] ? 4.0 : 3.0;
+                    }
+                    sumX += gCheckpoints[gTotalCheckpoints][cp_x];
+                    sumY += gCheckpoints[gTotalCheckpoints][cp_y];
+                    sumZ += gCheckpoints[gTotalCheckpoints][cp_z];
+                    countCoords++;
+                    gTotalCheckpoints++;
+                    continue;
+                }
                 gMapCenter[0] = SAMSP_Float(linha, 1);
                 gMapCenter[1] = SAMSP_Float(linha, 2);
                 gMapCenter[2] = SAMSP_Float(linha, 3);
@@ -406,6 +486,28 @@ stock SAMSP_CarregarMapa()
             }
             case 'M':
             {
+                if (tipo[1] == 'I')
+                {
+                    if (gTotalMapIcons >= SAMSP_MAX_MAPICONS) continue;
+                    gMapIcons[gTotalMapIcons][mi_iconid] = SAMSP_Int(linha, 1);
+                    gMapIcons[gTotalMapIcons][mi_x] = SAMSP_Float(linha, 2);
+                    gMapIcons[gTotalMapIcons][mi_y] = SAMSP_Float(linha, 3);
+                    gMapIcons[gTotalMapIcons][mi_z] = SAMSP_Float(linha, 4);
+                    gMapIcons[gTotalMapIcons][mi_type] = SAMSP_Int(linha, 5);
+                    gMapIcons[gTotalMapIcons][mi_color] = SAMSP_HexOrInt(linha, 6);
+                    gMapIcons[gTotalMapIcons][mi_style] = SAMSP_Int(linha, 7);
+                    if (gUseStreamer && gTotalMapIcons >= 100)
+                    {
+                        CreateDynamicMapIcon(gMapIcons[gTotalMapIcons][mi_x], gMapIcons[gTotalMapIcons][mi_y], gMapIcons[gTotalMapIcons][mi_z],
+                            gMapIcons[gTotalMapIcons][mi_type], gMapIcons[gTotalMapIcons][mi_color], -1, -1, -1, 200.0, gMapIcons[gTotalMapIcons][mi_style]);
+                    }
+                    sumX += gMapIcons[gTotalMapIcons][mi_x];
+                    sumY += gMapIcons[gTotalMapIcons][mi_y];
+                    sumZ += gMapIcons[gTotalMapIcons][mi_z];
+                    countCoords++;
+                    gTotalMapIcons++;
+                    continue;
+                }
                 new indice = SAMSP_Int(linha, 1);
                 if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
                 SAMSP_Campo(linha, 4, txd, sizeof(txd));
@@ -482,6 +584,55 @@ stock SAMSP_CarregarMapa()
             }
             case 'A':
             {
+                if (tipo[1] == 'V')
+                {
+                    new objIdx = SAMSP_Int(linha, 1);
+                    new vehIdx = SAMSP_Int(linha, 2);
+                    if (objIdx >= 0 && objIdx < gTotalObjetos && gObjetos[objIdx] != INVALID_OBJECT_ID && gObjetos[objIdx] != 0 &&
+                        vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
+                    {
+                        new Float:aox = SAMSP_Float(linha, 3);
+                        new Float:aoy = SAMSP_Float(linha, 4);
+                        new Float:aoz = SAMSP_Float(linha, 5);
+                        new Float:arx = SAMSP_Float(linha, 6);
+                        new Float:ary = SAMSP_Float(linha, 7);
+                        new Float:arz = SAMSP_Float(linha, 8);
+                        if (gUseStreamer)
+                        {
+                            AttachDynamicObjectToVehicle(STREAMER_TAG_OBJECT:gObjetos[objIdx], gVeiculos[vehIdx], aox, aoy, aoz, arx, ary, arz);
+                        }
+                        else
+                        {
+                            AttachObjectToVehicle(gObjetos[objIdx], gVeiculos[vehIdx], aox, aoy, aoz, arx, ary, arz);
+                        }
+                    }
+                    continue;
+                }
+                if (tipo[1] == 'O')
+                {
+                    new objIdx = SAMSP_Int(linha, 1);
+                    new parIdx = SAMSP_Int(linha, 2);
+                    if (objIdx >= 0 && objIdx < gTotalObjetos && gObjetos[objIdx] != INVALID_OBJECT_ID && gObjetos[objIdx] != 0 &&
+                        parIdx >= 0 && parIdx < gTotalObjetos && gObjetos[parIdx] != INVALID_OBJECT_ID && gObjetos[parIdx] != 0)
+                    {
+                        new Float:aox = SAMSP_Float(linha, 3);
+                        new Float:aoy = SAMSP_Float(linha, 4);
+                        new Float:aoz = SAMSP_Float(linha, 5);
+                        new Float:arx = SAMSP_Float(linha, 6);
+                        new Float:ary = SAMSP_Float(linha, 7);
+                        new Float:arz = SAMSP_Float(linha, 8);
+                        new syncRot = SAMSP_Int(linha, 9);
+                        if (gUseStreamer)
+                        {
+                            AttachDynamicObjectToObject(STREAMER_TAG_OBJECT:gObjetos[objIdx], gObjetos[parIdx], aox, aoy, aoz, arx, ary, arz, syncRot);
+                        }
+                        else
+                        {
+                            AttachObjectToObject(gObjetos[objIdx], gObjetos[parIdx], aox, aoy, aoz, arx, ary, arz, bool:syncRot);
+                        }
+                    }
+                    continue;
+                }
                 if (gTotalActors >= SAMSP_MAX_ACTORS) continue;
                 new skin = SAMSP_Int(linha, 1);
                 new Float:ax = SAMSP_Float(linha, 2);
@@ -751,8 +902,8 @@ stock SAMSP_CarregarMapa()
         gSpawn[3] = 0.0;
     }
 
-    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws (Streamer: %s)",
-        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalTextDraws, gUseStreamer ? "ATIVO" : "DESATIVADO");
+    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d checkpoints, %d mapicons, %d sons, %d textdraws (Streamer: %s)",
+        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalCheckpoints, gTotalMapIcons, gTotalSounds, gTotalTextDraws, gUseStreamer ? "ATIVO" : "DESATIVADO");
     printf("[SA Map Studio] Clima: %d, Horário: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
@@ -806,7 +957,7 @@ stock SAMSP_PreloadAllAnims(playerid)
     return 1;
 }
 
-// Sincroniza e reaplica as animaçõesções de todos os actors para o jogador
+// Sincroniza e reaplica as animações de todos os actors para o jogador
 forward SAMSP_SyncActorAnims(playerid);
 public SAMSP_SyncActorAnims(playerid)
 {
@@ -824,7 +975,7 @@ public SAMSP_SyncActorAnims(playerid)
     return 1;
 }
 
-// Quando um actor entra na área visível (stream-in) de um jogador, assegura a animaçãoção ativa
+// Quando um actor entra na área visível (stream-in) de um jogador, assegura a animação ativa
 public OnActorStreamIn(actorid, forplayerid)
 {
     for (new i = 0; i < gTotalActors; i++)
@@ -838,6 +989,101 @@ public OnActorStreamIn(actorid, forplayerid)
             break;
         }
     }
+    return 1;
+}
+
+stock SAMSP_ShowMapIcons(playerid)
+{
+    for (new i = 0; i < gTotalMapIcons && i < 100; i++)
+    {
+        new slot = gMapIcons[i][mi_iconid];
+        if (slot < 0 || slot >= 100) slot = i;
+        SetPlayerMapIcon(playerid, slot, gMapIcons[i][mi_x], gMapIcons[i][mi_y], gMapIcons[i][mi_z],
+            gMapIcons[i][mi_type], gMapIcons[i][mi_color], MAPICON:gMapIcons[i][mi_style]);
+    }
+}
+
+stock SAMSP_ShowPlayerCheckpoints(playerid)
+{
+    if (gTotalCheckpoints <= 0) return;
+    new normIdx = gPlayerNormalCPIdx[playerid];
+    new raceIdx = gPlayerRaceCPIdx[playerid];
+
+    new foundNorm = -1;
+    for (new i = 0; i < gTotalCheckpoints; i++)
+    {
+        new idx = (normIdx + i) % gTotalCheckpoints;
+        if (!gCheckpoints[idx][cp_isRace])
+        {
+            foundNorm = idx;
+            break;
+        }
+    }
+    if (foundNorm != -1)
+    {
+        gPlayerNormalCPIdx[playerid] = foundNorm;
+        SetPlayerCheckpoint(playerid, gCheckpoints[foundNorm][cp_x], gCheckpoints[foundNorm][cp_y], gCheckpoints[foundNorm][cp_z], gCheckpoints[foundNorm][cp_size]);
+    }
+
+    new foundRace = -1;
+    for (new i = 0; i < gTotalCheckpoints; i++)
+    {
+        new idx = (raceIdx + i) % gTotalCheckpoints;
+        if (gCheckpoints[idx][cp_isRace])
+        {
+            foundRace = idx;
+            break;
+        }
+    }
+    if (foundRace != -1)
+    {
+        gPlayerRaceCPIdx[playerid] = foundRace;
+        SetPlayerRaceCheckpoint(playerid, CP_TYPE:gCheckpoints[foundRace][cp_type],
+            gCheckpoints[foundRace][cp_x], gCheckpoints[foundRace][cp_y], gCheckpoints[foundRace][cp_z],
+            gCheckpoints[foundRace][cp_nx], gCheckpoints[foundRace][cp_ny], gCheckpoints[foundRace][cp_nz],
+            gCheckpoints[foundRace][cp_size]);
+    }
+}
+
+stock SAMSP_PlayMapSounds(playerid)
+{
+    for (new i = 0; i < gTotalSounds; i++)
+    {
+        PlayerPlaySound(playerid, gSounds[i][snd_id], gSounds[i][snd_x], gSounds[i][snd_y], gSounds[i][snd_z]);
+    }
+}
+
+public OnPlayerEnterCheckpoint(playerid)
+{
+    if (gTotalCheckpoints <= 0) return 1;
+    new countNorm = 0;
+    for (new i = 0; i < gTotalCheckpoints; i++)
+    {
+        if (!gCheckpoints[i][cp_isRace]) countNorm++;
+    }
+    if (countNorm > 1)
+    {
+        gPlayerNormalCPIdx[playerid] = (gPlayerNormalCPIdx[playerid] + 1) % gTotalCheckpoints;
+        SAMSP_ShowPlayerCheckpoints(playerid);
+    }
+    PlayerPlaySound(playerid, 1058, 0.0, 0.0, 0.0);
+    return 1;
+}
+
+public OnPlayerEnterRaceCheckpoint(playerid)
+{
+    if (gTotalCheckpoints <= 0) return 1;
+    new countRace = 0;
+    for (new i = 0; i < gTotalCheckpoints; i++)
+    {
+        if (gCheckpoints[i][cp_isRace]) countRace++;
+    }
+    if (countRace > 1)
+    {
+        gPlayerRaceCPIdx[playerid] = (gPlayerRaceCPIdx[playerid] + 1) % gTotalCheckpoints;
+        SAMSP_ShowPlayerCheckpoints(playerid);
+    }
+    PlayerPlaySound(playerid, 1138, 0.0, 0.0, 0.0);
     return 1;
 }
 
@@ -865,10 +1111,13 @@ public OnPlayerConnect(playerid)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
     }
+    gPlayerNormalCPIdx[playerid] = 0;
+    gPlayerRaceCPIdx[playerid] = 0;
     for (new i = 0; i < gTotalTextDraws; i++)
     {
         TextDrawShowForPlayer(playerid, gTextDraws[i]);
     }
+    SAMSP_ShowMapIcons(playerid);
     SAMSP_PreloadAllAnims(playerid);
     return 1;
 }
@@ -961,6 +1210,9 @@ public OnPlayerSpawn(playerid)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
     }
+    SAMSP_ShowMapIcons(playerid);
+    SAMSP_ShowPlayerCheckpoints(playerid);
+    SAMSP_PlayMapSounds(playerid);
     SAMSP_ShowAllTextDraws(playerid);
     SetTimerEx("SAMSP_ShowAllTextDraws", 400, false, "i", playerid);
     SetTimerEx("SAMSP_ShowAllTextDraws", 1200, false, "i", playerid);
@@ -1311,6 +1563,48 @@ public OnPlayerCommandText(playerid, cmdtext[])
         format(msg, sizeof(msg), "Horário alterado para %02d:%02d.", gHora, gMinuto);
         SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] Horário alterado para %02d:%02d por player %d.", gHora, gMinuto, playerid);
+        return 1;
+    }
+
+    // Reproduzir sons do mapa ou testar um Sound ID (/som [id])
+    if ((!strcmp(cmdtext, "/som", true, 4) && (cmdtext[4] == ' ' || cmdtext[4] == EOS)) ||
+        (!strcmp(cmdtext, "/sound", true, 6) && (cmdtext[6] == ' ' || cmdtext[6] == EOS)))
+    {
+        new pIdx = (!strcmp(cmdtext, "/som", true, 4)) ? 4 : 6;
+        while (cmdtext[pIdx] == ' ') pIdx++;
+        if (cmdtext[pIdx] != EOS)
+        {
+            new sid = strval(cmdtext[pIdx]);
+            PlayerPlaySound(playerid, sid, 0.0, 0.0, 0.0);
+            new msg[96];
+            format(msg, sizeof(msg), "Reproduzindo Sound ID %d.", sid);
+            SendClientMessage(playerid, SAMSP_COR_OK, msg);
+            return 1;
+        }
+        if (gTotalSounds > 0)
+        {
+            SAMSP_PlayMapSounds(playerid);
+            SendClientMessage(playerid, SAMSP_COR_OK, "Sons do mapa reproduzidos.");
+        }
+        else
+        {
+            SendClientMessage(playerid, SAMSP_COR_INFO, "Use /som [soundid] para testar um som (ex: /som 1052).");
+        }
+        return 1;
+    }
+
+    // Avançar ou teleportar para Checkpoints do mapa (/cp)
+    if (!strcmp(cmdtext, "/cp", true))
+    {
+        if (gTotalCheckpoints <= 0)
+        {
+            SendClientMessage(playerid, SAMSP_COR_INFO, "Nenhum checkpoint no mapa atual.");
+            return 1;
+        }
+        new idx = gPlayerRaceCPIdx[playerid];
+        if (!gCheckpoints[idx][cp_isRace]) idx = gPlayerNormalCPIdx[playerid];
+        SetPlayerPos(playerid, gCheckpoints[idx][cp_x], gCheckpoints[idx][cp_y], gCheckpoints[idx][cp_z] + 1.0);
+        SendClientMessage(playerid, SAMSP_COR_OK, "Teleportado para o checkpoint atual.");
         return 1;
     }
 

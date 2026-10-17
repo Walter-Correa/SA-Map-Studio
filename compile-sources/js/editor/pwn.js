@@ -92,7 +92,7 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
+const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 
@@ -172,11 +172,12 @@ function splitHeaderAndFirstItem(between) {
   };
 }
 
-// Lê o texto e devolve {objects, vehicles, actors, removed, labels, pickups, gangZones, textDraws, cameras, spawn, preservedHeader, rawPawn}
+// Lê o texto e devolve {objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, sounds, textDraws, cameras, spawn, preservedHeader, rawPawn}
 export function parsePwn(source) {
   const masked = maskComments(source);
   const objects = [], vehicles = [], actors = [], removed = [];
   const labels = [], pickups = [], gangZones = [], textDraws = [];
+  const checkpoints = [], mapIcons = [], sounds = [];
   const shots = [], paths = [];
   let spawn = null, interior = null;
   const vars = new Map();
@@ -190,6 +191,7 @@ export function parsePwn(source) {
     'SetObjectMaterialText', 'SetDynamicObjectMaterialText', 'SetPlayerObjectMaterialText',
     'MoveObject', 'MoveDynamicObject',
     'AttachObjectToObject', 'AttachDynamicObjectToObject',
+    'AttachObjectToVehicle', 'AttachDynamicObjectToVehicle',
     'ChangeVehicleColor', 'ChangeVehiclePaintjob', 'AddVehicleComponent',
     'ApplyActorAnimation', 'SetActorVirtualWorld', 'SetActorInvulnerable',
     'SetActorHealth', 'SetActorFacingAngle', 'SetActorPos',
@@ -350,8 +352,11 @@ export function parsePwn(source) {
     } else if (fn === 'AttachDynamicObjectToObject' || fn === 'AttachObjectToObject') {
       const target = (a[0] ? vars.get(varKey(a[0])) : null) || last;
       if (target && a.length >= 5) {
+        const parentObj = a[1] ? vars.get(varKey(a[1])) : null;
+        if (parentObj && !parentObj.uid) parentObj.uid = 'obj_p_' + Math.random().toString(36).slice(2, 9);
         target.attach = {
-          to: a[1] ? String(a[1]).trim() : '',
+          to: parentObj ? parentObj.uid : (a[1] ? String(a[1]).trim() : ''),
+          type: 'object',
           ox: num(a[2]),
           oy: num(a[3]),
           oz: num(a[4]),
@@ -361,6 +366,28 @@ export function parsePwn(source) {
           syncRot: a[8] !== undefined ? int(a[8]) : 1,
           comment: inlineComment,
         };
+      }
+    } else if (fn === 'AttachDynamicObjectToVehicle' || fn === 'AttachObjectToVehicle') {
+      const target = (a[0] ? vars.get(varKey(a[0])) : null) || last;
+      const parentVeh = (a[1] ? vars.get(varKey(a[1])) : null) || lastVeh;
+      if (target && a.length >= 5) {
+        if (parentVeh && !parentVeh.uid) parentVeh.uid = 'veh_p_' + Math.random().toString(36).slice(2, 9);
+        const vehTargetId = parentVeh ? parentVeh.uid : (a[1] ? String(a[1]).trim() : '');
+        const existingCount = parentVeh ? objects.filter(o => o.attach && o.attach.to === parentVeh.uid).length : 0;
+        if (existingCount < 25) {
+          target.attach = {
+            to: vehTargetId,
+            type: 'vehicle',
+            ox: num(a[2]),
+            oy: num(a[3]),
+            oz: num(a[4]),
+            rx: a[5] !== undefined ? num(a[5]) : 0,
+            ry: a[6] !== undefined ? num(a[6]) : 0,
+            rz: a[7] !== undefined ? num(a[7]) : 0,
+            syncRot: 1,
+            comment: inlineComment,
+          };
+        }
       }
     } else if (fn === 'CreateActor') {
       if (a.length >= 5) {
@@ -520,6 +547,67 @@ export function parsePwn(source) {
       if (target && colorArg !== undefined) {
         target.color = parseColor(colorArg);
       }
+    } else if (fn === 'SetPlayerCheckpoint' || fn === 'CreateDynamicCP') {
+      const o = fn === 'SetPlayerCheckpoint' ? 1 : 0;
+      if (a.length >= 4 + o) {
+        const cp = {
+          cpKind: 'normal',
+          type: 0,
+          x: num(a[o]), y: num(a[o + 1]), z: num(a[o + 2]),
+          size: num(a[o + 3], 3.0),
+          nextx: num(a[o]), nexty: num(a[o + 1]) + 10, nextz: num(a[o + 2]),
+          comment: inlineComment, preComment, blankLinesBefore,
+        };
+        checkpoints.push(cp);
+        if (variable) vars.set(variable, cp);
+      }
+    } else if (fn === 'SetPlayerRaceCheckpoint' || fn === 'CreateDynamicRaceCP') {
+      const o = fn === 'SetPlayerRaceCheckpoint' ? 1 : 0;
+      if (a.length >= 8 + o) {
+        const cp = {
+          cpKind: 'race',
+          type: Math.max(0, Math.min(4, int(a[o], 0))),
+          x: num(a[o + 1]), y: num(a[o + 2]), z: num(a[o + 3]),
+          nextx: num(a[o + 4]), nexty: num(a[o + 5]), nextz: num(a[o + 6]),
+          size: num(a[o + 7], 4.0),
+          comment: inlineComment, preComment, blankLinesBefore,
+        };
+        checkpoints.push(cp);
+        if (variable) vars.set(variable, cp);
+      }
+    } else if (fn === 'SetPlayerMapIcon' || fn === 'CreateDynamicMapIcon') {
+      if (fn === 'SetPlayerMapIcon' && a.length >= 6) {
+        const mi = {
+          iconid: int(a[1], mapIcons.length),
+          x: num(a[2]), y: num(a[3]), z: num(a[4]),
+          type: Math.max(0, Math.min(63, int(a[5], 0))),
+          color: a[6] !== undefined ? parseColor(a[6]) : 0xFF0000FF,
+          style: a[7] !== undefined ? Math.max(0, Math.min(3, int(a[7], 0))) : 0,
+          comment: inlineComment, preComment, blankLinesBefore,
+        };
+        mapIcons.push(mi);
+        if (variable) vars.set(variable, mi);
+      } else if (fn === 'CreateDynamicMapIcon' && a.length >= 5) {
+        const mi = {
+          iconid: mapIcons.length,
+          x: num(a[0]), y: num(a[1]), z: num(a[2]),
+          type: Math.max(0, Math.min(63, int(a[3], 0))),
+          color: a[4] !== undefined ? parseColor(a[4]) : 0xFF0000FF,
+          style: a[9] !== undefined ? Math.max(0, Math.min(3, int(a[9], 0))) : 0,
+          comment: inlineComment, preComment, blankLinesBefore,
+        };
+        mapIcons.push(mi);
+        if (variable) vars.set(variable, mi);
+      }
+    } else if (fn === 'PlayerPlaySound') {
+      if (a.length >= 5) {
+        const snd = {
+          soundid: int(a[1], 1052),
+          x: num(a[2]), y: num(a[3]), z: num(a[4]),
+          comment: inlineComment, preComment, blankLinesBefore,
+        };
+        sounds.push(snd);
+      }
     } else if (fn === 'TextDrawCreate' || fn === 'CreatePlayerTextDraw') {
       const o = fn === 'CreatePlayerTextDraw' ? 1 : 0;
       if (a.length >= 3 + o) {
@@ -607,7 +695,7 @@ export function parsePwn(source) {
       if (a.length >= 1) interior = int(a[0]);
     }
   }
-  return { objects, vehicles, actors, removed, labels, pickups, gangZones, textDraws, cameras: { shots, paths }, spawn, preservedHeader, rawPawn: source };
+  return { objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, sounds, textDraws, cameras: { shots, paths }, spawn, preservedHeader, rawPawn: source };
 }
 
 // =====================================================================  exportar Pawn
@@ -715,7 +803,10 @@ export function projectCenter(project) {
     ...(project.vehicles || []),
     ...(project.actors || []),
     ...(project.labels || []),
-    ...(project.pickups || [])
+    ...(project.pickups || []),
+    ...(project.checkpoints || []),
+    ...(project.mapIcons || []),
+    ...(project.sounds || []),
   ];
   if (!all.length) return { x: 0, y: 0, z: 0 };
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
@@ -740,11 +831,46 @@ export function exportPawn(project, options = {}) {
   const rems = opt.includeRemoved ? project.removed : [];
   const lines = [];
 
+  const vehUidSet = new Set(vehs.map(v => v.uid).filter(Boolean));
+  const objUidSet = new Set(objs.map(o => o.uid).filter(Boolean));
+  const parentObjUids = new Set(objs.filter(o => o.attach && objUidSet.has(o.attach.to)).map(o => o.attach.to));
+
   const objLines = [];
   const moveFn = opt.objectFn === 'CreateObject' ? 'MoveObject' : 'MoveDynamicObject';
   const attFn = opt.objectFn === 'CreateObject' ? 'AttachObjectToObject' : 'AttachDynamicObjectToObject';
+  const attVehFn = opt.objectFn === 'CreateObject' ? 'AttachObjectToVehicle' : 'AttachDynamicObjectToVehicle';
+
+  const emitObjectBlock = (targetArr, o, varName = 'objectid') => {
+    const hasExtras = (o.materials && o.materials.length) || o.move || o.attach || parentObjUids.has(o.uid);
+    const cmt = commentSuffix(o);
+    if (hasExtras) {
+      targetArr.push(`${varName} = ${objectLine(o, opt, center)};${cmt}`);
+      if (o.materials?.length) targetArr.push(...materialLines(o, opt, varName));
+      if (o.move) {
+        const mx = o.move.targetX - center.x, my = o.move.targetY - center.y, mz = o.move.targetZ - center.z;
+        const moveCmt = o.move.comment ? ` // ${o.move.comment}` : '';
+        targetArr.push(`${moveFn}(${varName}, ${f(mx, d)}, ${f(my, d)}, ${f(mz, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});${moveCmt}`);
+      }
+      if (o.attach) {
+        const attCmt = o.attach.comment ? ` // ${o.attach.comment}` : '';
+        const isVeh = o.attach.type === 'vehicle' || vehUidSet.has(o.attach.to);
+        if (isVeh) {
+          const targetVehVar = vehUidSet.has(o.attach.to) ? 'vehicleid' : (o.attach.to || 'vehicleid');
+          targetArr.push(`${attVehFn}(${varName}, ${targetVehVar}, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)});${attCmt}`);
+        } else {
+          const targetObjVar = objUidSet.has(o.attach.to) ? 'attachtoid' : (o.attach.to || 'attachtoid');
+          targetArr.push(`${attFn}(${varName}, ${targetObjVar}, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)}, ${o.attach.syncRot ?? 1});${attCmt}`);
+        }
+      }
+    } else {
+      targetArr.push(objectLine(o, opt, center) + ';' + cmt);
+    }
+  };
+
   for (let idx = 0; idx < objs.length; idx++) {
     const o = objs[idx];
+    // Objetos acoplados a veículos do projeto são exportados junto ao respectivo veículo
+    if (o.attach && vehUidSet.has(o.attach.to)) continue;
     if (o.blankLinesBefore > 0 && idx > 0) objLines.push('');
     if (o.preComment) {
       for (const pl of o.preComment.split('\n')) {
@@ -752,21 +878,8 @@ export function exportPawn(project, options = {}) {
         if (t) objLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
-    const hasExtras = (o.materials && o.materials.length) || o.move || o.attach;
-    const cmt = commentSuffix(o);
-    if (hasExtras) {
-      objLines.push(`objectid = ${objectLine(o, opt, center)};${cmt}`);
-      if (o.materials?.length) objLines.push(...materialLines(o, opt, 'objectid'));
-      if (o.move) {
-        const mx = o.move.targetX - center.x, my = o.move.targetY - center.y, mz = o.move.targetZ - center.z;
-        const moveCmt = o.move.comment ? ` // ${o.move.comment}` : '';
-        objLines.push(`${moveFn}(objectid, ${f(mx, d)}, ${f(my, d)}, ${f(mz, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});${moveCmt}`);
-      }
-      if (o.attach) {
-        const attCmt = o.attach.comment ? ` // ${o.attach.comment}` : '';
-        objLines.push(`${attFn}(objectid, ${o.attach.to || 'attachtoid'}, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)}, ${o.attach.syncRot ?? 1});${attCmt}`);
-      }
-    } else objLines.push(objectLine(o, opt, center) + ';' + cmt);
+    const varName = parentObjUids.has(o.uid) ? 'attachtoid' : 'objectid';
+    emitObjectBlock(objLines, o, varName);
   }
 
   const vehLines = [];
@@ -779,12 +892,16 @@ export function exportPawn(project, options = {}) {
         if (t) vehLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
-    const hasMods = (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0);
+    const attachedToVeh = objs.filter(o => o.attach && o.attach.to === v.uid).slice(0, 25);
+    const hasMods = (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || attachedToVeh.length > 0;
     const cmt = commentSuffix(v);
     if (hasMods) {
       vehLines.push(`vehicleid = ${vehicleLine(v, opt, center)}${cmt}`);
       if (v.paintjob !== undefined && v.paintjob >= 0) vehLines.push(`ChangeVehiclePaintjob(vehicleid, ${v.paintjob});`);
       for (const comp of (v.components || [])) vehLines.push(`AddVehicleComponent(vehicleid, ${comp});`);
+      for (const ao of attachedToVeh) {
+        emitObjectBlock(vehLines, ao, 'objectid');
+      }
     } else {
       vehLines.push(vehicleLine(v, opt, center) + cmt);
     }
@@ -890,6 +1007,60 @@ export function exportPawn(project, options = {}) {
     gangZoneLines.push(`GangZoneShowForAll(gangzoneid, ${colorHex});`);
   }
 
+  const checkpointLines = [];
+  const checkpoints = project.checkpoints || [];
+  for (let idx = 0; idx < checkpoints.length; idx++) {
+    const cp = checkpoints[idx];
+    if (cp.blankLinesBefore > 0 && idx > 0) checkpointLines.push('');
+    if (cp.preComment) {
+      for (const pl of cp.preComment.split('\n')) {
+        const t = pl.trim();
+        if (t) checkpointLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+      }
+    }
+    const cx = cp.x - center.x, cy = cp.y - center.y, cz = cp.z - center.z;
+    const cmt = commentSuffix(cp);
+    if (cp.cpKind === 'race') {
+      const nx = (cp.nextx ?? cp.x) - center.x, ny = (cp.nexty ?? (cp.y + 10)) - center.y, nz = (cp.nextz ?? cp.z) - center.z;
+      checkpointLines.push(`SetPlayerRaceCheckpoint(playerid, ${cp.type ?? 0}, ${formatCoord(cx)}, ${formatCoord(cy)}, ${formatCoord(cz)}, ${formatCoord(nx)}, ${formatCoord(ny)}, ${formatCoord(nz)}, ${formatCoord(cp.size || 4.0)});${cmt}`);
+    } else {
+      checkpointLines.push(`SetPlayerCheckpoint(playerid, ${formatCoord(cx)}, ${formatCoord(cy)}, ${formatCoord(cz)}, ${formatCoord(cp.size || 3.0)});${cmt}`);
+    }
+  }
+
+  const mapIconLines = [];
+  const mapIcons = project.mapIcons || [];
+  for (let idx = 0; idx < mapIcons.length; idx++) {
+    const mi = mapIcons[idx];
+    if (mi.blankLinesBefore > 0 && idx > 0) mapIconLines.push('');
+    if (mi.preComment) {
+      for (const pl of mi.preComment.split('\n')) {
+        const t = pl.trim();
+        if (t) mapIconLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+      }
+    }
+    const mx = mi.x - center.x, my = mi.y - center.y, mz = mi.z - center.z;
+    const colorHex = '0x' + (Number(mi.color ?? 0xFF0000FF) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    const cmt = commentSuffix(mi);
+    mapIconLines.push(`SetPlayerMapIcon(playerid, ${mi.iconid !== undefined ? mi.iconid : idx}, ${formatCoord(mx)}, ${formatCoord(my)}, ${formatCoord(mz)}, ${mi.type ?? 0}, ${colorHex}, ${mi.style ?? 0});${cmt}`);
+  }
+
+  const soundLines = [];
+  const sounds = project.sounds || [];
+  for (let idx = 0; idx < sounds.length; idx++) {
+    const s = sounds[idx];
+    if (s.blankLinesBefore > 0 && idx > 0) soundLines.push('');
+    if (s.preComment) {
+      for (const pl of s.preComment.split('\n')) {
+        const t = pl.trim();
+        if (t) soundLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+      }
+    }
+    const sx = s.x - center.x, sy = s.y - center.y, sz = s.z - center.z;
+    const cmt = commentSuffix(s);
+    soundLines.push(`PlayerPlaySound(playerid, ${s.soundid ?? 1052}, ${formatCoord(sx)}, ${formatCoord(sy)}, ${formatCoord(sz)});${cmt}`);
+  }
+
   const textDrawLines = [];
   const textDraws = project.textDraws || [];
   for (let idx = 0; idx < textDraws.length; idx++) {
@@ -957,7 +1128,8 @@ export function exportPawn(project, options = {}) {
 
   const cams = opt.includeCameras ? cameraFunctions(project.cameras) : { code: '', usage: [] };
   const needObjId = objs.some(o => (o.materials && o.materials.length) || o.move || o.attach);
-  const needVehId = vehs.some(v => (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0));
+  const needAttachToId = parentObjUids.size > 0;
+  const needVehId = vehs.some(v => (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || objs.some(o => o.attach && o.attach.to === v.uid));
   const needActorId = actorLines.length > 0;
   const needGzId = gangZoneLines.length > 0;
 
@@ -998,26 +1170,18 @@ export function exportPawn(project, options = {}) {
       lines.push('for (new i = 0; i < sizeof(MapObjects); i++) {');
       lines.push(`    ${opt.objectFn === 'CreateObject' ? 'CreateObject' : 'CreateDynamicObject'}(floatround(MapObjects[i][0]), MapObjects[i][1], MapObjects[i][2], MapObjects[i][3], MapObjects[i][4], MapObjects[i][5], MapObjects[i][6]);`);
       lines.push('}');
-      const extraObjs = objs.filter(o => (o.materials && o.materials.length) || o.move || o.attach);
+      const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach) && !(o.attach && vehUidSet.has(o.attach.to)));
       if (extraObjs.length) {
         lines.push('', '// Extras dos objetos (texturas, movimentação e anexação):');
         if (needObjId) lines.push('new objectid;');
+        if (needAttachToId) lines.push('new attachtoid;');
         for (const o of extraObjs) {
-          lines.push(`objectid = ${objectLine(o, opt, center)};${commentSuffix(o)}`);
-          if (o.materials?.length) lines.push(...materialLines(o, opt, 'objectid'));
-          if (o.move) {
-            const mx = o.move.targetX - center.x, my = o.move.targetY - center.y, mz = o.move.targetZ - center.z;
-            const moveCmt = o.move.comment ? ` // ${o.move.comment}` : '';
-            lines.push(`${moveFn}(objectid, ${f(mx, d)}, ${f(my, d)}, ${f(mz, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});${moveCmt}`);
-          }
-          if (o.attach) {
-            const attCmt = o.attach.comment ? ` // ${o.attach.comment}` : '';
-            lines.push(`${attFn}(objectid, ${o.attach.to || 'attachtoid'}, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)}, ${o.attach.syncRot ?? 1});${attCmt}`);
-          }
+          emitObjectBlock(lines, o, parentObjUids.has(o.uid) ? 'attachtoid' : 'objectid');
         }
       }
     } else {
       if (needObjId) lines.push('new objectid;');
+      if (needAttachToId) lines.push('new attachtoid;');
       lines.push(...objLines);
     }
     if (needVehId) lines.push('new vehicleid;');
@@ -1028,6 +1192,9 @@ export function exportPawn(project, options = {}) {
     if (labelLines.length) lines.push('', '// Textos 3D:', ...labelLines);
     if (pickupLines.length) lines.push('', '// Pickups:', ...pickupLines);
     if (gangZoneLines.length) lines.push('', '// GangZones:', ...gangZoneLines);
+    if (checkpointLines.length) lines.push('', '// Checkpoints:', ...checkpointLines);
+    if (mapIconLines.length) lines.push('', '// MapIcons:', ...mapIconLines);
+    if (soundLines.length) lines.push('', '// Sons (PlayerPlaySound):', ...soundLines);
     if (textDrawLines.length) lines.push('', '// TextDraws:', ...textDrawLines);
     if (remLines.length) lines.push('', '// Coloque em OnPlayerConnect (Objetos removidos):', ...remLines);
     if (cams.code) lines.push('', cams.code);
@@ -1041,8 +1208,8 @@ export function exportPawn(project, options = {}) {
   lines.push(`// Mapa: ${project.name}`);
   lines.push(`// Gerado pelo SA Map Studio em ${date}`);
   lines.push(`// Objetos: ${objs.length}   Veículos: ${vehs.length}   Actors: ${actors.length}   Objetos removidos: ${rems.length}`);
-  if (labels.length || pickups.length || gangZones.length || textDraws.length) {
-    lines.push(`// Textos 3D: ${labels.length}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   TextDraws: ${textDraws.length}`);
+  if (labels.length || pickups.length || gangZones.length || textDraws.length || checkpoints.length || mapIcons.length || sounds.length) {
+    lines.push(`// Textos 3D: ${labels.length}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   Checkpoints: ${checkpoints.length}   MapIcons: ${mapIcons.length}   Sons: ${sounds.length}   TextDraws: ${textDraws.length}`);
   }
   lines.push('// ----------------------------------------------------------------');
   lines.push('// Como usar:');
@@ -1062,6 +1229,7 @@ export function exportPawn(project, options = {}) {
   lines.push(`stock Mapa_${id}_Carregar()`);
   lines.push('{');
   if (needObjId) lines.push('    new objectid;');
+  if (needAttachToId) lines.push('    new attachtoid;');
   if (needVehId) lines.push('    new vehicleid;');
   if (needActorId) lines.push('    new actorid;');
   if (needGzId) lines.push('    new gangzoneid;');
@@ -1072,22 +1240,14 @@ export function exportPawn(project, options = {}) {
     lines.push('    {');
     lines.push(`        ${opt.objectFn === 'CreateObject' ? 'CreateObject' : 'CreateDynamicObject'}(floatround(MapObjects[i][0]), MapObjects[i][1], MapObjects[i][2], MapObjects[i][3], MapObjects[i][4], MapObjects[i][5], MapObjects[i][6]);`);
     lines.push('    }');
-    const extraObjs = objs.filter(o => (o.materials && o.materials.length) || o.move || o.attach);
+    const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach) && !(o.attach && vehUidSet.has(o.attach.to)));
     if (extraObjs.length) {
       lines.push('    // Extras dos objetos (texturas, movimentação e anexação):');
+      const tmp = [];
       for (const o of extraObjs) {
-        lines.push(`    objectid = ${objectLine(o, opt, center)};${commentSuffix(o)}`);
-        if (o.materials?.length) for (const ml of materialLines(o, opt, 'objectid')) lines.push('    ' + ml);
-        if (o.move) {
-          const mx = o.move.targetX - center.x, my = o.move.targetY - center.y, mz = o.move.targetZ - center.z;
-          const moveCmt = o.move.comment ? ` // ${o.move.comment}` : '';
-          lines.push(`    ${moveFn}(objectid, ${f(mx, d)}, ${f(my, d)}, ${f(mz, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});${moveCmt}`);
-        }
-        if (o.attach) {
-          const attCmt = o.attach.comment ? ` // ${o.attach.comment}` : '';
-          lines.push(`    ${attFn}(objectid, ${o.attach.to || 'attachtoid'}, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)}, ${o.attach.syncRot ?? 1});${attCmt}`);
-        }
+        emitObjectBlock(tmp, o, parentObjUids.has(o.uid) ? 'attachtoid' : 'objectid');
       }
+      for (const l of tmp) lines.push(indent(l));
     }
   } else {
     for (const l of objLines) lines.push(indent(l));
@@ -1098,6 +1258,9 @@ export function exportPawn(project, options = {}) {
   if (labelLines.length) { lines.push('', '    // Textos 3D:'); for (const l of labelLines) lines.push(indent(l)); }
   if (pickupLines.length) { lines.push('', '    // Pickups:'); for (const l of pickupLines) lines.push(indent(l)); }
   if (gangZoneLines.length) { lines.push('', '    // GangZones:'); for (const l of gangZoneLines) lines.push(indent(l)); }
+  if (checkpointLines.length) { lines.push('', '    // Checkpoints:'); for (const l of checkpointLines) lines.push(indent(l)); }
+  if (mapIconLines.length) { lines.push('', '    // MapIcons:'); for (const l of mapIconLines) lines.push(indent(l)); }
+  if (soundLines.length) { lines.push('', '    // Sons (PlayerPlaySound):'); for (const l of soundLines) lines.push(indent(l)); }
   if (textDrawLines.length) { lines.push('', '    // TextDraws:'); for (const l of textDrawLines) lines.push(indent(l)); }
   lines.push('    return 1;');
   lines.push('}');

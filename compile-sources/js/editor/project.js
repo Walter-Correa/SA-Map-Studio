@@ -33,9 +33,11 @@ export function makeObject(data) {
     } : null,
     attach: data.attach ? {
       to: data.attach.to || '',
+      type: data.attach.type || 'object',
       ox: +data.attach.ox || 0, oy: +data.attach.oy || 0, oz: +data.attach.oz || 0,
       rx: +data.attach.rx || 0, ry: +data.attach.ry || 0, rz: +data.attach.rz || 0,
       syncRot: data.attach.syncRot ?? 1,
+      comment: data.attach.comment ? String(data.attach.comment) : '',
     } : null,
   };
 }
@@ -179,7 +181,63 @@ export function makeTextDraw(data) {
   };
 }
 
-const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws'];
+export function makeCheckpoint(data) {
+  const isRace = Boolean(data.isRace);
+  const x = +data.x || 0, y = +data.y || 0, z = +data.z || 0;
+  return {
+    uid: data.uid || newUid(),
+    isRace,
+    type: Math.max(0, Math.min(4, data.type !== undefined ? (data.type | 0) : 0)),
+    x, y, z,
+    nextx: data.nextx !== undefined ? +data.nextx : (x + 15.0),
+    nexty: data.nexty !== undefined ? +data.nexty : y,
+    nextz: data.nextz !== undefined ? +data.nextz : z,
+    size: Math.max(0.5, +data.size || (isRace ? 6.0 : 4.0)),
+    world: data.world ?? -1,
+    interior: data.interior ?? -1,
+    streamDist: +data.streamDist || 200.0,
+    comment: data.comment ? String(data.comment) : '',
+    preComment: data.preComment ? String(data.preComment) : '',
+    blankLinesBefore: +data.blankLinesBefore || 0,
+    projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
+  };
+}
+
+export function makeMapIcon(data) {
+  return {
+    uid: data.uid || newUid(),
+    name: data.name ? String(data.name) : '',
+    iconid: Math.max(0, Math.min(99, data.iconid !== undefined ? (data.iconid | 0) : 0)),
+    markertype: Math.max(0, Math.min(63, data.markertype !== undefined ? (data.markertype | 0) : 0)),
+    x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
+    color: data.color !== undefined ? (data.color | 0) : 0xFF0000FF,
+    style: Math.max(0, Math.min(3, data.style !== undefined ? (data.style | 0) : 0)),
+    world: data.world ?? -1,
+    interior: data.interior ?? -1,
+    streamDist: +data.streamDist || 200.0,
+    comment: data.comment ? String(data.comment) : '',
+    preComment: data.preComment ? String(data.preComment) : '',
+    blankLinesBefore: +data.blankLinesBefore || 0,
+    projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
+  };
+}
+
+export function makeSound(data) {
+  return {
+    uid: data.uid || newUid(),
+    soundid: data.soundid !== undefined ? (data.soundid | 0) : 1058,
+    x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
+    comment: data.comment ? String(data.comment) : '',
+    preComment: data.preComment ? String(data.preComment) : '',
+    blankLinesBefore: +data.blankLinesBefore || 0,
+    projectId: data.projectId || '',
+    raw: data.raw ? { ...data.raw } : null,
+  };
+}
+
+const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws', 'checkpoints', 'mapIcons', 'sounds'];
 const MAKERS = {
   objects: makeObject,
   vehicles: makeVehicle,
@@ -189,6 +247,9 @@ const MAKERS = {
   pickups: makePickup,
   gangZones: makeGangZone,
   textDraws: makeTextDraw,
+  checkpoints: makeCheckpoint,
+  mapIcons: makeMapIcon,
+  sounds: makeSound,
 };
 
 export class Project {
@@ -202,6 +263,9 @@ export class Project {
     this.pickups = [];
     this.gangZones = [];
     this.textDraws = [];
+    this.checkpoints = [];
+    this.mapIcons = [];
+    this.sounds = [];
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
@@ -228,7 +292,8 @@ export class Project {
       pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '',
       camera: this.camera, cameras: this.cameras,
       objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,
-      labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws
+      labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws,
+      checkpoints: this.checkpoints, mapIcons: this.mapIcons, sounds: this.sounds
     };
   }
 
