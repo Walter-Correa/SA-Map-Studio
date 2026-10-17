@@ -370,7 +370,15 @@ export class Viewport {
     this.timer.connect(document);
     this.fps = 0; this._fpsT = 0; this._fpsN = 0;
     this.renderRequested = true;
-    new ResizeObserver(() => this.resize()).observe(container);
+    let resizeRaf = 0;
+    this._ro = new ResizeObserver(() => {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        this.resize();
+      });
+    });
+    this._ro.observe(container);
     this.resize();
 
     let lastRenderTime = 0;
@@ -605,12 +613,18 @@ export class Viewport {
     }
   }
 
+  get dom() { return this.container; }
+
   resize() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
-    this.renderer.setSize(w, h);
+    if (this._lastW === w && this._lastH === h) return;
+    this._lastW = w;
+    this._lastH = h;
+    this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.renderRequested = true;
   }
 
   onFrame(cb) { this.frameCallbacks.push(cb); }

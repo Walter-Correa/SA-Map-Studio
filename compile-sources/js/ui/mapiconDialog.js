@@ -99,6 +99,10 @@ function setupDialogEvents() {
   if (addBtn) {
     addBtn.onclick = () => {
       const pos = app.editor ? app.editor.pointInFront(12) : { x: 0, y: 0, z: 15 };
+      if (app.editor?.getSurfaceZAt) {
+        const gz = app.editor.getSurfaceZAt(pos.x, pos.y, Math.max(pos.z + 50, 100));
+        if (gz !== null) pos.z = gz;
+      }
       const item = makeMapIcon({
         type: defaultMarkerType,
         x: Math.round(pos.x * 100) / 100,
@@ -225,6 +229,13 @@ function setupDialogEvents() {
     btnFocus3D.onclick = () => {
       const m = getSelectedMapIcon();
       if (!m) return;
+      if (app.editor?.getSurfaceZAt) {
+        const gz = app.editor.getSurfaceZAt(m.x, m.y);
+        if (gz !== null && (m.z === 0 || m.z < gz - 2 || isNaN(m.z))) {
+          m.z = Math.round(gz * 100) / 100;
+          app.editor?.syncAll();
+        }
+      }
       closeMapIconDialog();
       app.editor.select([m.uid]);
       app.editor.focusSelection();
@@ -236,7 +247,7 @@ function setupDialogEvents() {
     btnDel.onclick = () => {
       const m = getSelectedMapIcon();
       if (!m) return;
-      app.project.removeItems('Apagar MapIcon', [m.uid]);
+      app.project.deleteItems('Apagar MapIcon', [m.uid]);
       selectedUid = app.project.mapIcons?.[0]?.uid || null;
       app.editor?.syncAll();
       updateSidebarList();
@@ -287,10 +298,10 @@ function setupCanvasEvents() {
         return;
       }
 
-      // Clicou em ponto vazio do mapa: cria um novo MapIcon naquela coordenada X/Y
       let zGuess = 15.0;
-      if (app.editor?.camera) {
-        zGuess = Math.round(app.editor.camera.position.y * 10) / 10;
+      if (app.editor?.getSurfaceZAt) {
+        const gz = app.editor.getSurfaceZAt(w.x, w.y);
+        if (gz !== null) zGuess = Math.round(gz * 100) / 100;
       }
       const item = makeMapIcon({
         type: defaultMarkerType,

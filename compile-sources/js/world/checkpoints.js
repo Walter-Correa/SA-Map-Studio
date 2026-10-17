@@ -3,12 +3,53 @@
 import * as THREE from 'three';
 
 export const RACE_CHECKPOINT_TYPES = [
-  { id: 0, name: '0 - Normal (Cilindro com Seta)', desc: 'Cilindro vermelho no solo com seta apontando para o próximo ponto (nextx, nexty, nextz).' },
-  { id: 1, name: '1 - Chegada / Finish (Cilindro Final)', desc: 'Cilindro vermelho de chegada no solo com ícone de bandeira quadriculada.' },
+  { id: 0, name: '0 - Normal (Cilindro com Seta)', desc: 'Cilindro vermelho no solo com seta apontando para o próximo ponto.' },
+  { id: 1, name: '1 - Chegada / Finish (Cilindro Final)', desc: 'Cilindro vermelho de chegada no solo com interior de bandeira quadriculada.' },
   { id: 2, name: '2 - Sem Seta (Apenas Cilindro)', desc: 'Cilindro vermelho no solo parado, sem seta direcional no interior.' },
-  { id: 3, name: '3 - Aéreo Normal (Anel com Seta)', desc: 'Anel circular vermelho suspenso no ar (para aeronaves) com seta direcional.' },
-  { id: 4, name: '4 - Aéreo Chegada (Anel Final)', desc: 'Anel circular vermelho de chegada suspenso no ar.' },
+  { id: 3, name: '3 - Aéreo Normal (Argola com Seta)', desc: 'Argola/anel circular vermelho suspenso no ar com seta direcional para o próximo ponto.' },
+  { id: 4, name: '4 - Aéreo Chegada (Argola Final)', desc: 'Argola/anel circular vermelho de chegada suspenso no ar com interior quadriculado.' },
 ];
+
+let checkeredTexture = null;
+function getCheckeredTexture() {
+  if (checkeredTexture) return checkeredTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const size = 16;
+  for (let y = 0; y < 128; y += size) {
+    for (let x = 0; x < 128; x += size) {
+      ctx.fillStyle = ((x / size + y / size) % 2 === 0) ? '#ffffff' : '#181818';
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+  checkeredTexture = new THREE.CanvasTexture(canvas);
+  checkeredTexture.wrapS = THREE.RepeatWrapping;
+  checkeredTexture.wrapT = THREE.RepeatWrapping;
+  checkeredTexture.repeat.set(4, 2);
+  return checkeredTexture;
+}
+
+export function updateRaceCheckpointsChain(checkpoints = []) {
+  if (!Array.isArray(checkpoints)) return;
+  const raceCps = checkpoints.filter(c => c && c.isRace);
+  for (let i = 0; i < raceCps.length; i++) {
+    const cp = raceCps[i];
+    if (i < raceCps.length - 1) {
+      const nextCp = raceCps[i + 1];
+      cp.hasNext = true;
+      cp.nextx = nextCp.x;
+      cp.nexty = nextCp.y;
+      cp.nextz = nextCp.z;
+    } else {
+      cp.hasNext = false;
+      cp.nextx = cp.x;
+      cp.nexty = cp.y;
+      cp.nextz = cp.z;
+    }
+  }
+}
 
 export function createCheckpointNode(cp) {
   const group = new THREE.Group();
@@ -17,8 +58,9 @@ export function createCheckpointNode(cp) {
   const isRace = Boolean(cp.isRace);
   const rType = Math.max(0, Math.min(4, cp.type | 0));
   const isAirRing = isRace && (rType === 3 || rType === 4);
+  const hasNext = Boolean(cp.hasNext);
 
-  // Direção para nextx, nexty, nextz (para tipos com seta ou anel aéreo)
+  // Direção para o próximo ponto (nextx, nexty, nextz)
   const dx = (cp.nextx ?? (cp.x + 15)) - (cp.x || 0);
   const dy = (cp.nexty ?? (cp.y || 0)) - (cp.y || 0);
   const dz = (cp.nextz ?? (cp.z || 0)) - (cp.z || 0);
@@ -27,52 +69,61 @@ export function createCheckpointNode(cp) {
   dir.normalize();
 
   if (isAirRing) {
-    // Anel aéreo (Torus) orientado na direção do próximo ponto
+    // Argola aérea (Torus) suspensa no ar
     const ringHolder = new THREE.Group();
-    const tube = Math.max(0.18, radius * 0.09);
-    const torusGeo = new THREE.TorusGeometry(radius, tube, 14, 36);
+    const tube = Math.max(0.2, radius * 0.095);
+    const torusGeo = new THREE.TorusGeometry(radius, tube, 16, 40);
     const torusMat = new THREE.MeshBasicMaterial({
-      color: rType === 4 ? 0xff2244 : 0xff1111,
+      color: rType === 4 ? 0xff2233 : 0xff1111,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.78,
       side: THREE.DoubleSide,
     });
     const torusMesh = new THREE.Mesh(torusGeo, torusMat);
     ringHolder.add(torusMesh);
 
-    // Esfera invisível central para facilitar seleção por clique no ar
-    const pickGeo = new THREE.SphereGeometry(Math.max(1.2, radius * 0.85), 12, 12);
+    // Esfera central para clique e seleção
+    const pickGeo = new THREE.SphereGeometry(Math.max(1.2, radius * 0.9), 12, 12);
     const pickMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false });
     const pickMesh = new THREE.Mesh(pickGeo, pickMat);
     ringHolder.add(pickMesh);
 
     if (rType === 3) {
-      const arrow = buildDirectionArrow(radius * 0.55, 0xffaa00);
-      // Aponta no eixo +Z do ringHolder (que olha para dir)
-      arrow.rotation.x = Math.PI / 2;
-      ringHolder.add(arrow);
-    } else {
-      // Centro de chegada
-      const coreGeo = new THREE.OctahedronGeometry(Math.max(0.5, radius * 0.28), 0);
-      const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: false, transparent: true, opacity: 0.85 });
-      ringHolder.add(new THREE.Mesh(coreGeo, coreMat));
+      // Tipo 3: Argola normal com seta 3D APENAS se houver próximo checkpoint na ordem
+      if (hasNext) {
+        const arrow = buildDirectionArrow(radius * 0.65, 0xffbb00);
+        arrow.rotation.x = Math.PI / 2;
+        ringHolder.add(arrow);
+      }
+    } else if (rType === 4) {
+      // Tipo 4: Argola de chegada aérea preenchida com bandeira quadriculada
+      const discGeo = new THREE.CircleGeometry(radius * 0.98, 36);
+      const discMat = new THREE.MeshBasicMaterial({
+        map: getCheckeredTexture(),
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.95,
+      });
+      ringHolder.add(new THREE.Mesh(discGeo, discMat));
     }
 
-    const lookMat = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
-    ringHolder.quaternion.setFromRotationMatrix(lookMat);
+    if (hasNext) {
+      const lookMat = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
+      ringHolder.quaternion.setFromRotationMatrix(lookMat);
+    }
     group.add(ringHolder);
   } else {
     // Cilindro vertical no solo (Checkpoint comum ou Race Checkpoint 0, 1, 2)
-    const height = isRace ? Math.max(3.5, radius * 1.4) : Math.max(2.6, radius * 1.1);
+    // Altura proporcional ao diâmetro do checkpoint
+    const height = isRace ? Math.max(3.5, radius * 1.5) : Math.max(2.4, Math.min(18.0, radius * 1.6));
     const cylGeo = new THREE.CylinderGeometry(radius, radius, height, 32, 1, true);
-    // CylinderGeometry no Three.js é alinhado ao eixo Y; giramos X em 90 graus para alinhar ao eixo Z do GTA
     cylGeo.rotateX(Math.PI / 2);
     cylGeo.translate(0, 0, height * 0.5);
 
     const cylMat = new THREE.MeshBasicMaterial({
-      color: isRace ? 0xff1818 : 0xe61919,
+      color: isRace ? 0xff1a1a : 0xe62222,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.44,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
@@ -91,7 +142,7 @@ export function createCheckpointNode(cp) {
     });
     group.add(new THREE.Mesh(ringGeo, ringMat));
 
-    // Cilindro fechado invisível para facilitar o clique (raycast)
+    // Cilindro invisível para raycast
     const pickGeo = new THREE.CylinderGeometry(radius, radius, height, 16, 1, false);
     pickGeo.rotateX(Math.PI / 2);
     pickGeo.translate(0, 0, height * 0.5);
@@ -99,18 +150,30 @@ export function createCheckpointNode(cp) {
     group.add(new THREE.Mesh(pickGeo, pickMat));
 
     if (isRace && rType === 0) {
-      const arrow = buildDirectionArrow(Math.min(2.8, Math.max(1.2, radius * 0.65)), 0xffcc00);
-      arrow.position.set(0, 0, Math.min(2.2, height * 0.45));
-      const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
-      arrow.rotation.z = yaw;
-      group.add(arrow);
+      // Tipo 0: Seta direcional amarela no interior apontando para o próximo checkpoint
+      // Apenas se houver um próximo checkpoint na sequência
+      if (hasNext) {
+        const arrow = buildDirectionArrow(Math.min(3.2, Math.max(1.3, radius * 0.68)), 0xffcc00);
+        arrow.position.set(0, 0, Math.min(2.4, height * 0.45));
+        const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
+        arrow.rotation.z = yaw;
+        group.add(arrow);
+      }
     } else if (isRace && rType === 1) {
-      const finish = new THREE.Mesh(
-        new THREE.OctahedronGeometry(Math.min(1.4, Math.max(0.5, radius * 0.32)), 0),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.88 })
-      );
-      finish.position.set(0, 0, Math.min(2.2, height * 0.45));
-      group.add(finish);
+      // Tipo 1: Cilindro de chegada / Finish com textura de bandeira quadriculada no interior
+      const flagCylGeo = new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, height * 0.55, 24, 1, true);
+      flagCylGeo.rotateX(Math.PI / 2);
+      flagCylGeo.translate(0, 0, height * 0.45);
+      const flagMat = new THREE.MeshBasicMaterial({
+        map: getCheckeredTexture(),
+        side: THREE.DoubleSide,
+      });
+      group.add(new THREE.Mesh(flagCylGeo, flagMat));
+
+      // Disco horizontal com quadriculado no topo do núcleo
+      const discGeo = new THREE.CircleGeometry(radius * 0.72, 24);
+      discGeo.translate(0, 0, height * 0.72);
+      group.add(new THREE.Mesh(discGeo, flagMat));
     }
   }
 
@@ -121,11 +184,11 @@ export function createCheckpointNode(cp) {
 
 function buildDirectionArrow(len = 1.8, colorHex = 0xffcc00) {
   const arrowGroup = new THREE.Group();
-  const shaftLen = len * 0.58;
-  const headLen = len * 0.42;
-  const shaftRadius = Math.max(0.08, len * 0.09);
-  const headRadius = Math.max(0.22, len * 0.24);
-  const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9 });
+  const shaftLen = len * 0.56;
+  const headLen = len * 0.44;
+  const shaftRadius = Math.max(0.09, len * 0.095);
+  const headRadius = Math.max(0.24, len * 0.26);
+  const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.95 });
 
   // Aponta para +Y por padrão
   const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLen, 12);

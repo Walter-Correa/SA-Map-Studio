@@ -65,13 +65,10 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
   background: var(--asphalt-700);
   border-bottom: 1px solid var(--line);
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
+  overflow: visible !important;
   position: relative;
   z-index: 100;
 }
-.topbar::-webkit-scrollbar { display: none; }
 .sidebar { background: var(--asphalt-700); min-height: 0; display: flex; flex-direction: column; position: relative; overflow-x: hidden !important; }
 .sidebar.left { border-right: 1px solid var(--line); grid-column: 1; grid-row: 2; width: var(--left-sb-width); overflow-x: hidden !important; }
 .sidebar.right { border-left: 1px solid var(--line); overflow-y: auto; overflow-x: hidden !important; grid-column: 3; grid-row: 2; width: var(--right-sb-width); }
@@ -528,20 +525,23 @@ legend.sub { margin-top: 8px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* ---------------------------------------------------------------- telas menores / responsividade */
-@media (max-width: 1720px) {
+@media (max-width: 1840px) {
   .lbl2 { display: none; }
 }
-@media (max-width: 1320px) {
+@media (max-width: 1450px) {
   .lbl { display: none; }
+  .lbl-seg { display: none; }
   .lbl-export { display: none; }
-  .project-name { max-width: 115px; }
+  .project-name { max-width: 110px; }
 }
-@media (max-width: 1180px) {
+@media (max-width: 1200px) {
   .lbl-keep { display: none; }
   .lbl-test { display: none; }
-  .btn { padding: 0 7px; font-size: 12.5px; }
-  .seg-btn { padding: 0 6px; font-size: 11.5px; }
-  .project-name { max-width: 95px; font-size: 12.5px; }
+  .brand span { display: none; }
+  .save-state { display: none; }
+  .btn { padding: 0 6px; font-size: 12.5px; }
+  .seg-btn { padding: 0 5px; font-size: 11.5px; }
+  .project-name { max-width: 90px; font-size: 12px; }
 }
 
 /* Botão flutuante nas setas do Gizmo para alternar Mover / Girar */
@@ -576,6 +576,34 @@ legend.sub { margin-top: 8px; }
   height: 13px;
 }
 
+/* Diálogo de Sons (PlayerPlaySound) - cabeçalho e filtros fixos, apenas a lista scrolla */
+#dlgSounds {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 16px 20px !important;
+}
+#dlgSounds[open] {
+  display: flex !important;
+}
+#dlgSounds .dialog-head {
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+#dlgSounds .snd-top-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+#dlgSounds #sndList {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
 /* Destaque da categoria ativa no diálogo de Sons */
 .snd-cat-btn.active {
   background: var(--sodium, #f0a630) !important;
@@ -585,16 +613,14 @@ legend.sub { margin-top: 8px; }
 }
 @media (max-width: 1050px) {
   .app { --left-sb-width: 260px; --right-sb-width: 270px; }
-  .brand span { display: none; }
-  .save-state { display: none; }
-  .tools .btn, .actions .btn { padding: 0 5px; }
+  .tools .btn, .actions .btn { padding: 0 4px; }
   .btn { height: 30px; }
-  .project-name { max-width: 80px; }
+  .project-name { max-width: 75px; }
 }
 @media (max-width: 920px) {
-  .seg-btn { padding: 0 4px; }
+  .seg-btn { padding: 0 3px; }
   .tools, .actions { gap: 2px; }
-  .project-box { padding-left: 3px; gap: 2px; }
+  .project-box { padding-left: 2px; gap: 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

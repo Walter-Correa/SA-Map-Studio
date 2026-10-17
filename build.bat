@@ -353,6 +353,16 @@ if defined RADARSRC (
     copy /y "%RADARSRC%" "%BASE%\data\cache\radarmap.png" >nul
 )
 
+rem ---------------- Sons (PlayerPlaySound)
+set "SOUNDSRC="
+if exist "%SRC%compile-sources\cache\sounds" set "SOUNDSRC=%SRC%compile-sources\cache\sounds"
+if not defined SOUNDSRC if exist "%BASE%\data\cache\sounds" set "SOUNDSRC=%BASE%\data\cache\sounds"
+if not defined SOUNDSRC if exist "%OUT%\data\cache\sounds" set "SOUNDSRC=%OUT%\data\cache\sounds"
+if defined SOUNDSRC (
+    if not exist "%BASE%\data\cache\sounds" mkdir "%BASE%\data\cache\sounds"
+    robocopy "%SOUNDSRC%" "%BASE%\data\cache\sounds" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+)
+
 rem ---------------- Modelos 3D
 rem Modelos 3D (cj.dff, cj.txd) sao empacotados internamente dentro de system\models
 if exist "%BASE%\models" rmdir /s /q "%BASE%\models" 2>nul

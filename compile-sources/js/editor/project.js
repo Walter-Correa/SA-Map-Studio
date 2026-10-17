@@ -443,6 +443,10 @@ export class Project {
     });
   }
 
+  removeItems(label, uids) {
+    return this.deleteItems(label, uids);
+  }
+
   updateItems(label, uids, mutate) {
     this.transact(label, uids, () => {
       for (const u of uids) { const o = this.find(u); if (o) mutate(o); }

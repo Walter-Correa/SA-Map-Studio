@@ -890,12 +890,14 @@ function setupOutline() {
   const btnClear = $('#btnClearProject');
   if (btnClear) {
     btnClear.onclick = () => {
-      const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0) +
+      const total = (app.project.objects?.length || 0) + (app.project.vehicles?.length || 0) + (app.project.actors?.length || 0) +
         (app.project.labels?.length || 0) + (app.project.pickups?.length || 0) + (app.project.gangZones?.length || 0) +
-        (app.project.textDraws?.length || 0) + app.project.removed.length;
+        (app.project.textDraws?.length || 0) + (app.project.checkpoints?.length || 0) + (app.project.mapIcons?.length || 0) +
+        (app.project.sounds?.length || 0) + (app.project.removed?.length || 0);
       if (!total) { toast('O projeto já está vazio', 'warn'); return; }
-      if (!confirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, pickups e remoções.`)) return;
+      if (!confirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, checkpoints, mapicons, sons e remoções.`)) return;
       const before = app.project.snapshotAll();
+      app.editor.clearSelection();
       app.project.clearAll();
       app.editor.syncAll();
       app.editor.updateHiddenWorld();

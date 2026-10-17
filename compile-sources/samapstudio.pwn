@@ -1029,6 +1029,60 @@ stock SAMSP_ApplyAllVehicleTuning()
     }
 }
 
+forward SAMSP_DelayedVehicleTuning();
+public SAMSP_DelayedVehicleTuning()
+{
+    SAMSP_ApplyAllVehicleTuning();
+    return 1;
+}
+
+public OnVehicleSpawn(vehicleid)
+{
+    for (new i = 0; i < gTotalVeiculos; i++)
+    {
+        if (gVeiculos[i] == vehicleid)
+        {
+            if (gVeiculoPaintjob[i] >= 0)
+            {
+                ChangeVehiclePaintjob(vehicleid, gVeiculoPaintjob[i]);
+            }
+            for (new c = 0; c < gVeiculoTotalComps[i]; c++)
+            {
+                AddVehicleComponent(vehicleid, gVeiculoComps[i][c]);
+            }
+            break;
+        }
+    }
+    return 1;
+}
+
+public OnPlayerStateChange(playerid, newstate, oldstate)
+{
+    if (newstate == PLAYER_STATE_DRIVER || newstate == PLAYER_STATE_PASSENGER)
+    {
+        new veh = GetPlayerVehicleID(playerid);
+        if (veh != 0 && veh != INVALID_VEHICLE_ID)
+        {
+            for (new i = 0; i < gTotalVeiculos; i++)
+            {
+                if (gVeiculos[i] == veh)
+                {
+                    if (gVeiculoPaintjob[i] >= 0)
+                    {
+                        ChangeVehiclePaintjob(veh, gVeiculoPaintjob[i]);
+                    }
+                    for (new c = 0; c < gVeiculoTotalComps[i]; c++)
+                    {
+                        AddVehicleComponent(veh, gVeiculoComps[i][c]);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
 public OnActorStreamIn(actorid, forplayerid)
 {
     for (new i = 0; i < gTotalActors; i++)
@@ -1268,6 +1322,9 @@ public OnPlayerSpawn(playerid)
     SAMSP_PlayMapSounds(playerid);
     SAMSP_ShowAllTextDraws(playerid);
     SAMSP_ApplyAllVehicleTuning();
+    SetTimer("SAMSP_DelayedVehicleTuning", 300, false);
+    SetTimer("SAMSP_DelayedVehicleTuning", 800, false);
+    SetTimer("SAMSP_DelayedVehicleTuning", 2000, false);
     SetTimerEx("SAMSP_ShowAllTextDraws", 400, false, "i", playerid);
     SetTimerEx("SAMSP_ShowAllTextDraws", 1200, false, "i", playerid);
     SAMSP_PreloadAllAnims(playerid);

@@ -8,7 +8,7 @@ import { CAR_COLORS } from '../world/vehicleMods.js';
 import { createLabelNode } from '../world/labels.js';
 import { createPickupFallbackMesh } from '../world/pickups.js';
 import { createGangZoneNode } from '../world/gangzones.js';
-import { createCheckpointNode } from '../world/checkpoints.js';
+import { createCheckpointNode, updateRaceCheckpointsChain } from '../world/checkpoints.js';
 import { createMapIconNode } from '../world/mapicons.js';
 import { createSoundNode } from '../world/sounds.js';
 
@@ -100,7 +100,8 @@ export class Editor extends EventTarget {
       e.preventDefault();
       this.setMode(this.mode === 'translate' ? 'rotate' : 'translate');
     });
-    if (viewport.dom) viewport.dom.appendChild(toggleBtn);
+    const vpDom = viewport.dom || viewport.container;
+    if (vpDom) vpDom.appendChild(toggleBtn);
     this.gizmoToggleBtn = toggleBtn;
 
     this.bindPointer();
@@ -123,6 +124,18 @@ export class Editor extends EventTarget {
       return { x: res.point.x, y: res.point.y, z: res.point.z };
     }
     return null;
+  }
+
+  getSurfaceZAt(x, y, startZ = 800) {
+    const origin = new THREE.Vector3(x, y, startZ);
+    const rc = new THREE.Raycaster(origin, new THREE.Vector3(0, 0, -1), 0, 2000);
+    rc.camera = this.vp.camera;
+    const hits = rc.intersectObjects(this.pickTargets(), true).filter(h => {
+      if (h.object.userData?.noPick) return false;
+      if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup || h.object.userData?.isCheckpoint || h.object.userData?.isMapIcon || h.object.userData?.isSound) return false;
+      return true;
+    });
+    return hits.length ? hits[0].point.z : null;
   }
 
   get worldSel() { return this.worldSelection.length ? this.worldSelection[0] : null; }
@@ -210,6 +223,7 @@ export class Editor extends EventTarget {
     const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
     const alive = new Set();
     for (const p of projects) {
+      if (p.checkpoints) updateRaceCheckpointsChain(p.checkpoints);
       for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'sounds']) {
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
@@ -222,7 +236,7 @@ export class Editor extends EventTarget {
           else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
           else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
           else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
-          else if (kind === 'checkpoints') sig = JSON.stringify([o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z]);
+          else if (kind === 'checkpoints') sig = JSON.stringify([o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
           else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
           else if (kind === 'sounds') sig = JSON.stringify([o.soundid]);
 
@@ -489,6 +503,7 @@ export class Editor extends EventTarget {
         if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_') || cName.startsWith('wg_')) {
           const leftMat = dummies['ug_wing_left'] || dummies['chassis'];
           if (leftMat) compObj.applyMatrix4(leftMat);
+          compObj.position.y -= 0.22;
           markComp(compObj);
           m.add(compObj);
 
@@ -507,12 +522,14 @@ export class Editor extends EventTarget {
             rClone.scale.x *= -1;
             rClone.updateMatrix();
           }
+          rClone.position.y -= 0.22;
           markComp(rClone);
           m.add(rClone);
           return;
         } else if (cName.startsWith('wg_r_')) {
           const rightMat = dummies['ug_wing_right'] || dummies['chassis'];
           if (rightMat) compObj.applyMatrix4(rightMat);
+          compObj.position.y -= 0.22;
           markComp(compObj);
           m.add(compObj);
           return;

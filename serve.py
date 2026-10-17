@@ -1293,7 +1293,29 @@ def _extract_stream_track(gta_path, track_id):
 
 
 def extract_gta_sound(gta_path, soundid):
-    if not gta_path or soundid <= 0:
+    if soundid <= 0:
+        return None
+
+    # Verifica cache local/embutido de sons WAV
+    for base_dir in [
+        os.path.join(COMPILE_CACHE_DIR, "sounds"),
+        os.path.join(DATA_DIR, "cache", "sounds"),
+        os.path.join(BASE_DIR, "data", "cache", "sounds"),
+        os.path.join(ROOT_DIR, "compile-sources", "cache", "sounds"),
+        os.path.join(APP_DIR, "data", "cache", "sounds"),
+        os.path.join(os.path.dirname(__file__), "compile-sources", "cache", "sounds"),
+        os.path.join(os.path.dirname(__file__), "cache", "sounds"),
+        os.path.join(os.path.dirname(__file__), "system", "cache", "sounds"),
+    ]:
+        fpath = os.path.join(base_dir, f"{soundid}.wav")
+        if os.path.isfile(fpath):
+            try:
+                with open(fpath, "rb") as f:
+                    return f.read(), "audio/wav"
+            except Exception:
+                pass
+
+    if not gta_path:
         return None
     if soundid >= 2000:
         bank_id = 147 + (soundid - 2000) // 200

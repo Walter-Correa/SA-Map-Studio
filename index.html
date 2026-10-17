@@ -129,9 +129,9 @@
     </div>
     <div class="tools" role="toolbar" aria-label="Ferramentas">
       <div class="seg" role="group" aria-label="Ferramenta do gizmo">
-        <button class="btn seg-btn" data-mode="translate" title="Mover (G)"><svg><use href="#i-move"/></svg>Mover</button>
-        <button class="btn seg-btn" data-mode="rotate" title="Girar (R)"><svg><use href="#i-rotate"/></svg>Girar</button>
-        <button class="btn seg-btn" data-mode="texture" title="Textura: clique numa face para escolher o pedaço (T)"><svg><use href="#i-brush"/></svg>Textura</button>
+        <button class="btn seg-btn" data-mode="translate" title="Mover (G)"><svg><use href="#i-move"/></svg><span class="lbl-seg">Mover</span></button>
+        <button class="btn seg-btn" data-mode="rotate" title="Girar (R)"><svg><use href="#i-rotate"/></svg><span class="lbl-seg">Girar</span></button>
+        <button class="btn seg-btn" data-mode="texture" title="Textura: clique numa face para escolher o pedaço (T)"><svg><use href="#i-brush"/></svg><span class="lbl-seg">Textura</span></button>
       </div>
       <button id="btnSpace" class="btn ghost" title="Sistema de coordenadas: Mundo (eixos globais X/Y/Z) ou Objeto (eixos locais da rotação do objeto) [Tecla L]"><svg><use href="#i-globe"/></svg><span class="lbl-keep">Mundo</span></button>
       <div class="pop-anchor">
@@ -979,14 +979,14 @@
     </div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
-  <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow: hidden; padding: 10px 0;">
+  <div class="snd-top-bar" style="display: flex; flex-direction: column; gap: 8px; padding: 8px 0; flex-shrink: 0;">
     <div style="display: flex; gap: 8px; align-items: center;">
       <input type="search" id="sndSearch" class="input" placeholder="Buscar som por Sound ID, nome oficial ou descrição (ex: 1052, beep, horn, alarm, mission, music, door)..." style="flex: 1; padding: 8px 12px; font-size: 13px;" autocomplete="off">
       <button type="button" class="btn small" id="sndBtnStop"><svg><use href="#i-stop"/></svg>Parar Áudio</button>
     </div>
     <div id="sndCategories" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;"></div>
-    <div id="sndList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; background: var(--asphalt-900); border: 1px solid var(--line); border-radius: 6px; padding: 6px;"></div>
   </div>
+  <div id="sndList" style="flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; background: var(--asphalt-900); border: 1px solid var(--line); border-radius: 6px; padding: 6px; min-height: 0;"></div>
 </dialog>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>

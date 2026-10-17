@@ -1159,6 +1159,11 @@ function bindVehicle(v) {
   // Bind de seleção múltipla de componentes de tuning
   $$('#inspector [data-veh-comp-toggle]').forEach(chk => {
     chk.onchange = () => {
+      const scrollParent = $('#sidebarRight');
+      const prevScrollTop = scrollParent ? scrollParent.scrollTop : 0;
+      const modGroups = $('#inspector .veh-mod-groups');
+      const prevGroupScrollTop = modGroups ? modGroups.scrollTop : 0;
+
       const cid = parseInt(chk.dataset.vehCompToggle, 10);
       const typeId = parseInt(chk.dataset.vehCompType, 10);
       const isChecked = chk.checked;
@@ -1180,6 +1185,9 @@ function bindVehicle(v) {
       app.editor.syncAll();
       toast(isChecked ? `Componente #${cid} (${compInfo?.name || 'Tuning'}) instalado` : `Componente #${cid} removido`, 'ok');
       renderInspector();
+      if (scrollParent) scrollParent.scrollTop = prevScrollTop;
+      const newModGroups = $('#inspector .veh-mod-groups');
+      if (newModGroups) newModGroups.scrollTop = prevGroupScrollTop;
     };
   });
 
@@ -2714,7 +2722,13 @@ function bindCheckpointCreate(d) {
         if (e.button !== 0) return;
         e.stopPropagation();
         cleanup();
-        const pt = app.editor.groundPointFromEvent(e) || app.editor.pointInFront(15);
+        let pt = app.editor.groundPointFromEvent(e);
+        if (!pt) {
+          const rawPt = app.editor.pointInFront(15);
+          const gz = app.editor.getSurfaceZAt ? app.editor.getSurfaceZAt(rawPt.x, rawPt.y, Math.max(rawPt.z + 50, 100)) : null;
+          if (gz !== null) rawPt.z = gz;
+          pt = rawPt;
+        }
         placeAt(pt);
       };
       const onKeyDown = (e) => { if (e.key === 'Escape') cleanup(); };
@@ -2730,7 +2744,14 @@ function bindCheckpointCreate(d) {
   const btnCam = $('#btnPlaceCpCam');
   if (btnCam) {
     btnCam.onclick = () => {
-      placeAt(app.editor.pointInFront(14));
+      const pt = app.editor.pointInFront(14);
+      const isAir = (d.cpKind === 'race' && (d.type === 3 || d.type === 4));
+      const groundZ = app.editor.getSurfaceZAt ? app.editor.getSurfaceZAt(pt.x, pt.y, Math.max(pt.z + 50, 100)) : null;
+      if (groundZ !== null) {
+        if (!isAir) pt.z = groundZ;
+        else pt.z = Math.max(groundZ + 12, pt.z);
+      }
+      placeAt(pt);
     };
   }
 
@@ -2833,7 +2854,7 @@ function bindCheckpoint(cp) {
       const t = parseInt(selRaceType.value, 10) || 0;
       project.updateItems('Alterar Tipo Race Checkpoint', [uid], (o) => { o.type = t; });
       app.editor.syncAll();
-      updateCheckpointCode(project.find(uid));
+      renderInspector();
     };
   }
 
