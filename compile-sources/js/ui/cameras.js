@@ -2,7 +2,7 @@
 // (InterpolateCameraPos + InterpolateCameraLookAt) com prévia no editor e código Pawn pronto.
 import * as THREE from 'three';
 import { cameraFunctions } from '../editor/pwn.js';
-import { app, $, $$, esc, fmt, toast, copyText } from './common.js';
+import { app, $, $$, esc, fmt, toast, copyText, showConfirm } from './common.js';
 
 let openPath = null;      // id do movimento aberto
 let helper = null;        // desenho do caminho na cena
@@ -113,7 +113,7 @@ async function onClick(e) {
   if (a === 'shot-add') { c.shots.push({ id: uid('c'), name: 'Câmera ' + (c.shots.length + 1), ...currentView(), cut: 'cut' }); changed(); toast('Câmera adicionada'); }
   else if (a === 'shot-view') viewFrom(shot.pos, shot.look);
   else if (a === 'shot-set') { Object.assign(shot, currentView()); changed(); toast('Câmera atualizada com a vista atual'); }
-  else if (a === 'shot-del') { if (confirm(`Apagar a câmera "${shot.name}"?`)) { c.shots.splice(c.shots.indexOf(shot), 1); changed(); } }
+  else if (a === 'shot-del') { if (await showConfirm(`Apagar a câmera "${shot.name}"?`, { danger: true, confirmText: 'Apagar' })) { c.shots.splice(c.shots.indexOf(shot), 1); changed(); } }
   else if (a === 'shot-code') { await copyText(cameraFunctions({ shots: [shot], paths: [] }).code); toast('Código da câmera copiado'); }
   else if (a === 'path-add') {
     const p = { id: uid('p'), name: 'Movimento ' + (c.paths.length + 1), end: 'behind', keys: [{ ...currentView(), time: 0, hold: 0, cut: 'cut' }] };
@@ -121,7 +121,7 @@ async function onClick(e) {
     toast('Agora mova a vista e clique em "Adicionar ponto"', 'ok', 4000);
   }
   else if (a === 'path-toggle') { openPath = openPath === path.id ? null : path.id; render(); drawHelper(); }
-  else if (a === 'path-del') { if (confirm(`Apagar o movimento "${path.name}"?`)) { c.paths.splice(c.paths.indexOf(path), 1); if (openPath === path.id) openPath = null; changed(); } }
+  else if (a === 'path-del') { if (await showConfirm(`Apagar o movimento "${path.name}"?`, { danger: true, confirmText: 'Apagar' })) { c.paths.splice(c.paths.indexOf(path), 1); if (openPath === path.id) openPath = null; changed(); } }
   else if (a === 'path-play') startPreview(path);
   else if (a === 'path-code') { await copyText(cameraFunctions({ shots: [], paths: [path] }).code); toast('Código do movimento copiado'); }
   else if (a === 'key-add') { path.keys.push({ ...currentView(), time: 3000, hold: 0, cut: 'move' }); changed(); }

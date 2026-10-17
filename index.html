@@ -138,7 +138,7 @@
         <button id="btnSnap" class="btn ghost" aria-pressed="false" title="Encaixe em grade"><svg><use href="#i-magnet"/></svg><span class="lbl">Encaixe</span></button>
         <div class="popover" id="popSnap" hidden>
           <div class="pop-title" style="margin-top:0">Grade e Passos</div>
-          <label class="check"><input type="checkbox" id="snapOn"> Encaixar na grade ao mover e girar</label>
+          <label class="check"><input type="checkbox" id="snapOn" checked> Encaixar na grade ao mover e girar</label>
           <label class="field-row">Passo de posição (m) <input type="number" id="snapMove" step="0.05" min="0.01" value="0.1"></label>
           <label class="field-row">Passo de rotação (°) <input type="number" id="snapRot" step="0.05" min="0.01" value="0.1"></label>
           <div class="pop-title">Encaixe Magnético (Bordas)</div>
@@ -509,6 +509,25 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
         <button type="button" class="btn ghost" id="promptCancel">Cancelar</button>
         <button type="submit" class="btn primary" id="promptOk">Salvar</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="dialog narrow" id="dlgConfirm" style="max-width: 440px; border-radius: 12px; background: #1a1e24; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 24px 60px rgba(0,0,0,0.65); padding: 0; overflow: hidden;">
+  <form method="dialog" class="dialog-body" id="confirmForm" style="display: flex; flex-direction: column; margin: 0;">
+    <header class="dialog-head" style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: #15181d; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg style="width: 18px; height: 18px; color: var(--gold-400, #ffb300);"><use href="#i-cube"/></svg>
+        <h2 id="confirmTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.3px;">SA Map Studio</h2>
+      </div>
+      <button class="btn icon" type="button" id="confirmCloseBtn" aria-label="Fechar" style="width: 28px; height: 28px;"><svg><use href="#i-x"/></svg></button>
+    </header>
+    <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+      <p id="confirmMsg" style="margin: 0; font-size: 13.5px; color: #e2e8f0; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"></p>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
+        <button type="button" class="btn ghost" id="confirmCancelBtn" style="padding: 7px 16px; font-weight: 600;">Cancelar</button>
+        <button type="submit" class="btn primary" id="confirmOkBtn" style="padding: 7px 20px; font-weight: 600;">OK</button>
       </div>
     </div>
   </form>

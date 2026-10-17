@@ -1,7 +1,7 @@
 // Projetos: salvar automático, abrir (salvando e fechando o atual), criar, renomear e apagar.
 import * as THREE from 'three';
 import { Project } from '../editor/project.js';
-import { app, $, esc, store, toast } from './common.js';
+import { app, $, esc, store, toast, showConfirm } from './common.js';
 
 let currentName = null;
 let unsub = null;
@@ -246,7 +246,7 @@ async function openProjectsDialog() {
     const btnMerge = li.querySelector('[data-merge]');
     if (btnMerge) {
       btnMerge.onclick = async () => {
-        if (!confirm(`Deseja mesclar todos os objetos, veículos e elementos do projeto "${p.name}" no projeto ativo "${app.project.name}"?`)) return;
+        if (!await showConfirm(`Deseja mesclar todos os objetos, veículos e elementos do projeto "${p.name}" no projeto ativo "${app.project.name}"?`, { confirmText: 'Mesclar' })) return;
         try {
           const other = await fetchProject(p.name);
           const uids = app.project.mergeProject(other);
@@ -259,7 +259,7 @@ async function openProjectsDialog() {
     }
 
     li.querySelector('[data-del]').onclick = async () => {
-      if (!confirm(`Apagar o projeto "${p.name}"? Essa ação não pode ser desfeita.`)) return;
+      if (!await showConfirm(`Apagar o projeto "${p.name}"? Essa ação não pode ser desfeita.`, { danger: true, confirmText: 'Apagar' })) return;
       if (app.editor.extraProjects?.has(p.name)) app.editor.removeExtraProject(p.name);
       await fetch('/api/projects/' + encodeURIComponent(p.name), { method: 'DELETE' });
       if (p.name === app.project.name) { useProject(new Project(await uniqueName('Meu mapa'))); saveNow(); }

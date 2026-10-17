@@ -263,8 +263,17 @@ export class ModelCache {
       });
       group.userData.dummies = dummies;
     }
-    if (!group.children.length) return null;
-    const box = new THREE.Box3().setFromObject(group);
+    const isParticle = isParticleModel(id, def);
+    if (!group.children.length || isParticle) {
+      group.add(createParticleMarkerMesh(id, def));
+      if (!slotInfo.length) slotInfo[0] = { texture: '', txd: '', color: [255, 100, 0, 255] };
+    }
+    let box = new THREE.Box3().setFromObject(group);
+    if (box.isEmpty() || box.getSize(new THREE.Vector3()).length() < 0.15) {
+      group.add(createParticleMarkerMesh(id, def));
+      box = new THREE.Box3().setFromObject(group);
+      if (!slotInfo.length) slotInfo[0] = { texture: '', txd: '', color: [255, 100, 0, 255] };
+    }
     group.userData.box = box;
     group.userData.radius = box.getBoundingSphere(new THREE.Sphere()).radius || 1;
     group.userData.def = def;
@@ -428,8 +437,12 @@ export class ModelCache {
     if (isText(ov)) {
       m.map = materialTextTexture(ov);
       m.vertexColors = false;
-      m.transparent = true;
-      m.alphaTest = 0.01;
+      const bc = parseColor(ov.backColor);
+      const isOpaque = ((bc >>> 24) & 255) === 255;
+      m.transparent = !isOpaque;
+      m.depthWrite = isOpaque;
+      m.alphaTest = isOpaque ? 0 : 0.01;
+      m.side = THREE.DoubleSide;
       m.color.setRGB(1, 1, 1);
     } else if (isNoneTexture(ov)) {
       m.visible = false;
@@ -526,7 +539,62 @@ export function materialTextTexture(ov) {
   tex.flipY = false;
   tex.anisotropy = 4;
   tex.colorSpace = THREE.NoColorSpace;
+  tex.needsUpdate = true;
   return tex;
+}
+
+// ---------------------------------------------------------------------------
+// Objetos invisíveis, fogo, fumaça e emissores de partículas:
+// Cria um marcador geométrico 3D visível para permitir visualização, clique,
+// gizmo e destaque vermelho padrão quando selecionado.
+// ---------------------------------------------------------------------------
+export function isParticleModel(id, def) {
+  if (id >= 18668 && id <= 18749) return true;
+  const name = String(def?.model || '').toLowerCase();
+  return /fire|smoke|prt_|particle|gunsmoke|riot_smoke/i.test(name);
+}
+
+export function createParticleMarkerMesh(id, def) {
+  const g = new THREE.Group();
+  g.userData.isParticleMarker = true;
+
+  // Marcador octaédrico estilizado
+  const geo = new THREE.OctahedronGeometry(0.55, 0);
+  geo.computeVertexNormals();
+
+  const name = String(def?.model || '').toLowerCase();
+  let baseColor = 0xff6600; // Fogo padrão
+  if (name.includes('smoke')) baseColor = 0x90a4ae; // Fumaça
+  else if (name.includes('water') || name.includes('splash')) baseColor = 0x29b6f6;
+
+  const mat = new THREE.MeshLambertMaterial({
+    color: baseColor,
+    transparent: true,
+    opacity: 0.70,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.name = 'particle_marker';
+  mesh.userData.slots = [0]; // Permite destacar e selecionar em vermelho normalmente
+  g.add(mesh);
+
+  // Contorno aramado
+  const wireGeo = new THREE.WireframeGeometry(geo);
+  const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
+  const wire = new THREE.LineSegments(wireGeo, wireMat);
+  wire.userData.noPick = true;
+  g.add(wire);
+
+  // Núcleo central pulsante
+  const coreGeo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+  const core = new THREE.Mesh(coreGeo, coreMat);
+  core.userData.noPick = true;
+  g.add(core);
+
+  return g;
 }
 
 // Quaternion do IPL (SA guarda o conjugado) -> THREE.Quaternion

@@ -135,3 +135,131 @@ export function showPrompt({ title = 'Definir apelido', desc = '', value = '', p
     setTimeout(() => { if (inp) { inp.focus(); inp.select(); } }, 60);
   });
 }
+
+// Diálogo de confirmação com design padrão do editor (centralizado, título "SA Map Studio")
+export function showConfirm(message, {
+  title = 'SA Map Studio',
+  confirmText = 'OK',
+  cancelText = 'Cancelar',
+  danger = false,
+} = {}) {
+  return new Promise((resolve) => {
+    let dlg = $('#dlgConfirm');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.id = 'dlgConfirm';
+      dlg.className = 'dialog narrow';
+      dlg.style.cssText = 'max-width: 440px; border-radius: 12px; background: #1a1e24; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 24px 60px rgba(0,0,0,0.65); padding: 0; overflow: hidden;';
+      dlg.innerHTML = `
+        <form method="dialog" class="dialog-body" id="confirmForm" style="display: flex; flex-direction: column; margin: 0;">
+          <header class="dialog-head" style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: #15181d; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg style="width: 18px; height: 18px; color: var(--gold-400, #ffb300);"><use href="#i-cube"/></svg>
+              <h2 id="confirmTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.3px;">SA Map Studio</h2>
+            </div>
+            <button class="btn icon" type="button" id="confirmCloseBtn" aria-label="Fechar" style="width: 28px; height: 28px;"><svg><use href="#i-x"/></svg></button>
+          </header>
+          <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+            <p id="confirmMsg" style="margin: 0; font-size: 13.5px; color: #e2e8f0; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"></p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
+              <button type="button" class="btn ghost" id="confirmCancelBtn" style="padding: 7px 16px; font-weight: 600;">Cancelar</button>
+              <button type="submit" class="btn primary" id="confirmOkBtn" style="padding: 7px 20px; font-weight: 600;">OK</button>
+            </div>
+          </div>
+        </form>
+      `;
+      document.body.appendChild(dlg);
+    }
+
+    const t = $('#confirmTitle', dlg);
+    const m = $('#confirmMsg', dlg);
+    const form = $('#confirmForm', dlg);
+    const closeBtn = $('#confirmCloseBtn', dlg);
+    const cancelBtn = $('#confirmCancelBtn', dlg);
+    const okBtn = $('#confirmOkBtn', dlg);
+
+    if (t) t.textContent = title;
+    if (m) m.textContent = message;
+    if (cancelBtn) {
+      cancelBtn.style.display = '';
+      cancelBtn.textContent = cancelText;
+    }
+    if (okBtn) {
+      okBtn.textContent = confirmText;
+      okBtn.className = danger ? 'btn danger' : 'btn primary';
+    }
+
+    let closed = false;
+    const finish = (val) => {
+      if (closed) return;
+      closed = true;
+      try { dlg.close(); } catch {}
+      resolve(val);
+    };
+
+    if (closeBtn) closeBtn.onclick = () => finish(false);
+    if (cancelBtn) cancelBtn.onclick = () => finish(false);
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        finish(true);
+      };
+    }
+    dlg.oncancel = () => finish(false);
+
+    dlg.showModal();
+    setTimeout(() => { if (okBtn) okBtn.focus(); }, 60);
+  });
+}
+
+// Diálogo de alerta simples (apenas botão OK)
+export function showAlert(message, { title = 'SA Map Studio', okText = 'OK' } = {}) {
+  return new Promise((resolve) => {
+    let dlg = $('#dlgConfirm');
+    if (!dlg) {
+      showConfirm(message, { title, confirmText: okText }).then(resolve);
+      return;
+    }
+    const t = $('#confirmTitle', dlg);
+    const m = $('#confirmMsg', dlg);
+    const form = $('#confirmForm', dlg);
+    const closeBtn = $('#confirmCloseBtn', dlg);
+    const cancelBtn = $('#confirmCancelBtn', dlg);
+    const okBtn = $('#confirmOkBtn', dlg);
+
+    if (t) t.textContent = title;
+    if (m) m.textContent = message;
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (okBtn) {
+      okBtn.textContent = okText;
+      okBtn.className = 'btn primary';
+    }
+
+    let closed = false;
+    const finish = () => {
+      if (closed) return;
+      closed = true;
+      try { dlg.close(); } catch {}
+      if (cancelBtn) cancelBtn.style.display = '';
+      resolve();
+    };
+
+    if (closeBtn) closeBtn.onclick = finish;
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        finish();
+      };
+    }
+    dlg.oncancel = finish;
+
+    dlg.showModal();
+    setTimeout(() => { if (okBtn) okBtn.focus(); }, 60);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.showConfirm = showConfirm;
+  window.showAlert = showAlert;
+}
+

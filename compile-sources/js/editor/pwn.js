@@ -125,6 +125,54 @@ function extractPreceding(between) {
   };
 }
 
+export function cleanPwnHeader(headerText) {
+  if (!headerText) return '';
+  const rawLines = String(headerText).split('\n');
+  const kept = [];
+  let inStudioBanner = false;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const l = rawLines[i];
+    const t = l.trim();
+
+    // Início / fim de faixas de comentários do editor (// ================= ou // -----------------)
+    if (t.startsWith('// =====') || t.startsWith('// -----')) {
+      inStudioBanner = !inStudioBanner;
+      continue;
+    }
+    if (inStudioBanner) continue;
+
+    // Linhas geradas do cabeçalho do editor
+    if (t.startsWith('// Mapa:') ||
+        t.startsWith('// Gerado pelo SA Map Studio') ||
+        t.startsWith('// Objetos:') ||
+        t.startsWith('// Textos 3D:') ||
+        t.startsWith('// Como usar:') ||
+        t.startsWith('//   OnGameModeInit') ||
+        t.startsWith('//   OnPlayerConnect') ||
+        t.startsWith('//   Requer o plugin streamer') ||
+        t.startsWith('//   Posições relativas') ||
+        t.startsWith('//   Câmeras')) {
+      continue;
+    }
+
+    // Declarações de função stock/public/forward geradas pelo estúdio ou variáveis de wrapper
+    if (/^stock\s+Mapa_\w+_(Carregar|Remover)\s*\(/i.test(t) ||
+        /^public\s+Mapa_\w+_(Carregar|Remover)\s*\(/i.test(t) ||
+        /^forward\s+Mapa_\w+_(Carregar|Remover)\s*\(/i.test(t) ||
+        /^(new\s+(objectid|vehicleid|attachtoid|actorid|gangzoneid);)/i.test(t) ||
+        t === '{' || t === '}' || t === 'return 1;' || t === 'return 0;') {
+      continue;
+    }
+
+    kept.push(l);
+  }
+
+  while (kept.length && !kept[0].trim()) kept.shift();
+  while (kept.length && !kept[kept.length - 1].trim()) kept.pop();
+  return kept.join('\n');
+}
+
 function splitHeaderAndFirstItem(between) {
   const lines = between.split('\n');
   const headerLines = [];
@@ -150,8 +198,9 @@ function splitHeaderAndFirstItem(between) {
   }
 
   if (hasCodeHeader) {
+    const cleaned = cleanPwnHeader(headerLines.join('\n'));
     return {
-      header: headerLines.join('\n').trim(),
+      header: cleaned,
       preComment: itemComments.join('\n'),
       blankLines: blankCount,
     };
@@ -1169,7 +1218,8 @@ export function exportPawn(project, options = {}) {
   }
 
   if (opt.layout === 'lines') {
-    if (project.pwnHeader) lines.push(project.pwnHeader, '');
+    const cleanHeader = cleanPwnHeader(project.pwnHeader);
+    if (cleanHeader) lines.push(cleanHeader, '');
     if (opt.relative) lines.push(`// Posições relativas ao centro (${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)})`);
     if (opt.exportArray && objs.length) {
       lines.push(...arrayLines);
@@ -1210,7 +1260,8 @@ export function exportPawn(project, options = {}) {
 
   const id = sanitizeIdent(project.name).slice(0, 17).replace(/_+$/, ''); // nomes do Pawn: até 31 letras
   const date = new Date().toLocaleDateString('pt-BR');
-  if (project.pwnHeader) lines.push(project.pwnHeader, '');
+  const cleanHeader = cleanPwnHeader(project.pwnHeader);
+  if (cleanHeader) lines.push(cleanHeader, '');
   lines.push('// ================================================================');
   lines.push(`// Mapa: ${project.name}`);
   lines.push(`// Gerado pelo SA Map Studio em ${date}`);

@@ -43,7 +43,7 @@ export class Editor extends EventTarget {
     this.worldSelection = [];        // instâncias do mapa selecionadas
     this.mode = 'translate';
     this.space = 'world';
-    this.snap = { enabled: false, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 };
+    this.snap = { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 };
     this.transformSpeed = { move: 1.0, rotate: 1.0 };
     this.placing = null;             // {model, ghost}
     this.matSel = [];                // índices de material escolhidos (0 a 15)
@@ -723,18 +723,6 @@ export class Editor extends EventTarget {
     if (items.length === 1) {
       this.pivot.position.set(items[0].item.x, items[0].item.y, items[0].item.z);
       this.pivot.rotation.copy(eulerFromItem(items[0].item, items[0].kind));
-    } else if (isAll && this.selection.length) {
-      // Quando seleciona todo o projeto, mantém o gizmo no item principal / primeiro selecionado para não sumir da tela
-      const primary = this.project.find(this.selection[0]);
-      if (primary) {
-        this.pivot.position.set(primary.x, primary.y, primary.z);
-      } else {
-        const c = new THREE.Vector3();
-        for (const s of items) c.add(new THREE.Vector3(s.item.x, s.item.y, s.item.z));
-        c.divideScalar(items.length);
-        this.pivot.position.copy(c);
-      }
-      this.pivot.rotation.set(0, 0, 0, 'ZXY');
     } else {
       const c = new THREE.Vector3();
       for (const s of items) c.add(new THREE.Vector3(s.item.x, s.item.y, s.item.z));
@@ -789,16 +777,9 @@ export class Editor extends EventTarget {
       ...(this.project.sounds || []),
     ].map(o => o.uid);
     if (all.length) {
-      const prevActiveUid = this.selection.length ? this.selection[0] : null;
       this.mode = 'translate';
       this.select(all);
-      if (prevActiveUid && this.selection.includes(prevActiveUid)) {
-        const primary = this.project.find(prevActiveUid);
-        if (primary) {
-          this.pivot.position.set(primary.x, primary.y, primary.z);
-          this.pivot.updateMatrixWorld(true);
-        }
-      } else if (focus) {
+      if (focus) {
         this.focusSelection();
       }
       this.setMode('translate');
@@ -1079,6 +1060,12 @@ export class Editor extends EventTarget {
 
       if (t >= 1) {
         this.activeMoveAnims.delete(uid);
+        if (this.selection.includes(uid)) {
+          this.pivot.position.copy(node.position);
+          this.pivot.quaternion.copy(node.quaternion);
+          this.pivot.updateMatrixWorld(true);
+          this.attachGizmo();
+        }
         this.emit('move-ended', { uid });
       } else {
         this.activeMoveAnims.set(uid, requestAnimationFrame(loop));
@@ -1094,6 +1081,13 @@ export class Editor extends EventTarget {
       cancelAnimationFrame(this.activeMoveAnims.get(uid));
       this.activeMoveAnims.delete(uid);
     }
+    const node = this.nodes.get(uid);
+    if (this.selection.includes(uid) && node) {
+      this.pivot.position.copy(node.position);
+      this.pivot.quaternion.copy(node.quaternion);
+      this.pivot.updateMatrixWorld(true);
+      this.attachGizmo();
+    }
   }
 
   resetMoveObject(uid) {
@@ -1106,6 +1100,9 @@ export class Editor extends EventTarget {
     node.updateMatrixWorld(true);
     this.refreshSelectionBoxes();
     this.updateAttachedChildren();
+    if (this.selection.includes(uid)) {
+      this.attachGizmo();
+    }
     this.emit('move-ended', { uid });
   }
 

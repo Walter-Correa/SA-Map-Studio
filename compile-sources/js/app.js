@@ -11,7 +11,7 @@ import { Thumbnails } from './editor/thumbs.js';
 import { TextureLibrary } from './editor/textures.js';
 import { WORLD_PLACES, INTERIOR_PLACES, PLACES, regionOf } from './editor/places.js';
 import { isText } from './editor/materials.js';
-import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, postJSON } from './ui/common.js';
+import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, postJSON, showConfirm } from './ui/common.js';
 import { setupProjects, openInitialProject, saveNow } from './ui/projects.js';
 import { setupCatalog, renderCatalogRows } from './ui/catalog.js';
 import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.js';
@@ -172,8 +172,8 @@ function setupToolbar(cfg) {
   setupPopover('#btnSnap', '#popSnap');
   setupPopover('#btnGoto', '#popGoto', () => setTimeout(() => $('#gotoInput')?.focus({ preventScroll: true }), 0));
   setupPopover('#btnView', '#popView');
-  const snap = store.get('snap', { enabled: false, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 });
-  $('#snapOn').checked = snap.enabled; $('#snapMove').value = snap.move; $('#snapRot').value = snap.rotate;
+  const snap = store.get('snap', { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 });
+  $('#snapOn').checked = snap.enabled ?? true; $('#snapMove').value = snap.move; $('#snapRot').value = snap.rotate;
   $('#snapMagnetic').checked = snap.magnetic ?? true; $('#snapMagDist').value = snap.magDist ?? 0.1;
   const applySnap = () => {
     const s = {
@@ -889,13 +889,13 @@ function setupOutline() {
 
   const btnClear = $('#btnClearProject');
   if (btnClear) {
-    btnClear.onclick = () => {
+    btnClear.onclick = async () => {
       const total = (app.project.objects?.length || 0) + (app.project.vehicles?.length || 0) + (app.project.actors?.length || 0) +
         (app.project.labels?.length || 0) + (app.project.pickups?.length || 0) + (app.project.gangZones?.length || 0) +
         (app.project.textDraws?.length || 0) + (app.project.checkpoints?.length || 0) + (app.project.mapIcons?.length || 0) +
         (app.project.sounds?.length || 0) + (app.project.removed?.length || 0);
       if (!total) { toast('O projeto já está vazio', 'warn'); return; }
-      if (!confirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, checkpoints, mapicons, sons e remoções.`)) return;
+      if (!await showConfirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, checkpoints, mapicons, sons e remoções.`, { danger: true, confirmText: 'Apagar tudo' })) return;
       const before = app.project.snapshotAll();
       app.editor.clearSelection();
       app.project.clearAll();

@@ -319,6 +319,15 @@ function objectInspector(o) {
   const first = app.editor.mode === 'texture';
   const attachType = o.attach ? (o.attach.type === 'vehicle' || (app.project.vehicles || []).some(v => v.uid === o.attach.to) ? 'vehicle' : 'object') : 'vehicle';
   return `${titleBlock(o.model, `ID ${o.model} <span class="tag">${esc(def ? categoryOf(def) : 'Não existe no jogo')}</span>`)}
+    <div class="insp-section" style="margin-top: 4px; padding-bottom: 4px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <span style="font-size: 12px; font-weight: 600; color: var(--paper-dim);">Alterar ID:</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="number" id="inpChangeModelId" class="input small" value="${o.model}" min="0" max="30000" style="width: 82px; padding: 3px 6px; font-size: 12px; font-weight: 700; background: var(--asphalt-700); color: var(--paper); border: 1px solid var(--line); border-radius: 4px; text-align: center;" title="Digite um novo ID e clique em Alterar ou pressione Enter">
+          <button type="button" class="btn small primary" id="btnApplyModelId" style="padding: 3px 10px; font-size: 11px;">Mudar</button>
+        </div>
+      </div>
+    </div>
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar objeto</button>
     ${scopeSection()}
     ${first ? mats : ''}
@@ -330,8 +339,8 @@ function objectInspector(o) {
     <!-- MoveObject -->
     <div class="insp-section">
       <div class="insp-label">Movimento (MoveObject)</div>
-      <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkMoveObj" ${o.move ? 'checked' : ''}> Ativar movimento</label>
-      ${o.move ? `
+      <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkMoveObj" ${o.move ? 'checked' : ''} ${o.attach ? 'disabled' : ''}> Ativar movimento</label>
+      ${o.attach ? '<div class="insp-note" style="color: var(--gold-400);">Objetos acoplados não podem se mover de forma independente. Somente o objeto ou veículo pai pode ter movimento.</div>' : (o.move ? `
         <div class="pair">
           <label>Alvo X<input type="number" step="0.1" data-move="targetX" value="${fmt(o.move.targetX)}"></label>
           <label>Alvo Y<input type="number" step="0.1" data-move="targetY" value="${fmt(o.move.targetY)}"></label>
@@ -352,7 +361,7 @@ function objectInspector(o) {
           <button type="button" class="btn small" data-move-act="reset" title="Resetar posição"><svg><use href="#i-restore"/></svg>Resetar</button>
           <button type="button" class="btn small" data-move-act="settarg" title="Usar coordenadas atuais do objeto como alvo"><svg><use href="#i-pin"/></svg>Posição atual</button>
         </div>
-      ` : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>'}
+      ` : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>')}
     </div>
 
     <!-- AttachObjectToVehicle / AttachObjectToObject -->
@@ -853,10 +862,39 @@ function bindItem(item) {
     });
   });
 
+  // Model ID change
+  const inpModel = $('#inpChangeModelId');
+  const btnApplyModel = $('#btnApplyModelId');
+  const doChangeModel = () => {
+    if (!inpModel) return;
+    const newId = parseInt(inpModel.value, 10);
+    if (!Number.isFinite(newId) || newId < 0) {
+      toast('Digite um ID de modelo válido (número positivo)', 'warn');
+      return;
+    }
+    const cur = project.find(uid);
+    if (!cur || cur.model === newId) return;
+    project.updateItems('Alterar ID do Modelo', [uid], (o) => {
+      o.model = newId;
+      o.materials = [];
+    });
+    app.editor.syncAll();
+    renderInspector();
+    toast(`Modelo alterado para ID ${newId}`);
+  };
+  if (btnApplyModel) btnApplyModel.onclick = doChangeModel;
+  if (inpModel) inpModel.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doChangeModel(); } });
+
   // MoveObject binding
   const chkMove = $('#chkMoveObj');
   if (chkMove) {
     chkMove.onchange = () => {
+      const cur = project.find(uid);
+      if (cur?.attach) {
+        chkMove.checked = false;
+        toast('Objetos acoplados não podem se mover de forma independente. Somente o objeto ou veículo pai pode ter movimento.', 'warn');
+        return;
+      }
       project.updateItems('Alterar MoveObject', [uid], (o) => {
         if (chkMove.checked) {
           o.move = {
@@ -942,6 +980,8 @@ function bindItem(item) {
     chkAttach.onchange = () => {
       project.updateItems('Alterar Attach', [uid], (o) => {
         if (chkAttach.checked) {
+          app.editor.stopMoveObject(uid);
+          o.move = null;
           const otherObjs = (project.objects || []).filter(x => x.uid !== uid);
           const availVehs = (project.vehicles || []).filter(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
 
@@ -1904,10 +1944,18 @@ function drawPreview() {
   drawMaterialText(c.getContext('2d'), t, w, h);
 }
 
+function applyTextLive(uids, idx, draft) {
+  suppress = true;
+  try {
+    app.editor.applyText(uids, idx, draft);
+  } finally {
+    suppress = false;
+  }
+}
+
 function applyTextNow(uids, idx) {
   textDraft = { ...textDraft, ...readText() };
-  suppress = true;
-  try { app.editor.applyText(uids, idx, textDraft); } finally { suppress = false; }
+  applyTextLive(uids, idx, textDraft);
   const keepFocus = document.activeElement?.id;
   renderInspector();
   if (keepFocus) document.getElementById(keepFocus)?.focus();
@@ -1916,12 +1964,14 @@ function applyTextNow(uids, idx) {
 function bindTextEditor(uids, o, idx) {
   const cur = matOf(o, idx[0]);
   if (cur && isText(cur)) textDraft = { ...textDraft, ...cur };
-  const live = idx.every(i => isText(matOf(o, i)));
   let timer = null;
   const changed = () => {
     textDraft = { ...textDraft, ...readText() };
     drawPreview();
-    if (live) { clearTimeout(timer); timer = setTimeout(() => applyTextNow(uids, idx), 450); }
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      applyTextLive(uids, idx, textDraft);
+    }, 150);
   };
   ['#mxText', '#mxFontSize'].forEach(s => $(s).addEventListener('input', changed));
   ['#mxSize', '#mxFont', '#mxAlign', '#mxBold'].forEach(s => $(s).addEventListener('change', changed));
