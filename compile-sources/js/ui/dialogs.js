@@ -315,7 +315,9 @@ function spawnPoint(kind) {
     if (s) { const z = down(s.item.x, s.item.y, s.item.z + 50); return { x: s.item.x, y: s.item.y, z: z ?? s.item.z + 2, a }; }
     if (ed.worldSel) { const w = ed.worldSel; const z = down(w.x, w.y, w.z + 50); return { x: w.x, y: w.y, z: z ?? w.z + 2, a }; }
   }
-  if (kind === 'center' && (app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0))) {
+  const totalSpatial = (app.project.objects?.length || 0) + (app.project.vehicles?.length || 0) +
+    (app.project.actors?.length || 0) + (app.project.labels?.length || 0) + (app.project.pickups?.length || 0);
+  if (kind === 'center' && totalSpatial > 0) {
     const c = projectCenter(app.project);
     const z = down(c.x, c.y, c.z + 200);
     return { x: c.x, y: c.y, z: z ?? c.z + 2, a };
@@ -356,11 +358,14 @@ export function setupTest() {
   };
   const refresh = async () => { try { showInfo(await (await fetch('/api/test/info')).json()); } catch { /* servidor fora */ } };
   const warn = () => {
-    const n = app.project.objects.length;
+    const n = app.project.objects?.length || 0;
     const isStreamer = Boolean($('#testStreamer')?.checked);
     const notes = [];
     if (n > 2000 && !isStreamer) notes.push(`O teste sem Streamer usa CreateObject, que aceita até 2000 objetos: ${n - 2000} vão ficar de fora. Ative a opção "Usar plugin Streamer (itens dinâmicos)" para carregar todos.`);
-    if (!n && !app.project.vehicles.length) notes.push('O projeto ainda está vazio: você vai nascer no ponto escolhido, só com o mapa original.');
+    const totalAny = n + (app.project.vehicles?.length || 0) + (app.project.actors?.length || 0) +
+      (app.project.labels?.length || 0) + (app.project.pickups?.length || 0) +
+      (app.project.gangZones?.length || 0) + (app.project.textDraws?.length || 0) + (app.project.removed?.length || 0);
+    if (!totalAny) notes.push('O projeto ainda está vazio: você vai nascer no ponto escolhido, só com o mapa original.');
     $('#testWarn').innerHTML = notes.map(x => `<span class="warn">${esc(x)}</span>`).join('<br>');
   };
   $('#testStreamer')?.addEventListener('change', warn);

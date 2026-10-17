@@ -746,6 +746,8 @@ def stop_test():
 
 def copy_if_newer(src, dst):
     try:
+        if os.path.normcase(os.path.abspath(src)) == os.path.normcase(os.path.abspath(dst)):
+            return
         if os.path.exists(dst):
             a, b = os.stat(src), os.stat(dst)
             if a.st_size == b.st_size and int(a.st_mtime) <= int(b.st_mtime):
@@ -829,16 +831,21 @@ def start_test(body):
             break
 
     rcon = base64.b32encode(os.urandom(10)).decode().lower()
+    map_data = body.get("map", "")
     for td in target_dirs:
         try:
             os.makedirs(os.path.join(td, "gamemodes"), exist_ok=True)
             os.makedirs(os.path.join(td, "plugins"), exist_ok=True)
             os.makedirs(os.path.join(td, "scriptfiles", "samapstudio"), exist_ok=True)
-            shutil.copy2(amx, os.path.join(td, "gamemodes", "samapstudio.amx"))
-            if streamer_src:
-                copy_if_newer(streamer_src, os.path.join(td, "plugins", "streamer.dll"))
             with open(os.path.join(td, "scriptfiles", "samapstudio", "mapa.txt"), "w", encoding="cp1252", errors="replace", newline="\r\n") as f:
-                f.write(body.get("map", ""))
+                f.write(map_data)
+            dst_amx = os.path.join(td, "gamemodes", "samapstudio.amx")
+            if amx and os.path.isfile(amx) and os.path.normcase(os.path.abspath(amx)) != os.path.normcase(os.path.abspath(dst_amx)):
+                copy_if_newer(amx, dst_amx)
+            if streamer_src:
+                dst_streamer = os.path.join(td, "plugins", "streamer.dll")
+                if os.path.normcase(os.path.abspath(streamer_src)) != os.path.normcase(os.path.abspath(dst_streamer)):
+                    copy_if_newer(streamer_src, dst_streamer)
             load_streamer = bool(streamer_src or use_streamer)
             plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
             with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
@@ -856,8 +863,8 @@ def start_test(body):
             }
             with open(os.path.join(td, "config.json"), "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2)
-        except Exception:
-            pass
+        except Exception as err:
+            print(f"[SA Map Studio] Erro ao preparar servidor de teste em {td}: {err}")
     for name in ("log.txt", "server_log.txt"):
         try:
             os.remove(os.path.join(TEST_DIR, name))

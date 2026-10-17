@@ -579,6 +579,10 @@ stock SAMSP_CarregarMapa()
                     gLabels[gTotalLabels] = lbl;
                 }
                 gTotalLabels++;
+                sumX += lx;
+                sumY += ly;
+                sumZ += lz;
+                countCoords++;
             }
             case 'P':
             {
@@ -601,6 +605,10 @@ stock SAMSP_CarregarMapa()
                     gPickups[gTotalPickups] = pick;
                 }
                 gTotalPickups++;
+                sumX += px;
+                sumY += py;
+                sumZ += pz;
+                countCoords++;
             }
             case 'G':
             {

@@ -705,14 +705,23 @@ function vehicleLine(v, opt, center) {
 }
 
 export function projectCenter(project) {
-  const all = [...project.objects, ...project.vehicles, ...(project.actors || [])];
+  const all = [
+    ...(project.objects || []),
+    ...(project.vehicles || []),
+    ...(project.actors || []),
+    ...(project.labels || []),
+    ...(project.pickups || [])
+  ];
   if (!all.length) return { x: 0, y: 0, z: 0 };
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
   for (const o of all) {
-    minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x);
-    minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y);
-    minZ = Math.min(minZ, o.z); maxZ = Math.max(maxZ, o.z);
+    if (typeof o.x === 'number' && typeof o.y === 'number' && typeof o.z === 'number') {
+      minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x);
+      minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y);
+      minZ = Math.min(minZ, o.z); maxZ = Math.max(maxZ, o.z);
+    }
   }
+  if (!isFinite(minX)) return { x: 0, y: 0, z: 0 };
   return { x: (minX + maxX) / 2, y: (minY + maxY) / 2, z: (minZ + maxZ) / 2 };
 }
 
