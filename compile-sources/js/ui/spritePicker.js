@@ -82,7 +82,12 @@ export function openSpritePicker({ currentSprite = 'hud:arrow', onSelect = null 
   const dlg = $('#dlgSpritePicker');
   if (!dlg) return;
 
-  selectedSprite = currentSprite || 'hud:arrow';
+  let normCurrent = currentSprite || 'hud:arrow';
+  if (normCurrent.toLowerCase().startsWith('loadscs:')) {
+    const tex = normCurrent.slice(8).toLowerCase();
+    normCurrent = tex === 'loadsc0' ? 'LOADSUK:loadscuk' : `LOADSUK:${tex}`;
+  }
+  selectedSprite = normCurrent;
   onSelectCallback = onSelect;
   currentSearch = '';
   const searchInp = $('#spritePickerSearch');
@@ -170,8 +175,9 @@ function updateSpritePreview(spriteVal) {
     thumbUrl = found.thumb;
   } else {
     const [lib, name] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];
-    const normLib = lib.toLowerCase() === 'ld_loadscs' ? 'loadscs' : lib.toLowerCase();
-    thumbUrl = `/cache/sprites/${normLib}/${(name || '').toLowerCase()}.png`;
+    const normLib = (lib.toLowerCase() === 'ld_loadscs' || lib.toLowerCase() === 'loadscs') ? 'loadsuk' : lib.toLowerCase();
+    const normName = (normLib === 'loadsuk' && (name || '').toLowerCase() === 'loadsc0') ? 'loadscuk' : (name || '').toLowerCase();
+    thumbUrl = `/cache/sprites/${normLib}/${normName}.png`;
   }
 
   const prevImg = $('#prevSpriteImg');
@@ -181,12 +187,7 @@ function updateSpritePreview(spriteVal) {
   const btnApply = $('#btnApplySelectedSprite');
 
   if (prevImg) {
-    prevImg.onerror = () => {
-      if (spriteVal.toLowerCase().includes('loadsc')) {
-        const [lib, name] = spriteVal.split(':');
-        prevImg.src = `/cache/sprites/loadscs/${(name || lib).toLowerCase()}.png`;
-      }
-    };
+    prevImg.onerror = null;
     prevImg.src = thumbUrl;
   }
   const [libName, texName] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];

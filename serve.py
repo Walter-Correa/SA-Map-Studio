@@ -1293,18 +1293,18 @@ class Handler(SimpleHTTPRequestHandler):
                 full = os.path.join(cdir, rel_sub)
                 if os.path.isfile(full):
                     return self.send_file(full, cache="public, max-age=86400")
-                low_rel = rel_sub.lower()
-                if "sprites" in low_rel:
-                    base_name = os.path.basename(rel_sub)
-                    parts = low_rel.split(os.sep)
-                    sub_folder = parts[1] if len(parts) > 2 else ""
-                    cand_folders = [sub_folder]
-                    if sub_folder.startswith("loadsc"):
-                        cand_folders.extend(["loadscs", "ld_loadscs", base_name[:-4] if base_name.endswith(".png") else ""])
-                    elif sub_folder == "ld_loadscs":
-                        cand_folders.append("loadscs")
+            low_rel = rel_sub.lower()
+            if "sprites" in low_rel:
+                base_name = os.path.basename(low_rel)
+                parts = low_rel.split(os.sep)
+                sub_folder = parts[1] if len(parts) > 2 else ""
+                cand_folders = [sub_folder]
+                if sub_folder in ("loadscs", "ld_loadscs"):
+                    cand_folders.extend(["loadsuk", "loadscs"])
+                for cdir in all_cdirs:
                     for cf in cand_folders:
-                        if not cf: continue
+                        if not cf:
+                            continue
                         alt_cand = os.path.join(cdir, "sprites", cf, base_name)
                         if os.path.isfile(alt_cand):
                             return self.send_file(alt_cand, cache="public, max-age=86400")

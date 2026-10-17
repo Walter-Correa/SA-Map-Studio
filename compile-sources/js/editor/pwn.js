@@ -523,10 +523,15 @@ export function parsePwn(source) {
     } else if (fn === 'TextDrawCreate' || fn === 'CreatePlayerTextDraw') {
       const o = fn === 'CreatePlayerTextDraw' ? 1 : 0;
       if (a.length >= 3 + o) {
+        let rawTdText = unquote(a[o + 2]).replace(/\\n/g, '\n');
+        if (rawTdText.toLowerCase().startsWith('loadscs:')) {
+          const tex = rawTdText.slice(8).toLowerCase();
+          rawTdText = 'LOADSUK:' + (tex === 'loadsc0' ? 'loadscuk' : tex);
+        }
         const td = {
           isPlayer: Boolean(o),
           x: num(a[o]), y: num(a[o + 1]),
-          text: unquote(a[o + 2]).replace(/\\n/g, '\n'),
+          text: rawTdText,
           font: 1,
           letterSizeX: 0.48, letterSizeY: 1.12,
           textSizeX: 1280, textSizeY: 1280,
@@ -902,12 +907,11 @@ export function exportPawn(project, options = {}) {
       if (colon !== -1) {
         const libPart = rawText.slice(0, colon).toLowerCase();
         const texPart = rawText.slice(colon + 1);
-        if (libPart === 'loadscs') {
-          rawText = 'LOADSCS:' + texPart.toLowerCase();
+        if (libPart === 'loadscs' || libPart === 'loadsuk') {
+          const tLow = texPart.toLowerCase();
+          rawText = 'LOADSUK:' + (tLow === 'loadsc0' ? 'loadscuk' : tLow);
         } else if (libPart.startsWith('loadsc')) {
           rawText = libPart.toLowerCase() + ':' + texPart.toLowerCase();
-        } else if (libPart === 'loadsuk') {
-          rawText = 'LOADSUK:' + texPart.toLowerCase();
         } else if (libPart === 'hud') {
           if (texPart.toLowerCase() === 'radar_ring' || texPart.toLowerCase() === 'radarringplane') {
             rawText = 'hud:radarRingPlane';

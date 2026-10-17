@@ -94,6 +94,12 @@ function getSpriteImage(lib, name) {
   if (libLower === 'hud' && (nameLower === 'radar_ring' || nameLower === 'radarringplane')) {
     nameLower = 'radarringplane';
   }
+  if (libLower === 'loadscs' || libLower === 'ld_loadscs') {
+    libLower = 'loadsuk';
+    if (nameLower === 'loadsc0') nameLower = 'loadscuk';
+  } else if (libLower === 'loadsuk' && nameLower === 'loadsc0') {
+    nameLower = 'loadscuk';
+  }
   const key = `${libLower}:${nameLower}`;
   if (spriteImageCache.has(key)) return spriteImageCache.get(key);
 
@@ -103,16 +109,6 @@ function getSpriteImage(lib, name) {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.src = primaryUrl;
-  img.onerror = () => {
-    if (!img._altTried) {
-      img._altTried = true;
-      if (libLower.startsWith('loadsc')) {
-        img.src = `/cache/sprites/loadscs/${nameLower}.png`;
-      } else if (libLower === 'loadscs' || libLower === 'ld_loadscs') {
-        img.src = `/cache/sprites/${nameLower}/${nameLower}.png`;
-      }
-    }
-  };
   img.onload = () => {
     if (dialogEl && dialogEl.classList.contains('open')) redrawCanvas();
   };
@@ -1309,9 +1305,13 @@ function copyTextDrawsPawn() {
 
     if (td.font === 4) {
       let rawText = td.text || 'hud:radardisc';
-      if (rawText.toLowerCase().startsWith('loadscs:')) rawText = 'LOADSCS:' + rawText.slice(8).toLowerCase();
-      else if (rawText.toLowerCase().startsWith('loadsuk:')) rawText = 'LOADSUK:' + rawText.slice(8).toLowerCase();
-      else if (rawText.toLowerCase().startsWith('ld_')) {
+      if (rawText.toLowerCase().startsWith('loadscs:')) {
+        const tex = rawText.slice(8).toLowerCase();
+        rawText = 'LOADSUK:' + (tex === 'loadsc0' ? 'loadscuk' : tex);
+      } else if (rawText.toLowerCase().startsWith('loadsuk:')) {
+        const tex = rawText.slice(8).toLowerCase();
+        rawText = 'LOADSUK:' + (tex === 'loadsc0' ? 'loadscuk' : tex);
+      } else if (rawText.toLowerCase().startsWith('ld_')) {
         const colon = rawText.indexOf(':');
         if (colon !== -1) rawText = rawText.slice(0, colon).toUpperCase() + ':' + rawText.slice(colon + 1).toLowerCase();
       }

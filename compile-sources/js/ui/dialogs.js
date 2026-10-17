@@ -272,12 +272,11 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
         if (colon !== -1) {
           const libPart = rawText.slice(0, colon).toLowerCase();
           const texPart = rawText.slice(colon + 1);
-          if (libPart === 'loadscs') {
-            rawText = 'LOADSCS:' + texPart.toLowerCase();
+          if (libPart === 'loadscs' || libPart === 'loadsuk') {
+            const tLow = texPart.toLowerCase();
+            rawText = 'LOADSUK:' + (tLow === 'loadsc0' ? 'loadscuk' : tLow);
           } else if (libPart.startsWith('loadsc')) {
             rawText = libPart.toLowerCase() + ':' + texPart.toLowerCase();
-          } else if (libPart === 'loadsuk') {
-            rawText = 'LOADSUK:' + texPart.toLowerCase();
           } else if (libPart === 'hud') {
             if (texPart.toLowerCase() === 'radar_ring' || texPart.toLowerCase() === 'radarringplane') {
               rawText = 'hud:radarRingPlane';
