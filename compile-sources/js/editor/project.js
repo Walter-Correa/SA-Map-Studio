@@ -182,10 +182,11 @@ export function makeTextDraw(data) {
 }
 
 export function makeCheckpoint(data) {
-  const isRace = Boolean(data.isRace);
+  const isRace = Boolean(data.isRace || data.cpKind === 'race');
   const x = +data.x || 0, y = +data.y || 0, z = +data.z || 0;
   return {
     uid: data.uid || newUid(),
+    kind: 'checkpoints',
     isRace,
     type: Math.max(0, Math.min(4, data.type !== undefined ? (data.type | 0) : 0)),
     x, y, z,
@@ -205,11 +206,14 @@ export function makeCheckpoint(data) {
 }
 
 export function makeMapIcon(data) {
+  const mtype = data.markertype !== undefined ? (data.markertype | 0) : (data.type !== undefined ? (data.type | 0) : 0);
   return {
     uid: data.uid || newUid(),
+    kind: 'mapIcons',
     name: data.name ? String(data.name) : '',
     iconid: Math.max(0, Math.min(99, data.iconid !== undefined ? (data.iconid | 0) : 0)),
-    markertype: Math.max(0, Math.min(63, data.markertype !== undefined ? (data.markertype | 0) : 0)),
+    markertype: Math.max(0, Math.min(63, mtype)),
+    type: Math.max(0, Math.min(63, mtype)),
     x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
     color: data.color !== undefined ? (data.color | 0) : 0xFF0000FF,
     style: Math.max(0, Math.min(3, data.style !== undefined ? (data.style | 0) : 0)),
@@ -227,6 +231,7 @@ export function makeMapIcon(data) {
 export function makeSound(data) {
   return {
     uid: data.uid || newUid(),
+    kind: 'sounds',
     soundid: data.soundid !== undefined ? (data.soundid | 0) : 1058,
     x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
     comment: data.comment ? String(data.comment) : '',
@@ -392,21 +397,36 @@ export class Project {
   }
 
   // ---- operações de alto nível ----
-  addItems(label, items) {
+  addItems(label, a, b) {
+    let kind = null;
+    let items = null;
+    if (typeof a === 'string' && Array.isArray(b)) {
+      kind = a;
+      items = b;
+    } else if (Array.isArray(a)) {
+      items = a;
+      kind = typeof b === 'string' ? b : null;
+    } else if (Array.isArray(b)) {
+      items = b;
+    } else {
+      items = [];
+    }
+
     const uids = [];
     this.transact(label, [], () => {
       for (const it of items) {
-        const k = it.kind;
+        if (!it) continue;
+        const k = it.kind || kind;
         if (k && MAKERS[k]) {
           const obj = MAKERS[k](it);
           if (!this[k]) this[k] = [];
           this[k].push(obj);
           uids.push(obj.uid);
-        } else if (it.kind === 'removed') {
+        } else if (k === 'removed' || it.kind === 'removed') {
           const r = makeRemoved(it); this.removed.push(r); uids.push(r.uid);
-        } else if (it.kind === 'actors') {
+        } else if (k === 'actors' || it.kind === 'actors') {
           const a = makeActor(it); this.actors.push(a); uids.push(a.uid);
-        } else if (it.kind === 'vehicles' || (it.kind !== 'objects' && isVehicleModel(it.model))) {
+        } else if (k === 'vehicles' || it.kind === 'vehicles' || (it.model && isVehicleModel(it.model))) {
           const v = makeVehicle(it); this.vehicles.push(v); uids.push(v.uid);
         } else {
           const o = makeObject(it); this.objects.push(o); uids.push(o.uid);

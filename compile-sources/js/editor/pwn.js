@@ -1,6 +1,7 @@
 // Importação e exportação de mapas em Pawn (.pwn) e IPL.
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
+import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -898,7 +899,11 @@ export function exportPawn(project, options = {}) {
     if (hasMods) {
       vehLines.push(`vehicleid = ${vehicleLine(v, opt, center)}${cmt}`);
       if (v.paintjob !== undefined && v.paintjob >= 0) vehLines.push(`ChangeVehiclePaintjob(vehicleid, ${v.paintjob});`);
-      for (const comp of (v.components || [])) vehLines.push(`AddVehicleComponent(vehicleid, ${comp});`);
+      for (const comp of (v.components || [])) {
+        const cInfo = VEHICLE_COMPONENTS[comp];
+        const cComment = cInfo?.name ? `;//${cInfo.name}` : ';';
+        vehLines.push(`AddVehicleComponent(vehicleid, ${comp})${cComment}`);
+      }
       for (const ao of attachedToVeh) {
         emitObjectBlock(vehLines, ao, 'objectid');
       }

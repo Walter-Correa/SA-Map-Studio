@@ -479,36 +479,37 @@ function vehicleInspector(v) {
       `}
     </div>
 
-    <!-- Tuning / Componentes -->
+    <!-- Tuning e Modificações com Múltiplas Marcações -->
     <div class="insp-section">
-      <div class="insp-label">Tuning e Componentes <span class="tag">${comps.length} instalados</span></div>
-      <div class="slots" id="vehComponentList" style="max-height:160px; overflow-y:auto;">
-        ${comps.map(cid => {
-          const comp = VEHICLE_COMPONENTS[cid] || { type: -1, name: `Componente ${cid}` };
-          const slotName = COMPONENT_TYPES[comp.type] || 'Outro';
-          return `<div class="slot changed" style="display:flex; justify-content:space-between; align-items:center; padding: 4px 8px;">
-            <div style="font-size:12px;"><b>${esc(comp.name)}</b> <small style="color:var(--text-dim);">[${cid}] · ${esc(slotName)}</small></div>
-            <button type="button" class="btn icon small danger" data-del-comp="${cid}" title="Desacoplar componente"><svg><use href="#i-x"/></svg></button>
-          </div>`;
-        }).join('') || '<div class="insp-note">Nenhum componente de tuning acoplado.</div>'}
-      </div>
+      <div class="insp-label">Tuning e Modificações <span class="tag">${comps.length} ativo(s)</span></div>
       ${isVehicleValidForModding(v.model) ? `
-      <div style="margin-top:8px;">
-        <label>Acoplar componente no veículo
-          <select id="selAddComp" style="width:100%;">
-            <option value="">Escolha um componente</option>
-            ${Object.entries(COMPONENT_TYPES).map(([typeId, typeName]) => {
-              const items = Object.entries(VEHICLE_COMPONENTS).filter(([cId, c]) => c.type === +typeId && !comps.includes(+cId) && isModValidForVehicle(+cId, v.model));
-              if (!items.length) return '';
-              return `<optgroup label="${esc(typeName)}">
-                ${items.map(([cId, c]) => `<option value="${cId}">${cId} - ${esc(c.name)}</option>`).join('')}
-              </optgroup>`;
-            }).join('')}
-          </select>
-        </label>
+      <div class="veh-mod-groups" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px;">
+        ${Object.entries(COMPONENT_TYPES).map(([typeId, typeName]) => {
+          const items = Object.entries(VEHICLE_COMPONENTS).filter(([cId, c]) => c.type === +typeId && isModValidForVehicle(+cId, v.model));
+          if (!items.length) return '';
+          return `
+            <div class="veh-mod-group" style="background: var(--asphalt-900); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--paper-mute); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
+                <span>${esc(typeName)}</span>
+                <small style="font-weight: normal; color: var(--paper-dim);">${items.length} opção(ões)</small>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                ${items.map(([cId, c]) => {
+                  const isChecked = comps.includes(+cId);
+                  return `
+                    <label class="check" style="font-size: 12px; padding: 2px 4px; border-radius: 4px; cursor: pointer; ${isChecked ? 'background: rgba(240,166,48,0.12); color: var(--sodium); font-weight: 600;' : ''}">
+                      <input type="checkbox" data-veh-comp-toggle="${cId}" data-veh-comp-type="${typeId}" ${isChecked ? 'checked' : ''}>
+                      <span>#${cId} — ${esc(c.name)}</span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
       ` : `
-      <div class="insp-note warn" style="margin-top:8px;">Este modelo não suporta modificações de tuning.</div>
+      <div class="insp-note warn">Este modelo não suporta modificações de tuning.</div>
       `}
     </div>
 
@@ -1155,37 +1156,29 @@ function bindVehicle(v) {
     };
   }
 
-  const selAddComp = $('#selAddComp');
-  if (selAddComp) {
-    selAddComp.onchange = () => {
-      const cid = parseInt(selAddComp.value, 10);
-      if (!Number.isFinite(cid) || cid < 1000) return;
-      const newComp = VEHICLE_COMPONENTS[cid];
-      project.updateItems('Acoplar Componente', [uid], (o) => {
+  // Bind de seleção múltipla de componentes de tuning
+  $$('#inspector [data-veh-comp-toggle]').forEach(chk => {
+    chk.onchange = () => {
+      const cid = parseInt(chk.dataset.vehCompToggle, 10);
+      const typeId = parseInt(chk.dataset.vehCompType, 10);
+      const isChecked = chk.checked;
+      const compInfo = VEHICLE_COMPONENTS[cid];
+
+      project.updateItems(isChecked ? 'Instalar Componente' : 'Remover Componente', [uid], (o) => {
         if (!o.components) o.components = [];
-        if (newComp && newComp.type !== undefined) {
+        if (isChecked) {
+          // Desmarca qualquer outro componente do mesmo grupo / slot (mutuamente exclusivo por slot)
           o.components = o.components.filter(existingId => {
             const ec = VEHICLE_COMPONENTS[existingId];
-            return !ec || ec.type !== newComp.type;
+            return !ec || ec.type !== typeId;
           });
+          if (!o.components.includes(cid)) o.components.push(cid);
+        } else {
+          o.components = o.components.filter(existingId => existingId !== cid);
         }
-        if (!o.components.includes(cid)) o.components.push(cid);
       });
       app.editor.syncAll();
-      toast(`Componente ${cid} acoplado no veículo`);
-      renderInspector();
-    };
-  }
-
-  $$('#inspector [data-del-comp]').forEach(btn => {
-    btn.onclick = () => {
-      const cid = parseInt(btn.dataset.delComp, 10);
-      project.updateItems('Desacoplar Componente', [uid], (o) => {
-        if (!o.components) return;
-        o.components = o.components.filter(c => c !== cid);
-      });
-      app.editor.syncAll();
-      toast(`Componente ${cid} desacoplado`);
+      toast(isChecked ? `Componente #${cid} (${compInfo?.name || 'Tuning'}) instalado` : `Componente #${cid} removido`, 'ok');
       renderInspector();
     };
   });
@@ -1253,7 +1246,11 @@ function updateVehCode(v) {
     `new vehicleid = AddStaticVehicleEx(${v.model}, ${v.x.toFixed(4)}, ${v.y.toFixed(4)}, ${v.z.toFixed(4)}, ${v.rz.toFixed(4)}, ${v.color1}, ${v.color2}, ${v.respawn});`
   ];
   if (v.paintjob !== undefined && v.paintjob >= 0) lines.push(`ChangeVehiclePaintjob(vehicleid, ${v.paintjob});`);
-  for (const c of (v.components || [])) lines.push(`AddVehicleComponent(vehicleid, ${c});`);
+  for (const c of (v.components || [])) {
+    const cInfo = VEHICLE_COMPONENTS[c];
+    const cComment = cInfo?.name ? `;//${cInfo.name}` : ';';
+    lines.push(`AddVehicleComponent(vehicleid, ${c})${cComment}`);
+  }
   const attached = getVehicleAttachedObjects(v.uid).slice(0, MAX_VEHICLE_ATTACHED_OBJECTS);
   attached.forEach((o, i) => {
     const a = o.attach;

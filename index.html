@@ -193,10 +193,10 @@
       </div>
       <button id="btnCheckpoints" class="btn ghost" title="Criar Checkpoint ou Race Checkpoint (Tipos 0 a 4)"><svg><use href="#i-flag"/></svg><span class="lbl2">Checkpoints</span></button>
       <button id="btnMapIcons" class="btn ghost" title="Criar e editar MapIcons no mapa (IDs 0 a 63)"><svg><use href="#i-pin"/></svg><span class="lbl2">MapIcons</span></button>
-      <button id="btnSounds" class="btn ghost" title="Catálogo de sons (PlayerPlaySound) com prévia de áudio"><svg><use href="#i-sound"/></svg><span class="lbl2">Sons</span></button>
       <button id="btnGangZones" class="btn ghost" title="Criar e editar GangZones no mapa do radar"><svg><use href="#i-map"/></svg><span class="lbl2">GangZones</span></button>
       <button id="btnTextDraws" class="btn ghost" title="Editor visual de TextDraws (640x480)"><svg><use href="#i-text"/></svg><span class="lbl2">TextDraws</span></button>
       <button id="btn3DText" class="btn ghost" title="Criar Texto 3D no mapa"><svg><use href="#i-text3d"/></svg><span class="lbl2">3DText</span></button>
+      <button id="btnSounds" class="btn ghost" title="Catálogo de sons (PlayerPlaySound) com prévia de áudio"><svg><use href="#i-sound"/></svg><span class="lbl2">Sons</span></button>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
       <button id="btnExport" class="btn" title="Exportar mapa (Pawn, CreateObject, etc.)"><svg><use href="#i-out"/></svg><span class="lbl-export">Exportar</span></button>
       <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar</span></button>
@@ -906,7 +906,7 @@
 
     <div class="gz-sidebar" style="width: 340px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 4px;">
       <div style="display: flex; gap: 6px;">
-        <button type="button" class="btn primary small" id="miBtnAdd" style="flex: 1;"><svg><use href="#i-plus"/></svg>+ Na Câmera</button>
+        <button type="button" class="btn primary small" id="miBtnAdd" style="flex: 1;"><svg><use href="#i-plus"/></svg>Para onde aponta a câmera</button>
         <button type="button" class="btn small" id="miBtnCopyPwn" title="Copiar código Pawn de todos os MapIcons"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
       </div>
 
@@ -987,13 +987,6 @@
     <div id="sndCategories" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;"></div>
     <div id="sndList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; background: var(--asphalt-900); border: 1px solid var(--line); border-radius: 6px; padding: 6px;"></div>
   </div>
-  <footer class="dialog-foot" style="border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto; display: flex; align-items: center; gap: 8px;">
-    <div id="sndSelectedLabel" style="margin-right: auto; font-size: 12.5px; color: var(--paper);"></div>
-    <button type="button" class="btn ghost" id="sndBtnCopyCode"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
-    <button type="button" class="btn" id="sndBtnPlaceMap"><svg><use href="#i-pin"/></svg>Clicar no Mapa</button>
-    <button type="button" class="btn primary" id="sndBtnPlaceCam"><svg><use href="#i-plus"/></svg>Criar na Câmera</button>
-    <button type="button" class="btn" id="sndBtnClose">Fechar</button>
-  </footer>
 </dialog>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>

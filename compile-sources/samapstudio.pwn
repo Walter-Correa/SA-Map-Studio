@@ -63,6 +63,9 @@ new Float:gRemovidos[SAMSP_MAX_REMOVIDOS][4];
 new gRemovidosModelo[SAMSP_MAX_REMOVIDOS];
 new gTotalRemovidos;
 new gVeiculos[SAMSP_MAX_VEICULOS];
+new gVeiculoComps[SAMSP_MAX_VEICULOS][16];
+new gVeiculoTotalComps[SAMSP_MAX_VEICULOS];
+new gVeiculoPaintjob[SAMSP_MAX_VEICULOS];
 new gTotalVeiculos;
 new gTotalActors;
 new gActors[SAMSP_MAX_ACTORS];
@@ -553,18 +556,26 @@ stock SAMSP_CarregarMapa()
                 if (tipo[1] == 'P')
                 {
                     new vehIdx = SAMSP_Int(linha, 1);
+                    new pj = SAMSP_Int(linha, 2);
                     if (vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
                     {
-                        ChangeVehiclePaintjob(gVeiculos[vehIdx], SAMSP_Int(linha, 2));
+                        gVeiculoPaintjob[vehIdx] = pj;
+                        ChangeVehiclePaintjob(gVeiculos[vehIdx], pj);
                     }
                     continue;
                 }
                 if (tipo[1] == 'C')
                 {
                     new vehIdx = SAMSP_Int(linha, 1);
+                    new compId = SAMSP_Int(linha, 2);
                     if (vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
                     {
-                        AddVehicleComponent(gVeiculos[vehIdx], SAMSP_Int(linha, 2));
+                        if (gVeiculoTotalComps[vehIdx] < 16)
+                        {
+                            gVeiculoComps[vehIdx][gVeiculoTotalComps[vehIdx]] = compId;
+                            gVeiculoTotalComps[vehIdx]++;
+                        }
+                        AddVehicleComponent(gVeiculos[vehIdx], compId);
                     }
                     continue;
                 }
@@ -575,6 +586,8 @@ stock SAMSP_CarregarMapa()
                 new veh = CreateVehicle(SAMSP_Int(linha, 1), vx, vy, vz,
                     SAMSP_Float(linha, 5), SAMSP_Int(linha, 6), SAMSP_Int(linha, 7), -1);
                 gVeiculos[gTotalVeiculos] = veh;
+                gVeiculoTotalComps[gTotalVeiculos] = 0;
+                gVeiculoPaintjob[gTotalVeiculos] = -1;
                 gTotalVeiculos++;
 
                 sumX += vx;
@@ -976,6 +989,46 @@ public SAMSP_SyncActorAnims(playerid)
 }
 
 // Quando um actor entra na área visível (stream-in) de um jogador, assegura a animação ativa
+public OnVehicleStreamIn(vehicleid, forplayerid)
+{
+    #pragma unused forplayerid
+    for (new i = 0; i < gTotalVeiculos; i++)
+    {
+        if (gVeiculos[i] == vehicleid)
+        {
+            if (gVeiculoPaintjob[i] >= 0)
+            {
+                ChangeVehiclePaintjob(vehicleid, gVeiculoPaintjob[i]);
+            }
+            for (new c = 0; c < gVeiculoTotalComps[i]; c++)
+            {
+                AddVehicleComponent(vehicleid, gVeiculoComps[i][c]);
+            }
+            break;
+        }
+    }
+    return 1;
+}
+
+stock SAMSP_ApplyAllVehicleTuning()
+{
+    for (new i = 0; i < gTotalVeiculos; i++)
+    {
+        new veh = gVeiculos[i];
+        if (veh != INVALID_VEHICLE_ID)
+        {
+            if (gVeiculoPaintjob[i] >= 0)
+            {
+                ChangeVehiclePaintjob(veh, gVeiculoPaintjob[i]);
+            }
+            for (new c = 0; c < gVeiculoTotalComps[i]; c++)
+            {
+                AddVehicleComponent(veh, gVeiculoComps[i][c]);
+            }
+        }
+    }
+}
+
 public OnActorStreamIn(actorid, forplayerid)
 {
     for (new i = 0; i < gTotalActors; i++)
@@ -1214,6 +1267,7 @@ public OnPlayerSpawn(playerid)
     SAMSP_ShowPlayerCheckpoints(playerid);
     SAMSP_PlayMapSounds(playerid);
     SAMSP_ShowAllTextDraws(playerid);
+    SAMSP_ApplyAllVehicleTuning();
     SetTimerEx("SAMSP_ShowAllTextDraws", 400, false, "i", playerid);
     SetTimerEx("SAMSP_ShowAllTextDraws", 1200, false, "i", playerid);
     SAMSP_PreloadAllAnims(playerid);

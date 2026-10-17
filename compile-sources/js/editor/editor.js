@@ -87,9 +87,42 @@ export class Editor extends EventTarget {
     this.hoverBox.visible = false;
     viewport.scene.add(this.hoverBox);
 
+    // Botão flutuante nas setas do Gizmo para alternar Mover / Girar
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'gizmo-mode-toggle';
+    toggleBtn.id = 'gizmoModeToggle';
+    toggleBtn.style.display = 'none';
+    toggleBtn.title = 'Alternar entre Mover e Girar (Atalhos: G ou R)';
+    toggleBtn.innerHTML = `<svg><use href="#i-rotate"/></svg><span>Girar (R)</span>`;
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.setMode(this.mode === 'translate' ? 'rotate' : 'translate');
+    });
+    if (viewport.dom) viewport.dom.appendChild(toggleBtn);
+    this.gizmoToggleBtn = toggleBtn;
+
     this.bindPointer();
     viewport.onFrame(() => this.frame());
     this.setProject(project);
+  }
+
+  get renderer() { return this.vp.renderer; }
+
+  pointInFront(dist = 12) {
+    const dir = new THREE.Vector3();
+    this.vp.camera.getWorldDirection(dir);
+    const pos = this.vp.camera.position.clone().addScaledVector(dir, dist);
+    return { x: pos.x, y: pos.y, z: pos.z };
+  }
+
+  groundPointFromEvent(e) {
+    const res = this.surfacePoint(e);
+    if (res && res.point) {
+      return { x: res.point.x, y: res.point.y, z: res.point.z };
+    }
+    return null;
   }
 
   get worldSel() { return this.worldSelection.length ? this.worldSelection[0] : null; }
@@ -412,17 +445,76 @@ export class Editor extends EventTarget {
           });
         };
 
-        // Rodas: substitui todas as rodas originais e instancia em cada dummy de roda
+        // Rodas: substitui todas as rodas originais e instancia em cada dummy de roda com escala ajustada ao diâmetro original
         if (cName.startsWith('wheel_')) {
+          let stockRadius = null;
+          for (const c of m.children) {
+            if (c.userData?.isStockWheel && c.geometry) {
+              if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
+              const bb = c.geometry.boundingBox;
+              const diam = Math.max(Math.abs(bb.max.z - bb.min.z), Math.abs(bb.max.y - bb.min.y));
+              if (diam > 0.15 && diam < 3.0) { stockRadius = diam / 2; break; }
+            }
+          }
+
+          let compRadius = null;
+          compObj.traverse(child => {
+            if (child.isMesh && child.geometry && !compRadius) {
+              if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+              const bb = child.geometry.boundingBox;
+              const diam = Math.max(Math.abs(bb.max.z - bb.min.z), Math.abs(bb.max.y - bb.min.y));
+              if (diam > 0.15) compRadius = diam / 2;
+            }
+          });
+
+          const wheelScale = (stockRadius && compRadius && compRadius > 0) ? (stockRadius / compRadius) : 1.0;
+
           m.children.forEach(c => { if (c.userData?.isStockWheel) c.visible = false; });
           const wDummies = ['wheel_lf_dummy', 'wheel_rf_dummy', 'wheel_lb_dummy', 'wheel_rb_dummy', 'wheel_lm_dummy', 'wheel_rm_dummy'].filter(k => dummies[k]);
           for (const dKey of wDummies) {
             const wClone = compObj.clone(true);
             wClone.applyMatrix4(dummies[dKey]);
-            if (/_l/.test(dKey)) { wClone.scale.x *= -1; wClone.updateMatrix(); }
+            if (wheelScale !== 1.0) {
+              wClone.scale.multiplyScalar(wheelScale);
+            }
+            if (/_l/.test(dKey)) { wClone.scale.x *= -1; }
+            wClone.updateMatrix();
             markComp(wClone);
             m.add(wClone);
           }
+          return;
+        }
+
+        // Saias laterais (wg_l / wg_r): aplicam-se em ambas as laterais do veículo
+        if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_') || cName.startsWith('wg_')) {
+          const leftMat = dummies['ug_wing_left'] || dummies['chassis'];
+          if (leftMat) compObj.applyMatrix4(leftMat);
+          markComp(compObj);
+          m.add(compObj);
+
+          // Lado direito da saia lateral
+          const rClone = compObj.clone(true);
+          rClone.position.set(0, 0, 0);
+          rClone.rotation.set(0, 0, 0);
+          rClone.scale.set(1, 1, 1);
+          const rightMat = dummies['ug_wing_right'];
+          if (rightMat) {
+            rClone.applyMatrix4(rightMat);
+          } else if (leftMat) {
+            const mirrored = leftMat.clone();
+            mirrored.elements[12] = -mirrored.elements[12];
+            rClone.applyMatrix4(mirrored);
+            rClone.scale.x *= -1;
+            rClone.updateMatrix();
+          }
+          markComp(rClone);
+          m.add(rClone);
+          return;
+        } else if (cName.startsWith('wg_r_')) {
+          const rightMat = dummies['ug_wing_right'] || dummies['chassis'];
+          if (rightMat) compObj.applyMatrix4(rightMat);
+          markComp(compObj);
+          m.add(compObj);
           return;
         }
 
@@ -441,10 +533,6 @@ export class Editor extends EventTarget {
           targetMat = dummies['ug_spoiler'] || dummies['boot_dummy'];
         } else if (cName.startsWith('rf_')) {
           targetMat = dummies['ug_roof'] || dummies['chassis'];
-        } else if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_')) {
-          targetMat = dummies['ug_wing_left'] || dummies['chassis'];
-        } else if (cName.startsWith('wg_r_')) {
-          targetMat = dummies['ug_wing_right'] || dummies['chassis'];
         } else if (cName.startsWith('nto_')) {
           targetMat = dummies['ug_nitro'] || dummies['chassis'];
         } else if (cName.startsWith('exh_')) {
@@ -739,11 +827,14 @@ export class Editor extends EventTarget {
 
         // Encaixe magnético em bordas de objetos próximos
         if (this.mode === 'translate' && this.snap.magnetic && this.selection.length === 1) {
-          const candidates = [...this.nodes.values()].filter(n => n !== node);
-          const snapDelta = findMagneticSnap(node, candidates, this.snap.magDist || 0.8);
-          if (snapDelta) {
-            node.position.add(snapDelta);
-            node.updateMatrixWorld(true);
+          const itemAttached = this.findProjectOf(uid)?.find(uid);
+          if (!itemAttached?.attach || !itemAttached.attach.to) {
+            const candidates = [...this.nodes.values()].filter(n => n !== node);
+            const snapDelta = findMagneticSnap(node, candidates, this.snap.magDist || 0.8);
+            if (snapDelta) {
+              node.position.add(snapDelta);
+              node.updateMatrixWorld(true);
+            }
           }
         }
 
@@ -961,7 +1052,6 @@ export class Editor extends EventTarget {
       ov.parent?.remove(ov);
     }
     this.selOverlays = [];
-    if (!this.showSelectionBox) return;
 
     const addHighlightOverlay = (rootObj) => {
       if (!rootObj) return;
@@ -977,11 +1067,14 @@ export class Editor extends EventTarget {
     };
 
     const add = (obj, color) => {
-      const box = new THREE.Box3().setFromObject(obj);
-      if (box.isEmpty()) return;
-      const h = new THREE.Box3Helper(box, color);
-      h.userData.noPick = true;
-      this.selBoxes.add(h);
+      if (this.showSelectionBox) {
+        const box = new THREE.Box3().setFromObject(obj);
+        if (!box.isEmpty()) {
+          const h = new THREE.Box3Helper(box, color);
+          h.userData.noPick = true;
+          this.selBoxes.add(h);
+        }
+      }
       addHighlightOverlay(obj);
     };
     for (const u of this.selection) {
@@ -1596,6 +1689,31 @@ export class Editor extends EventTarget {
     }
     if (this.worldSelection.length && !this._lastWorldBoxOk) { this.refreshSelectionBoxes(); }
     this._lastWorldBoxOk = !this.worldSelection.length || this.worldSelection.every(w => this.streamer.shown.has(w.index));
+
+    // Atualiza posição na tela e texto do botão flutuante de alternar Mover / Girar
+    if (this.gizmoToggleBtn) {
+      if (this.selection.length === 0 || !this.gizmo.visible || this.mode === 'texture') {
+        this.gizmoToggleBtn.style.display = 'none';
+      } else {
+        const v = this.pivot.position.clone().project(this.vp.camera);
+        if (v.z >= 1.0) {
+          this.gizmoToggleBtn.style.display = 'none';
+        } else {
+          const dom = this.vp.dom;
+          const rect = dom ? dom.getBoundingClientRect() : null;
+          if (rect) {
+            const screenX = ((v.x + 1) / 2) * rect.width;
+            const screenY = ((-v.y + 1) / 2) * rect.height;
+            this.gizmoToggleBtn.style.left = `${screenX}px`;
+            this.gizmoToggleBtn.style.top = `${screenY}px`;
+            this.gizmoToggleBtn.style.display = 'inline-flex';
+            const nextLabel = this.mode === 'translate' ? 'Girar (R)' : 'Mover (G)';
+            const nextIcon = this.mode === 'translate' ? 'i-rotate' : 'i-move';
+            this.gizmoToggleBtn.innerHTML = `<svg><use href="#${nextIcon}"/></svg><span>${nextLabel}</span>`;
+          }
+        }
+      }
+    }
   }
 }
 
