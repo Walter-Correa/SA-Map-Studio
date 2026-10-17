@@ -2542,91 +2542,91 @@ export const TEXTDRAW_SPRITES = [
   {
     "lib": "LOADSCS",
     "name": "loadsc0",
-    "value": "LOADSCS:loadsc0",
+    "value": "loadsc0:loadsc0",
     "thumb": "/cache/sprites/loadscs/loadsc0.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc1",
-    "value": "LOADSCS:loadsc1",
+    "value": "loadsc1:loadsc1",
     "thumb": "/cache/sprites/loadscs/loadsc1.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc10",
-    "value": "LOADSCS:loadsc10",
+    "value": "loadsc10:loadsc10",
     "thumb": "/cache/sprites/loadscs/loadsc10.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc11",
-    "value": "LOADSCS:loadsc11",
+    "value": "loadsc11:loadsc11",
     "thumb": "/cache/sprites/loadscs/loadsc11.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc12",
-    "value": "LOADSCS:loadsc12",
+    "value": "loadsc12:loadsc12",
     "thumb": "/cache/sprites/loadscs/loadsc12.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc13",
-    "value": "LOADSCS:loadsc13",
+    "value": "loadsc13:loadsc13",
     "thumb": "/cache/sprites/loadscs/loadsc13.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc14",
-    "value": "LOADSCS:loadsc14",
+    "value": "loadsc14:loadsc14",
     "thumb": "/cache/sprites/loadscs/loadsc14.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc2",
-    "value": "LOADSCS:loadsc2",
+    "value": "loadsc2:loadsc2",
     "thumb": "/cache/sprites/loadscs/loadsc2.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc3",
-    "value": "LOADSCS:loadsc3",
+    "value": "loadsc3:loadsc3",
     "thumb": "/cache/sprites/loadscs/loadsc3.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc4",
-    "value": "LOADSCS:loadsc4",
+    "value": "loadsc4:loadsc4",
     "thumb": "/cache/sprites/loadscs/loadsc4.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc5",
-    "value": "LOADSCS:loadsc5",
+    "value": "loadsc5:loadsc5",
     "thumb": "/cache/sprites/loadscs/loadsc5.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc6",
-    "value": "LOADSCS:loadsc6",
+    "value": "loadsc6:loadsc6",
     "thumb": "/cache/sprites/loadscs/loadsc6.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc7",
-    "value": "LOADSCS:loadsc7",
+    "value": "loadsc7:loadsc7",
     "thumb": "/cache/sprites/loadscs/loadsc7.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc8",
-    "value": "LOADSCS:loadsc8",
+    "value": "loadsc8:loadsc8",
     "thumb": "/cache/sprites/loadscs/loadsc8.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc9",
-    "value": "LOADSCS:loadsc9",
+    "value": "loadsc9:loadsc9",
     "thumb": "/cache/sprites/loadscs/loadsc9.png"
   },
   {

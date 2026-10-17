@@ -41,7 +41,7 @@ export class Editor extends EventTarget {
     this.mode = 'translate';
     this.space = 'world';
     this.snap = { enabled: false, move: 0.5, rotate: 15, magnetic: true, magDist: 0.8 };
-    this.transformSpeed = { move: 1.0, rotate: 1.0 };
+    this.transformSpeed = { move: 1.0, rotate: 10.0 };
     this.placing = null;             // {model, ghost}
     this.matSel = [];                // índices de material escolhidos (0 a 15)
     this.slotHiddenMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -438,7 +438,7 @@ export class Editor extends EventTarget {
     const items = this.selectedItems();
     if (!items.length) { this.tc.detach(); return; }
 
-    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0);
+    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0);
     const isAll = items.length >= totalProjectItems && totalProjectItems > 0;
 
     if (items.length === 1) {
@@ -489,17 +489,23 @@ export class Editor extends EventTarget {
   setSnap(s) { Object.assign(this.snap, s); this.applySnap(); this.emit('mode'); }
   setTransformSpeed(speeds) {
     if (speeds.move !== undefined) {
-      this.transformSpeed.move = Math.min(10.0, Math.max(0.001, +speeds.move || 1.0));
+      this.transformSpeed.move = Math.min(10.0, Math.max(1.0, +speeds.move || 1.0));
       if (this.tc) this.tc.translationSpeed = this.transformSpeed.move;
     }
     if (speeds.rotate !== undefined) {
-      this.transformSpeed.rotate = Math.min(10.0, Math.max(0.001, +speeds.rotate || 1.0));
+      this.transformSpeed.rotate = Math.min(10.0, Math.max(1.0, +speeds.rotate || 10.0));
       if (this.tc) this.tc.rotationSpeed = this.transformSpeed.rotate;
     }
   }
   selectAll(focus = false) {
     this.syncAll();
-    const all = [...this.project.objects, ...this.project.vehicles, ...(this.project.actors || [])].map(o => o.uid);
+    const all = [
+      ...this.project.objects,
+      ...this.project.vehicles,
+      ...(this.project.actors || []),
+      ...(this.project.labels || []),
+      ...(this.project.pickups || []),
+    ].map(o => o.uid);
     if (all.length) {
       const prevActiveUid = this.selection.length ? this.selection[0] : null;
       this.mode = 'translate';

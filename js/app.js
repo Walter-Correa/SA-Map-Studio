@@ -35,7 +35,10 @@ async function boot() {
   let cfg;
   try { cfg = await (await fetch('/api/config')).json(); }
   catch { status.textContent = 'Não consegui falar com o servidor. Abra o programa pelo SA Map Studio.exe (ou serve.py).'; status.classList.add('error'); return; }
-  if (!cfg.ok) { showSetup(cfg.gtaPath, cfg.problem); return; }
+  if (cfg.needsSetup || !cfg.ok) {
+    showSetup(cfg.detectedPath || cfg.gtaPath || '', cfg.problem, cfg.needsSetup);
+    return;
+  }
   await start(cfg);
   if (cfg.problem) toast(cfg.problem, 'warn', 8000);
 }
@@ -44,25 +47,43 @@ async function browseGta(initial) {
   try { return await postJSON('/api/browse', { initial }); } catch { return { path: '' }; }
 }
 
-function showSetup(path, problem) {
+function showSetup(path, problem, needsSetup) {
   $('#bootBody').hidden = true;
   const form = $('#setupForm');
   form.hidden = false;
   $('#setupPath').value = path || '';
-  $('#setupPath').focus();
   const er = $('#setupError');
-  if (path && problem) { er.textContent = problem; er.hidden = false; }
+  if (problem && !needsSetup) {
+    er.textContent = problem;
+    er.hidden = false;
+  } else {
+    er.hidden = true;
+    er.textContent = '';
+  }
   $('#setupBrowse').onclick = async () => {
     const r = await browseGta($('#setupPath').value);
     if (!r.path) return;
     $('#setupPath').value = r.path;
-    er.hidden = r.ok; er.textContent = r.problem || '';
+    er.hidden = r.ok;
+    er.textContent = r.problem || '';
   };
   form.onsubmit = async (e) => {
     e.preventDefault();
-    const data = await postJSON('/api/config', { gtaPath: $('#setupPath').value });
-    if (!data.ok) { er.textContent = data.error; er.hidden = false; return; }
-    form.hidden = true; $('#bootBody').hidden = false;
+    const chosen = $('#setupPath').value.trim();
+    if (!chosen) {
+      er.textContent = 'Por favor, selecione a pasta onde o GTA San Andreas está instalado.';
+      er.hidden = false;
+      return;
+    }
+    const data = await postJSON('/api/config', { gtaPath: chosen });
+    if (!data || !data.ok) {
+      er.textContent = (data && data.error) || 'O caminho selecionado não é uma instalação válida do jogo.';
+      er.hidden = false;
+      return;
+    }
+    er.hidden = true;
+    form.hidden = true;
+    $('#bootBody').hidden = false;
     await start({ gtaPath: data.gtaPath, ok: true });
   };
 }
@@ -165,8 +186,11 @@ function setupToolbar(cfg) {
     $(s).addEventListener('change', applySnap);
     $(s).addEventListener('input', applySnap);
   });
-  applySnap();
-  const initSpeed = store.get('transformSpeed', { move: 1.0, rotate: 1.0 });
+  const rawSpeed = store.get('transformSpeed', { move: 1.0, rotate: 10.0 });
+  const initSpeed = {
+    move: Math.max(1.0, +rawSpeed.move || 1.0),
+    rotate: Math.max(1.0, +rawSpeed.rotate || 10.0)
+  };
   ed.setTransformSpeed(initSpeed);
   $('#btnUndo').onclick = doUndo;
   $('#btnRedo').onclick = doRedo;

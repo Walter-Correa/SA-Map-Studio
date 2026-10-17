@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+import sys
+import os
+
+sys.dont_write_bytecode = True
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+
 """SA Map Studio - servidor local.
 
 Serve o editor e lê os arquivos da pasta do GTA San Andreas.
@@ -11,23 +17,23 @@ Uso:
     python serve.py --port 8777 --no-browser
     python serve.py --navegador          (abre no navegador mesmo com o pywebview instalado)
 
-Pastas (ao lado do .exe, ou desta pasta quando roda pelo Python):
+Pastas (dentro de sa-map-studio):
     projects/     projetos salvos (.json)
     exported/     arquivos .pwn / .ipl gerados
     data/         configuração, cache de texturas e miniaturas, dados da janela e registros
     test-server/  servidor open.mp/SA-MP usado pelo "Testar no jogo"
+    models/       modelos 3D auxiliares (ex: cj.dff)
 """
 import argparse
+import atexit
 import base64
 import json
-import os
 import re
 import shutil
 import socket
 import struct
 import sqlite3
 import subprocess
-import sys
 import tempfile
 import threading
 import time
@@ -38,16 +44,20 @@ from urllib.parse import quote, unquote, urlparse, parse_qs
 
 VERSION = "3.0.0"
 FROZEN = getattr(sys, "frozen", False)
-# Arquivos do editor (html/js/css); no .exe ficam na pasta system
-APP_DIR = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
-# Pasta principal do programa (onde fica o .exe)
-BASE_DIR = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.abspath(__file__))
+# Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
+ROOT_DIR = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.abspath(__file__))
+# Todas as pastas do programa ficam estritamente dentro de sa-map-studio
+BASE_DIR = os.path.join(ROOT_DIR, "sa-map-studio")
+os.makedirs(BASE_DIR, exist_ok=True)
+
+# Arquivos do editor (html/js/css)
+APP_DIR = getattr(sys, "_MEIPASS", None) or ROOT_DIR
 PROJECTS_DIR = os.path.join(BASE_DIR, "projects")
 EXPORTS_DIR = os.path.join(BASE_DIR, "exported")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
-COMPILE_SOURCES_DIR = os.path.join(BASE_DIR, "compile-sources")
+COMPILE_SOURCES_DIR = os.path.join(ROOT_DIR, "compile-sources")
 COMPILE_CACHE_DIR = os.path.join(COMPILE_SOURCES_DIR, "cache")
 COMPILE_MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
 if not FROZEN and not os.path.isdir(CACHE_DIR) and os.path.isdir(COMPILE_CACHE_DIR):
@@ -56,43 +66,67 @@ THUMBS_DIR = os.path.join(CACHE_DIR, "thumbnails") if os.path.isdir(os.path.join
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.join(CACHE_DIR, "animations")) or not os.path.isdir(os.path.join(CACHE_DIR, "animacoes")) else os.path.join(CACHE_DIR, "animacoes")
 WEBVIEW_DIR = os.path.join(DATA_DIR, "browser")
 LOGS_DIR = os.path.join(DATA_DIR, "logs")
-TEST_DIR = os.path.join(BASE_DIR, "test-server")  # servidor de teste fica dentro da pasta do programa
+TEST_DIR = os.path.join(BASE_DIR, "test-server")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
 IS_WINDOWS = os.name == "nt"
 
 
 def migrate_old_layout():
-    """Move os arquivos das versões anteriores para as pastas organizadas em inglês."""
-    # Migra pastas legadas em português da raiz se existirem
-    for old, new in (
-        ("Dados", DATA_DIR),
-        ("dados", DATA_DIR),
-        ("Servidor de Teste", TEST_DIR),
-        ("servidor-teste", TEST_DIR),
-        ("teste", TEST_DIR),
-        ("Projetos", PROJECTS_DIR),
-        ("projetos", PROJECTS_DIR),
-        ("Exportados", EXPORTS_DIR),
-        ("exportados", EXPORTS_DIR),
-    ):
-        src = os.path.join(BASE_DIR, old)
-        if os.path.isdir(src) and not os.path.exists(new):
+    """Move pastas e arquivos da raiz para dentro de sa-map-studio e remove pastas legadas e __pycache__."""
+    # Remove qualquer __pycache__ encontrado recursivamente
+    for root, dirs, _ in os.walk(ROOT_DIR):
+        if "__pycache__" in dirs:
             try:
-                os.rename(src, new)
-            except OSError:
-                pass
-        elif os.path.isdir(src) and os.path.isdir(new):
-            try:
-                if not os.path.samefile(src, new):
-                    for n in os.listdir(src):
-                        s_f = os.path.join(src, n)
-                        d_f = os.path.join(new, n)
-                        if not os.path.exists(d_f):
-                            shutil.move(s_f, d_f)
-                    if not os.listdir(src):
-                        os.rmdir(src)
+                shutil.rmtree(os.path.join(root, "__pycache__"), ignore_errors=True)
             except OSError:
                 pass
 
+    def merge_and_remove(src_dir, dst_dir):
+        if not os.path.isdir(src_dir) or os.path.abspath(src_dir) == os.path.abspath(dst_dir):
+            return
+        os.makedirs(dst_dir, exist_ok=True)
+        for item in os.listdir(src_dir):
+            s = os.path.join(src_dir, item)
+            d = os.path.join(dst_dir, item)
+            if os.path.isdir(s):
+                merge_and_remove(s, d)
+            else:
+                if not os.path.exists(d):
+                    try:
+                        shutil.move(s, d)
+                    except OSError:
+                        pass
+                else:
+                    try:
+                        os.remove(s)
+                    except OSError:
+                        pass
+        try:
+            shutil.rmtree(src_dir, ignore_errors=True)
+        except OSError:
+            pass
+
+    # Migra pastas que possam estar soltas na raiz para dentro de sa-map-studio
+    for old_name, target_dir in (
+        ("projects", PROJECTS_DIR),
+        ("projetos", PROJECTS_DIR),
+        ("Projetos", PROJECTS_DIR),
+        ("exported", EXPORTS_DIR),
+        ("exportados", EXPORTS_DIR),
+        ("Exportados", EXPORTS_DIR),
+        ("data", DATA_DIR),
+        ("dados", DATA_DIR),
+        ("Dados", DATA_DIR),
+        ("test-server", TEST_DIR),
+        ("servidor-teste", TEST_DIR),
+        ("Servidor de Teste", TEST_DIR),
+        ("teste", TEST_DIR),
+        ("models", MODELS_DIR),
+    ):
+        src = os.path.join(ROOT_DIR, old_name)
+        merge_and_remove(src, target_dir)
+
+    # Migra arquivos avulsos se ainda existirem soltos
     moves = [
         ("config.json", CONFIG_FILE),
         ("cache", CACHE_DIR),
@@ -101,21 +135,24 @@ def migrate_old_layout():
         ("registros", LOGS_DIR),
         ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
     ]
-    for old, new in moves:
-        src = os.path.join(BASE_DIR, old)
-        if os.path.exists(src) and not os.path.exists(new):
+    for old_file, new_path in moves:
+        src = os.path.join(ROOT_DIR, old_file)
+        if os.path.exists(src) and not os.path.exists(new_path):
             try:
-                os.makedirs(os.path.dirname(new), exist_ok=True)
-                shutil.move(src, new)
+                os.makedirs(os.path.dirname(new_path), exist_ok=True)
+                shutil.move(src, new_path)
             except OSError:
                 pass
-        sub_src = os.path.join(DATA_DIR, old)
-        if os.path.exists(sub_src) and not os.path.exists(new):
+        sub_src = os.path.join(DATA_DIR, old_file)
+        if os.path.exists(sub_src) and not os.path.exists(new_path):
             try:
-                os.makedirs(os.path.dirname(new), exist_ok=True)
-                shutil.move(sub_src, new)
+                os.makedirs(os.path.dirname(new_path), exist_ok=True)
+                shutil.move(sub_src, new_path)
             except OSError:
                 pass
+
+
+atexit.register(migrate_old_layout)
 
 
 LOG_FILE_PATH = os.path.join(LOGS_DIR, "sa-map-studio.log")
@@ -382,11 +419,20 @@ def thumb_file(kind, key):
 
 class State:
     gta_path = ""
+    detected_gta = ""
     window = None
     lock = threading.Lock()
     last_ping = 0.0   # último sinal de vida da página aberta no navegador
     stopping = False  # True quando o programa está fechando de propósito
     test_proc = None  # servidor de teste em execução
+
+
+def is_editor_inside_gta():
+    """Retorna o caminho caso o editor esteja rodando dentro da instalação do GTA San Andreas."""
+    for cand in (ROOT_DIR, os.path.dirname(ROOT_DIR), os.path.dirname(os.path.dirname(ROOT_DIR))):
+        if is_gta_dir(cand):
+            return cand
+    return ""
 
 
 def watch_browser(httpd, grace=300, timeout=180):
@@ -1180,10 +1226,24 @@ class Handler(SimpleHTTPRequestHandler):
             State.last_ping = time.time()
             return self.send_json({"ok": True})
         if path == "/api/config":
-            return self.send_json({"gtaPath": State.gta_path, "ok": is_gta_dir(State.gta_path), "version": VERSION,
-                                   "build": build_info(),
-                                   "problem": gta_problem(State.gta_path) if State.gta_path else "",
-                                   "folders": {"projects": PROJECTS_DIR, "exports": EXPORTS_DIR, "data": DATA_DIR}})
+            cfg = load_config()
+            inside_path = is_editor_inside_gta()
+            inside_gta = bool(inside_path)
+            gta_confirmed = cfg.get("gta_confirmed", False) or inside_gta
+            is_valid = is_gta_dir(State.gta_path)
+            needs_setup = (not inside_gta) and (not gta_confirmed or not is_valid)
+            detected_path = State.detected_gta or State.gta_path or detect_gta()
+            return self.send_json({
+                "gtaPath": State.gta_path if (gta_confirmed and is_valid) else "",
+                "detectedPath": detected_path if is_gta_dir(detected_path) else "",
+                "needsSetup": needs_setup,
+                "ok": is_valid and not needs_setup,
+                "insideGta": inside_gta,
+                "version": VERSION,
+                "build": build_info(),
+                "problem": gta_problem(State.gta_path) if State.gta_path else ("Pasta do GTA San Andreas não selecionada." if needs_setup else ""),
+                "folders": {"projects": PROJECTS_DIR, "exports": EXPORTS_DIR, "data": DATA_DIR}
+            })
         if path == "/api/projects":
             return self.list_projects()
         if path.startswith("/api/projects/"):
@@ -1258,11 +1318,13 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json({"ok": True, "cancelled": True})
         if path == "/api/config":
             body = self.read_json() or {}
-            p = (body.get("gtaPath") or "").strip().strip('"')
-            if not is_gta_dir(p):
-                return self.send_json({"ok": False, "error": gta_problem(p)}, 400)
+            p = (body.get("gtaPath") or body.get("gta_path") or "").strip().strip('"')
+            if not p or not is_gta_dir(p):
+                prob = gta_problem(p) or "O caminho informado não é uma instalação válida do GTA San Andreas."
+                return self.send_json({"ok": False, "error": prob}, 400)
             State.gta_path = p
-            update_config(gta_path=p)
+            State.detected_gta = p
+            update_config(gta_path=p, gta_confirmed=True)
             return self.send_json({"ok": True, "gtaPath": p})
         if path.startswith("/api/cache/"):
             name = safe_name(path[len("/api/cache/"):])
@@ -1408,15 +1470,11 @@ class Handler(SimpleHTTPRequestHandler):
         low_rel = rel.replace("\\", "/").lower()
         if low_rel in ("models/cj.dff", "models/cj.txd", "cj.dff", "cj.txd", "data/models/cj.dff", "data/models/cj.txd", "dados/models/cj.dff", "dados/models/cj.txd"):
             for mdir in (
-                os.path.join(BASE_DIR, "compile-sources", "models"),
-                os.path.join(APP_DIR, "compile-sources", "models"),
-                os.path.join(BASE_DIR, "models"),
+                MODELS_DIR,
+                COMPILE_MODELS_DIR,
+                os.path.join(ROOT_DIR, "models"),
                 os.path.join(APP_DIR, "models"),
-                os.path.join(DATA_DIR, "models"),
-                os.path.join(APP_DIR, "data", "models"),
-                os.path.join(BASE_DIR, "data", "models"),
-                os.path.join(APP_DIR, "Dados", "models"),
-                os.path.join(BASE_DIR, "Dados", "models")
+                os.path.join(DATA_DIR, "models")
             ):
                 candidate = os.path.join(mdir, os.path.basename(rel))
                 if os.path.isfile(candidate):
@@ -1426,9 +1484,9 @@ class Handler(SimpleHTTPRequestHandler):
         full = resolve_ci(State.gta_path, rel)
         if not full or not os.path.isfile(full):
             for fdir in (
-                os.path.join(BASE_DIR, "compile-sources", "models"),
-                os.path.join(APP_DIR, "compile-sources", "models"),
-                os.path.join(BASE_DIR, "models"),
+                MODELS_DIR,
+                COMPILE_MODELS_DIR,
+                os.path.join(ROOT_DIR, "models"),
                 os.path.join(APP_DIR, "models"),
                 os.path.join(DATA_DIR, "models")
             ):
@@ -1713,12 +1771,21 @@ def main():
     args = ap.parse_args()
 
     cfg = load_config()
-    gta = args.gta or cfg.get("gta_path") or ""
-    if not is_gta_dir(gta):
-        gta = detect_gta()
-    State.gta_path = gta if is_gta_dir(gta) else ""
-    if State.gta_path and State.gta_path != cfg.get("gta_path"):
-        update_config(gta_path=State.gta_path)
+    inside_path = is_editor_inside_gta()
+    if inside_path:
+        State.gta_path = inside_path
+        State.detected_gta = inside_path
+        update_config(gta_path=inside_path, gta_confirmed=True)
+    else:
+        saved_gta = args.gta or cfg.get("gta_path") or ""
+        gta_confirmed = cfg.get("gta_confirmed", False)
+        if saved_gta and is_gta_dir(saved_gta) and gta_confirmed:
+            State.gta_path = saved_gta
+            State.detected_gta = saved_gta
+        else:
+            detected = detect_gta()
+            State.detected_gta = detected if is_gta_dir(detected) else ""
+            State.gta_path = State.detected_gta
 
     port = args.port or cfg.get("port") or 8777
     httpd = make_server(port)

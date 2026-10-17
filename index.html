@@ -313,14 +313,14 @@
       <p class="boot-rights" id="bootRights">Todos os direitos reservados · SA Map Studio</p>
     </div>
     <form class="setup" id="setupForm" hidden>
-      <p>Não encontrei o GTA San Andreas neste computador. Escolha a pasta onde fica o <code>gta_sa.exe</code>.</p>
-      <p class="setup-hint">O editor só lê os arquivos do seu jogo, sem alterar nada. Use o GTA San Andreas original.</p>
+      <p>Selecione a pasta de instalação do GTA San Andreas para carregar o editor.</p>
+      <p class="setup-hint">O editor apenas lê os arquivos do seu jogo, sem alterar nada. Use a instalação original do GTA San Andreas.</p>
       <div class="setup-row">
         <input id="setupPath" placeholder="C:\Program Files (x86)\Rockstar Games\GTA San Andreas" spellcheck="false" aria-label="Pasta do GTA San Andreas">
         <button class="btn" type="button" id="setupBrowse"><svg><use href="#i-folder"/></svg>Procurar</button>
       </div>
       <p class="error" id="setupError" hidden></p>
-      <button class="btn primary" type="submit">Usar esta pasta</button>
+      <button class="btn primary" id="setupSubmit" type="submit">Selecionar e carregar</button>
     </form>
   </div>
 </div>
@@ -692,6 +692,9 @@
         <button type="button" class="btn small ghost" id="gzZoomOut" title="Afastar">-</button>
         <button type="button" class="btn small ghost" id="gzResetView" title="Ajustar tela">Enquadrar</button>
         <span class="divider"></span>
+        <button type="button" class="btn small ghost" id="gzBtnUndo" title="Desfazer (Ctrl+Z)" disabled><svg><use href="#i-undo"/></svg></button>
+        <button type="button" class="btn small ghost" id="gzBtnRedo" title="Refazer (Ctrl+Y)" disabled><svg><use href="#i-redo"/></svg></button>
+        <span class="divider"></span>
         <label class="check" style="font-size: 11px; margin: 0;"><input type="checkbox" id="gzChkSnap" checked> Alinhamento Magnético</label>
         <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;" id="gzHudCoords">X: 0.0 | Y: 0.0</span>
       </div>
@@ -759,6 +762,10 @@
       <div class="td-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px; flex-shrink: 0;">
         <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGameBg" checked> HUD / Tela GTA SA</label>
         <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGrid" checked> Grade & Safe Zone</label>
+        <span class="divider"></span>
+        <button type="button" class="btn small ghost" id="tdBtnUndo" title="Desfazer (Ctrl+Z)" disabled><svg><use href="#i-undo"/></svg></button>
+        <button type="button" class="btn small ghost" id="tdBtnRedo" title="Refazer (Ctrl+Y)" disabled><svg><use href="#i-redo"/></svg></button>
+        <span class="divider"></span>
         <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Arraste os elementos para mover ou use a alça no canto para redimensionar</span>
         <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;">640 x 480</span>
       </div>

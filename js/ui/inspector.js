@@ -19,6 +19,57 @@ import { DEFAULT_GANGZONE_COLORS, gzColorToRgba, gzColorToHexAndAlpha, hexAndAlp
 
 const round = (v, d = 4) => Math.round((+v || 0) * 10 ** d) / 10 ** d;
 
+export function getTotalProjectItems() {
+  const p = app.project;
+  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0);
+}
+
+export function get3DTextCleanLength(text) {
+  if (!text) return 0;
+  let s = String(text).replace(/\{[0-9a-fA-F]{6}\}/g, '');
+  s = s.replace(/\\n/gi, '').replace(/~n~/gi, '').replace(/[\r\n]/g, '');
+  return s.length;
+}
+
+export function truncate3DTextToLimit(text, limit = 1024) {
+  if (!text) return '';
+  if (get3DTextCleanLength(text) <= limit) return text;
+  let cleanCount = 0;
+  let result = '';
+  let i = 0;
+  const s = String(text);
+  while (i < s.length) {
+    if (s[i] === '{' && i + 7 < s.length && s[i + 7] === '}' && /^[0-9a-fA-F]{6}$/.test(s.slice(i + 1, i + 7))) {
+      result += s.slice(i, i + 8);
+      i += 8;
+      continue;
+    }
+    if (s[i] === '\r' || s[i] === '\n') {
+      result += s[i];
+      i++;
+      continue;
+    }
+    if (s.slice(i, i + 2) === '\\n') {
+      result += '\\n';
+      i += 2;
+      continue;
+    }
+    if (s.slice(i, i + 3).toLowerCase() === '~n~') {
+      result += s.slice(i, i + 3);
+      i += 3;
+      continue;
+    }
+    if (cleanCount < limit) {
+      result += s[i];
+      cleanCount++;
+      i++;
+    } else {
+      break;
+    }
+  }
+  return result;
+}
+
 let showAllIndices = false;
 let matTab = store.get('matTab', 'texture');
 let textDraft = { text: 'Texto', ...TEXT_DEFAULTS };
@@ -173,12 +224,31 @@ const actionGrid = () => `<div class="btn-grid">
     </div>`;
 
 function speedSection() {
-  const sp = app.editor.transformSpeed || { move: 1.0, rotate: 1.0 };
+  const sp = app.editor.transformSpeed || { move: 1.0, rotate: 10.0 };
+  const currentMove = Math.min(10.0, Math.max(1.0, +sp.move || 1.0));
+  const currentRotate = Math.min(10.0, Math.max(1.0, +sp.rotate || 10.0));
+
+  const options = [];
+  for (let i = 1; i <= 10; i++) {
+    const val = (i).toFixed(1);
+    const label = `${i},0`;
+    options.push({ val, label, num: i });
+  }
+
+  const renderSelect = (type, current) => {
+    return `<select data-speed="${type}" style="width:100%; box-sizing:border-box; height:30px; font-weight:600;">
+      ${options.map(o => {
+        const selected = Math.abs(current - o.num) < 0.05 ? 'selected' : '';
+        return `<option value="${o.val}" ${selected}>${o.label}</option>`;
+      }).join('')}
+    </select>`;
+  };
+
   return `<div class="insp-section">
-    <div class="insp-label">Velocidade <span class="tag">0.001x a 10.0x</span></div>
+    <div class="insp-label">Velocidade <span class="tag">1,0 a 10,0</span></div>
     <div class="pair">
-      <label>Movimento<input type="number" step="0.1" min="0.001" max="10.0" data-speed="move" value="${fmt(sp.move ?? 1.0, 3)}"></label>
-      <label>Rotação<input type="number" step="0.1" min="0.001" max="10.0" data-speed="rotate" value="${fmt(sp.rotate ?? 1.0, 3)}"></label>
+      <label>Movimento${renderSelect('move', currentMove)}</label>
+      <label>Rotação${renderSelect('rotate', currentRotate)}</label>
     </div>
   </div>`;
 }
@@ -187,7 +257,7 @@ function objectInspector(o) {
   const def = app.gd.models.get(o.model);
   const mats = materialSection([o]);
   const first = app.editor.mode === 'texture';
-  const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0);
+  const total = getTotalProjectItems();
   return `${titleBlock(o.model, `ID ${o.model} <span class="tag">${esc(def ? categoryOf(def) : 'Não existe no jogo')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar objeto</button>
     <div class="scope-toggle">
@@ -279,7 +349,7 @@ function objectInspector(o) {
 
 function vehicleInspector(v) {
   const def = app.gd.models.get(v.model);
-  const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0);
+  const total = getTotalProjectItems();
   const c1Hex = carColorHex(v.color1);
   const c2Hex = carColorHex(v.color2);
   const comps = v.components || [];
@@ -377,7 +447,7 @@ function vehicleInspector(v) {
 }
 
 function actorInspector(a) {
-  const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0);
+  const total = getTotalProjectItems();
   const skinName = getSkinLabel(a.skin ?? 0);
   let currentAnimTitle = 'Animação selecionada';
   if (a.anim) {
@@ -469,7 +539,7 @@ function actorInspector(a) {
 
 function multiInspector(items, objs) {
   const sameModel = objs.length === items.length && objs.every(o => o.model === objs[0].model);
-  const total = app.project.objects.length + app.project.vehicles.length + (app.project.actors?.length || 0);
+  const total = getTotalProjectItems();
   const isAll = items.length >= total && total > 0;
   const c = { x: 0, y: 0, z: 0 };
   for (const s of items) { c.x += s.item.x; c.y += s.item.y; c.z += s.item.z; }
@@ -559,18 +629,13 @@ function bindCommon() {
 }
 
 function bindSpeedControls() {
-  $$('#inspector [data-speed]').forEach(inp => {
-    const apply = () => {
-      let v = parseFloat(inp.value);
+  $$('#inspector [data-speed]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      let v = parseFloat(sel.value);
       if (!Number.isFinite(v)) return;
-      v = Math.min(10.0, Math.max(0.001, v));
-      app.editor.setTransformSpeed({ [inp.dataset.speed]: v });
+      v = Math.min(10.0, Math.max(1.0, v));
+      app.editor.setTransformSpeed({ [sel.dataset.speed]: v });
       store.set('transformSpeed', app.editor.transformSpeed);
-    };
-    inp.addEventListener('input', apply);
-    inp.addEventListener('change', () => {
-      apply();
-      inp.value = fmt(app.editor.transformSpeed[inp.dataset.speed], 3);
     });
   });
 }
@@ -1172,7 +1237,7 @@ function bindMulti(items) {
   bindSpeedControls();
   const project = app.project;
   bindVecArrows(items.map(x => x.item.uid), project, true);
-  const total = project.objects.length + project.vehicles.length + (project.actors?.length || 0);
+  const total = getTotalProjectItems();
   const isAll = items.length >= total && total > 0;
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
@@ -1597,13 +1662,16 @@ function labelInspector(l) {
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar Texto 3D</button>
 
     <div class="insp-section">
-      <div class="insp-label">Texto (suporta quebra de linha com \\n e cores {RRGGBB})</div>
+      <div class="insp-label" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Texto (\n quebra, {RRGGBB} cor)</span>
+        <span id="lblCharCount" style="font-family:monospace; font-size:11px; color:var(--paper-dim);">${get3DTextCleanLength(l.text || '')} / 1024</span>
+      </div>
       <textarea id="lblText" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:13px; resize:vertical; padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff;">${esc(l.text || '')}</textarea>
       <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
         ${STANDARD_LABEL_COLORS.map(c => `
           <button type="button" class="btn small" data-lbl-tag="${c.tag}" style="font-size:10px; padding:2px 6px; border-left:3px solid ${c.hex};" title="Inserir cor ${c.name}">${c.tag}</button>
         `).join('')}
-        <button type="button" class="btn small" id="btnLblBreak" style="font-size:10px; padding:2px 6px;" title="Inserir quebra de linha">\\n Quebra</button>
+        <button type="button" class="btn small" id="btnLblBreak" style="font-size:10px; padding:2px 6px;" title="Inserir quebra de linha">\n Quebra</button>
       </div>
     </div>
 
@@ -1671,13 +1739,27 @@ function bindLabel(l) {
   bindVecArrows(uid, project);
 
   const txt = $('#lblText');
+  const countEl = $('#lblCharCount');
+  const updateCount = (val) => {
+    const len = get3DTextCleanLength(val);
+    if (countEl) {
+      countEl.textContent = `${len} / 1024`;
+      countEl.style.color = len >= 1024 ? '#ef4444' : 'var(--paper-dim)';
+    }
+  };
   if (txt) {
     txt.addEventListener('keydown', (e) => e.stopPropagation());
     txt.addEventListener('keyup', (e) => e.stopPropagation());
     txt.oninput = () => {
+      let val = txt.value;
+      if (get3DTextCleanLength(val) > 1024) {
+        val = truncate3DTextToLimit(val, 1024);
+        txt.value = val;
+      }
+      updateCount(val);
       suppress = true;
       try {
-        project.updateItems('Editar Texto 3D', [uid], (o) => { o.text = txt.value; });
+        project.updateItems('Editar Texto 3D', [uid], (o) => { o.text = val; });
         app.editor.syncAll();
         updateLabelCode(project.find(uid));
       } finally {
@@ -1867,13 +1949,16 @@ function labelCreateInspector(draft) {
     </div>
 
     <div class="insp-section">
-      <div class="insp-label">Texto (suporta quebra de linha com \\n e cores {RRGGBB})</div>
+      <div class="insp-label" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Texto (\n quebra, {RRGGBB} cor)</span>
+        <span id="lblDraftCharCount" style="font-family:monospace; font-size:11px; color:var(--paper-dim);">${get3DTextCleanLength(draft.text || '')} / 1024</span>
+      </div>
       <textarea id="lblDraftText" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:13px; resize:vertical; padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff;" placeholder="Digite o texto 3D...">${esc(draft.text || '')}</textarea>
       <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
         ${STANDARD_LABEL_COLORS.map(c => `
           <button type="button" class="btn small" data-lbl-draft-tag="${c.tag}" style="font-size:10px; padding:2px 6px; border-left:3px solid ${c.hex};" title="Inserir cor ${c.name}">${c.tag}</button>
         `).join('')}
-        <button type="button" class="btn small" id="btnLblDraftBreak" style="font-size:10px; padding:2px 6px;" title="Inserir quebra de linha">\\n Quebra</button>
+        <button type="button" class="btn small" id="btnLblDraftBreak" style="font-size:10px; padding:2px 6px;" title="Inserir quebra de linha">\n Quebra</button>
       </div>
 
       <button type="button" class="btn primary block" id="btnConfirmCreate3DText" style="margin: 10px 0 6px; font-weight: bold; font-size: 13px; padding: 10px;">
@@ -1929,10 +2014,26 @@ function labelCreateInspector(draft) {
 
 function bindLabelCreate(draft) {
   const txt = $('#lblDraftText');
+  const countEl = $('#lblDraftCharCount');
+  const updateDraftCount = (val) => {
+    const len = get3DTextCleanLength(val);
+    if (countEl) {
+      countEl.textContent = `${len} / 1024`;
+      countEl.style.color = len >= 1024 ? '#ef4444' : 'var(--paper-dim)';
+    }
+  };
   if (txt) {
     txt.addEventListener('keydown', (e) => e.stopPropagation());
     txt.addEventListener('keyup', (e) => e.stopPropagation());
-    txt.oninput = () => { draft.text = txt.value; };
+    txt.oninput = () => {
+      let val = txt.value;
+      if (get3DTextCleanLength(val) > 1024) {
+        val = truncate3DTextToLimit(val, 1024);
+        txt.value = val;
+      }
+      updateDraftCount(val);
+      draft.text = val;
+    };
   }
 
   const btnBreak = $('#btnLblDraftBreak');
@@ -1943,7 +2044,7 @@ function bindLabelCreate(draft) {
       txt.value = txt.value.substring(0, start) + '\\n' + txt.value.substring(end);
       txt.focus();
       txt.selectionStart = txt.selectionEnd = start + 2;
-      draft.text = txt.value;
+      txt.dispatchEvent(new Event('input'));
     };
   }
 
@@ -1956,7 +2057,7 @@ function bindLabelCreate(draft) {
       txt.value = txt.value.substring(0, start) + tag + txt.value.substring(end);
       txt.focus();
       txt.selectionStart = txt.selectionEnd = start + tag.length;
-      draft.text = txt.value;
+      txt.dispatchEvent(new Event('input'));
     };
   });
 
@@ -2010,7 +2111,7 @@ function bindLabelCreate(draft) {
     const pt = getCameraLookSurfacePoint(0.5);
     const newLbl = {
       uid: null,
-      text: draft.text || 'Novo Texto 3D',
+      text: truncate3DTextToLimit(draft.text || 'Novo Texto 3D', 1024),
       color: draft.color || 0x33CCFFFF,
       scale: draft.scale ?? 1.0,
       x: pt.x,

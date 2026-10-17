@@ -316,13 +316,48 @@ stock SAMS_NormalizeSprite(texto[], maxlen)
     for (i = colon + 1; texto[i] != EOS && j < sizeof(tex) - 1; i++, j++) tex[j] = SAMS_ToLower(texto[i]);
     tex[j] = EOS;
 
-    if (!strcmp(lib, "loadscs", true))
+    // Normalização de bibliotecas conhecidas do SA-MP
+    if (!strcmp(lib, "loadscs", true) || !strcmp(lib, "loadsc", true))
     {
-        format(lib, sizeof(lib), "LOADSCS");
+        // Se a textura for um dos loading screens (loadsc0 a loadsc14), mapeia para o arquivo individual loadscX.txd
+        if (!strcmp(tex, "loadsc", false, 6))
+        {
+            format(lib, sizeof(lib), "%s", tex);
+        }
+        else
+        {
+            format(lib, sizeof(lib), "LOADSCS");
+        }
     }
     else if (!strcmp(lib, "loadsuk", true))
     {
         format(lib, sizeof(lib), "LOADSUK");
+    }
+    else if (!strcmp(lib, "hud", true))
+    {
+        format(lib, sizeof(lib), "hud");
+        // Correção de nomes específicos do hud.txd
+        if (!strcmp(tex, "radar_ring", true) || !strcmp(tex, "radarringplane", true))
+        {
+            format(tex, sizeof(tex), "radarRingPlane");
+        }
+        else if (!strcmp(tex, "radar_zero", true)) format(tex, sizeof(tex), "radar_ZERO");
+        else if (!strcmp(tex, "radar_woozie", true)) format(tex, sizeof(tex), "radar_WOOZIE");
+        else if (!strcmp(tex, "radar_torenoranch", true)) format(tex, sizeof(tex), "radar_TorenoRanch");
+        else if (!strcmp(tex, "radar_toreno", true)) format(tex, sizeof(tex), "radar_TORENO");
+        else if (!strcmp(tex, "radar_thetruth", true)) format(tex, sizeof(tex), "radar_THETRUTH");
+        else if (!strcmp(tex, "radar_sweet", true)) format(tex, sizeof(tex), "radar_SWEET");
+        else if (!strcmp(tex, "radar_ryder", true)) format(tex, sizeof(tex), "radar_RYDER");
+        else if (!strcmp(tex, "radar_ogloc", true)) format(tex, sizeof(tex), "radar_OGLOC");
+        else if (!strcmp(tex, "radar_mcstrap", true)) format(tex, sizeof(tex), "radar_MCSTRAP");
+        else if (!strcmp(tex, "radar_maddog", true)) format(tex, sizeof(tex), "radar_MADDOG");
+        else if (!strcmp(tex, "radar_locosyndicate", true)) format(tex, sizeof(tex), "radar_LocoSyndicate");
+        else if (!strcmp(tex, "radar_crash1", true)) format(tex, sizeof(tex), "radar_CRASH1");
+        else if (!strcmp(tex, "radar_cj", true)) format(tex, sizeof(tex), "radar_CJ");
+        else if (!strcmp(tex, "radar_cesarviapando", true)) format(tex, sizeof(tex), "radar_CESARVIAPANDO");
+        else if (!strcmp(tex, "radar_catalinapink", true)) format(tex, sizeof(tex), "radar_CATALINAPINK");
+        else if (!strcmp(tex, "radar_bigsmoke", true)) format(tex, sizeof(tex), "radar_BIGSMOKE");
+        else if (!strcmp(tex, "radar_flag", true)) format(tex, sizeof(tex), "radar_Flag");
     }
     else if (lib[0] == 'l' && lib[1] == 'd' && lib[2] == '_')
     {
@@ -658,19 +693,18 @@ stock SAMS_CarregarMapa()
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
                         TextDrawFont(td, 4);
-                        TextDrawSetString(td, texto);
-                        TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.5), (tdlety > 0.0 ? tdlety : 1.0));
                         TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
                         if (tdcol == 0 || tdcol == 0xFF) tdcol = 0xFFFFFFFF;
                         if ((tdcol & 0xFF) == 0) tdcol |= 0xFF;
                         TextDrawColor(td, tdcol);
+                        TextDrawBackgroundColor(td, (tdbgcol & 0xFF) == 0 ? 0x000000FF : tdbgcol);
+                        TextDrawAlignment(td, 1);
                         TextDrawSetOutline(td, 0);
                         TextDrawSetShadow(td, 0);
-                        TextDrawAlignment(td, 1);
-                        TextDrawBackgroundColor(td, (tdbgcol & 0xFF) == 0 ? 0x000000FF : tdbgcol);
                         TextDrawSetProportional(td, true);
                         TextDrawUseBox(td, false);
                         if (tdselect) TextDrawSetSelectable(td, true);
+                        TextDrawSetString(td, texto);
                         gTextDraws[gTotalTextDraws] = td;
                         gTotalTextDraws++;
                     }

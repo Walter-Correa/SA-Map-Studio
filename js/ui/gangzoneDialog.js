@@ -43,9 +43,81 @@ let imgLoaded = false;
 let selectedUid = null;
 let isDrawing = null; // { startX, startY, curX, curY }
 let isDraggingHandle = null; // { zone, handle: 'nw'|'ne'|'sw'|'se'|'move', startX, startY, origMinX, ... }
+let dragStartSnapshot = null;
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let activeSnapLines = []; // Linhas de guia do snap
+
+let gzUndoStack = [];
+let gzRedoStack = [];
+
+function gzPushUndo() {
+  const current = JSON.stringify({
+    zones: appRef?.project?.gangZones || [],
+    selectedUid
+  });
+  if (gzUndoStack.length > 0 && gzUndoStack[gzUndoStack.length - 1] === current) return;
+  gzUndoStack.push(current);
+  if (gzUndoStack.length > 50) gzUndoStack.shift();
+  gzRedoStack = [];
+  updateGzUndoButtons();
+}
+
+function gzPushUndoSnapshot(snapshotStr) {
+  if (!snapshotStr) return;
+  if (gzUndoStack.length > 0 && gzUndoStack[gzUndoStack.length - 1] === snapshotStr) return;
+  gzUndoStack.push(snapshotStr);
+  if (gzUndoStack.length > 50) gzUndoStack.shift();
+  gzRedoStack = [];
+  updateGzUndoButtons();
+}
+
+function gzUndo() {
+  if (gzUndoStack.length === 0) return;
+  const current = JSON.stringify({
+    zones: appRef?.project?.gangZones || [],
+    selectedUid
+  });
+  gzRedoStack.push(current);
+  const prev = JSON.parse(gzUndoStack.pop());
+  appRef.project.gangZones = prev.zones || [];
+  selectedUid = prev.selectedUid;
+  if (!getSelectedZone() && appRef.project.gangZones.length > 0) {
+    selectedUid = appRef.project.gangZones[0].uid;
+  }
+  appRef.editor?.syncAll();
+  updateSidebarFields();
+  updateSidebarList();
+  redrawCanvas();
+  updateGzUndoButtons();
+}
+
+function gzRedo() {
+  if (gzRedoStack.length === 0) return;
+  const current = JSON.stringify({
+    zones: appRef?.project?.gangZones || [],
+    selectedUid
+  });
+  gzUndoStack.push(current);
+  const next = JSON.parse(gzRedoStack.pop());
+  appRef.project.gangZones = next.zones || [];
+  selectedUid = next.selectedUid;
+  if (!getSelectedZone() && appRef.project.gangZones.length > 0) {
+    selectedUid = appRef.project.gangZones[0].uid;
+  }
+  appRef.editor?.syncAll();
+  updateSidebarFields();
+  updateSidebarList();
+  redrawCanvas();
+  updateGzUndoButtons();
+}
+
+function updateGzUndoButtons() {
+  const btnU = dialogEl?.querySelector('#gzBtnUndo');
+  const btnR = dialogEl?.querySelector('#gzBtnRedo');
+  if (btnU) btnU.disabled = gzUndoStack.length === 0;
+  if (btnR) btnR.disabled = gzRedoStack.length === 0;
+}
 
 // Estado da visualização do canvas
 const view = {
@@ -216,6 +288,24 @@ function setupDialogEvents() {
     };
   }
 
+  const btnUndo = dialogEl.querySelector('#gzBtnUndo');
+  if (btnUndo) {
+    btnUndo.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      gzUndo();
+    };
+  }
+
+  const btnRedo = dialogEl.querySelector('#gzBtnRedo');
+  if (btnRedo) {
+    btnRedo.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      gzRedo();
+    };
+  }
+
   const btnDel = dialogEl.querySelector('#gzBtnDelete');
   if (btnDel) {
     btnDel.onclick = (e) => {
@@ -235,10 +325,25 @@ function setupDialogEvents() {
   }
 
   dialogEl.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      gzUndo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'Y') || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
+      e.preventDefault();
+      e.stopPropagation();
+      gzRedo();
+      return;
+    }
     if (e.key === 'Delete' || e.key === 'Del') {
       const activeTag = document.activeElement?.tagName?.toLowerCase();
-      if (activeTag !== 'input' && activeTag !== 'textarea') {
-        e.preventDefault();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      e.preventDefault();
+      e.stopPropagation();
+      const z = getSelectedZone();
+      if (z) {
         deleteSelectedZone();
       }
     }
@@ -280,6 +385,11 @@ function setupCanvasEvents() {
     }
 
     if (e.button === 0) {
+      dragStartSnapshot = JSON.stringify({
+        zones: appRef?.project?.gangZones || [],
+        selectedUid
+      });
+
       // Verifica clique nas alças de redimensionamento da zona selecionada
       const selZone = getSelectedZone();
       if (selZone) {
@@ -464,6 +574,13 @@ function setupCanvasEvents() {
     if (isDraggingHandle) {
       isDraggingHandle = null;
       activeSnapLines = [];
+      const current = JSON.stringify({
+        zones: appRef?.project?.gangZones || [],
+        selectedUid
+      });
+      if (dragStartSnapshot && dragStartSnapshot !== current) {
+        gzPushUndoSnapshot(dragStartSnapshot);
+      }
       appRef.editor?.saveUndoState?.('Alterar GangZone');
       redrawCanvas();
     }
@@ -479,6 +596,7 @@ function setupCanvasEvents() {
       // Só cria se tiver tamanho mínimo relevante (ex: >= 15 unidades)
       if ((maxx - minx) >= 15 && (maxy - miny) >= 15) {
         if (!appRef.project.gangZones) appRef.project.gangZones = [];
+        if (dragStartSnapshot) gzPushUndoSnapshot(dragStartSnapshot);
         const count = appRef.project.gangZones.length + 1;
         const newZ = makeGangZone({
           name: `Zona ${count}`,
@@ -614,6 +732,7 @@ export function openGangZoneDialog() {
 
   updateSidebarList();
   updateSidebarFields();
+  updateGzUndoButtons();
 }
 
 export function closeGangZoneDialog() {
@@ -884,6 +1003,7 @@ function updateSidebarFields() {
       dot.onclick = () => {
         const curZ = getSelectedZone();
         if (!curZ) return;
+        gzPushUndo();
         curZ.color = p.val;
         updateSidebarFields();
         updateSidebarList();
@@ -896,6 +1016,7 @@ function updateSidebarFields() {
 }
 
 function createNewZoneAtCenter() {
+  gzPushUndo();
   if (!appRef.project.gangZones) appRef.project.gangZones = [];
   const count = appRef.project.gangZones.length + 1;
   const newZ = makeGangZone({
@@ -915,6 +1036,7 @@ function createNewZoneAtCenter() {
 function deleteSelectedZone() {
   const z = getSelectedZone();
   if (!z) return;
+  gzPushUndo();
   const idx = appRef.project.gangZones.indexOf(z);
   if (idx >= 0) {
     appRef.project.gangZones.splice(idx, 1);

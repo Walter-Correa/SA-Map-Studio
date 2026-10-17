@@ -889,14 +889,27 @@ export function exportPawn(project, options = {}) {
     const cmt = commentSuffix(td);
     let rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
     if (td.font === 4) {
-      if (rawText.toLowerCase().startsWith('loadscs:')) {
-        rawText = 'LOADSCS:' + rawText.slice(8).toLowerCase();
-      } else if (rawText.toLowerCase().startsWith('loadsuk:')) {
-        rawText = 'LOADSUK:' + rawText.slice(8).toLowerCase();
-      } else if (rawText.toLowerCase().startsWith('ld_')) {
-        const colon = rawText.indexOf(':');
-        if (colon !== -1) {
-          rawText = rawText.slice(0, colon).toUpperCase() + ':' + rawText.slice(colon + 1).toLowerCase();
+      const colon = rawText.indexOf(':');
+      if (colon !== -1) {
+        const libPart = rawText.slice(0, colon).toLowerCase();
+        const texPart = rawText.slice(colon + 1);
+        if (libPart === 'loadscs' || libPart === 'loadsc') {
+          const lowTex = texPart.toLowerCase();
+          if (lowTex.startsWith('loadsc')) {
+            rawText = `${lowTex}:${lowTex}`;
+          } else {
+            rawText = 'LOADSCS:' + lowTex;
+          }
+        } else if (libPart === 'loadsuk') {
+          rawText = 'LOADSUK:' + texPart.toLowerCase();
+        } else if (libPart === 'hud') {
+          if (texPart.toLowerCase() === 'radar_ring' || texPart.toLowerCase() === 'radarringplane') {
+            rawText = 'hud:radarRingPlane';
+          } else {
+            rawText = 'hud:' + texPart;
+          }
+        } else if (libPart.startsWith('ld_')) {
+          rawText = libPart.toUpperCase() + ':' + texPart.toLowerCase();
         }
       }
     }

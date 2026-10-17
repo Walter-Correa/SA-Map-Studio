@@ -11,24 +11,98 @@ let appRef = null;
 
 let selectedIdx = 0;
 let isDraggingTd = null; // { idx, startX, startY, origX, origY, isResize }
+let dragStartTdSnapshot = null;
 let showGrid = true;
 let showGameBg = true;
 let gameBgImg = null;
 
+let tdUndoStack = [];
+let tdRedoStack = [];
+
+function tdPushUndo() {
+  const current = JSON.stringify({
+    textDraws: appRef?.project?.textDraws || [],
+    selectedIdx
+  });
+  if (tdUndoStack.length > 0 && tdUndoStack[tdUndoStack.length - 1] === current) return;
+  tdUndoStack.push(current);
+  if (tdUndoStack.length > 50) tdUndoStack.shift();
+  tdRedoStack = [];
+  updateTdUndoButtons();
+}
+
+function tdPushUndoSnapshot(snapshotStr) {
+  if (!snapshotStr) return;
+  if (tdUndoStack.length > 0 && tdUndoStack[tdUndoStack.length - 1] === snapshotStr) return;
+  tdUndoStack.push(snapshotStr);
+  if (tdUndoStack.length > 50) tdUndoStack.shift();
+  tdRedoStack = [];
+  updateTdUndoButtons();
+}
+
+function tdUndo() {
+  if (tdUndoStack.length === 0) return;
+  const current = JSON.stringify({
+    textDraws: appRef?.project?.textDraws || [],
+    selectedIdx
+  });
+  tdRedoStack.push(current);
+  const prev = JSON.parse(tdUndoStack.pop());
+  appRef.project.textDraws = prev.textDraws || [];
+  selectedIdx = prev.selectedIdx;
+  if (selectedIdx >= appRef.project.textDraws.length) {
+    selectedIdx = appRef.project.textDraws.length - 1;
+  }
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+  updateTdUndoButtons();
+}
+
+function tdRedo() {
+  if (tdRedoStack.length === 0) return;
+  const current = JSON.stringify({
+    textDraws: appRef?.project?.textDraws || [],
+    selectedIdx
+  });
+  tdUndoStack.push(current);
+  const next = JSON.parse(tdRedoStack.pop());
+  appRef.project.textDraws = next.textDraws || [];
+  selectedIdx = next.selectedIdx;
+  if (selectedIdx >= appRef.project.textDraws.length) {
+    selectedIdx = appRef.project.textDraws.length - 1;
+  }
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+  updateTdUndoButtons();
+}
+
+function updateTdUndoButtons() {
+  const btnU = dialogEl?.querySelector('#tdBtnUndo');
+  const btnR = dialogEl?.querySelector('#tdBtnRedo');
+  if (btnU) btnU.disabled = tdUndoStack.length === 0;
+  if (btnR) btnR.disabled = tdRedoStack.length === 0;
+}
+
 const spriteImageCache = new Map();
 
 function getSpriteImage(lib, name) {
-  const libLower = (lib || 'hud').toLowerCase();
-  const nameLower = (name || '').toLowerCase();
+  let libLower = (lib || 'hud').toLowerCase();
+  let nameLower = (name || '').toLowerCase();
+  if (libLower === 'hud' && (nameLower === 'radar_ring' || nameLower === 'radarringplane')) {
+    nameLower = 'radarringplane';
+  }
+  const folder = libLower.startsWith('loadsc') ? 'loadscs' : libLower;
   const key = `${libLower}:${nameLower}`;
   if (spriteImageCache.has(key)) return spriteImageCache.get(key);
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = `/cache/sprites/${libLower}/${nameLower}.png`;
+  img.src = `/cache/sprites/${folder}/${nameLower}.png`;
   img.onerror = () => {
     if (!img._altTried) {
       img._altTried = true;
-      const altLib = libLower === 'loadscs' ? 'ld_loadscs' : (libLower === 'ld_loadscs' ? 'loadscs' : null);
+      const altLib = folder === 'loadscs' ? 'ld_loadscs' : (folder === 'ld_loadscs' ? 'loadscs' : null);
       if (altLib) {
         img.src = `/cache/sprites/${altLib}/${nameLower}.png`;
       }
@@ -141,19 +215,66 @@ function setupDialogEvents() {
     };
   }
 
+  const btnUndo = dialogEl.querySelector('#tdBtnUndo');
+  if (btnUndo) {
+    btnUndo.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      tdUndo();
+    };
+  }
+
+  const btnRedo = dialogEl.querySelector('#tdBtnRedo');
+  if (btnRedo) {
+    btnRedo.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      tdRedo();
+    };
+  }
+
   const btnDel = dialogEl.querySelector('#tdBtnDelete');
   if (btnDel) {
-    btnDel.onclick = () => {
+    btnDel.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       deleteSelectedTextDraw();
     };
   }
 
   const btnDup = dialogEl.querySelector('#tdBtnDuplicate');
   if (btnDup) {
-    btnDup.onclick = () => {
+    btnDup.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       duplicateSelectedTextDraw();
     };
   }
+
+  dialogEl.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      tdUndo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'Y') || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
+      e.preventDefault();
+      e.stopPropagation();
+      tdRedo();
+      return;
+    }
+    if (e.key === 'Delete' || e.key === 'Del') {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      e.preventDefault();
+      e.stopPropagation();
+      const tds = appRef.project?.textDraws || [];
+      if (selectedIdx >= 0 && tds[selectedIdx]) {
+        deleteSelectedTextDraw();
+      }
+    }
+  });
 
   const chkGameBg = dialogEl.querySelector('#tdChkGameBg');
   if (chkGameBg) {
@@ -388,6 +509,11 @@ function setupCanvasEvents() {
 
     const tds = appRef.project?.textDraws || [];
 
+    dragStartTdSnapshot = JSON.stringify({
+      textDraws: appRef?.project?.textDraws || [],
+      selectedIdx
+    });
+
     // 1. Checa se clicou na alça de redimensionamento do TextDraw selecionado
     const curTd = getSelectedTd();
     if (curTd) {
@@ -518,6 +644,13 @@ function setupCanvasEvents() {
     if (isDraggingTd) {
       isDraggingTd = null;
       canvasEl.style.cursor = 'default';
+      const current = JSON.stringify({
+        textDraws: appRef?.project?.textDraws || [],
+        selectedIdx
+      });
+      if (dragStartTdSnapshot && dragStartTdSnapshot !== current) {
+        tdPushUndoSnapshot(dragStartTdSnapshot);
+      }
       appRef.editor?.saveUndoState?.('Editar TextDraw');
       redrawCanvas();
     }
@@ -590,11 +723,14 @@ export function openTextDrawEditor() {
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
 
   if (appRef.project.textDraws.length === 0) {
-    createNewTextDraw('SA MAP STUDIO');
+    selectedIdx = -1;
+  } else if (selectedIdx < 0 || selectedIdx >= appRef.project.textDraws.length) {
+    selectedIdx = 0;
   }
 
   updateSidebarList();
   updateSidebarFields();
+  updateTdUndoButtons();
   redrawCanvas();
 }
 
@@ -1025,6 +1161,7 @@ function updateSidebarFields() {
 }
 
 function createNewTextDraw(defaultText = 'NOVO TEXTO') {
+  tdPushUndo();
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const td = makeTextDraw({
     text: defaultText,
@@ -1051,6 +1188,7 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
 }
 
 function createNewBox() {
+  tdPushUndo();
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const td = makeTextDraw({
     text: '_',
@@ -1070,6 +1208,7 @@ function createNewBox() {
 }
 
 function createNewModelPreview() {
+  tdPushUndo();
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const td = makeTextDraw({
     text: 'Preview',
@@ -1098,6 +1237,7 @@ function createNewModelPreview() {
 }
 
 function createNewSprite() {
+  tdPushUndo();
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const td = makeTextDraw({
     text: 'hud:radardisc',
@@ -1120,6 +1260,7 @@ function createNewSprite() {
 function deleteSelectedTextDraw() {
   const tds = appRef.project?.textDraws || [];
   if (!tds[selectedIdx]) return;
+  tdPushUndo();
   tds.splice(selectedIdx, 1);
   selectedIdx = Math.max(0, selectedIdx - 1);
   appRef.editor?.saveUndoState?.('Excluir TextDraw');
@@ -1131,6 +1272,7 @@ function deleteSelectedTextDraw() {
 function duplicateSelectedTextDraw() {
   const td = getSelectedTd();
   if (!td) return;
+  tdPushUndo();
   const copy = makeTextDraw({ ...td, uid: null, x: td.x + 10, y: td.y + 10 });
   appRef.project.textDraws.push(copy);
   selectedIdx = appRef.project.textDraws.length - 1;
