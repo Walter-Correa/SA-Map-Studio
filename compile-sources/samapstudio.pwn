@@ -770,10 +770,35 @@ public OnGameModeInit()
     return 1;
 }
 
-// Pré-carrega todas as bibliotecas IFP necessárias no cliente do jogador
+// Tabela com todas as 135 bibliotecas de animacao oficiais do GTA SA / open.mp para pre-carregamento completo
+static const gPreloadAnimLibs[][] = {
+    "AIRPORT", "Attractors", "BAR", "BASEBALL", "BD_FIRE", "BEACH", "benchpress", "BF_injection",
+    "BIKED", "BIKEH", "BIKELEAP", "BIKES", "BIKEV", "BIKE_DBZ", "BLOWJOBZ", "BMX",
+    "BOMBER", "BOX", "BSKTBALL", "BUDDY", "BUS", "CAMERA", "CAR", "CARRY",
+    "CAR_CHAT", "CASINO", "CHAINSAW", "CHOPPA", "CLOTHES", "COACH", "COLT45", "COP_AMBIENT",
+    "COP_DVBYZ", "CRACK", "CRIB", "DAM_JUMP", "DANCING", "DEALER", "DILDO", "DODGE",
+    "DOZER", "DRIVEBYS", "FAT", "FIGHT_B", "FIGHT_C", "FIGHT_D", "FIGHT_E", "FINALE",
+    "FINALE2", "FLAME", "Flowers", "FOOD", "Freeweights", "GANGS", "GFUNK", "GHANDS",
+    "GHETTO_DB", "goggles", "GRAFFITI", "GRAVEYARD", "GRENADE", "GYMNASIUM", "HAIRCUTS", "HEIST9",
+    "INT_HOUSE", "INT_OFFICE", "INT_SHOP", "JST_BUISNESS", "KART", "KISSING", "KNIFE", "LAPDAN1",
+    "LAPDAN2", "LAPDAN3", "LOWRIDER", "MD_CHASE", "MD_END", "MEDIC", "MISC", "MTB",
+    "MUSCULAR", "NEVADA", "ON_LOOKERS", "OTB", "PARACHUTE", "PARK", "PAULNMAC", "ped",
+    "PLAYER_DVBYS", "PLAYIDLES", "POLICE", "POOL", "POOR", "PYTHON", "QUAD", "QUAD_DBZ",
+    "RAPPING", "RIFLE", "RIOT", "ROB_BANK", "ROCKET", "RUNNINGMAN", "RUSTLER", "RYDER",
+    "SAMP", "SCRATCHING", "SEX", "SHAMAL", "SHOP", "SHOTGUN", "SILENCED", "SKATE",
+    "SMOKING", "SNIPER", "SnM", "SPRAYCAN", "STRIP", "SUNBATHE", "SWAT", "SWEET",
+    "SWIM", "SWORD", "TANK", "TATTOOS", "TEC", "TRAIN", "TRUCK", "UZI",
+    "VAN", "VENDING", "VORTEX", "WAYFARER", "WEAPONS", "WOP", "WUZI"
+};
+
+// Pre-carrega todas as bibliotecas IFP no cliente do jogador
 stock SAMSP_PreloadAllAnims(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
+    for (new i = 0; i < sizeof(gPreloadAnimLibs); i++)
+    {
+        ApplyAnimation(playerid, gPreloadAnimLibs[i], "null", 0.0, false, false, false, false, 0);
+    }
     for (new i = 0; i < gTotalAnimLibs; i++)
     {
         ApplyAnimation(playerid, gAnimLibs[i], "null", 0.0, false, false, false, false, 0);

@@ -24,8 +24,8 @@ export const POPULAR_ANIMATIONS = [
 ];
 
 export const ANIM_CATEGORIES = [
-  { id: 'populares', label: '⭐ Populares' },
   { id: 'todas', label: '🌐 Todas' },
+  { id: 'populares', label: '⭐ Populares' },
   { id: 'conversas', label: '💬 Conversas & Gestos' },
   { id: 'sentado', label: '🪑 Sentado & Deitado' },
   { id: 'danca', label: '🕺 Danças' },

@@ -2,7 +2,7 @@
 import { $, $$, esc, toast } from './common.js';
 import { POPULAR_ANIMATIONS, ALL_ANIMATIONS, ANIM_CATEGORIES, classifyAnim } from '../world/actors.js';
 
-let activeCategory = 'populares';
+let activeCategory = 'todas';
 let currentSearch = '';
 let onSelectCallback = null;
 let previewedAnim = null;
@@ -364,10 +364,18 @@ export function openAnimPicker(onSelect, initialAnim = null) {
   const inputSearch = $('#animPickerSearch');
   if (inputSearch) inputSearch.value = currentSearch = '';
 
+  activeCategory = 'todas';
+  const catContainer = $('#animPickerCategories');
+  if (catContainer) {
+    catContainer.querySelectorAll('button[data-cat]').forEach(b => {
+      b.className = `btn small ${b.dataset.cat === activeCategory ? 'primary' : 'ghost'}`;
+    });
+  }
+
   if (initialAnim && initialAnim.lib && initialAnim.name) {
     previewedAnim = initialAnim;
   } else {
-    previewedAnim = POPULAR_ANIMATIONS[0];
+    previewedAnim = ALL_ANIMATIONS[0];
   }
 
   renderList();
