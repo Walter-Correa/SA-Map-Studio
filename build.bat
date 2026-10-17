@@ -285,7 +285,7 @@ if not defined THUMBSRC if exist "%OUT%\data\cache\thumbnails\objects" set "THUM
 if defined THUMBSRC (
     echo Copiando miniaturas do catalogo de: "%THUMBSRC%"...
     if not exist "%BASE%\data\cache\thumbnails" mkdir "%BASE%\data\cache\thumbnails"
-    robocopy "%THUMBSRC%" "%BASE%\data\cache\thumbnails" /E /NFL /NDL /NJH /NJS /NP >nul
+    robocopy "%THUMBSRC%" "%BASE%\data\cache\thumbnails" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
 rem ---------------- Texturas do Catalogo
@@ -307,7 +307,7 @@ if not defined SPRITESRC if exist "%OUT%\data\cache\sprites" set "SPRITESRC=%OUT
 if defined SPRITESRC (
     echo Copiando sprites de: "%SPRITESRC%"...
     if not exist "%BASE%\data\cache\sprites" mkdir "%BASE%\data\cache\sprites"
-    robocopy "%SPRITESRC%" "%BASE%\data\cache\sprites" /E /NFL /NDL /NJH /NJS /NP >nul
+    robocopy "%SPRITESRC%" "%BASE%\data\cache\sprites" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
 rem ---------------- Skins
@@ -318,7 +318,18 @@ if not defined SKINSRC if exist "%OUT%\data\cache\skins" set "SKINSRC=%OUT%\data
 if defined SKINSRC (
     echo Copiando skins de: "%SKINSRC%"...
     if not exist "%BASE%\data\cache\skins" mkdir "%BASE%\data\cache\skins"
-    robocopy "%SKINSRC%" "%BASE%\data\cache\skins" /E /NFL /NDL /NJH /NJS /NP >nul
+    robocopy "%SKINSRC%" "%BASE%\data\cache\skins" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+)
+
+rem ---------------- Animacoes (videos de preview)
+set "ANIMSRC="
+if exist "%SRC%compile-sources\cache\animations" set "ANIMSRC=%SRC%compile-sources\cache\animations"
+if not defined ANIMSRC if exist "%BASE%\data\cache\animations" set "ANIMSRC=%BASE%\data\cache\animations"
+if not defined ANIMSRC if exist "%OUT%\data\cache\animations" set "ANIMSRC=%OUT%\data\cache\animations"
+if defined ANIMSRC (
+    echo Copiando animacoes do catalogo de: "%ANIMSRC%"...
+    if not exist "%BASE%\data\cache\animations" mkdir "%BASE%\data\cache\animations"
+    robocopy "%ANIMSRC%" "%BASE%\data\cache\animations" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
 rem ---------------- Radarmap
@@ -382,7 +393,7 @@ echo  primeira vez que o programa abrir. Pronta para enviar a outra pessoa.
 ) else (
 echo    projects\, exported\, data\ - seus mapas e configuracoes ^(mantidos^)
 )
-explorer "%OUT%"
+if not defined NO_EXPLORER explorer "%OUT%"
 if not defined NO_PAUSE pause
 exit /b 0
 

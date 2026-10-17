@@ -921,6 +921,8 @@ legend.sub { margin-top: 8px; }
   border: 1px solid var(--line);
 }
 .anim-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 58px;
   cursor: pointer;
   padding: 9px 12px;
   background: var(--asphalt-800);

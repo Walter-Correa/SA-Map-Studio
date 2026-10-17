@@ -286,10 +286,7 @@ function renderList() {
     return;
   }
 
-  const limit = 200;
-  const toRender = items.slice(0, limit);
-
-  listContainer.innerHTML = toRender.map(it => {
+  listContainer.innerHTML = items.map(it => {
     const isActive = previewedAnim && previewedAnim.name === it.name && previewedAnim.lib === it.lib;
     return `
       <div class="anim-card ${isActive ? 'active' : ''}" data-anim-idx="${it.idx}" data-anim-source="${it.source}" data-anim-lib="${esc(it.lib)}" data-anim-name="${esc(it.name)}">
@@ -304,13 +301,6 @@ function renderList() {
       </div>
     `;
   }).join('');
-
-  if (items.length > limit) {
-    listContainer.innerHTML += `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 8px; font-size: 12px; color: var(--paper-mute);">
-        Exibindo as primeiras ${limit} de ${items.length} animações. Use a pesquisa para ver qualquer outra.
-      </div>`;
-  }
 
   // Pré-seleciona a primeira animação caso não haja nenhuma ativa
   if (!previewedAnim && items.length > 0) {
