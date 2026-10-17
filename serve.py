@@ -1164,16 +1164,24 @@ _FRONTEND_STREAM_MAP = {
 }
 
 _FRONTEND_GENRL_MAP = {
+    1020: (39, 0),
+    1021: (138, 18),
+    1022: (60, 0),
+    1036: (60, 2),
     1052: (60, 1),
     1053: (60, 2),
     1054: (60, 3),
     1055: (60, 4),
-    1056: (60, 10),
-    1057: (60, 11),
+    1056: (60, 0),
+    1057: (60, 1),
     1058: (60, 0),
+    1063: (60, 0),
+    1069: (60, 0),
     1083: (60, 5),
     1084: (60, 6),
     1085: (60, 7),
+    1095: (138, 16),
+    1098: (60, 0),
     1130: (74, 0),
     1131: (39, 0),
     1132: (60, 8),
@@ -1181,19 +1189,24 @@ _FRONTEND_GENRL_MAP = {
     1134: (138, 18),
     1135: (74, 2),
     1136: (74, 1),
-    1137: (60, 12),
-    1138: (60, 13),
-    1139: (60, 14),
+    1137: (60, 0),
+    1138: (60, 1),
+    1139: (60, 2),
     1140: (138, 0),
     1141: (138, 4),
-    1147: (60, 15),
+    1143: (60, 0),
+    1147: (60, 3),
     1148: (138, 6),
     1149: (60, 1),
-    1150: (60, 9),
+    1150: (60, 0),
     1153: (138, 19),
     1163: (74, 5),
     1165: (138, 19),
     1166: (138, 16),
+    1169: (145, 12),
+    1184: (60, 0),
+    1186: (60, 0),
+    1188: (60, 0),
     1190: (74, 3),
 }
 
@@ -1326,8 +1339,12 @@ def extract_gta_sound(gta_path, soundid):
     if 1000 <= soundid <= 1199:
         if soundid in _FRONTEND_STREAM_MAP:
             return _extract_stream_track(gta_path, _FRONTEND_STREAM_MAP[soundid])
-        bank_slot = _FRONTEND_GENRL_MAP.get(soundid) or (60, soundid % 25)
-        return _extract_sfx_bank_slot(gta_path, bank_slot[0], bank_slot[1])
+        if soundid in _FRONTEND_GENRL_MAP:
+            bs = _FRONTEND_GENRL_MAP[soundid]
+            res = _extract_sfx_bank_slot(gta_path, bs[0], bs[1])
+            if res:
+                return res
+        return _extract_sfx_bank_slot(gta_path, 60, soundid % 9)
     return None
 
 

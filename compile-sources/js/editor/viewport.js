@@ -379,7 +379,7 @@ export class Viewport {
       });
     });
     this._ro.observe(container);
-    this.resize();
+    this.resize(true);
 
     let lastRenderTime = 0;
     const loop = (timestamp) => {
@@ -615,16 +615,33 @@ export class Viewport {
 
   get dom() { return this.container; }
 
-  resize() {
+  resize(immediate = false) {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     if (this._lastW === w && this._lastH === h) return;
     this._lastW = w;
     this._lastH = h;
-    this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderRequested = true;
+
+    if (this._resizeTimer) clearTimeout(this._resizeTimer);
+    if (immediate) {
+      this.renderer.setSize(w, h, false);
+    } else {
+      this._resizeTimer = setTimeout(() => {
+        this._resizeTimer = null;
+        if (this.renderer && this.container) {
+          const cw = this.container.clientWidth, ch = this.container.clientHeight;
+          if (cw && ch) {
+            this.renderer.setSize(cw, ch, false);
+            this.camera.aspect = cw / ch;
+            this.camera.updateProjectionMatrix();
+            this.renderRequested = true;
+          }
+        }
+      }, 60);
+    }
   }
 
   onFrame(cb) { this.frameCallbacks.push(cb); }

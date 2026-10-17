@@ -190,6 +190,59 @@ function setupDialogEvents() {
     };
   }
 
+  const undoBtn = dialogEl.querySelector('#miBtnUndo');
+  if (undoBtn) {
+    undoBtn.onclick = () => {
+      app.project?.undo();
+      app.editor?.syncAll();
+      updateSidebarList();
+      updateSidebarFields();
+      redrawCanvas();
+    };
+  }
+
+  const redoBtn = dialogEl.querySelector('#miBtnRedo');
+  if (redoBtn) {
+    redoBtn.onclick = () => {
+      app.project?.redo();
+      app.editor?.syncAll();
+      updateSidebarList();
+      updateSidebarFields();
+      redrawCanvas();
+    };
+  }
+
+  dialogEl.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      const m = getSelectedMapIcon();
+      if (!m) return;
+      e.preventDefault();
+      app.project.deleteItems('Apagar MapIcon', [m.uid]);
+      selectedUid = app.project.mapIcons?.[0]?.uid || null;
+      app.editor?.syncAll();
+      updateSidebarList();
+      updateSidebarFields();
+      redrawCanvas();
+      toast('MapIcon removido', 'info');
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      if (e.shiftKey) app.project?.redo();
+      else app.project?.undo();
+      app.editor?.syncAll();
+      updateSidebarList();
+      updateSidebarFields();
+      redrawCanvas();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault();
+      app.project?.redo();
+      app.editor?.syncAll();
+      updateSidebarList();
+      updateSidebarFields();
+      redrawCanvas();
+    }
+  });
+
   const bindField = (selId, prop, isInt = false) => {
     const el = dialogEl.querySelector(selId);
     if (!el) return;
@@ -229,16 +282,15 @@ function setupDialogEvents() {
     btnFocus3D.onclick = () => {
       const m = getSelectedMapIcon();
       if (!m) return;
-      if (app.editor?.getSurfaceZAt) {
-        const gz = app.editor.getSurfaceZAt(m.x, m.y);
-        if (gz !== null && (m.z === 0 || m.z < gz - 2 || isNaN(m.z))) {
-          m.z = Math.round(gz * 100) / 100;
-          app.editor?.syncAll();
-        }
-      }
       closeMapIconDialog();
       app.editor.select([m.uid]);
       app.editor.focusSelection();
+      setTimeout(() => {
+        app.editor?.dropToGround();
+      }, 100);
+      setTimeout(() => {
+        app.editor?.dropToGround();
+      }, 350);
     };
   }
 

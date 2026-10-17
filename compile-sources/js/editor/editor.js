@@ -95,11 +95,14 @@ export class Editor extends EventTarget {
     toggleBtn.style.display = 'none';
     toggleBtn.title = 'Alternar entre Mover e Girar (Atalhos: G ou R)';
     toggleBtn.innerHTML = `<svg><use href="#i-rotate"/></svg><span>Girar (R)</span>`;
-    toggleBtn.addEventListener('click', (e) => {
+    const doToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
       this.setMode(this.mode === 'translate' ? 'rotate' : 'translate');
-    });
+    };
+    toggleBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+    toggleBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); });
+    toggleBtn.addEventListener('click', doToggle);
     const vpDom = viewport.dom || viewport.container;
     if (vpDom) vpDom.appendChild(toggleBtn);
     this.gizmoToggleBtn = toggleBtn;
@@ -236,7 +239,7 @@ export class Editor extends EventTarget {
           else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
           else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
           else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
-          else if (kind === 'checkpoints') sig = JSON.stringify([o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
+          else if (kind === 'checkpoints') sig = JSON.stringify([o.isRace, o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
           else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
           else if (kind === 'sounds') sig = JSON.stringify([o.soundid]);
 
@@ -266,6 +269,7 @@ export class Editor extends EventTarget {
     this.updateAttachedChildren();
     this.updateHiddenWorld();
     this.refreshSelectionBoxes();
+    this.attachGizmo();
   }
 
   createNode(o, kind) {
@@ -499,37 +503,73 @@ export class Editor extends EventTarget {
           return;
         }
 
+        // Tabela oficial de pares de saias laterais do GTA San Andreas (Esquerda -> Direita)
+        const SIDESKIRT_PAIRS = {
+          1007: 1017, // Transfender: wg_l_b_ssk -> wg_r_b_ssk
+          1026: 1027, // Sultan: wg_l_a_s -> wg_r_a_s
+          1031: 1030, // Sultan: wg_l_c_s -> wg_r_c_s
+          1036: 1040, // Elegy: wg_l_a_l -> wg_r_a_l
+          1039: 1041, // Elegy: wg_l_c_l -> wg_r_c_l
+          1042: 1099, // Broadway: wg_l_lr_br1 -> wg_r_lr_br1
+          1047: 1051, // Flash: wg_l_a_f -> wg_r_a_f
+          1048: 1052, // Flash: wg_l_c_f -> wg_r_c_f
+          1056: 1062, // Stratum: wg_l_a_st -> wg_r_a_st
+          1057: 1063, // Stratum: wg_l_c_st -> wg_r_c_st
+          1069: 1071, // Jester: wg_l_a_j -> wg_r_a_j
+          1070: 1072, // Jester: wg_l_c_j -> wg_r_c_j
+          1090: 1094, // Uranus: wg_l_a_u -> wg_r_a_u
+          1093: 1095, // Uranus: wg_l_c_u -> wg_r_c_u
+          1108: 1107, // Blade: wg_l_lr_bl1 -> wg_r_lr_bl1
+          1118: 1120, // Slamvan: wg_l_lr_slv1 -> wg_r_lr_slv1
+          1119: 1121, // Slamvan: wg_l_lr_slv2 -> wg_r_lr_slv2
+          1122: 1101, // Remington: wg_l_lr_rem1 -> wg_r_lr_rem1
+          1106: 1124, // Remington: wg_l_lr_rem2 -> wg_r_lr_rem2
+          1133: 1102, // Savanna: wg_l_lr_sv -> wg_r_lr_sv
+          1134: 1137, // Tornado: wg_l_lr_t1 -> wg_r_lr_t1
+        };
+
         // Saias laterais (wg_l / wg_r): aplicam-se em ambas as laterais do veículo
-        if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_') || cName.startsWith('wg_')) {
+        if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_') || cName.startsWith('wg_') || SIDESKIRT_PAIRS[compId]) {
           const leftMat = dummies['ug_wing_left'] || dummies['chassis'];
           if (leftMat) compObj.applyMatrix4(leftMat);
-          compObj.position.y -= 0.22;
           markComp(compObj);
           m.add(compObj);
 
-          // Lado direito da saia lateral
-          const rClone = compObj.clone(true);
-          rClone.position.set(0, 0, 0);
-          rClone.rotation.set(0, 0, 0);
-          rClone.scale.set(1, 1, 1);
+          // Lado direito da saia lateral: carrega o modelo nativo correspondente do GTA SA
+          const rightCompId = SIDESKIRT_PAIRS[compId];
           const rightMat = dummies['ug_wing_right'];
-          if (rightMat) {
+          if (rightCompId && rightMat) {
+            const attachRightMesh = (rObj) => {
+              if (!rObj) return;
+              rObj.children.forEach(cm => {
+                cm.position.set(0, 0, 0);
+                cm.rotation.set(0, 0, 0);
+                cm.scale.set(1, 1, 1);
+                cm.updateMatrix();
+              });
+              applyColorsToObj(rObj);
+              if (paintjobTex) applyPaintjobToObj(rObj, paintjobTex);
+              rObj.applyMatrix4(rightMat);
+              markComp(rObj);
+              m.add(rObj);
+            };
+            if (this.models.ready.has(rightCompId)) {
+              attachRightMesh(this.models.instantiate(rightCompId));
+            } else {
+              this.models.getModel(rightCompId).then(() => {
+                attachRightMesh(this.models.instantiate(rightCompId));
+              }).catch(() => {});
+            }
+          } else if (rightMat) {
+            const rClone = compObj.clone(true);
             rClone.applyMatrix4(rightMat);
-          } else if (leftMat) {
-            const mirrored = leftMat.clone();
-            mirrored.elements[12] = -mirrored.elements[12];
-            rClone.applyMatrix4(mirrored);
-            rClone.scale.x *= -1;
-            rClone.updateMatrix();
+            markComp(rClone);
+            m.add(rClone);
           }
-          rClone.position.y -= 0.22;
-          markComp(rClone);
-          m.add(rClone);
           return;
         } else if (cName.startsWith('wg_r_')) {
           const rightMat = dummies['ug_wing_right'] || dummies['chassis'];
           if (rightMat) compObj.applyMatrix4(rightMat);
-          compObj.position.y -= 0.22;
           markComp(compObj);
           m.add(compObj);
           return;
@@ -1290,7 +1330,15 @@ export class Editor extends EventTarget {
     }
     const createdUids = [];
     for (const [p, pItems] of byProject.entries()) {
-      const data = pItems.map(s => ({ ...JSON.parse(JSON.stringify(s.item)), uid: undefined, kind: s.kind }));
+      const data = pItems.map(s => {
+        const itemCopy = JSON.parse(JSON.stringify(s.item));
+        delete itemCopy.uid;
+        if (s.kind === 'checkpoints') {
+          itemCopy.x += 2.0;
+          itemCopy.y += 2.0;
+        }
+        return { ...itemCopy, kind: s.kind };
+      });
       const uids = p.addItems(pItems.length > 1 ? `Duplicar ${pItems.length} itens` : 'Duplicar', data);
       createdUids.push(...uids);
     }

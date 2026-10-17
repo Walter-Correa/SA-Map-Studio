@@ -2774,7 +2774,10 @@ function checkpointInspector(cp) {
         <div class="insp-sub"><span class="tag">${isRace ? `Tipo ${cp.type ?? 0}` : 'SetPlayerCheckpoint'}</span> · Raio ${fmt(cp.size, 1)}</div>
       </div>
     </div>
-    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar checkpoint</button>
+    <div style="display:flex; gap:6px; margin: 8px 0 10px;">
+      <button type="button" class="btn" data-act="dup" style="flex:1;" title="Duplicar Checkpoint (Ctrl+D)"><svg><use href="#i-copy"/></svg>Duplicar</button>
+      <button type="button" class="btn danger" data-act="del" style="flex:1;" title="Apagar Checkpoint"><svg><use href="#i-trash"/></svg>Apagar</button>
+    </div>
     ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [cp.x, cp.y, cp.z], 0.1)}</div>
     ${speedSection()}
@@ -2837,7 +2840,8 @@ function bindCheckpoint(cp) {
       const k = btn.dataset.cpKind;
       project.updateItems('Alterar Categoria Checkpoint', [uid], (o) => {
         o.cpKind = k;
-        if (k === 'race' && o.nextx === undefined) {
+        o.isRace = (k === 'race');
+        if (k === 'race' && (o.nextx === undefined || (o.nextx === o.x && o.nexty === o.y))) {
           o.nextx = o.x + 15;
           o.nexty = o.y;
           o.nextz = o.z;

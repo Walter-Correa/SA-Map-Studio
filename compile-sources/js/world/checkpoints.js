@@ -33,9 +33,10 @@ function getCheckeredTexture() {
 
 export function updateRaceCheckpointsChain(checkpoints = []) {
   if (!Array.isArray(checkpoints)) return;
-  const raceCps = checkpoints.filter(c => c && c.isRace);
+  const raceCps = checkpoints.filter(c => c && (c.isRace || c.cpKind === 'race'));
   for (let i = 0; i < raceCps.length; i++) {
     const cp = raceCps[i];
+    cp.isRace = true;
     if (i < raceCps.length - 1) {
       const nextCp = raceCps[i + 1];
       cp.hasNext = true;
@@ -43,19 +44,43 @@ export function updateRaceCheckpointsChain(checkpoints = []) {
       cp.nexty = nextCp.y;
       cp.nextz = nextCp.z;
     } else {
-      cp.hasNext = false;
-      cp.nextx = cp.x;
-      cp.nexty = cp.y;
-      cp.nextz = cp.z;
+      // Último checkpoint da lista
+      if (i > 0) {
+        // Aponta para a frente, no mesmo sentido que aponta o checkpoint anterior a ele
+        const prevCp = raceCps[i - 1];
+        const fdx = cp.x - prevCp.x;
+        const fdy = cp.y - prevCp.y;
+        const fdz = cp.z - prevCp.z;
+        const len = Math.hypot(fdx, fdy, fdz);
+        if (len > 0.001) {
+          const normDist = Math.max(15, Math.min(30, len));
+          cp.nextx = cp.x + (fdx / len) * normDist;
+          cp.nexty = cp.y + (fdy / len) * normDist;
+          cp.nextz = cp.z + (fdz / len) * normDist;
+        } else {
+          cp.nextx = cp.x + 15;
+          cp.nexty = cp.y;
+          cp.nextz = cp.z;
+        }
+        cp.hasNext = true;
+      } else {
+        // Primeiro ou único checkpoint criado: aponta para a frente na horizontal, nunca fica sem seta ou direção
+        if (cp.nextx === undefined || (cp.nextx === cp.x && cp.nexty === cp.y)) {
+          cp.nextx = cp.x + 15;
+          cp.nexty = cp.y;
+          cp.nextz = cp.z;
+        }
+        cp.hasNext = true;
+      }
     }
   }
 }
 
 export function createCheckpointNode(cp) {
   const group = new THREE.Group();
-  group.name = cp.isRace ? `racecp_${cp.type}` : 'checkpoint';
+  const isRace = Boolean(cp.isRace || cp.cpKind === 'race');
+  group.name = isRace ? `racecp_${cp.type}` : 'checkpoint';
   const radius = Math.max(0.5, (+cp.size || 4.0) * 0.5);
-  const isRace = Boolean(cp.isRace);
   const rType = Math.max(0, Math.min(4, cp.type | 0));
   const isAirRing = isRace && (rType === 3 || rType === 4);
   const hasNext = Boolean(cp.hasNext);
@@ -89,12 +114,10 @@ export function createCheckpointNode(cp) {
     ringHolder.add(pickMesh);
 
     if (rType === 3) {
-      // Tipo 3: Argola normal com seta 3D APENAS se houver próximo checkpoint na ordem
-      if (hasNext) {
-        const arrow = buildDirectionArrow(radius * 0.65, 0xffbb00);
-        arrow.rotation.x = Math.PI / 2;
-        ringHolder.add(arrow);
-      }
+      // Tipo 3: Argola normal com seta 3D apontando na direção do trajeto
+      const arrow = buildDirectionArrow(radius * 0.65, 0xffbb00);
+      arrow.rotation.x = Math.PI / 2;
+      ringHolder.add(arrow);
     } else if (rType === 4) {
       // Tipo 4: Argola de chegada aérea preenchida com bandeira quadriculada
       const discGeo = new THREE.CircleGeometry(radius * 0.98, 36);
@@ -107,10 +130,8 @@ export function createCheckpointNode(cp) {
       ringHolder.add(new THREE.Mesh(discGeo, discMat));
     }
 
-    if (hasNext) {
-      const lookMat = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
-      ringHolder.quaternion.setFromRotationMatrix(lookMat);
-    }
+    const lookMat = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
+    ringHolder.quaternion.setFromRotationMatrix(lookMat);
     group.add(ringHolder);
   } else {
     // Cilindro vertical no solo (Checkpoint comum ou Race Checkpoint 0, 1, 2)
@@ -150,15 +171,12 @@ export function createCheckpointNode(cp) {
     group.add(new THREE.Mesh(pickGeo, pickMat));
 
     if (isRace && rType === 0) {
-      // Tipo 0: Seta direcional amarela no interior apontando para o próximo checkpoint
-      // Apenas se houver um próximo checkpoint na sequência
-      if (hasNext) {
-        const arrow = buildDirectionArrow(Math.min(3.2, Math.max(1.3, radius * 0.68)), 0xffcc00);
-        arrow.position.set(0, 0, Math.min(2.4, height * 0.45));
-        const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
-        arrow.rotation.z = yaw;
-        group.add(arrow);
-      }
+      // Tipo 0: Seta direcional amarela no interior apontando para a direção do trajeto
+      const arrow = buildDirectionArrow(Math.min(3.2, Math.max(1.3, radius * 0.68)), 0xffcc00);
+      arrow.position.set(0, 0, Math.min(2.4, height * 0.45));
+      const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
+      arrow.rotation.z = yaw;
+      group.add(arrow);
     } else if (isRace && rType === 1) {
       // Tipo 1: Cilindro de chegada / Finish com textura de bandeira quadriculada no interior
       const flagCylGeo = new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, height * 0.55, 24, 1, true);
