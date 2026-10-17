@@ -324,7 +324,7 @@ async function refreshCacheStatusUI() {
   const status = await getCacheStatus();
   if (!status) return;
 
-  const total = status.total || 1812;
+  const total = status.total || 1872;
   const cached = status.cached || 0;
   const pct = Math.round((cached / total) * 100);
 

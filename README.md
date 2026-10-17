@@ -248,7 +248,7 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 - Novo comando `/ajuda` no servidor de teste listando todos os atalhos e comandos disponíveis.
 
 ### 2.7.0 — 14/10/2026
-- Catálogo completo de animações do open.mp: 1.812 presets organizados por biblioteca com campo de busca em tempo real.
+- Catálogo completo de animações do open.mp: 1.872 presets organizados por biblioteca com campo de busca em tempo real.
 - Posicionamento e centralização inteligente da janela na tela, adaptando-se à área útil do monitor.
 - Esclarecimento da orientação dos eixos do manipulador ("Eixos: Mundo" vs "Eixos: Objeto").
 - Opção "Trocar pasta do GTA" integrada ao diálogo "Testar no jogo".

@@ -904,7 +904,7 @@ class AnimCacheManager:
     is_downloading = False
     stop_requested = False
     downloaded = 0
-    total = 1812
+    total = 1872
     current = ""
     error = ""
 
@@ -1398,7 +1398,7 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/anim_cache/status":
             cached_count = AnimCacheManager.count_cached()
             anims = AnimCacheManager.get_anim_list()
-            total = len(anims) if anims else 1812
+            total = len(anims) if anims else 1872
             return self.send_json({
                 "ok": True,
                 "cached": cached_count,

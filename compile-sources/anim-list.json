@@ -1152,6 +1152,150 @@
     "duration": 0.83
   },
   {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_End_P",
+    "desc": "Finish getting pumped in car",
+    "notes": "",
+    "frames": 248,
+    "duration": 4.13
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_End_W",
+    "desc": "Finish pumping in car",
+    "notes": "",
+    "frames": 220,
+    "duration": 3.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Loop_P",
+    "desc": "Getting pumped in car",
+    "notes": "",
+    "frames": 40,
+    "duration": 0.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Loop_W",
+    "desc": "Pumping in car",
+    "notes": "",
+    "frames": 40,
+    "duration": 0.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Start_P",
+    "desc": "Start getting pumped in car",
+    "notes": "",
+    "frames": 140,
+    "duration": 2.33
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Start_W",
+    "desc": "Start pumping in car",
+    "notes": "",
+    "frames": 140,
+    "duration": 2.33
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_End_P",
+    "desc": "Finish getting pumped on couch",
+    "notes": "",
+    "frames": 460,
+    "duration": 7.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_End_W",
+    "desc": "Finish pumping on couch",
+    "notes": "",
+    "frames": 460,
+    "duration": 7.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Loop_P",
+    "desc": "Getting pumped on couch",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Loop_W",
+    "desc": "Pumping on couch",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Start_P",
+    "desc": "Start getting pumped on couch",
+    "notes": "",
+    "frames": 320,
+    "duration": 5.33
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Start_W",
+    "desc": "Start pumping on couch",
+    "notes": "",
+    "frames": 320,
+    "duration": 5.33
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_End_P",
+    "desc": "Finish getting pumped up",
+    "notes": "",
+    "frames": 292,
+    "duration": 4.87
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_End_W",
+    "desc": "Finish pumping up",
+    "notes": "",
+    "frames": 320,
+    "duration": 5.33
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Loop_P",
+    "desc": "Getting pumped up",
+    "notes": "",
+    "frames": 40,
+    "duration": 0.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Loop_W",
+    "desc": "Pumping up",
+    "notes": "",
+    "frames": 40,
+    "duration": 0.67
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Start_P",
+    "desc": "Start getting pumped up",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Start_W",
+    "desc": "Start pumping up",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
     "lib": "BMX",
     "name": "BMX_back",
     "desc": "BMX lean back",
@@ -4889,6 +5033,62 @@
   },
   {
     "lib": "GFUNK",
+    "name": "Dance_B10",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B11",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B12",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B13",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B14",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B15",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B16",
+    "desc": "Bad \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
     "name": "Dance_B2",
     "desc": "Bad \"G Thang\" dance",
     "notes": "",
@@ -4953,63 +5153,63 @@
   },
   {
     "lib": "GFUNK",
-    "name": "Dance_B10",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B11",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B12",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B13",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B14",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B15",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B16",
-    "desc": "Bad \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
     "name": "Dance_G1",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G10",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G11",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G12",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G13",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G14",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G15",
+    "desc": "Good \"G Thang\" dance",
+    "notes": "",
+    "frames": 76,
+    "duration": 1.27
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G16",
     "desc": "Good \"G Thang\" dance",
     "notes": "",
     "frames": 76,
@@ -5074,62 +5274,6 @@
   {
     "lib": "GFUNK",
     "name": "Dance_G9",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G10",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G11",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G12",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G13",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G14",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G15",
-    "desc": "Good \"G Thang\" dance",
-    "notes": "",
-    "frames": 76,
-    "duration": 1.27
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G16",
     "desc": "Good \"G Thang\" dance",
     "notes": "",
     "frames": 76,
@@ -11361,6 +11505,62 @@
   },
   {
     "lib": "RUNNINGMAN",
+    "name": "Dance_B10",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B11",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 32,
+    "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B12",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B13",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 32,
+    "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B14",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B15",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 32,
+    "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B16",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
     "name": "Dance_B2",
     "desc": "Bad \"Hollywood swinging\" dance",
     "notes": "",
@@ -11425,67 +11625,67 @@
   },
   {
     "lib": "RUNNINGMAN",
-    "name": "Dance_B10",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B11",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 32,
-    "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B12",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B13",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 32,
-    "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B14",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B15",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 32,
-    "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B16",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
     "name": "Dance_G1",
     "desc": "Good \"Hollywood swinging\" dance",
     "notes": "",
     "frames": 32,
     "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G10",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G11",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 32,
+    "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G12",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G13",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 32,
+    "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G14",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G15",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 32,
+    "duration": 0.53
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G16",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "notes": "",
+    "frames": 34,
+    "duration": 0.57
   },
   {
     "lib": "RUNNINGMAN",
@@ -11550,62 +11750,6 @@
     "notes": "",
     "frames": 32,
     "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G10",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G11",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 32,
-    "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G12",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G13",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 32,
-    "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G14",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G15",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 32,
-    "duration": 0.53
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G16",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "notes": "",
-    "frames": 34,
-    "duration": 0.57
   },
   {
     "lib": "RUNNINGMAN",
@@ -11886,6 +12030,166 @@
     "notes": "",
     "frames": 40,
     "duration": 0.67
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1to2_P",
+    "desc": "Change position from eagle to butterfly as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 60,
+    "duration": 1.0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1to2_W",
+    "desc": "Change position from eagle to butterfly as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 60,
+    "duration": 1.0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Cum_P",
+    "desc": "Orgasm as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 400,
+    "duration": 6.67
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Cum_W",
+    "desc": "Orgasm as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 400,
+    "duration": 6.67
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Fail_P",
+    "desc": "Eagle position as male (fail)",
+    "notes": "Blocked in SA-MP",
+    "frames": 320,
+    "duration": 5.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Fail_W",
+    "desc": "Eagle position as female (fail)",
+    "notes": "Blocked in SA-MP",
+    "frames": 320,
+    "duration": 5.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_P",
+    "desc": "Eagle position as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 20,
+    "duration": 0.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_W",
+    "desc": "Eagle position as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 20,
+    "duration": 0.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2to3_P",
+    "desc": "Change position from butterfly to doggy as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 90,
+    "duration": 1.5
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2to3_W",
+    "desc": "Change position from butterfly to doggy as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 90,
+    "duration": 1.5
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_Fail_P",
+    "desc": "Butterfly position as male (fail)",
+    "notes": "Blocked in SA-MP",
+    "frames": 380,
+    "duration": 6.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_Fail_W",
+    "desc": "Butterfly position as female (fail)",
+    "notes": "Blocked in SA-MP",
+    "frames": 380,
+    "duration": 6.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_P",
+    "desc": "Butterfly position as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 20,
+    "duration": 0.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_W",
+    "desc": "Butterfly position as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 20,
+    "duration": 0.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3to1_P",
+    "desc": "Change position from doggy to eagle as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 60,
+    "duration": 1.0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3to1_W",
+    "desc": "Change position from doggy to eagle as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 60,
+    "duration": 1.0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_Fail_P",
+    "desc": "Doggy position as male (fail)",
+    "notes": "Blocked in SA-MP",
+    "frames": 260,
+    "duration": 4.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_Fail_W",
+    "desc": "Doggy position as female (fail)",
+    "notes": "Blocked in SA-MP",
+    "frames": 260,
+    "duration": 4.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_P",
+    "desc": "Doggy position as male",
+    "notes": "Blocked in SA-MP",
+    "frames": 20,
+    "duration": 0.33
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_W",
+    "desc": "Doggy position as female",
+    "notes": "Blocked in SA-MP",
+    "frames": 20,
+    "duration": 0.33
   },
   {
     "lib": "SHAMAL",
@@ -12270,6 +12574,182 @@
     "notes": "",
     "frames": 88,
     "duration": 1.47
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_Idle_P",
+    "desc": "Bent at 90 degrees ready to be caned as male",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_Idle_W",
+    "desc": "Position to caning as female",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_P",
+    "desc": "Bent at 90 degrees being caned as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_W",
+    "desc": "Caning as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_Idle_P",
+    "desc": "Position to caning as male",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_Idle_W",
+    "desc": "Bent at 90 degrees ready to be caned as female",
+    "notes": "",
+    "frames": 120,
+    "duration": 2.0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_P",
+    "desc": "Caning as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_W",
+    "desc": "Bent at 90 degrees being caned as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankedP",
+    "desc": "Bent at 90 degrees being spanked as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankedW",
+    "desc": "Spanking as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanked_IdleP",
+    "desc": "Bent at 90 degrees ready to be spanked as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanked_IdleW",
+    "desc": "Position to spank as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankingP",
+    "desc": "Spanking as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankingW",
+    "desc": "Bent over 90 degrees being spanked as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_endP",
+    "desc": "Finish spanking as male",
+    "notes": "",
+    "frames": 400,
+    "duration": 6.67
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_endW",
+    "desc": "Finish being spanked as female",
+    "notes": "",
+    "frames": 400,
+    "duration": 6.67
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_IdleP",
+    "desc": "Position to spank as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_IdleW",
+    "desc": "Bent over 90 degrees ready to be spanked as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingIdleP",
+    "desc": "Sitting position to spank as male",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingIdleW",
+    "desc": "Kneeling on the floor ready to be spanked as female",
+    "notes": "",
+    "frames": 80,
+    "duration": 1.33
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingP",
+    "desc": "Sitting and spanking as male",
+    "notes": "",
+    "frames": 60,
+    "duration": 1.0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingW",
+    "desc": "Kneeling on the floor being spanked as female",
+    "notes": "",
+    "frames": 60,
+    "duration": 1.0
   },
   {
     "lib": "SPRAYCAN",
@@ -14145,6 +14625,62 @@
   },
   {
     "lib": "WOP",
+    "name": "Dance_B10",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B11",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 68,
+    "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B12",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B13",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 68,
+    "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B14",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B15",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 68,
+    "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B16",
+    "desc": "Bad \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
     "name": "Dance_B2",
     "desc": "Bad \"Funky president\" dance",
     "notes": "",
@@ -14209,67 +14745,67 @@
   },
   {
     "lib": "WOP",
-    "name": "Dance_B10",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B11",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 68,
-    "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B12",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B13",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 68,
-    "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B14",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B15",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 68,
-    "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B16",
-    "desc": "Bad \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
     "name": "Dance_G1",
     "desc": "Good \"Funky president\" dance",
     "notes": "",
     "frames": 68,
     "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G10",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G11",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 68,
+    "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G12",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G13",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 68,
+    "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G14",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G15",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 68,
+    "duration": 1.13
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G16",
+    "desc": "Good \"Funky president\" dance",
+    "notes": "",
+    "frames": 70,
+    "duration": 1.17
   },
   {
     "lib": "WOP",
@@ -14334,62 +14870,6 @@
     "notes": "",
     "frames": 68,
     "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G10",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G11",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 68,
-    "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G12",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G13",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 68,
-    "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G14",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G15",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 68,
-    "duration": 1.13
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G16",
-    "desc": "Good \"Funky president\" dance",
-    "notes": "",
-    "frames": 70,
-    "duration": 1.17
   },
   {
     "lib": "WOP",

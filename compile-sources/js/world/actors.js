@@ -19,7 +19,7 @@ export const POPULAR_ANIMATIONS = [
   { label: 'Assustado / Encolhido', lib: 'PED', name: 'cower', loop: 1, freeze: 1 },
   { label: 'Gangue falando alto', lib: 'GANGS', name: 'prtial_gngtlkA', loop: 1, freeze: 0 },
   { label: 'Postura armada', lib: 'PED', name: 'IDLE_armed', loop: 1, freeze: 0 },
-  { label: 'Prostituta esperando', lib: 'BLOWJOB', name: 'BJ_STAND_LOOP_P', loop: 1, freeze: 0 },
+  { label: 'Prostituta esperando', lib: 'BLOWJOBZ', name: 'BJ_Stand_Loop_P', loop: 1, freeze: 0 },
   { label: 'Comemorando / Palmas', lib: 'BENCHPRESS', name: 'gym_bp_celebrate', loop: 1, freeze: 0 },
 ];
 
@@ -45,7 +45,7 @@ export function classifyAnim(a) {
   if (lib.includes('GANG') || lib.includes('ON_LOOKERS') || nm.includes('chat') || nm.includes('talk') || desc.includes('talk') || desc.includes('chat') || desc.includes('wave')) return 'conversas';
   if (lib.includes('FIGHT') || lib.includes('COLT') || lib.includes('RIFLE') || lib.includes('SHOTGUN') || nm.includes('aim') || nm.includes('fight') || desc.includes('fight') || desc.includes('aim')) return 'combate';
   if (lib.includes('GYM') || lib.includes('BENCH') || lib.includes('BOX') || lib.includes('BASEBALL') || desc.includes('gym') || desc.includes('exercise')) return 'esportes';
-  if (lib.includes('BAR') || lib.includes('SMOK') || lib.includes('FOOD') || lib.includes('CASINO') || desc.includes('drink') || desc.includes('smoke') || nm.includes('smoke')) return 'lazer';
+  if (lib.includes('BAR') || lib.includes('SMOK') || lib.includes('FOOD') || lib.includes('CASINO') || lib.includes('BLOWJOB') || lib.includes('SEX') || lib.includes('SNM') || desc.includes('drink') || desc.includes('smoke') || nm.includes('smoke')) return 'lazer';
   return 'outros';
 }
 
@@ -2988,6 +2988,132 @@ export const ALL_ANIMATIONS = [
     "lib": "BIKE_DBZ",
     "name": "Pass_Driveby_RHS",
     "desc": "Bike passanger drive bying right",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_End_P",
+    "desc": "Finish getting pumped in car",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_End_W",
+    "desc": "Finish pumping in car",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Loop_P",
+    "desc": "Getting pumped in car",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Loop_W",
+    "desc": "Pumping in car",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Start_P",
+    "desc": "Start getting pumped in car",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Car_Start_W",
+    "desc": "Start pumping in car",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_End_P",
+    "desc": "Finish getting pumped on couch",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_End_W",
+    "desc": "Finish pumping on couch",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Loop_P",
+    "desc": "Getting pumped on couch",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Loop_W",
+    "desc": "Pumping on couch",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Start_P",
+    "desc": "Start getting pumped on couch",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Couch_Start_W",
+    "desc": "Start pumping on couch",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_End_P",
+    "desc": "Finish getting pumped up",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_End_W",
+    "desc": "Finish pumping up",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Loop_P",
+    "desc": "Getting pumped up",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Loop_W",
+    "desc": "Pumping up",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Start_P",
+    "desc": "Start getting pumped up",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "BLOWJOBZ",
+    "name": "BJ_Stand_Start_W",
+    "desc": "Start pumping up",
     "loop": 0,
     "freeze": 0
   },
@@ -6262,6 +6388,55 @@ export const ALL_ANIMATIONS = [
   },
   {
     "lib": "GFUNK",
+    "name": "Dance_B10",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B11",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B12",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B13",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B14",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B15",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_B16",
+    "desc": "Bad \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
     "name": "Dance_B2",
     "desc": "Bad \"G Thang\" dance",
     "loop": 1,
@@ -6318,56 +6493,56 @@ export const ALL_ANIMATIONS = [
   },
   {
     "lib": "GFUNK",
-    "name": "Dance_B10",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B11",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B12",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B13",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B14",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B15",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_B16",
-    "desc": "Bad \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
     "name": "Dance_G1",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G10",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G11",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G12",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G13",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G14",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G15",
+    "desc": "Good \"G Thang\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "GFUNK",
+    "name": "Dance_G16",
     "desc": "Good \"G Thang\" dance",
     "loop": 1,
     "freeze": 0
@@ -6424,55 +6599,6 @@ export const ALL_ANIMATIONS = [
   {
     "lib": "GFUNK",
     "name": "Dance_G9",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G10",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G11",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G12",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G13",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G14",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G15",
-    "desc": "Good \"G Thang\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "GFUNK",
-    "name": "Dance_G16",
     "desc": "Good \"G Thang\" dance",
     "loop": 1,
     "freeze": 0
@@ -11925,6 +12051,55 @@ export const ALL_ANIMATIONS = [
   },
   {
     "lib": "RUNNINGMAN",
+    "name": "Dance_B10",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B11",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B12",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B13",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B14",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B15",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_B16",
+    "desc": "Bad \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
     "name": "Dance_B2",
     "desc": "Bad \"Hollywood swinging\" dance",
     "loop": 1,
@@ -11981,56 +12156,56 @@ export const ALL_ANIMATIONS = [
   },
   {
     "lib": "RUNNINGMAN",
-    "name": "Dance_B10",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B11",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B12",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B13",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B14",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B15",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_B16",
-    "desc": "Bad \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
     "name": "Dance_G1",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G10",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G11",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G12",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G13",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G14",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G15",
+    "desc": "Good \"Hollywood swinging\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "RUNNINGMAN",
+    "name": "Dance_G16",
     "desc": "Good \"Hollywood swinging\" dance",
     "loop": 1,
     "freeze": 0
@@ -12087,55 +12262,6 @@ export const ALL_ANIMATIONS = [
   {
     "lib": "RUNNINGMAN",
     "name": "Dance_G9",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G10",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G11",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G12",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G13",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G14",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G15",
-    "desc": "Good \"Hollywood swinging\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "RUNNINGMAN",
-    "name": "Dance_G16",
     "desc": "Good \"Hollywood swinging\" dance",
     "loop": 1,
     "freeze": 0
@@ -12382,6 +12508,146 @@ export const ALL_ANIMATIONS = [
     "lib": "SCRATCHING",
     "name": "sc_rtol",
     "desc": "DJ animation right",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1to2_P",
+    "desc": "Change position from eagle to butterfly as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1to2_W",
+    "desc": "Change position from eagle to butterfly as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Cum_P",
+    "desc": "Orgasm as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Cum_W",
+    "desc": "Orgasm as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Fail_P",
+    "desc": "Eagle position as male (fail)",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_Fail_W",
+    "desc": "Eagle position as female (fail)",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_P",
+    "desc": "Eagle position as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_1_W",
+    "desc": "Eagle position as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2to3_P",
+    "desc": "Change position from butterfly to doggy as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2to3_W",
+    "desc": "Change position from butterfly to doggy as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_Fail_P",
+    "desc": "Butterfly position as male (fail)",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_Fail_W",
+    "desc": "Butterfly position as female (fail)",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_P",
+    "desc": "Butterfly position as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_2_W",
+    "desc": "Butterfly position as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3to1_P",
+    "desc": "Change position from doggy to eagle as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3to1_W",
+    "desc": "Change position from doggy to eagle as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_Fail_P",
+    "desc": "Doggy position as male (fail)",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_Fail_W",
+    "desc": "Doggy position as female (fail)",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_P",
+    "desc": "Doggy position as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SEX",
+    "name": "SEX_3_W",
+    "desc": "Doggy position as female",
     "loop": 0,
     "freeze": 0
   },
@@ -12718,6 +12984,160 @@ export const ALL_ANIMATIONS = [
     "lib": "SNIPER",
     "name": "WEAPON_sniper",
     "desc": "Aiming with a sniper rifle",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_Idle_P",
+    "desc": "Bent at 90 degrees ready to be caned as male",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_Idle_W",
+    "desc": "Position to caning as female",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_P",
+    "desc": "Bent at 90 degrees being caned as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Caned_W",
+    "desc": "Caning as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_Idle_P",
+    "desc": "Position to caning as male",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_Idle_W",
+    "desc": "Bent at 90 degrees ready to be caned as female",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_P",
+    "desc": "Caning as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SnM_Cane_W",
+    "desc": "Bent at 90 degrees being caned as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankedP",
+    "desc": "Bent at 90 degrees being spanked as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankedW",
+    "desc": "Spanking as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanked_IdleP",
+    "desc": "Bent at 90 degrees ready to be spanked as male",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanked_IdleW",
+    "desc": "Position to spank as female",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankingP",
+    "desc": "Spanking as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "SpankingW",
+    "desc": "Bent over 90 degrees being spanked as female",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_endP",
+    "desc": "Finish spanking as male",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_endW",
+    "desc": "Finish being spanked as female",
+    "loop": 0,
+    "freeze": 1
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_IdleP",
+    "desc": "Position to spank as male",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_IdleW",
+    "desc": "Bent over 90 degrees ready to be spanked as female",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingIdleP",
+    "desc": "Sitting position to spank as male",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingIdleW",
+    "desc": "Kneeling on the floor ready to be spanked as female",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingP",
+    "desc": "Sitting and spanking as male",
+    "loop": 0,
+    "freeze": 0
+  },
+  {
+    "lib": "SnM",
+    "name": "Spanking_SittingW",
+    "desc": "Kneeling on the floor being spanked as female",
     "loop": 0,
     "freeze": 0
   },
@@ -14361,6 +14781,55 @@ export const ALL_ANIMATIONS = [
   },
   {
     "lib": "WOP",
+    "name": "Dance_B10",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B11",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B12",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B13",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B14",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B15",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_B16",
+    "desc": "Bad \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
     "name": "Dance_B2",
     "desc": "Bad \"Funky president\" dance",
     "loop": 1,
@@ -14417,56 +14886,56 @@ export const ALL_ANIMATIONS = [
   },
   {
     "lib": "WOP",
-    "name": "Dance_B10",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B11",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B12",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B13",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B14",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B15",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_B16",
-    "desc": "Bad \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
     "name": "Dance_G1",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G10",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G11",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G12",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G13",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G14",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G15",
+    "desc": "Good \"Funky president\" dance",
+    "loop": 1,
+    "freeze": 0
+  },
+  {
+    "lib": "WOP",
+    "name": "Dance_G16",
     "desc": "Good \"Funky president\" dance",
     "loop": 1,
     "freeze": 0
@@ -14523,55 +14992,6 @@ export const ALL_ANIMATIONS = [
   {
     "lib": "WOP",
     "name": "Dance_G9",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G10",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G11",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G12",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G13",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G14",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G15",
-    "desc": "Good \"Funky president\" dance",
-    "loop": 1,
-    "freeze": 0
-  },
-  {
-    "lib": "WOP",
-    "name": "Dance_G16",
     "desc": "Good \"Funky president\" dance",
     "loop": 1,
     "freeze": 0

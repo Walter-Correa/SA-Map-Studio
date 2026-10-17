@@ -52,7 +52,7 @@ const CHANGELOG = [
   },
   {
     version: '2.7.0', date: '14/10/2026', items: [
-      'Catálogo completo de animações : 1.812 presets organizados por biblioteca com campo de busca em tempo real (nome, lib e ação) no painel de Actors.',
+      'Catálogo completo de animações: 1.872 presets organizados por biblioteca com campo de busca em tempo real (nome, lib e ação) no painel de Actors.',
       'Posicionamento e centralização inteligente da janela na tela: dimensionamento dinâmico que se adapta à área útil de trabalho (work area), evitando cortes ou bordas ocultas em qualquer monitor.',
       'Orientação dos eixos do manipulador esclarecida: botão "Eixos: Mundo" vs "Eixos: Objeto" com tooltips detalhados explicando o impacto da manipulação global vs local alinhada à rotação dos objetos.',
       'Opção "Trocar pasta do GTA" relocalizada para o menu "Testar no jogo", mantendo todas as configurações de inicialização e teste integradas em um só diálogo.',
