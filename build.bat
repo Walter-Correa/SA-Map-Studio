@@ -119,10 +119,23 @@ rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
 set "ARGS=%ARGS% --uac-admin"
 set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;.""
-set "ARGS=%ARGS% --add-data "%SRC%css;css" --add-data "%SRC%js;js" --add-data "%SRC%fonts;fonts""
+if exist "%SRC%compile-sources\css" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\css;css""
+) else if exist "%SRC%css" (
+    set "ARGS=%ARGS% --add-data "%SRC%css;css""
+)
+if exist "%SRC%compile-sources\js" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\js;js""
+) else if exist "%SRC%js" (
+    set "ARGS=%ARGS% --add-data "%SRC%js;js""
+)
+if exist "%SRC%compile-sources\fonts" (
+    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\fonts;fonts""
+) else if exist "%SRC%fonts" (
+    set "ARGS=%ARGS% --add-data "%SRC%fonts;fonts""
+)
 if exist "%SRC%compile-sources\anim-list.json" (
     set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;compile-sources""
 ) else if exist "%SRC%anim-list.json" (
     set "ARGS=%ARGS% --add-data "%SRC%anim-list.json;.""
 ) else if exist "%SRC%anim_list.json" (
@@ -132,12 +145,6 @@ if exist "%SRC%compile-sources\models" (
     set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
 ) else if exist "%SRC%models" (
     set "ARGS=%ARGS% --add-data "%SRC%models;models""
-)
-if exist "%SRC%compile-sources\samapstudio.amx" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\samapstudio.amx;compile-sources""
-)
-if exist "%SRC%compile-sources\samapstudio.pwn" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\samapstudio.pwn;compile-sources""
 )
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
@@ -170,6 +177,8 @@ if exist "%BASE%\_tcl_data" rmdir /s /q "%BASE%\_tcl_data" 2>nul
 if exist "%BASE%\_tk_data" rmdir /s /q "%BASE%\_tk_data" 2>nul
 if exist "%BASE%\clr_loader" rmdir /s /q "%BASE%\clr_loader" 2>nul
 if exist "%BASE%\compile-sources" rmdir /s /q "%BASE%\compile-sources" 2>nul
+if exist "%BASE%\system\compile-sources" rmdir /s /q "%BASE%\system\compile-sources" 2>nul
+if exist "%BASE%\models" rmdir /s /q "%BASE%\models" 2>nul
 if exist "%BASE%\css" rmdir /s /q "%BASE%\css" 2>nul
 if exist "%BASE%\fonts" rmdir /s /q "%BASE%\fonts" 2>nul
 if exist "%BASE%\js" rmdir /s /q "%BASE%\js" 2>nul
@@ -275,16 +284,9 @@ if defined RADARSRC (
 )
 
 rem ---------------- Modelos 3D
-set "MODELSRC="
-if exist "%SRC%compile-sources\models" set "MODELSRC=%SRC%compile-sources\models"
-if not defined MODELSRC if exist "%SRC%models" set "MODELSRC=%SRC%models"
-if not defined MODELSRC if exist "%BASE%\models" set "MODELSRC=%BASE%\models"
-if not defined MODELSRC if exist "%OUT%\models" set "MODELSRC=%OUT%\models"
-if defined MODELSRC (
-    echo Copiando modelos de: "%MODELSRC%"...
-    if not exist "%BASE%\models" mkdir "%BASE%\models"
-    robocopy "%MODELSRC%" "%BASE%\models" /E /NFL /NDL /NJH /NJS /NP >nul
-)
+rem Modelos 3D (cj.dff, cj.txd) sao empacotados internamente dentro de system\models
+if exist "%BASE%\models" rmdir /s /q "%BASE%\models" 2>nul
+if exist "%BASE%\system\compile-sources" rmdir /s /q "%BASE%\system\compile-sources" 2>nul
 
 rem Garante que na raiz de %OUT% existam SOMENTE o executavel e a pasta sa-map-studio
 if exist "%OUT%\system" rmdir /s /q "%OUT%\system" 2>nul
@@ -322,7 +324,7 @@ echo.
 echo ============================================================
 echo  Pronto! Pasta do programa: %OUT%
 echo    SA Map Studio.exe   - abra este
-echo    sa-map-studio\      - pasta contendo data, exported, models, projects, test-server, system
+echo    sa-map-studio\      - pasta contendo data, exported, projects, test-server, system
 if /i "%MODO%"=="clean" (
 echo  Versao limpa: projects, exported e data sao criados vazios na
 echo  primeira vez que o programa abrir. Pronta para enviar a outra pessoa.

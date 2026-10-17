@@ -22,7 +22,7 @@ Pastas (dentro de sa-map-studio):
     exported/     arquivos .pwn / .ipl gerados
     data/         configuração, cache de texturas e miniaturas, dados da janela e registros
     test-server/  servidor open.mp/SA-MP usado pelo "Testar no jogo"
-    models/       modelos 3D auxiliares (ex: cj.dff)
+    system/       arquivos internos, runtime, bibliotecas e modelos 3D
 """
 import argparse
 import atexit
@@ -71,7 +71,7 @@ ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.
 WEBVIEW_DIR = os.path.join(DATA_DIR, "browser")
 LOGS_DIR = os.path.join(DATA_DIR, "logs")
 TEST_DIR = os.path.join(BASE_DIR, "test-server")
-MODELS_DIR = os.path.join(BASE_DIR, "models")
+MODELS_DIR = os.path.join(APP_DIR, "models") if FROZEN else os.path.join(COMPILE_SOURCES_DIR, "models")
 IS_WINDOWS = os.name == "nt"
 
 
@@ -126,12 +126,21 @@ def migrate_old_layout():
         ("servidor-teste", TEST_DIR),
         ("Servidor de Teste", TEST_DIR),
         ("teste", TEST_DIR),
-        ("models", MODELS_DIR),
     ):
-        if not FROZEN and old_name == "models":
-            continue
         src = os.path.join(ROOT_DIR, old_name)
         merge_and_remove(src, target_dir)
+
+    # Remove pastas residuais/duplicadas que nao devem existir dentro de sa-map-studio
+    for obsolete_dir in (
+        os.path.join(BASE_DIR, "models"),
+        os.path.join(BASE_DIR, "compile-sources"),
+        os.path.join(BASE_DIR, "system", "compile-sources"),
+    ):
+        if os.path.isdir(obsolete_dir):
+            try:
+                shutil.rmtree(obsolete_dir, ignore_errors=True)
+            except OSError:
+                pass
 
     # Migra arquivos avulsos se ainda existirem soltos
     moves = [
@@ -650,15 +659,12 @@ def samp_client():
 def find_samapstudio_amx():
     """Localiza o arquivo samapstudio.amx nas fontes de compilacao ou instalacao."""
     for cand in (
-        os.path.join(APP_DIR, "compile-sources", "samapstudio.amx"),
-        os.path.join(BASE_DIR, "compile-sources", "samapstudio.amx"),
+        os.path.join(COMPILE_SOURCES_DIR, "samapstudio.amx"),
+        os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
         os.path.join(APP_DIR, "samapstudio.amx"),
         os.path.join(BASE_DIR, "samapstudio.amx"),
-        os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
         os.path.join(BASE_DIR, "omp-server-source", "gamemodes", "samapstudio.amx"),
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server", "gamemodes", "samapstudio.amx"),
-        os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server", "gamemodes", "samapstudio.amx"),
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "gamemodes", "samapstudio.amx"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server", "gamemodes", "samapstudio.amx"),
     ):
         if os.path.isfile(cand):
             return cand
@@ -887,7 +893,6 @@ class AnimCacheManager:
     def get_anim_list(cls):
         candidates = [
             os.path.join(COMPILE_SOURCES_DIR, "anim-list.json"),
-            os.path.join(APP_DIR, "compile-sources", "anim-list.json"),
             os.path.join(APP_DIR, "anim-list.json"),
             os.path.join(BASE_DIR, "anim-list.json"),
             os.path.join(APP_DIR, "anim_list.json"),
@@ -1466,7 +1471,11 @@ class Handler(SimpleHTTPRequestHandler):
             path = "/index.html"
         rel = path.lstrip("/")
         full = os.path.normpath(os.path.join(APP_DIR, rel))
-        if not full.startswith(os.path.normpath(APP_DIR)) or not os.path.isfile(full):
+        if not os.path.isfile(full) and not FROZEN:
+            cand = os.path.normpath(os.path.join(COMPILE_SOURCES_DIR, rel))
+            if os.path.isfile(cand):
+                full = cand
+        if not os.path.isfile(full):
             return self.send_error(HTTPStatus.NOT_FOUND)
         low = os.path.basename(full).lower()
         if low in ("config.json", "serve.py") or full.startswith(DATA_DIR) or full.startswith(PROJECTS_DIR):
@@ -1478,9 +1487,9 @@ class Handler(SimpleHTTPRequestHandler):
         if low_rel in ("models/cj.dff", "models/cj.txd", "cj.dff", "cj.txd", "data/models/cj.dff", "data/models/cj.txd", "dados/models/cj.dff", "dados/models/cj.txd"):
             for mdir in (
                 MODELS_DIR,
+                os.path.join(APP_DIR, "models"),
                 COMPILE_MODELS_DIR,
                 os.path.join(ROOT_DIR, "models"),
-                os.path.join(APP_DIR, "models"),
                 os.path.join(DATA_DIR, "models")
             ):
                 candidate = os.path.join(mdir, os.path.basename(rel))
@@ -1492,9 +1501,9 @@ class Handler(SimpleHTTPRequestHandler):
         if not full or not os.path.isfile(full):
             for fdir in (
                 MODELS_DIR,
+                os.path.join(APP_DIR, "models"),
                 COMPILE_MODELS_DIR,
                 os.path.join(ROOT_DIR, "models"),
-                os.path.join(APP_DIR, "models"),
                 os.path.join(DATA_DIR, "models")
             ):
                 local_fallback = os.path.join(fdir, os.path.basename(rel))
@@ -1520,7 +1529,6 @@ class Handler(SimpleHTTPRequestHandler):
                 os.path.join(COMPILE_CACHE_DIR, "skins"),
                 os.path.join(APP_DIR, "data", "cache", "skins"),
                 os.path.join(APP_DIR, "Dados", "cache", "skins"),
-                os.path.join(APP_DIR, "compile-sources", "cache", "skins")
             ):
                 cj_skin = os.path.join(sdir, "0.png")
                 if os.path.isfile(cj_skin):
