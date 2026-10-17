@@ -52,6 +52,7 @@ new Float:gFlySavedPos[MAX_PLAYERS][4];
 new gFlySavedInterior[MAX_PLAYERS];
 new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
+new bool:gPlayerSpawned[MAX_PLAYERS];
 
 new gObjetos[SAMS_MAX_OBJETOS];
 new gTotalObjetos;
@@ -89,7 +90,7 @@ new gActorAnim[SAMS_MAX_ACTORS][E_SAMS_ACTOR_ANIM];
 new gAnimLibs[64][32];
 new gTotalAnimLibs = 0;
 new gIgnorados;
-new Float:gSpawn[4];
+new Float:gSpawn[4] = {0.0, 0.0, 3.0, 0.0};
 new gSpawnInterior;
 new gSpawnMundo;
 new bool:gJetpack = true;
@@ -693,6 +694,7 @@ stock SAMS_CarregarMapa()
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
                         TextDrawFont(td, 4);
+                        TextDrawLetterSize(td, 0.0, 0.0);
                         TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
                         if (tdcol == 0 || tdcol == 0xFF) tdcol = 0xFFFFFFFF;
                         if ((tdcol & 0xFF) == 0) tdcol |= 0xFF;
@@ -786,6 +788,14 @@ stock SAMS_CarregarMapa()
         gHasMapCenter = true;
     }
 
+    if (gSpawn[0] == 0.0 && gSpawn[1] == 0.0 && (gSpawn[2] == 0.0 || gSpawn[2] == 3.0) && gHasMapCenter)
+    {
+        gSpawn[0] = gMapCenter[0];
+        gSpawn[1] = gMapCenter[1];
+        gSpawn[2] = gMapCenter[2];
+        gSpawn[3] = 0.0;
+    }
+
     printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d textdraws (Streamer: %s)",
         gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalTextDraws, gUseStreamer ? "ATIVO" : "DESATIVADO");
     printf("[SA Map Studio] Clima: %d, Horário: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
@@ -798,8 +808,8 @@ public OnGameModeInit()
     UsePlayerPedAnims();
     DisableInteriorEnterExits();
     ShowPlayerMarkers(PLAYER_MARKERS_MODE_OFF);
-    AddPlayerClass(0, 0.0, 0.0, 3.0, 0.0, 0, 0, 0, 0, 0, 0);
     SAMS_CarregarMapa();
+    AddPlayerClass(0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SetWorldTime(gHora);
     SetWeather(gClima);
     return 1;
@@ -853,6 +863,7 @@ public OnActorStreamIn(actorid, forplayerid)
 
 public OnPlayerConnect(playerid)
 {
+    gPlayerSpawned[playerid] = false;
     gNoClip[playerid][noclip_cameramode] = CAMERA_MODE_NONE;
     gNoClip[playerid][noclip_flyobject] = INVALID_OBJECT_ID;
     gNoClip[playerid][noclip_lrold] = 0;
@@ -862,6 +873,7 @@ public OnPlayerConnect(playerid)
     gNoClip[playerid][noclip_accelmul] = 0.0;
     gReturningFromFly[playerid] = false;
 
+    SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SetPlayerTime(playerid, gHora, gMinuto);
     SetPlayerWeather(playerid, gClima);
 
@@ -889,15 +901,15 @@ public OnPlayerDisconnect(playerid, reason)
         gNoClip[playerid][noclip_cameramode] = CAMERA_MODE_NONE;
     }
     gReturningFromFly[playerid] = false;
+    gPlayerSpawned[playerid] = false;
     return 1;
 }
 
-// Pula a escolha de personagem: liga e desliga o modo espectador, o que faz o jogo
-// spawnar o jogador direto no ponto definido por SetSpawnInfo.
+// Pula a escolha de personagem: no open.mp e SA-MP, chama SetSpawnInfo e SpawnPlayer diretamente
 public OnPlayerRequestClass(playerid, classid)
 {
     SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
-    TogglePlayerSpectating(playerid, true);
+    SpawnPlayer(playerid);
     SetTimerEx("SAMS_Spawnar", 150, false, "i", playerid);
     return 1;
 }
@@ -906,13 +918,24 @@ forward SAMS_Spawnar(playerid);
 public SAMS_Spawnar(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
-    SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
-    TogglePlayerSpectating(playerid, false);
+    if (!gPlayerSpawned[playerid])
+    {
+        SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
+        SpawnPlayer(playerid);
+    }
     return 1;
 }
 
 public OnPlayerRequestSpawn(playerid)
 {
+    SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
+    return 1;
+}
+
+public OnPlayerDeath(playerid, killerid, reason)
+{
+    gPlayerSpawned[playerid] = false;
+    SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     return 1;
 }
 
@@ -940,6 +963,7 @@ public SAMS_ShowAllTextDraws(playerid)
 
 public OnPlayerSpawn(playerid)
 {
+    gPlayerSpawned[playerid] = true;
     if (gReturningFromFly[playerid])
     {
         SAMS_RestaurarPosVoo(playerid);
@@ -959,6 +983,7 @@ public OnPlayerSpawn(playerid)
     }
     SAMS_ShowAllTextDraws(playerid);
     SetTimerEx("SAMS_ShowAllTextDraws", 400, false, "i", playerid);
+    SetTimerEx("SAMS_ShowAllTextDraws", 1200, false, "i", playerid);
     SAMS_PreloadAllAnims(playerid);
     SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
     SetTimerEx("SAMS_SyncActorAnims", 1500, false, "i", playerid);

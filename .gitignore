@@ -14,7 +14,9 @@ __pycache__/
 *.pyc
 
 # Dados locais do usuário, projetos e configurações da máquina
-config.json
+/config.json
+/data/config.json
+!omp-server-source/config.json
 sa-map-studio.log
 sa-map-studio/
 data/

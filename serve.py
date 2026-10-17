@@ -694,6 +694,7 @@ def test_info():
         TEST_DIR,
         os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server"),
         os.path.join(BASE_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server"),
+        os.path.join(ROOT_DIR, "omp-server-source"),
         os.path.join(BASE_DIR, "omp-server-source"),
     ]
     for c in candidates:
@@ -849,7 +850,7 @@ def start_test(body):
             cfg = {
                 "name": "SA Map Studio - teste", "max_players": 8, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT, "bind": "127.0.0.1"},
-                "pawn": {"main_scripts": ["samapstudio 1"], "side_scripts": [], "legacy_plugins": ["streamer"] if load_streamer else []},
+                "pawn": {"main_scripts": ["samapstudio"], "side_scripts": [], "legacy_plugins": ["streamer"] if load_streamer else []},
                 "rcon": {"enable": False, "password": rcon},
                 "game": {"use_entry_exit_markers": False, "use_player_ped_anims": True, "use_all_animations": True},
             }
@@ -1151,9 +1152,18 @@ class Handler(SimpleHTTPRequestHandler):
             pass
 
     # ---------- utilidades ----------
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def send_json(self, obj, status=200):
         data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")

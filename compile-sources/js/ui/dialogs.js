@@ -344,9 +344,9 @@ export function setupTest() {
     $('#testServer').value = i.serverPath || '';
     $('#testPort').textContent = i.port;
     const notes = [];
-    if (i.serverExe && i.builtin) notes.push(`Usando o servidor da pasta <b>Servidor de Teste</b> do programa (<b>${esc(i.serverExe)}</b>).`);
-    else if (i.serverExe) notes.push(`Servidor encontrado: <b>${esc(i.serverExe)}</b>. Ao testar, ele é copiado para a pasta <b>Servidor de Teste</b> do programa (seu servidor não é alterado).`);
-    else notes.push('<span class="warn">Não achei um servidor. Coloque os arquivos do servidor na pasta "Servidor de Teste" do programa, ou escolha aqui a pasta de um servidor.</span>');
+    if (i.serverExe && i.builtin) notes.push(`Usando o servidor da pasta <b>test-server</b> do programa (<b>${esc(i.serverExe)}</b>).`);
+    else if (i.serverExe) notes.push(`Servidor encontrado: <b>${esc(i.serverExe)}</b>. Ao testar, ele é copiado para a pasta <b>test-server</b> do programa (seu servidor não é alterado).`);
+    else notes.push('<span class="warn">Não achei um servidor. Coloque os arquivos do servidor na pasta "test-server" do programa, ou escolha aqui a pasta de um servidor.</span>');
     if (!i.client) notes.push('<span class="warn">Não achei o samp.exe na pasta do GTA. Instale o cliente multiplayer e conecte em 127.0.0.1:' + i.port + '.</span>');
     if (i.error) notes.push(`<span class="warn">${esc(i.error)}</span>`);
     $('#testServerInfo').innerHTML = notes.join('<br>');

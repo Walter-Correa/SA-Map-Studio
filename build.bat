@@ -204,6 +204,14 @@ rem ---------------- test-server (dentro da pasta sa-map-studio)
 set "ST=%BASE%\test-server"
 if not exist "%ST%\gamemodes" mkdir "%ST%\gamemodes"
 if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
+
+rem Compila o gamemode samapstudio.pwn se o compilador pawno existir
+if exist "omp-server-source\pawno\pawncc.exe" (
+    echo Compilando gamemode samapstudio.pwn...
+    "omp-server-source\pawno\pawncc.exe" "%SRC%compile-sources\samapstudio.pwn" -o"%SRC%compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
+    if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "omp-server-source\gamemodes\samapstudio.amx" >nul
+)
+
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
 if exist "%SRC%compile-sources\samapstudio.pwn" copy /y "%SRC%compile-sources\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
 del /q "%ST%\LEIA-ME.txt" 2>nul
@@ -236,6 +244,37 @@ del /q /s "%ST%\plugins\*.dmp" 2>nul
 del /q /s "%ST%\*.pdb" 2>nul
 del /q /s "%ST%\*.dmp" 2>nul
 if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "test-server".
+
+rem Garante config.json, server.cfg e mapa.txt padrao no test-server
+if exist "omp-server-source\config.json" copy /y "omp-server-source\config.json" "%ST%\config.json" >nul
+if not exist "%ST%\server.cfg" (
+    > "%ST%\server.cfg" (
+        echo echo Executing Server Config...
+        echo lanmode 1
+        echo rcon_password changeme1
+        echo maxplayers 8
+        echo port 7777
+        echo hostname SA Map Studio - teste
+        echo gamemode0 samapstudio 1
+        echo filterscripts
+        echo plugins streamer.dll
+        echo announce 0
+        echo query 1
+        echo chatlogging 0
+        echo weburl localhost
+        echo onfoot_rate 40
+        echo incar_rate 40
+        echo weapon_rate 40
+        echo stream_distance 300.0
+        echo stream_rate 1000
+        echo maxnpc 0
+        echo logtimeformat [%%H:%%M:%%S]
+        echo language Portugues
+    )
+)
+if not exist "%ST%\scriptfiles\samapstudio\mapa.txt" (
+    echo S^|0.0^|0.0^|3.0^|0.0^|0^|0^|1> "%ST%\scriptfiles\samapstudio\mapa.txt"
+)
 
 rem ---------------- Miniaturas do Catalogo
 set "THUMBSRC="
