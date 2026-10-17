@@ -111,7 +111,7 @@ for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -For
 
 rem Compila numa pasta temporaria (assim projects, exported e data nunca sao apagados)
 if exist "build" rmdir /s /q "build"
-set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory sa-map-studio"
+set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory sa-map-studio\system"
 set "ICONFILE=%SRC%compile-sources\icon.ico"
 if not exist "%ICONFILE%" set "ICONFILE=%SRC%icon.ico"
 set "ARGS=%ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
@@ -141,6 +141,9 @@ if exist "%SRC%compile-sources\samapstudio.pwn" (
 )
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
+rem Garante suporte a pasta de conteudo aninhada sa-map-studio\system no PyInstaller
+"%VPY%" -c "import PyInstaller.building.api as a, inspect; p = inspect.getfile(a); s = open(p, 'r', encoding='utf-8').read(); s = s.replace('elif self.contents_directory == \"..\" or \"/\" in self.contents_directory or \"\\\\\" in self.contents_directory:', 'elif self.contents_directory == \"..\" or \"..\" in self.contents_directory:'); open(p, 'w', encoding='utf-8').write(s)"
+
 echo Gerando o programa...
 "%VPY%" -m PyInstaller %ARGS% "%SRC%serve.py"
 if errorlevel 1 goto erro
@@ -161,10 +164,25 @@ if /i "%MODO%"=="clean" if exist "%OUT%" (
     if exist "%BASE%\Sistema" rmdir /s /q "%BASE%\Sistema" 2>nul
 )
 
+rem Limpa qualquer arquivo solto em sa-map-studio (todos os arquivos internos pertencem a system)
+for %%F in ("%BASE%\*.*") do del /q "%%F" 2>nul
+if exist "%BASE%\_tcl_data" rmdir /s /q "%BASE%\_tcl_data" 2>nul
+if exist "%BASE%\_tk_data" rmdir /s /q "%BASE%\_tk_data" 2>nul
+if exist "%BASE%\clr_loader" rmdir /s /q "%BASE%\clr_loader" 2>nul
+if exist "%BASE%\compile-sources" rmdir /s /q "%BASE%\compile-sources" 2>nul
+if exist "%BASE%\css" rmdir /s /q "%BASE%\css" 2>nul
+if exist "%BASE%\fonts" rmdir /s /q "%BASE%\fonts" 2>nul
+if exist "%BASE%\js" rmdir /s /q "%BASE%\js" 2>nul
+if exist "%BASE%\pythonnet" rmdir /s /q "%BASE%\pythonnet" 2>nul
+if exist "%BASE%\setuptools" rmdir /s /q "%BASE%\setuptools" 2>nul
+if exist "%BASE%\tcl8" rmdir /s /q "%BASE%\tcl8" 2>nul
+if exist "%BASE%\webview" rmdir /s /q "%BASE%\webview" 2>nul
+
 echo Copiando o programa...
 if not exist "%OUT%" mkdir "%OUT%"
 if not exist "%BASE%" mkdir "%BASE%"
-robocopy "build\saida\SA Map Studio\sa-map-studio" "%BASE%" /E /NFL /NDL /NJH /NJS /NP >nul
+if not exist "%BASE%\system" mkdir "%BASE%\system"
+robocopy "build\saida\SA Map Studio\sa-map-studio\system" "%BASE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto erro
 copy /y "build\saida\SA Map Studio\SA Map Studio.exe" "%OUT%\SA Map Studio.exe" >nul
 if errorlevel 1 goto erro
@@ -280,6 +298,7 @@ if exist "%OUT%\Exportados" rmdir /s /q "%OUT%\Exportados" 2>nul
 if exist "%OUT%\Dados" rmdir /s /q "%OUT%\Dados" 2>nul
 if exist "%OUT%\Servidor de Teste" rmdir /s /q "%OUT%\Servidor de Teste" 2>nul
 if exist "%OUT%\Sistema" rmdir /s /q "%OUT%\Sistema" 2>nul
+for %%F in ("%BASE%\*.*") do del /q "%%F" 2>nul
 del /q "%OUT%\LEIA-ME.txt" 2>nul
 del /q "%OUT%\*.txt" 2>nul
 del /q "%BASE%\LEIA-ME.txt" 2>nul
@@ -289,6 +308,7 @@ rem Limpa pastas da raiz do projeto para manter o repositorio perfeitamente limp
 if exist "%SRC%__pycache__" rmdir /s /q "%SRC%__pycache__" 2>nul
 if exist "%SRC%projects" rmdir /s /q "%SRC%projects" 2>nul
 if exist "%SRC%data" rmdir /s /q "%SRC%data" 2>nul
+if exist "%SRC%sa-map-studio" rmdir /s /q "%SRC%sa-map-studio" 2>nul
 
 rem Limpa pastas legadas se existirem
 if exist "%~dp0compiled\sa-map-studio\" rmdir /s /q "%~dp0compiled\sa-map-studio" 2>nul
@@ -302,14 +322,13 @@ echo.
 echo ============================================================
 echo  Pronto! Pasta do programa: %OUT%
 echo    SA Map Studio.exe   - abra este
-echo    sa-map-studio\      - pasta com todos os dados e sistema do programa
+echo    sa-map-studio\      - pasta contendo data, exported, models, projects, test-server, system
 if /i "%MODO%"=="clean" (
 echo  Versao limpa: projects, exported e data sao criados vazios na
 echo  primeira vez que o programa abrir. Pronta para enviar a outra pessoa.
 ) else (
 echo    projects\, exported\, data\ - seus mapas e configuracoes ^(mantidos^)
 )
-echo ============================================================
 explorer "%OUT%"
 if not defined NO_PAUSE pause
 exit /b 0

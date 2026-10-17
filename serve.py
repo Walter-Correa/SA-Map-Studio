@@ -46,8 +46,12 @@ VERSION = "3.0.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 ROOT_DIR = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.abspath(__file__))
-# Todas as pastas do programa ficam estritamente dentro de sa-map-studio
-BASE_DIR = os.path.join(ROOT_DIR, "sa-map-studio")
+# Na versao compilada, as pastas ficam dentro de sa-map-studio ao lado do executavel.
+# No modo de desenvolvimento, usa a pasta da versao compilada para manter a raiz do repositorio sempre limpa.
+if FROZEN:
+    BASE_DIR = os.path.join(ROOT_DIR, "sa-map-studio")
+else:
+    BASE_DIR = os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio")
 os.makedirs(BASE_DIR, exist_ok=True)
 
 # Arquivos do editor (html/js/css)
@@ -106,8 +110,9 @@ def migrate_old_layout():
         except OSError:
             pass
 
-    # Migra pastas que possam estar soltas na raiz para dentro de sa-map-studio
+    # Migra pastas que possam estar soltas na raiz para dentro de BASE_DIR
     for old_name, target_dir in (
+        ("sa-map-studio", BASE_DIR),
         ("projects", PROJECTS_DIR),
         ("projetos", PROJECTS_DIR),
         ("Projetos", PROJECTS_DIR),
@@ -123,6 +128,8 @@ def migrate_old_layout():
         ("teste", TEST_DIR),
         ("models", MODELS_DIR),
     ):
+        if not FROZEN and old_name == "models":
+            continue
         src = os.path.join(ROOT_DIR, old_name)
         merge_and_remove(src, target_dir)
 
