@@ -3,49 +3,112 @@
 //               
 
 export const POPULAR_ANIMATIONS = [
-  { label: 'Conversando (Chat)', lib: 'PED', name: 'IDLE_chat', loop: 1, freeze: 0 },
+  { label: 'Conversando (Chat)', lib: 'ped', name: 'IDLE_chat', loop: 1, freeze: 0 },
   { label: 'Braços Cruzados (Guarda)', lib: 'COP_AMBIENT', name: 'Coplook_loop', loop: 1, freeze: 0 },
   { label: 'Fumando encostado', lib: 'SMOKING', name: 'M_smklean_loop', loop: 1, freeze: 0 },
-  { label: 'Sentado no chão', lib: 'BEACH', name: 'SitnWait_loop', loop: 1, freeze: 1 },
+  { label: 'Sentado no chão', lib: 'BEACH', name: 'SitnWait_loop_W', loop: 1, freeze: 1 },
   { label: 'Deitado na praia', lib: 'BEACH', name: 'Lay_Bac_Loop', loop: 1, freeze: 1 },
   { label: 'Dançando (Dance)', lib: 'DANCING', name: 'dance_loop', loop: 1, freeze: 0 },
   { label: 'Mãos ao Alto (Rendição)', lib: 'ROB_BANK', name: 'SHP_HandsUp_Scr', loop: 0, freeze: 1 },
-  { label: 'Bêbado andando', lib: 'PED', name: 'WALK_drunk', loop: 1, freeze: 0 },
+  { label: 'Bêbado andando', lib: 'ped', name: 'WALK_drunk', loop: 1, freeze: 0 },
   { label: 'Atendente de balcão / bar', lib: 'BAR', name: 'Barserve_loop', loop: 1, freeze: 0 },
   { label: 'Traficante esperando', lib: 'DEALER', name: 'DEALER_IDLE', loop: 1, freeze: 0 },
   { label: 'Acenando para a multidão', lib: 'ON_LOOKERS', name: 'wave_loop', loop: 1, freeze: 0 },
   { label: 'Médico reanimando (CPR)', lib: 'MEDIC', name: 'CPR', loop: 1, freeze: 0 },
   { label: 'Policial anotando no bloco', lib: 'COP_AMBIENT', name: 'Copbrowse_loop', loop: 1, freeze: 0 },
-  { label: 'Assustado / Encolhido', lib: 'PED', name: 'cower', loop: 1, freeze: 1 },
+  { label: 'Assustado / Encolhido', lib: 'ped', name: 'cower', loop: 1, freeze: 1 },
   { label: 'Gangue falando alto', lib: 'GANGS', name: 'prtial_gngtlkA', loop: 1, freeze: 0 },
-  { label: 'Postura armada', lib: 'PED', name: 'IDLE_armed', loop: 1, freeze: 0 },
+  { label: 'Postura armada', lib: 'ped', name: 'IDLE_armed', loop: 1, freeze: 0 },
   { label: 'Prostituta esperando', lib: 'BLOWJOBZ', name: 'BJ_Stand_Loop_P', loop: 1, freeze: 0 },
-  { label: 'Comemorando / Palmas', lib: 'BENCHPRESS', name: 'gym_bp_celebrate', loop: 1, freeze: 0 },
+  { label: 'Comemorando / Palmas', lib: 'benchpress', name: 'gym_bp_celebrate', loop: 1, freeze: 0 },
+  { label: 'Basquete (Driblando)', lib: 'BSKTBALL', name: 'BBALL_run', loop: 1, freeze: 0 },
+  { label: 'Basquete (Arremesso)', lib: 'BSKTBALL', name: 'BBALL_Jump_Shot', loop: 0, freeze: 0 },
 ];
 
 export const ANIM_CATEGORIES = [
   { id: 'todas', label: '🌐 Todas' },
   { id: 'populares', label: '⭐ Populares' },
+  { id: 'esportes', label: '🏋️ Esportes & Academia' },
   { id: 'conversas', label: '💬 Conversas & Gestos' },
   { id: 'sentado', label: '🪑 Sentado & Deitado' },
-  { id: 'danca', label: '🕺 Danças' },
-  { id: 'policia', label: '👮 Polícia & Segurança' },
   { id: 'combate', label: '🥊 Combate & Armas' },
-  { id: 'esportes', label: '🏋️ Esportes & Academia' },
-  { id: 'lazer', label: '🍻 Bar, Fumo & Lazer' },
+  { id: 'policia', label: '👮 Polícia & Crimes' },
+  { id: 'veiculos', label: '🚗 Veículos & Direção' },
+  { id: 'danca', label: '🕺 Danças & Festas' },
+  { id: 'lazer', label: '🍻 Bar, Lazer & Adulto' },
+  { id: 'trabalho', label: '🛠️ Trabalho & Cotidiano' },
+  { id: 'movimento', label: '🚶 Movimento & Posturas' },
+  { id: 'outros', label: '🎭 Cenas & Especiais' },
 ];
 
 export function classifyAnim(a) {
   const lib = (a.lib || '').toUpperCase();
   const nm = (a.name || '').toLowerCase();
   const desc = (a.desc || '').toLowerCase();
-  if (lib.includes('DANC') || lib.includes('STRIP') || nm.includes('dance') || desc.includes('dance')) return 'danca';
-  if (lib.includes('COP') || lib.includes('POLICE') || lib.includes('SWAT') || nm.includes('cop') || desc.includes('police')) return 'policia';
-  if (lib.includes('BEACH') || lib.includes('SUNBATHE') || lib.includes('ATTRACTORS') || lib.includes('INT_HOUSE') || nm.includes('sit') || nm.includes('lay') || desc.includes('sit') || desc.includes('lay')) return 'sentado';
-  if (lib.includes('GANG') || lib.includes('ON_LOOKERS') || nm.includes('chat') || nm.includes('talk') || desc.includes('talk') || desc.includes('chat') || desc.includes('wave')) return 'conversas';
-  if (lib.includes('FIGHT') || lib.includes('COLT') || lib.includes('RIFLE') || lib.includes('SHOTGUN') || nm.includes('aim') || nm.includes('fight') || desc.includes('fight') || desc.includes('aim')) return 'combate';
-  if (lib.includes('GYM') || lib.includes('BENCH') || lib.includes('BOX') || lib.includes('BASEBALL') || desc.includes('gym') || desc.includes('exercise')) return 'esportes';
-  if (lib.includes('BAR') || lib.includes('SMOK') || lib.includes('FOOD') || lib.includes('CASINO') || lib.includes('BLOWJOB') || lib.includes('SEX') || lib.includes('SNM') || desc.includes('drink') || desc.includes('smoke') || nm.includes('smoke')) return 'lazer';
+  const notes = (a.notes || '').toLowerCase();
+  const full = `${lib} ${nm} ${desc} ${notes}`;
+
+  // 1. Dança & Festas
+  if (['DANC', 'STRIP', 'WOP', 'SCRATCHING'].some(k => lib.includes(k)) || ['dance', 'strip', 'dancing', 'scratching'].some(k => full.includes(k))) {
+    return 'danca';
+  }
+
+  // 2. Esportes & Academia (Basquete, Academia, Musculação, Luta/Boxe, Natação, BMX/Bike, Skate, Corrida)
+  if (['BSKTBALL', 'BENCHPRESS', 'FREEWEIGHTS', 'GYMNASIUM', 'MUSCULAR', 'BASEBALL', 'BOX', 'SKATE', 'SWIM', 'RUNNINGMAN'].some(k => lib.includes(k)) ||
+      ['bball', 'gym', 'basket', 'swim', 'skate', 'box', 'run'].some(k => nm.includes(k)) ||
+      ['basketball', 'basket', 'gym', 'bench press', 'weights', 'swimming', 'skate', 'exercise', 'punching bag', 'running'].some(k => desc.includes(k))) {
+    return 'esportes';
+  }
+
+  // 3. Polícia, Crimes & Segurança
+  if (['COP', 'POLICE', 'SWAT', 'ROB_BANK', 'RIOT', 'HEIST9', 'DEALER'].some(k => lib.includes(k)) ||
+      ['cop', 'police', 'swat', 'arrest', 'handcuff', 'handsup', 'robbery', 'heist', 'cuff', 'dealer'].some(k => full.includes(k))) {
+    return 'policia';
+  }
+
+  // 4. Combate & Armas
+  if (['FIGHT', 'COLT45', 'RIFLE', 'SHOTGUN', 'SILENCED', 'SNIPER', 'TEC', 'UZI', 'WEAPONS', 'KNIFE', 'SWORD', 'GRENADE', 'ROCKET', 'FLAME', 'SPRAYCAN', 'BUDDY', 'DAM_JUMP', 'CHAINSAW', 'DILDO'].some(k => lib.includes(k)) ||
+      ['fight', 'punch', 'kick', 'aim', 'shoot', 'reload', 'weapon', 'gun', 'knife', 'sword', 'firearm', 'attack', 'hit', 'shot'].some(k => full.includes(k))) {
+    return 'combate';
+  }
+
+  // 5. Sentado & Deitado
+  if (['BEACH', 'SUNBATHE', 'ATTRACTORS', 'INT_HOUSE', 'CRACK', 'CRIB'].some(k => lib.includes(k)) ||
+      ['sit', 'lay', 'lie down', 'lying', 'sitting', 'sleep', 'bed', 'sofa', 'chair', 'bench'].some(k => full.includes(k))) {
+    return 'sentado';
+  }
+
+  // 6. Conversas & Gestos
+  if (['GANGS', 'ON_LOOKERS', 'GHANDS', 'GFUNK', 'CAR_CHAT', 'RAPPING', 'MISC'].some(k => lib.includes(k)) ||
+      ['chat', 'talk', 'wave', 'gesture', 'shout', 'call', 'greet', 'hands', 'argue', 'cheer'].some(k => full.includes(k))) {
+    return 'conversas';
+  }
+
+  // 7. Bar, Lazer & Adulto
+  if (['BAR', 'SMOKING', 'FOOD', 'CASINO', 'BLOWJOBZ', 'SEX', 'SNM', 'VENDING', 'FLOWERS', 'KISSING', 'OTB', 'POOL'].some(k => lib.includes(k)) ||
+      ['drink', 'smoke', 'food', 'eat', 'bar', 'casino', 'kiss', 'beer', 'pool game', 'billiards', 'vending'].some(k => full.includes(k))) {
+    return 'lazer';
+  }
+
+  // 8. Veículos & Direção
+  if (['BIKED', 'BIKEH', 'BIKELEAP', 'BIKES', 'BIKEV', 'BIKE_DBZ', 'BMX', 'MTB', 'WAYFARER', 'QUAD', 'QUAD_DBZ',
+       'CAR', 'COACH', 'BUS', 'TRUCK', 'VAN', 'TRAIN', 'KART', 'DOZER', 'LOWRIDER', 'DRIVEBYS', 'PLAYER_DVBYS',
+       'COP_DVBYZ', 'GHETTO_DB', 'BF_INJECTION', 'CHOPPA', 'AIRPORT', 'SHAMAL', 'NEVADA', 'RUSTLER', 'VORTEX', 'PARACHUTE', 'TANK'].some(k => lib.includes(k)) ||
+      ['drive', 'driver', 'passenger', 'car', 'bike', 'vehicle', 'pedal', 'plane', 'heli', 'flight', 'parachute'].some(k => full.includes(k))) {
+    return 'veiculos';
+  }
+
+  // 9. Trabalho & Cotidiano
+  if (['SHOP', 'CLOTHES', 'HAIRCUTS', 'TATTOOS', 'MEDIC', 'INT_SHOP', 'INT_OFFICE', 'JST_BUISNESS', 'BOMBER', 'CAMERA', 'GRAFFITI', 'BD_FIRE'].some(k => lib.includes(k)) ||
+      ['shop', 'haircut', 'tattoo', 'cpr', 'medic', 'doctor', 'camera', 'photo', 'spray', 'paint', 'clerk', 'work', 'fire'].some(k => full.includes(k))) {
+    return 'trabalho';
+  }
+
+  // 10. Movimento & Posturas
+  if (['walk', 'sprint', 'jump', 'fall', 'climb', 'crawl', 'stumble', 'drunk', 'limp', 'ped', 'idle', 'stand', 'turn'].some(k => full.includes(k))) {
+    return 'movimento';
+  }
+
   return 'outros';
 }
 
