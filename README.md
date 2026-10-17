@@ -111,8 +111,8 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 ### Rodar pelo código-fonte
 
 ```powershell
-git clone https://github.com/rafaelnepomucenno-lgtm/SA-MAP-STUDIO.git
-cd SA-MAP-STUDIO
+git clone https://github.com/Walter-Correa/SA-Map-Studio.git
+cd SA-Map-Studio
 python serve.py
 ```
 
@@ -236,7 +236,7 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 - Recolhimento independente das barras laterais esquerda e direita com botões de borda e restauração inteligente no modo auto-collapse da câmera.
 - Teleporte rápido para coordenadas de clique do mouse através de botão dedicado no inspetor.
 - Arquitetura de miniaturas em disco local e otimização total de VRAM: pré-empacotamento de 15.956 miniaturas WebP (~15 MB) na pasta local `data/cache/thumbnails`, leitura 100% direta do disco sem carregar malhas 3D no boot, preservação de texturas compartilhadas do mundo (evitando asfalto/terreno pretos), pixel ratio 1.0 e descarte estrito de geometrias, reduzindo o consumo de memória de >3,1 GB para níveis mínimos e estáveis.
-- Compilação limpa e autônoma do executável (.exe): script de compilação aprimorado com auto-recuperação do ambiente virtual (`compile-sources\.venv-build`), detecção inteligente de executáveis Python no sistema (evitando stubs inválidos da Microsoft Store) e empacotamento limpo verificado em `compiled\sa-map-studio`.
+- Compilação limpa e autônoma do executável (.exe): script de compilação aprimorado com auto-recuperação do ambiente virtual (`compile-sources\.venv-build`), detecção inteligente de executáveis Python no sistema (evitando stubs inválidos da Microsoft Store) e empacotamento limpo verificado em `compiled\SA Map Studio`.
 - Elevação automática de privilégios (Admin / UAC): compilação com `--uac-admin`, gravando a diretiva `requireAdministrator` no manifesto PE do `.exe` para garantir permissões de acesso ao GTA San Andreas, controle de processos e portas de rede automaticamente.
 
 ### 2.8.0 — 14/10/2026

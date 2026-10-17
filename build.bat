@@ -193,6 +193,8 @@ if not exist "%BASE%" mkdir "%BASE%"
 if not exist "%BASE%\system" mkdir "%BASE%\system"
 robocopy "build\saida\SA Map Studio\sa-map-studio\system" "%BASE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto erro
+if exist "%BASE%\system\webview\lib\pywebview-android.jar" del /q "%BASE%\system\webview\lib\pywebview-android.jar" 2>nul
+if exist "%BASE%\system\pythonnet\runtime\Python.Runtime.xml" del /q "%BASE%\system\pythonnet\runtime\Python.Runtime.xml" 2>nul
 copy /y "build\saida\SA Map Studio\SA Map Studio.exe" "%OUT%\SA Map Studio.exe" >nul
 if errorlevel 1 goto erro
 del /q "%OUT%\LEIA-ME.txt" 2>nul
@@ -226,6 +228,13 @@ if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if exist "omp-server-source\plugins" robocopy "omp-server-source\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
+rem Remove simbolos de depuracao (.pdb) e dumps desnecessarios para o servidor de teste
+del /q /s "%ST%\components\*.pdb" 2>nul
+del /q /s "%ST%\components\*.dmp" 2>nul
+del /q /s "%ST%\plugins\*.pdb" 2>nul
+del /q /s "%ST%\plugins\*.dmp" 2>nul
+del /q /s "%ST%\*.pdb" 2>nul
+del /q /s "%ST%\*.dmp" 2>nul
 if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "test-server".
 
 rem ---------------- Miniaturas do Catalogo
@@ -306,11 +315,14 @@ del /q "%OUT%\*.txt" 2>nul
 del /q "%BASE%\LEIA-ME.txt" 2>nul
 del /q "%BASE%\*.txt" 2>nul
 
-rem Limpa pastas da raiz do projeto para manter o repositorio perfeitamente limpo
+rem Limpa pastas e logs da raiz do projeto para manter o repositorio perfeitamente limpo
 if exist "%SRC%__pycache__" rmdir /s /q "%SRC%__pycache__" 2>nul
 if exist "%SRC%projects" rmdir /s /q "%SRC%projects" 2>nul
 if exist "%SRC%data" rmdir /s /q "%SRC%data" 2>nul
 if exist "%SRC%sa-map-studio" rmdir /s /q "%SRC%sa-map-studio" 2>nul
+if exist "%SRC%sa-map-studio.log" del /q "%SRC%sa-map-studio.log" 2>nul
+if exist "%SRC%sa-map-studio.log" del /q "%SRC%sa-map-studio.log" 2>nul
+if exist "%BASE%\data\logs\sa-map-studio.log" del /q "%BASE%\data\logs\sa-map-studio.log" 2>nul
 
 rem Limpa pastas legadas se existirem
 if exist "%~dp0compiled\sa-map-studio\" rmdir /s /q "%~dp0compiled\sa-map-studio" 2>nul

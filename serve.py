@@ -150,6 +150,7 @@ def migrate_old_layout():
         ("navegador", WEBVIEW_DIR),
         ("registros", LOGS_DIR),
         ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
+        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
     ]
     for old_file, new_path in moves:
         src = os.path.join(ROOT_DIR, old_file)
@@ -164,6 +165,20 @@ def migrate_old_layout():
             try:
                 os.makedirs(os.path.dirname(new_path), exist_ok=True)
                 shutil.move(sub_src, new_path)
+            except OSError:
+                pass
+
+    old_log = os.path.join(LOGS_DIR, "sa-map-studio.log")
+    new_log = os.path.join(LOGS_DIR, "sa-map-studio.log")
+    if os.path.exists(old_log):
+        if not os.path.exists(new_log):
+            try:
+                shutil.move(old_log, new_log)
+            except OSError:
+                pass
+        else:
+            try:
+                os.remove(old_log)
             except OSError:
                 pass
 
@@ -677,9 +692,8 @@ def test_info():
     # Servidor que já está dentro da pasta do programa ("test-server") tem prioridade
     candidates = [
         TEST_DIR,
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server"),
-        os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server"),
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste"),
+        os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server"),
         os.path.join(BASE_DIR, "omp-server-source"),
     ]
     for c in candidates:
@@ -795,9 +809,7 @@ def start_test(body):
     target_dirs = {TEST_DIR}
     if info.get("serverPath"):
         target_dirs.add(info["serverPath"])
-    dist_root_st = os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server") if not FROZEN else TEST_DIR
-    if not os.path.isdir(dist_root_st):
-        dist_root_st = os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server")
+    dist_root_st = os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server") if not FROZEN else TEST_DIR
     if os.path.isdir(dist_root_st):
         target_dirs.add(dist_root_st)
 
@@ -808,9 +820,8 @@ def start_test(body):
         os.path.join(TEST_DIR, "plugins", "streamer.dll"),
         os.path.join(APP_DIR, "plugins", "streamer.dll"),
         os.path.join(src, "plugins", "streamer.dll"),
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "test-server", "plugins", "streamer.dll"),
-        os.path.join(BASE_DIR, "compiled", "sa-map-studio", "test-server", "plugins", "streamer.dll"),
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "Servidor de Teste", "plugins", "streamer.dll"),
+        os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server", "plugins", "streamer.dll"),
+        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server", "plugins", "streamer.dll"),
     ):
         if os.path.isfile(cand):
             streamer_src = cand

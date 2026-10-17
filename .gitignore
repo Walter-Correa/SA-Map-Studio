@@ -38,6 +38,7 @@ scratch_*.png
 bans.json
 config.json
 sa-map-studio.log
+sa-map-studio.log
 
 # Banco de dados local do open.mp (mantido localmente na raiz, nao versionar)
 omp-server-source/
