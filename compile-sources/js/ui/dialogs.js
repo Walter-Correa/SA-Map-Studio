@@ -272,13 +272,10 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
         if (colon !== -1) {
           const libPart = rawText.slice(0, colon).toLowerCase();
           const texPart = rawText.slice(colon + 1);
-          if (libPart === 'loadscs' || libPart === 'loadsc') {
-            const lowTex = texPart.toLowerCase();
-            if (lowTex.startsWith('loadsc')) {
-              rawText = `${lowTex}:${lowTex}`;
-            } else {
-              rawText = 'LOADSCS:' + lowTex;
-            }
+          if (libPart === 'loadscs') {
+            rawText = 'LOADSCS:' + texPart.toLowerCase();
+          } else if (libPart.startsWith('loadsc')) {
+            rawText = libPart.toLowerCase() + ':' + texPart.toLowerCase();
           } else if (libPart === 'loadsuk') {
             rawText = 'LOADSUK:' + texPart.toLowerCase();
           } else if (libPart === 'hud') {

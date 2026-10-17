@@ -277,17 +277,9 @@ stock SAMSP_NormalizeSprite(texto[], maxlen)
     tex[j] = EOS;
 
     // Normalização de bibliotecas conhecidas do SA-MP
-    if (!strcmp(lib, "loadscs", true) || !strcmp(lib, "loadsc", true))
+    if (!strcmp(lib, "loadscs", true))
     {
-        // Se a textura for um dos loading screens (loadsc0 a loadsc14), mapeia para o arquivo individual loadscX.txd
-        if (!strcmp(tex, "loadsc", false, 6))
-        {
-            format(lib, sizeof(lib), "%s", tex);
-        }
-        else
-        {
-            format(lib, sizeof(lib), "LOADSCS");
-        }
+        format(lib, sizeof(lib), "LOADSCS");
     }
     else if (!strcmp(lib, "loadsuk", true))
     {

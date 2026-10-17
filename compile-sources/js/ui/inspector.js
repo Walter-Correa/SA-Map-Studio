@@ -257,8 +257,8 @@ function scopeSection() {
   const total = getTotalProjectItems();
   return `
     <div class="insp-section" style="margin-bottom: 8px;">
-      <div class="insp-label" style="margin-bottom: 6px;">Mover ou rotacionar vários itens</div>
-      <div class="scope-toggle">
+      <div class="insp-label">Mover ou rotacionar vários itens</div>
+      <div class="scope-toggle" style="margin: 0;">
         <button type="button" class="btn small active" data-scope="sel">Selecionados</button>
         <button type="button" class="btn small" data-scope="all">Projeto (${total})</button>
       </div>
@@ -554,8 +554,8 @@ function multiInspector(items, objs) {
     <h3>${isAll ? 'Todo o projeto' : `${items.length} itens selecionados`}</h3>
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar ${items.length} itens</button>
     <div class="insp-section" style="margin-bottom: 8px;">
-      <div class="insp-label" style="margin-bottom: 6px;">Mover ou rotacionar vários itens</div>
-      <div class="scope-toggle">
+      <div class="insp-label">Mover ou rotacionar vários itens</div>
+      <div class="scope-toggle" style="margin: 0;">
         <button type="button" class="btn small ${isAll ? '' : 'active'}" data-scope="sel">Selecionados (${items.length})</button>
         <button type="button" class="btn small ${isAll ? 'active' : ''}" data-scope="all">Projeto (${total})</button>
       </div>

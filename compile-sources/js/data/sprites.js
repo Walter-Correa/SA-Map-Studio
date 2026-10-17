@@ -1,4 +1,4 @@
-// Catálogo completo de 449 sprites para TextDraws
+// Catálogo completo de 567 sprites para TextDraws do GTA San Andreas / SA-MP
 
 export const TEXTDRAW_SPRITES = [
   {
@@ -24,18 +24,6 @@ export const TEXTDRAW_SPRITES = [
     "name": "fist",
     "value": "hud:fist",
     "thumb": "/cache/sprites/hud/fist.png"
-  },
-  {
-    "lib": "hud",
-    "name": "radardisc",
-    "value": "hud:radardisc",
-    "thumb": "/cache/sprites/hud/radardisc.png"
-  },
-  {
-    "lib": "hud",
-    "name": "radarRingPlane",
-    "value": "hud:radarRingPlane",
-    "thumb": "/cache/sprites/hud/radarringplane.png"
   },
   {
     "lib": "hud",
@@ -411,6 +399,18 @@ export const TEXTDRAW_SPRITES = [
   },
   {
     "lib": "hud",
+    "name": "radardisc",
+    "value": "hud:radardisc",
+    "thumb": "/cache/sprites/hud/radardisc.png"
+  },
+  {
+    "lib": "hud",
+    "name": "radarRingPlane",
+    "value": "hud:radarRingPlane",
+    "thumb": "/cache/sprites/hud/radarringplane.png"
+  },
+  {
+    "lib": "hud",
     "name": "siteM16",
     "value": "hud:siteM16",
     "thumb": "/cache/sprites/hud/sitem16.png"
@@ -534,6 +534,12 @@ export const TEXTDRAW_SPRITES = [
     "name": "upr",
     "value": "LD_BEAT:upr",
     "thumb": "/cache/sprites/ld_beat/upr.png"
+  },
+  {
+    "lib": "LD_BUM",
+    "name": "blkdot",
+    "value": "LD_BUM:blkdot",
+    "thumb": "/cache/sprites/ld_bum/blkdot.png"
   },
   {
     "lib": "LD_BUM",
@@ -903,6 +909,12 @@ export const TEXTDRAW_SPRITES = [
   },
   {
     "lib": "LD_DRV",
+    "name": "blkdot",
+    "value": "LD_DRV:blkdot",
+    "thumb": "/cache/sprites/ld_drv/blkdot.png"
+  },
+  {
+    "lib": "LD_DRV",
     "name": "brboat",
     "value": "LD_DRV:brboat",
     "thumb": "/cache/sprites/ld_drv/brboat.png"
@@ -999,6 +1011,12 @@ export const TEXTDRAW_SPRITES = [
   },
   {
     "lib": "LD_DUAL",
+    "name": "black",
+    "value": "LD_DUAL:black",
+    "thumb": "/cache/sprites/ld_dual/black.png"
+  },
+  {
+    "lib": "LD_DUAL",
     "name": "dark",
     "value": "LD_DUAL:dark",
     "thumb": "/cache/sprites/ld_dual/dark.png"
@@ -1076,129 +1094,147 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/ld_dual/thrustg.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "LD_DUAL",
+    "name": "tvcorn",
+    "value": "LD_DUAL:tvcorn",
+    "thumb": "/cache/sprites/ld_dual/tvcorn.png"
+  },
+  {
+    "lib": "LD_DUAL",
+    "name": "white",
+    "value": "LD_DUAL:white",
+    "thumb": "/cache/sprites/ld_dual/white.png"
+  },
+  {
+    "lib": "ld_grav",
     "name": "bee1",
-    "value": "LD_GRAV:bee1",
+    "value": "ld_grav:bee1",
     "thumb": "/cache/sprites/ld_grav/bee1.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "bee2",
-    "value": "LD_GRAV:bee2",
+    "value": "ld_grav:bee2",
     "thumb": "/cache/sprites/ld_grav/bee2.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "beea",
-    "value": "LD_GRAV:beea",
+    "value": "ld_grav:beea",
     "thumb": "/cache/sprites/ld_grav/beea.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "bumble",
-    "value": "LD_GRAV:bumble",
+    "value": "ld_grav:bumble",
     "thumb": "/cache/sprites/ld_grav/bumble.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "exitw",
-    "value": "LD_GRAV:exitw",
+    "value": "ld_grav:exitw",
     "thumb": "/cache/sprites/ld_grav/exitw.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "exity",
-    "value": "LD_GRAV:exity",
+    "value": "ld_grav:exity",
     "thumb": "/cache/sprites/ld_grav/exity.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "flwr",
-    "value": "LD_GRAV:flwr",
+    "value": "ld_grav:flwr",
     "thumb": "/cache/sprites/ld_grav/flwr.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "flwra",
-    "value": "LD_GRAV:flwra",
+    "value": "ld_grav:flwra",
     "thumb": "/cache/sprites/ld_grav/flwra.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "ghost",
-    "value": "LD_GRAV:ghost",
+    "value": "ld_grav:ghost",
     "thumb": "/cache/sprites/ld_grav/ghost.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "hiscorew",
-    "value": "LD_GRAV:hiscorew",
+    "value": "ld_grav:hiscorew",
     "thumb": "/cache/sprites/ld_grav/hiscorew.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "hiscorey",
-    "value": "LD_GRAV:hiscorey",
+    "value": "ld_grav:hiscorey",
     "thumb": "/cache/sprites/ld_grav/hiscorey.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "hive",
-    "value": "LD_GRAV:hive",
+    "value": "ld_grav:hive",
     "thumb": "/cache/sprites/ld_grav/hive.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "hon",
-    "value": "LD_GRAV:hon",
+    "value": "ld_grav:hon",
     "thumb": "/cache/sprites/ld_grav/hon.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "leaf",
-    "value": "LD_GRAV:leaf",
+    "value": "ld_grav:leaf",
     "thumb": "/cache/sprites/ld_grav/leaf.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "playw",
-    "value": "LD_GRAV:playw",
+    "value": "ld_grav:playw",
     "thumb": "/cache/sprites/ld_grav/playw.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "playy",
-    "value": "LD_GRAV:playy",
+    "value": "ld_grav:playy",
     "thumb": "/cache/sprites/ld_grav/playy.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "sky",
-    "value": "LD_GRAV:sky",
+    "value": "ld_grav:sky",
     "thumb": "/cache/sprites/ld_grav/sky.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "thorn",
-    "value": "LD_GRAV:thorn",
+    "value": "ld_grav:thorn",
     "thumb": "/cache/sprites/ld_grav/thorn.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "timer",
-    "value": "LD_GRAV:timer",
+    "value": "ld_grav:timer",
     "thumb": "/cache/sprites/ld_grav/timer.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
+    "name": "tvcorn",
+    "value": "ld_grav:tvcorn",
+    "thumb": "/cache/sprites/ld_grav/tvcorn.png"
+  },
+  {
+    "lib": "ld_grav",
     "name": "tvl",
-    "value": "LD_GRAV:tvl",
+    "value": "ld_grav:tvl",
     "thumb": "/cache/sprites/ld_grav/tvl.png"
   },
   {
-    "lib": "LD_GRAV",
+    "lib": "ld_grav",
     "name": "tvr",
-    "value": "LD_GRAV:tvr",
+    "value": "ld_grav:tvr",
     "thumb": "/cache/sprites/ld_grav/tvr.png"
   },
   {
@@ -1335,6 +1371,12 @@ export const TEXTDRAW_SPRITES = [
   },
   {
     "lib": "LD_NONE",
+    "name": "tvcorn",
+    "value": "LD_NONE:tvcorn",
+    "thumb": "/cache/sprites/ld_none/tvcorn.png"
+  },
+  {
+    "lib": "LD_NONE",
     "name": "warp",
     "value": "LD_NONE:warp",
     "thumb": "/cache/sprites/ld_none/warp.png"
@@ -1344,6 +1386,12 @@ export const TEXTDRAW_SPRITES = [
     "name": "bckgrnd",
     "value": "LD_OTB:bckgrnd",
     "thumb": "/cache/sprites/ld_otb/bckgrnd.png"
+  },
+  {
+    "lib": "LD_OTB",
+    "name": "blue",
+    "value": "LD_OTB:blue",
+    "thumb": "/cache/sprites/ld_otb/blue.png"
   },
   {
     "lib": "LD_OTB",
@@ -1611,6 +1659,24 @@ export const TEXTDRAW_SPRITES = [
   },
   {
     "lib": "LD_OTB",
+    "name": "tvcorn",
+    "value": "LD_OTB:tvcorn",
+    "thumb": "/cache/sprites/ld_otb/tvcorn.png"
+  },
+  {
+    "lib": "LD_OTB",
+    "name": "tvl",
+    "value": "LD_OTB:tvl",
+    "thumb": "/cache/sprites/ld_otb/tvl.png"
+  },
+  {
+    "lib": "LD_OTB",
+    "name": "tvr",
+    "value": "LD_OTB:tvr",
+    "thumb": "/cache/sprites/ld_otb/tvr.png"
+  },
+  {
+    "lib": "LD_OTB",
     "name": "yride1",
     "value": "LD_OTB:yride1",
     "thumb": "/cache/sprites/ld_otb/yride1.png"
@@ -1730,6 +1796,24 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/ld_plan/airlogo.png"
   },
   {
+    "lib": "LD_PLAN",
+    "name": "blkdot",
+    "value": "LD_PLAN:blkdot",
+    "thumb": "/cache/sprites/ld_plan/blkdot.png"
+  },
+  {
+    "lib": "LD_PLAN",
+    "name": "tvbase",
+    "value": "LD_PLAN:tvbase",
+    "thumb": "/cache/sprites/ld_plan/tvbase.png"
+  },
+  {
+    "lib": "LD_PLAN",
+    "name": "tvcorn",
+    "value": "LD_PLAN:tvcorn",
+    "thumb": "/cache/sprites/ld_plan/tvcorn.png"
+  },
+  {
     "lib": "LD_POKE",
     "name": "addcoin",
     "value": "LD_POKE:addcoin",
@@ -1746,6 +1830,324 @@ export const TEXTDRAW_SPRITES = [
     "name": "backred",
     "value": "LD_POKE:backred",
     "thumb": "/cache/sprites/ld_poke/backred.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd10c",
+    "value": "LD_POKE:cd10c",
+    "thumb": "/cache/sprites/ld_poke/cd10c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd10d",
+    "value": "LD_POKE:cd10d",
+    "thumb": "/cache/sprites/ld_poke/cd10d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd10h",
+    "value": "LD_POKE:cd10h",
+    "thumb": "/cache/sprites/ld_poke/cd10h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd10s",
+    "value": "LD_POKE:cd10s",
+    "thumb": "/cache/sprites/ld_poke/cd10s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd11c",
+    "value": "LD_POKE:cd11c",
+    "thumb": "/cache/sprites/ld_poke/cd11c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd11d",
+    "value": "LD_POKE:cd11d",
+    "thumb": "/cache/sprites/ld_poke/cd11d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd11h",
+    "value": "LD_POKE:cd11h",
+    "thumb": "/cache/sprites/ld_poke/cd11h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd11s",
+    "value": "LD_POKE:cd11s",
+    "thumb": "/cache/sprites/ld_poke/cd11s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd12c",
+    "value": "LD_POKE:cd12c",
+    "thumb": "/cache/sprites/ld_poke/cd12c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd12d",
+    "value": "LD_POKE:cd12d",
+    "thumb": "/cache/sprites/ld_poke/cd12d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd12h",
+    "value": "LD_POKE:cd12h",
+    "thumb": "/cache/sprites/ld_poke/cd12h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd12s",
+    "value": "LD_POKE:cd12s",
+    "thumb": "/cache/sprites/ld_poke/cd12s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd13c",
+    "value": "LD_POKE:cd13c",
+    "thumb": "/cache/sprites/ld_poke/cd13c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd13d",
+    "value": "LD_POKE:cd13d",
+    "thumb": "/cache/sprites/ld_poke/cd13d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd13h",
+    "value": "LD_POKE:cd13h",
+    "thumb": "/cache/sprites/ld_poke/cd13h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd13s",
+    "value": "LD_POKE:cd13s",
+    "thumb": "/cache/sprites/ld_poke/cd13s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd1c",
+    "value": "LD_POKE:cd1c",
+    "thumb": "/cache/sprites/ld_poke/cd1c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd1d",
+    "value": "LD_POKE:cd1d",
+    "thumb": "/cache/sprites/ld_poke/cd1d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd1h",
+    "value": "LD_POKE:cd1h",
+    "thumb": "/cache/sprites/ld_poke/cd1h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd1s",
+    "value": "LD_POKE:cd1s",
+    "thumb": "/cache/sprites/ld_poke/cd1s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd2c",
+    "value": "LD_POKE:cd2c",
+    "thumb": "/cache/sprites/ld_poke/cd2c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd2d",
+    "value": "LD_POKE:cd2d",
+    "thumb": "/cache/sprites/ld_poke/cd2d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd2h",
+    "value": "LD_POKE:cd2h",
+    "thumb": "/cache/sprites/ld_poke/cd2h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd2s",
+    "value": "LD_POKE:cd2s",
+    "thumb": "/cache/sprites/ld_poke/cd2s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd3c",
+    "value": "LD_POKE:cd3c",
+    "thumb": "/cache/sprites/ld_poke/cd3c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd3d",
+    "value": "LD_POKE:cd3d",
+    "thumb": "/cache/sprites/ld_poke/cd3d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd3h",
+    "value": "LD_POKE:cd3h",
+    "thumb": "/cache/sprites/ld_poke/cd3h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd3s",
+    "value": "LD_POKE:cd3s",
+    "thumb": "/cache/sprites/ld_poke/cd3s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd4c",
+    "value": "LD_POKE:cd4c",
+    "thumb": "/cache/sprites/ld_poke/cd4c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd4d",
+    "value": "LD_POKE:cd4d",
+    "thumb": "/cache/sprites/ld_poke/cd4d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd4h",
+    "value": "LD_POKE:cd4h",
+    "thumb": "/cache/sprites/ld_poke/cd4h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd4s",
+    "value": "LD_POKE:cd4s",
+    "thumb": "/cache/sprites/ld_poke/cd4s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd5c",
+    "value": "LD_POKE:cd5c",
+    "thumb": "/cache/sprites/ld_poke/cd5c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd5d",
+    "value": "LD_POKE:cd5d",
+    "thumb": "/cache/sprites/ld_poke/cd5d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd5h",
+    "value": "LD_POKE:cd5h",
+    "thumb": "/cache/sprites/ld_poke/cd5h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd5s",
+    "value": "LD_POKE:cd5s",
+    "thumb": "/cache/sprites/ld_poke/cd5s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd6c",
+    "value": "LD_POKE:cd6c",
+    "thumb": "/cache/sprites/ld_poke/cd6c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd6d",
+    "value": "LD_POKE:cd6d",
+    "thumb": "/cache/sprites/ld_poke/cd6d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd6h",
+    "value": "LD_POKE:cd6h",
+    "thumb": "/cache/sprites/ld_poke/cd6h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd6s",
+    "value": "LD_POKE:cd6s",
+    "thumb": "/cache/sprites/ld_poke/cd6s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd7c",
+    "value": "LD_POKE:cd7c",
+    "thumb": "/cache/sprites/ld_poke/cd7c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd7d",
+    "value": "LD_POKE:cd7d",
+    "thumb": "/cache/sprites/ld_poke/cd7d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd7h",
+    "value": "LD_POKE:cd7h",
+    "thumb": "/cache/sprites/ld_poke/cd7h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd7s",
+    "value": "LD_POKE:cd7s",
+    "thumb": "/cache/sprites/ld_poke/cd7s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd8c",
+    "value": "LD_POKE:cd8c",
+    "thumb": "/cache/sprites/ld_poke/cd8c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd8d",
+    "value": "LD_POKE:cd8d",
+    "thumb": "/cache/sprites/ld_poke/cd8d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd8h",
+    "value": "LD_POKE:cd8h",
+    "thumb": "/cache/sprites/ld_poke/cd8h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd8s",
+    "value": "LD_POKE:cd8s",
+    "thumb": "/cache/sprites/ld_poke/cd8s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd9c",
+    "value": "LD_POKE:cd9c",
+    "thumb": "/cache/sprites/ld_poke/cd9c.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd9d",
+    "value": "LD_POKE:cd9d",
+    "thumb": "/cache/sprites/ld_poke/cd9d.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd9h",
+    "value": "LD_POKE:cd9h",
+    "thumb": "/cache/sprites/ld_poke/cd9h.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cd9s",
+    "value": "LD_POKE:cd9s",
+    "thumb": "/cache/sprites/ld_poke/cd9s.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "cdback",
+    "value": "LD_POKE:cdback",
+    "thumb": "/cache/sprites/ld_poke/cdback.png"
   },
   {
     "lib": "LD_POKE",
@@ -1770,6 +2172,12 @@ export const TEXTDRAW_SPRITES = [
     "name": "holdon",
     "value": "LD_POKE:holdon",
     "thumb": "/cache/sprites/ld_poke/holdon.png"
+  },
+  {
+    "lib": "LD_POKE",
+    "name": "tvcorn",
+    "value": "LD_POKE:tvcorn",
+    "thumb": "/cache/sprites/ld_poke/tvcorn.png"
   },
   {
     "lib": "LD_POOL",
@@ -2030,183 +2438,201 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/ld_roul/roulred.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "bstars",
-    "value": "LD_SHTR:bstars",
+    "value": "ld_shtr:bstars",
     "thumb": "/cache/sprites/ld_shtr/bstars.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "cbarl",
-    "value": "LD_SHTR:cbarl",
+    "value": "ld_shtr:cbarl",
     "thumb": "/cache/sprites/ld_shtr/cbarl.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "cbarm",
-    "value": "LD_SHTR:cbarm",
+    "value": "ld_shtr:cbarm",
     "thumb": "/cache/sprites/ld_shtr/cbarm.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "cbarr",
-    "value": "LD_SHTR:cbarr",
+    "value": "ld_shtr:cbarr",
     "thumb": "/cache/sprites/ld_shtr/cbarr.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ex1",
-    "value": "LD_SHTR:ex1",
+    "value": "ld_shtr:ex1",
     "thumb": "/cache/sprites/ld_shtr/ex1.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ex2",
-    "value": "LD_SHTR:ex2",
+    "value": "ld_shtr:ex2",
     "thumb": "/cache/sprites/ld_shtr/ex2.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ex3",
-    "value": "LD_SHTR:ex3",
+    "value": "ld_shtr:ex3",
     "thumb": "/cache/sprites/ld_shtr/ex3.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ex4",
-    "value": "LD_SHTR:ex4",
+    "value": "ld_shtr:ex4",
     "thumb": "/cache/sprites/ld_shtr/ex4.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "fire",
-    "value": "LD_SHTR:fire",
+    "value": "ld_shtr:fire",
     "thumb": "/cache/sprites/ld_shtr/fire.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "fstar",
-    "value": "LD_SHTR:fstar",
+    "value": "ld_shtr:fstar",
     "thumb": "/cache/sprites/ld_shtr/fstar.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "hbarl",
-    "value": "LD_SHTR:hbarl",
+    "value": "ld_shtr:hbarl",
     "thumb": "/cache/sprites/ld_shtr/hbarl.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "hbarm",
-    "value": "LD_SHTR:hbarm",
+    "value": "ld_shtr:hbarm",
     "thumb": "/cache/sprites/ld_shtr/hbarm.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "hbarr",
-    "value": "LD_SHTR:hbarr",
+    "value": "ld_shtr:hbarr",
     "thumb": "/cache/sprites/ld_shtr/hbarr.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "hi_a",
-    "value": "LD_SHTR:hi_a",
+    "value": "ld_shtr:hi_a",
     "thumb": "/cache/sprites/ld_shtr/hi_a.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "hi_b",
-    "value": "LD_SHTR:hi_b",
+    "value": "ld_shtr:hi_b",
     "thumb": "/cache/sprites/ld_shtr/hi_b.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "hi_c",
-    "value": "LD_SHTR:hi_c",
+    "value": "ld_shtr:hi_c",
     "thumb": "/cache/sprites/ld_shtr/hi_c.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "kami",
-    "value": "LD_SHTR:kami",
+    "value": "ld_shtr:kami",
     "thumb": "/cache/sprites/ld_shtr/kami.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "nmef",
-    "value": "LD_SHTR:nmef",
+    "value": "ld_shtr:nmef",
     "thumb": "/cache/sprites/ld_shtr/nmef.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "pa",
-    "value": "LD_SHTR:pa",
+    "value": "ld_shtr:pa",
     "thumb": "/cache/sprites/ld_shtr/pa.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "pm2",
-    "value": "LD_SHTR:pm2",
+    "value": "ld_shtr:pm2",
     "thumb": "/cache/sprites/ld_shtr/pm2.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "pm3",
-    "value": "LD_SHTR:pm3",
+    "value": "ld_shtr:pm3",
     "thumb": "/cache/sprites/ld_shtr/pm3.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ps1",
-    "value": "LD_SHTR:ps1",
+    "value": "ld_shtr:ps1",
     "thumb": "/cache/sprites/ld_shtr/ps1.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ps2",
-    "value": "LD_SHTR:ps2",
+    "value": "ld_shtr:ps2",
     "thumb": "/cache/sprites/ld_shtr/ps2.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ps3",
-    "value": "LD_SHTR:ps3",
+    "value": "ld_shtr:ps3",
     "thumb": "/cache/sprites/ld_shtr/ps3.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "ship",
-    "value": "LD_SHTR:ship",
+    "value": "ld_shtr:ship",
     "thumb": "/cache/sprites/ld_shtr/ship.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "splsh",
-    "value": "LD_SHTR:splsh",
+    "value": "ld_shtr:splsh",
     "thumb": "/cache/sprites/ld_shtr/splsh.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
+    "name": "tvcorn",
+    "value": "ld_shtr:tvcorn",
+    "thumb": "/cache/sprites/ld_shtr/tvcorn.png"
+  },
+  {
+    "lib": "ld_shtr",
+    "name": "tvl",
+    "value": "ld_shtr:tvl",
+    "thumb": "/cache/sprites/ld_shtr/tvl.png"
+  },
+  {
+    "lib": "ld_shtr",
+    "name": "tvr",
+    "value": "ld_shtr:tvr",
+    "thumb": "/cache/sprites/ld_shtr/tvr.png"
+  },
+  {
+    "lib": "ld_shtr",
     "name": "ufo",
-    "value": "LD_SHTR:ufo",
+    "value": "ld_shtr:ufo",
     "thumb": "/cache/sprites/ld_shtr/ufo.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "un_a",
-    "value": "LD_SHTR:un_a",
+    "value": "ld_shtr:un_a",
     "thumb": "/cache/sprites/ld_shtr/un_a.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "un_b",
-    "value": "LD_SHTR:un_b",
+    "value": "ld_shtr:un_b",
     "thumb": "/cache/sprites/ld_shtr/un_b.png"
   },
   {
-    "lib": "LD_SHTR",
+    "lib": "ld_shtr",
     "name": "un_c",
-    "value": "LD_SHTR:un_c",
+    "value": "ld_shtr:un_c",
     "thumb": "/cache/sprites/ld_shtr/un_c.png"
   },
   {
@@ -2244,6 +2670,108 @@ export const TEXTDRAW_SPRITES = [
     "name": "r_69",
     "value": "LD_SLOT:r_69",
     "thumb": "/cache/sprites/ld_slot/r_69.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "backgnd",
+    "value": "LD_SPAC:backgnd",
+    "thumb": "/cache/sprites/ld_spac/backgnd.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "black",
+    "value": "LD_SPAC:black",
+    "thumb": "/cache/sprites/ld_spac/black.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "dark",
+    "value": "LD_SPAC:dark",
+    "thumb": "/cache/sprites/ld_spac/dark.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "DUALITY",
+    "value": "LD_SPAC:DUALITY",
+    "thumb": "/cache/sprites/ld_spac/duality.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "ex1",
+    "value": "LD_SPAC:ex1",
+    "thumb": "/cache/sprites/ld_spac/ex1.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "ex2",
+    "value": "LD_SPAC:ex2",
+    "thumb": "/cache/sprites/ld_spac/ex2.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "ex3",
+    "value": "LD_SPAC:ex3",
+    "thumb": "/cache/sprites/ld_spac/ex3.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "ex4",
+    "value": "LD_SPAC:ex4",
+    "thumb": "/cache/sprites/ld_spac/ex4.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "Health",
+    "value": "LD_SPAC:Health",
+    "thumb": "/cache/sprites/ld_spac/health.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "layer",
+    "value": "LD_SPAC:layer",
+    "thumb": "/cache/sprites/ld_spac/layer.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "light",
+    "value": "LD_SPAC:light",
+    "thumb": "/cache/sprites/ld_spac/light.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "power",
+    "value": "LD_SPAC:power",
+    "thumb": "/cache/sprites/ld_spac/power.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "rockshp",
+    "value": "LD_SPAC:rockshp",
+    "thumb": "/cache/sprites/ld_spac/rockshp.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "shoot",
+    "value": "LD_SPAC:shoot",
+    "thumb": "/cache/sprites/ld_spac/shoot.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "thrustG",
+    "value": "LD_SPAC:thrustG",
+    "thumb": "/cache/sprites/ld_spac/thrustg.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "tvcorn",
+    "value": "LD_SPAC:tvcorn",
+    "thumb": "/cache/sprites/ld_spac/tvcorn.png"
+  },
+  {
+    "lib": "LD_SPAC",
+    "name": "white",
+    "value": "LD_SPAC:white",
+    "thumb": "/cache/sprites/ld_spac/white.png"
   },
   {
     "lib": "LD_TATT",
@@ -2534,6 +3062,102 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/ld_tatt/9rasta.png"
   },
   {
+    "lib": "load0uk",
+    "name": "load0uk",
+    "value": "load0uk:load0uk",
+    "thumb": "/cache/sprites/load0uk/load0uk.png"
+  },
+  {
+    "lib": "loadsc0",
+    "name": "loadsc0",
+    "value": "loadsc0:loadsc0",
+    "thumb": "/cache/sprites/loadsc0/loadsc0.png"
+  },
+  {
+    "lib": "loadsc1",
+    "name": "loadsc1",
+    "value": "loadsc1:loadsc1",
+    "thumb": "/cache/sprites/loadsc1/loadsc1.png"
+  },
+  {
+    "lib": "loadsc10",
+    "name": "loadsc10",
+    "value": "loadsc10:loadsc10",
+    "thumb": "/cache/sprites/loadsc10/loadsc10.png"
+  },
+  {
+    "lib": "loadsc11",
+    "name": "loadsc11",
+    "value": "loadsc11:loadsc11",
+    "thumb": "/cache/sprites/loadsc11/loadsc11.png"
+  },
+  {
+    "lib": "loadsc12",
+    "name": "loadsc12",
+    "value": "loadsc12:loadsc12",
+    "thumb": "/cache/sprites/loadsc12/loadsc12.png"
+  },
+  {
+    "lib": "loadsc13",
+    "name": "loadsc13",
+    "value": "loadsc13:loadsc13",
+    "thumb": "/cache/sprites/loadsc13/loadsc13.png"
+  },
+  {
+    "lib": "loadsc14",
+    "name": "loadsc14",
+    "value": "loadsc14:loadsc14",
+    "thumb": "/cache/sprites/loadsc14/loadsc14.png"
+  },
+  {
+    "lib": "loadsc2",
+    "name": "loadsc2",
+    "value": "loadsc2:loadsc2",
+    "thumb": "/cache/sprites/loadsc2/loadsc2.png"
+  },
+  {
+    "lib": "loadsc3",
+    "name": "loadsc3",
+    "value": "loadsc3:loadsc3",
+    "thumb": "/cache/sprites/loadsc3/loadsc3.png"
+  },
+  {
+    "lib": "loadsc4",
+    "name": "loadsc4",
+    "value": "loadsc4:loadsc4",
+    "thumb": "/cache/sprites/loadsc4/loadsc4.png"
+  },
+  {
+    "lib": "loadsc5",
+    "name": "loadsc5",
+    "value": "loadsc5:loadsc5",
+    "thumb": "/cache/sprites/loadsc5/loadsc5.png"
+  },
+  {
+    "lib": "loadsc6",
+    "name": "loadsc6",
+    "value": "loadsc6:loadsc6",
+    "thumb": "/cache/sprites/loadsc6/loadsc6.png"
+  },
+  {
+    "lib": "loadsc7",
+    "name": "loadsc7",
+    "value": "loadsc7:loadsc7",
+    "thumb": "/cache/sprites/loadsc7/loadsc7.png"
+  },
+  {
+    "lib": "loadsc8",
+    "name": "loadsc8",
+    "value": "loadsc8:loadsc8",
+    "thumb": "/cache/sprites/loadsc8/loadsc8.png"
+  },
+  {
+    "lib": "loadsc9",
+    "name": "loadsc9",
+    "value": "loadsc9:loadsc9",
+    "thumb": "/cache/sprites/loadsc9/loadsc9.png"
+  },
+  {
     "lib": "LOADSCS",
     "name": "eax",
     "value": "LOADSCS:eax",
@@ -2542,91 +3166,91 @@ export const TEXTDRAW_SPRITES = [
   {
     "lib": "LOADSCS",
     "name": "loadsc0",
-    "value": "loadsc0:loadsc0",
+    "value": "LOADSCS:loadsc0",
     "thumb": "/cache/sprites/loadscs/loadsc0.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc1",
-    "value": "loadsc1:loadsc1",
+    "value": "LOADSCS:loadsc1",
     "thumb": "/cache/sprites/loadscs/loadsc1.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc10",
-    "value": "loadsc10:loadsc10",
+    "value": "LOADSCS:loadsc10",
     "thumb": "/cache/sprites/loadscs/loadsc10.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc11",
-    "value": "loadsc11:loadsc11",
+    "value": "LOADSCS:loadsc11",
     "thumb": "/cache/sprites/loadscs/loadsc11.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc12",
-    "value": "loadsc12:loadsc12",
+    "value": "LOADSCS:loadsc12",
     "thumb": "/cache/sprites/loadscs/loadsc12.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc13",
-    "value": "loadsc13:loadsc13",
+    "value": "LOADSCS:loadsc13",
     "thumb": "/cache/sprites/loadscs/loadsc13.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc14",
-    "value": "loadsc14:loadsc14",
+    "value": "LOADSCS:loadsc14",
     "thumb": "/cache/sprites/loadscs/loadsc14.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc2",
-    "value": "loadsc2:loadsc2",
+    "value": "LOADSCS:loadsc2",
     "thumb": "/cache/sprites/loadscs/loadsc2.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc3",
-    "value": "loadsc3:loadsc3",
+    "value": "LOADSCS:loadsc3",
     "thumb": "/cache/sprites/loadscs/loadsc3.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc4",
-    "value": "loadsc4:loadsc4",
+    "value": "LOADSCS:loadsc4",
     "thumb": "/cache/sprites/loadscs/loadsc4.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc5",
-    "value": "loadsc5:loadsc5",
+    "value": "LOADSCS:loadsc5",
     "thumb": "/cache/sprites/loadscs/loadsc5.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc6",
-    "value": "loadsc6:loadsc6",
+    "value": "LOADSCS:loadsc6",
     "thumb": "/cache/sprites/loadscs/loadsc6.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc7",
-    "value": "loadsc7:loadsc7",
+    "value": "LOADSCS:loadsc7",
     "thumb": "/cache/sprites/loadscs/loadsc7.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc8",
-    "value": "loadsc8:loadsc8",
+    "value": "LOADSCS:loadsc8",
     "thumb": "/cache/sprites/loadscs/loadsc8.png"
   },
   {
     "lib": "LOADSCS",
     "name": "loadsc9",
-    "value": "loadsc9:loadsc9",
+    "value": "LOADSCS:loadsc9",
     "thumb": "/cache/sprites/loadscs/loadsc9.png"
   },
   {
@@ -2648,10 +3272,94 @@ export const TEXTDRAW_SPRITES = [
     "thumb": "/cache/sprites/loadscs/title_pc_us.png"
   },
   {
-    "lib": "outro",
-    "name": "outro",
-    "value": "outro:outro",
-    "thumb": "/cache/sprites/outro/outro.png"
+    "lib": "LOADSUK",
+    "name": "loadsc1",
+    "value": "LOADSUK:loadsc1",
+    "thumb": "/cache/sprites/loadsuk/loadsc1.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc10",
+    "value": "LOADSUK:loadsc10",
+    "thumb": "/cache/sprites/loadsuk/loadsc10.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc11",
+    "value": "LOADSUK:loadsc11",
+    "thumb": "/cache/sprites/loadsuk/loadsc11.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc12",
+    "value": "LOADSUK:loadsc12",
+    "thumb": "/cache/sprites/loadsuk/loadsc12.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc13",
+    "value": "LOADSUK:loadsc13",
+    "thumb": "/cache/sprites/loadsuk/loadsc13.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc14",
+    "value": "LOADSUK:loadsc14",
+    "thumb": "/cache/sprites/loadsuk/loadsc14.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc2",
+    "value": "LOADSUK:loadsc2",
+    "thumb": "/cache/sprites/loadsuk/loadsc2.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc3",
+    "value": "LOADSUK:loadsc3",
+    "thumb": "/cache/sprites/loadsuk/loadsc3.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc4",
+    "value": "LOADSUK:loadsc4",
+    "thumb": "/cache/sprites/loadsuk/loadsc4.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc5",
+    "value": "LOADSUK:loadsc5",
+    "thumb": "/cache/sprites/loadsuk/loadsc5.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc6",
+    "value": "LOADSUK:loadsc6",
+    "thumb": "/cache/sprites/loadsuk/loadsc6.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc7",
+    "value": "LOADSUK:loadsc7",
+    "thumb": "/cache/sprites/loadsuk/loadsc7.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc8",
+    "value": "LOADSUK:loadsc8",
+    "thumb": "/cache/sprites/loadsuk/loadsc8.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadsc9",
+    "value": "LOADSUK:loadsc9",
+    "thumb": "/cache/sprites/loadsuk/loadsc9.png"
+  },
+  {
+    "lib": "LOADSUK",
+    "name": "loadscuk",
+    "value": "LOADSUK:loadscuk",
+    "thumb": "/cache/sprites/loadsuk/loadscuk.png"
   },
   {
     "lib": "samaps",
@@ -2685,14 +3393,14 @@ export const TEXTDRAW_SPRITES = [
   },
   {
     "lib": "splash1",
-    "name": "gtasamapbit1",
-    "value": "splash1:gtasamapbit1",
-    "thumb": "/cache/sprites/splash1/gtasamapbit1.png"
+    "name": "splash1",
+    "value": "splash1:splash1",
+    "thumb": "/cache/sprites/splash1/splash1.png"
   },
   {
     "lib": "splash2",
-    "name": "gtasamapbit1",
-    "value": "splash2:gtasamapbit1",
-    "thumb": "/cache/sprites/splash2/gtasamapbit1.png"
+    "name": "splash2",
+    "value": "splash2:splash2",
+    "thumb": "/cache/sprites/splash2/splash2.png"
   }
 ];

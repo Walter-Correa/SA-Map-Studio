@@ -1158,13 +1158,11 @@ class Handler(SimpleHTTPRequestHandler):
         except (TypeError, ValueError):
             pass
 
-    # ---------- utilidades ----------
-    def __getattr__(self, name):
-        if name.startswith("do_"):
-            clean = name[3:].upper()
-            if hasattr(self, "do_" + clean):
-                return getattr(self, "do_" + clean)
-        raise AttributeError(name)
+    def parse_request(self):
+        res = super().parse_request()
+        if res and hasattr(self, "command") and self.command:
+            self.command = self.command.upper()
+        return res
 
     def do_HEAD(self):
         return self.do_GET()
@@ -1268,19 +1266,37 @@ class Handler(SimpleHTTPRequestHandler):
         if path.startswith("/cache/"):
             sub = path[len("/cache/"):].lstrip("/")
             rel_sub = sub.replace("/", os.sep)
-            for cdir in (CACHE_DIR, COMPILE_CACHE_DIR, os.path.join(APP_DIR, "data", "cache"), os.path.join(APP_DIR, "Dados", "cache"), os.path.join(os.path.dirname(BASE_DIR), "data", "cache"), os.path.join(os.path.dirname(BASE_DIR), "Dados", "cache")):
+            all_cdirs = (
+                CACHE_DIR,
+                COMPILE_CACHE_DIR,
+                os.path.join(APP_DIR, "data", "cache"),
+                os.path.join(APP_DIR, "Dados", "cache"),
+                os.path.join(DATA_DIR, "cache"),
+                os.path.join(BASE_DIR, "data", "cache"),
+                os.path.join(ROOT_DIR, "data", "cache"),
+                os.path.join(ROOT_DIR, "compile-sources", "cache"),
+                os.path.join(os.path.dirname(BASE_DIR), "data", "cache"),
+                os.path.join(os.path.dirname(BASE_DIR), "Dados", "cache")
+            )
+            for cdir in all_cdirs:
                 full = os.path.join(cdir, rel_sub)
                 if os.path.isfile(full):
                     return self.send_file(full, cache="public, max-age=86400")
                 low_rel = rel_sub.lower()
-                if low_rel.startswith("sprites" + os.sep + "loadscs" + os.sep):
-                    alt = os.path.join(cdir, "sprites", "ld_loadscs", os.path.basename(rel_sub))
-                    if os.path.isfile(alt):
-                        return self.send_file(alt, cache="public, max-age=86400")
-                elif low_rel.startswith("sprites" + os.sep + "ld_loadscs" + os.sep):
-                    alt = os.path.join(cdir, "sprites", "loadscs", os.path.basename(rel_sub))
-                    if os.path.isfile(alt):
-                        return self.send_file(alt, cache="public, max-age=86400")
+                if "sprites" in low_rel:
+                    base_name = os.path.basename(rel_sub)
+                    parts = low_rel.split(os.sep)
+                    sub_folder = parts[1] if len(parts) > 2 else ""
+                    cand_folders = [sub_folder]
+                    if sub_folder.startswith("loadsc"):
+                        cand_folders.extend(["loadscs", "ld_loadscs", base_name[:-4] if base_name.endswith(".png") else ""])
+                    elif sub_folder == "ld_loadscs":
+                        cand_folders.append("loadscs")
+                    for cf in cand_folders:
+                        if not cf: continue
+                        alt_cand = os.path.join(cdir, "sprites", cf, base_name)
+                        if os.path.isfile(alt_cand):
+                            return self.send_file(alt_cand, cache="public, max-age=86400")
             return self.send_error(404, "Arquivo de cache nao encontrado")
         if path == "/api/ping":
             State.last_ping = time.time()

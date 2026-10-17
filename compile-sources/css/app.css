@@ -583,7 +583,7 @@ legend.sub { margin-top: 8px; }
 
 /* ---------------------------------------------------------------- escopo de seleção / movimento */
 .scope-toggle {
-  display: flex; gap: 4px; margin: 8px 0; background: var(--asphalt-900); padding: 3px; border-radius: var(--radius-s); border: 1px solid var(--line);
+  display: flex; gap: 4px; margin: 0; background: var(--asphalt-900); padding: 3px; border-radius: var(--radius-s); border: 1px solid var(--line);
 }
 .scope-toggle .btn {
   flex: 1; border: none; background: transparent; padding: 4px 6px; font-size: 11.5px; height: 26px; justify-content: center;

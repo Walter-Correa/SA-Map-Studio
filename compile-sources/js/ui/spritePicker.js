@@ -21,6 +21,7 @@ const POPULAR_LIBS = [
   { id: 'LD_TATT', label: '🐉 Tatuagens (LD_TATT)' },
   { id: 'LD_CHAT', label: '💬 Chat (LD_CHAT)' },
   { id: 'LD_OTB', label: '🐎 Corrida (LD_OTB)' },
+  { id: 'LD_SPAC', label: '🚀 Espaço (LD_SPAC)' },
   { id: 'splash', label: '🖼️ Telas & Intros' },
 ];
 
@@ -99,10 +100,12 @@ export function openSpritePicker({ currentSprite = 'hud:arrow', onSelect = null 
 function filterSprites() {
   return TEXTDRAW_SPRITES.filter(sp => {
     if (activeLib !== 'todas') {
+      const l = sp.lib.toLowerCase();
       if (activeLib === 'splash') {
-        const l = sp.lib.toLowerCase();
-        if (!l.startsWith('splash') && !l.startsWith('intro') && !l.startsWith('outro') && !l.startsWith('loadscs') && !l.startsWith('ld_loadscs')) return false;
-      } else if (sp.lib.toLowerCase() !== activeLib.toLowerCase()) {
+        if (!l.startsWith('splash') && !l.startsWith('intro') && !l.startsWith('loadsc') && !l.startsWith('loadsuk') && !l.startsWith('load0uk')) return false;
+      } else if (activeLib === 'LD_OTB') {
+        if (l !== 'ld_otb' && l !== 'ld_otb2' && l !== 'ld_race' && !l.startsWith('ld_rce')) return false;
+      } else if (l !== activeLib.toLowerCase()) {
         return false;
       }
     }
@@ -161,9 +164,15 @@ function renderSpriteGrid() {
 }
 
 function updateSpritePreview(spriteVal) {
-  const [lib, name] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];
-  const normLib = lib.toLowerCase() === 'ld_loadscs' ? 'loadscs' : lib.toLowerCase();
-  const thumbUrl = `/cache/sprites/${normLib}/${name.toLowerCase()}.png`;
+  let thumbUrl = '';
+  const found = TEXTDRAW_SPRITES.find(s => s.value.toLowerCase() === (spriteVal || '').toLowerCase());
+  if (found && found.thumb) {
+    thumbUrl = found.thumb;
+  } else {
+    const [lib, name] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];
+    const normLib = lib.toLowerCase() === 'ld_loadscs' ? 'loadscs' : lib.toLowerCase();
+    thumbUrl = `/cache/sprites/${normLib}/${(name || '').toLowerCase()}.png`;
+  }
 
   const prevImg = $('#prevSpriteImg');
   const prevTitle = $('#prevSpriteTitle');
@@ -172,11 +181,17 @@ function updateSpritePreview(spriteVal) {
   const btnApply = $('#btnApplySelectedSprite');
 
   if (prevImg) {
-    prevImg.onerror = null;
+    prevImg.onerror = () => {
+      if (spriteVal.toLowerCase().includes('loadsc')) {
+        const [lib, name] = spriteVal.split(':');
+        prevImg.src = `/cache/sprites/loadscs/${(name || lib).toLowerCase()}.png`;
+      }
+    };
     prevImg.src = thumbUrl;
   }
-  if (prevTitle) prevTitle.textContent = name;
-  if (prevSub) prevSub.textContent = `Biblioteca TXD: ${lib}.txd · Textura: ${name}`;
+  const [libName, texName] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];
+  if (prevTitle) prevTitle.textContent = texName || spriteVal;
+  if (prevSub) prevSub.textContent = `Biblioteca TXD: ${libName}.txd · Textura: ${texName || spriteVal}`;
   if (prevCode) prevCode.textContent = `TextDrawSetString(textdraw, "${spriteVal}");`;
   if (btnApply) {
     btnApply.disabled = false;

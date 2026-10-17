@@ -3,6 +3,7 @@
 // fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
 import { makeTextDraw } from '../editor/project.js';
 import { openSpritePicker } from './spritePicker.js';
+import { TEXTDRAW_SPRITES } from '../data/sprites.js';
 
 let dialogEl = null;
 let canvasEl = null;
@@ -93,18 +94,22 @@ function getSpriteImage(lib, name) {
   if (libLower === 'hud' && (nameLower === 'radar_ring' || nameLower === 'radarringplane')) {
     nameLower = 'radarringplane';
   }
-  const folder = libLower.startsWith('loadsc') ? 'loadscs' : libLower;
   const key = `${libLower}:${nameLower}`;
   if (spriteImageCache.has(key)) return spriteImageCache.get(key);
+
+  const found = TEXTDRAW_SPRITES.find(s => s.value.toLowerCase() === key);
+  const primaryUrl = found?.thumb || `/cache/sprites/${libLower}/${nameLower}.png`;
+
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = `/cache/sprites/${folder}/${nameLower}.png`;
+  img.src = primaryUrl;
   img.onerror = () => {
     if (!img._altTried) {
       img._altTried = true;
-      const altLib = folder === 'loadscs' ? 'ld_loadscs' : (folder === 'ld_loadscs' ? 'loadscs' : null);
-      if (altLib) {
-        img.src = `/cache/sprites/${altLib}/${nameLower}.png`;
+      if (libLower.startsWith('loadsc')) {
+        img.src = `/cache/sprites/loadscs/${nameLower}.png`;
+      } else if (libLower === 'loadscs' || libLower === 'ld_loadscs') {
+        img.src = `/cache/sprites/${nameLower}/${nameLower}.png`;
       }
     }
   };
