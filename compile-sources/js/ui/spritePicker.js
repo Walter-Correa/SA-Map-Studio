@@ -192,7 +192,7 @@ function updateSpritePreview(spriteVal) {
   const [libName, texName] = spriteVal.includes(':') ? spriteVal.split(':') : ['hud', spriteVal];
   if (prevTitle) prevTitle.textContent = texName || spriteVal;
   if (prevSub) prevSub.textContent = `Biblioteca TXD: ${libName}.txd · Textura: ${texName || spriteVal}`;
-  if (prevCode) prevCode.textContent = `TextDrawSetString(textdraw, "${spriteVal}");`;
+  if (prevCode) prevCode.textContent = `TextDrawCreate(x, y, "${spriteVal}");`;
   if (btnApply) {
     btnApply.disabled = false;
     btnApply.innerHTML = `<svg><use href="#i-check"/></svg> Usar Sprite "${esc(spriteVal)}"`;

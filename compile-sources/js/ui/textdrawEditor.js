@@ -1317,7 +1317,6 @@ function copyTextDrawsPawn() {
       }
       lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${rawText}");`);
       lines.push(`TextDrawFont(${varName}, 4);`);
-      lines.push(`TextDrawSetString(${varName}, "${rawText}");`);
       lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX || 0.5).toFixed(2)}, ${(td.letterSizeY || 1.0).toFixed(2)});`);
     } else {
       lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || '_'}");`);

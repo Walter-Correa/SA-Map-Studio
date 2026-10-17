@@ -663,7 +663,6 @@ stock SAMSP_CarregarMapa()
                         TextDrawSetProportional(td, true);
                         TextDrawUseBox(td, false);
                         if (tdselect) TextDrawSetSelectable(td, true);
-                        TextDrawSetString(td, texto);
                         gTextDraws[gTotalTextDraws] = td;
                         gTotalTextDraws++;
                     }

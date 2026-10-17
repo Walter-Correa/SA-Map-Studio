@@ -929,9 +929,6 @@ export function exportPawn(project, options = {}) {
     const tdVar = `td_${idx}`;
     textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
     textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
-    if (td.font === 4) {
-      textDrawLines.push(`TextDrawSetString(${tdVar}, ${escText});`);
-    }
     const letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
     const letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
     textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);

@@ -1159,6 +1159,12 @@ class Handler(SimpleHTTPRequestHandler):
             pass
 
     def parse_request(self):
+        if hasattr(self, "raw_requestline") and self.raw_requestline:
+            line = self.raw_requestline.lstrip()
+            # Descarta bytes espúrios residuais no socket (ex: b'{}' de body não drenado antes do método)
+            while line and not (line[:1].isalpha() or line.startswith(b"\r\n")):
+                line = line[1:].lstrip()
+            self.raw_requestline = line
         res = super().parse_request()
         if res and hasattr(self, "command") and self.command:
             self.command = self.command.upper()
@@ -1168,6 +1174,7 @@ class Handler(SimpleHTTPRequestHandler):
         return self.do_GET()
 
     def send_error(self, code, message=None, explain=None):
+        self.drain_body()
         self.close_connection = True
         cmd = getattr(self, "command", "UNKNOWN")
         path = getattr(self, "path", "UNKNOWN")
@@ -1178,6 +1185,7 @@ class Handler(SimpleHTTPRequestHandler):
         super().send_error(code, message=message, explain=explain)
 
     def do_OPTIONS(self):
+        self.drain_body()
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
@@ -1186,6 +1194,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def send_json(self, obj, status=200):
+        self.drain_body()
         data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -1193,11 +1202,24 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def read_body(self):
-        n = int(self.headers.get("Content-Length") or 0)
-        return self.rfile.read(n) if n > 0 else b""
+        if getattr(self, "_cached_body", None) is not None:
+            return self._cached_body
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            self._cached_body = self.rfile.read(n) if n > 0 else b""
+        except Exception:
+            self._cached_body = b""
+        return self._cached_body
+
+    def drain_body(self):
+        if getattr(self, "_cached_body", None) is None:
+            self.read_body()
 
     def read_json(self):
         try:
