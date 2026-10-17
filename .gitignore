@@ -2,69 +2,38 @@
 # SA Map Studio - Git Ignore
 # ==============================================================================
 
-# Executaveis e distribuicoes geradas
+# Executáveis e distribuições geradas (saída de build)
 compiled/
-dist/
-dist-limpo/
 build/
 build-info.json
 *.spec
-*.rar
-*.zip
-*.7z
 
-# Ambiente Python e compilacao
-.venv-build/
+# Ambiente virtual isolado do Python e bytecode
+compile-sources/.venv-build/
 __pycache__/
 *.pyc
-*.pyo
 
-# Dados do usuario e configuracoes locais
+# Dados locais do usuário, projetos e configurações da máquina
+config.json
+sa-map-studio.log
 sa-map-studio/
 data/
 projects/
 exported/
 test-server/
-Dados/
-Projetos/
-Exportados/
-projetos/
-exportados/
-Servidor de Teste/
-dados-da-janela/
-cache/
-scratch/
-scratch_*.png
-bans.json
-config.json
-sa-map-studio.log
-sa-map-studio.log
 
-# Banco de dados local do open.mp (mantido localmente na raiz, nao versionar)
-omp-server-source/
-
-# Fontes de compilacao pesadas e ambiente isolado
-compile-sources/cache/
-compile-sources/.venv-build/
-
-# Pasta de testes e scripts temporarios (mantem a pasta testing/, ignora o conteudo)
+# Pasta de testes (mantém a pasta testing/, ignora scripts temporários)
 testing/*
 !testing/.gitkeep
 
-# Arquivos de execucao e registros do servidor de testes
+# Arquivos de execução, despejo e depuração do servidor
 server_log.txt
 omp-server.log
-omp-server.json
-server.cfg
-log.txt
 *.dmp
 *.pdb
 
 # Editores e sistema operacional
 .vscode/
 .idea/
-*.tmp
-*.bak
 Thumbs.db
 desktop.ini
-.DS_Store
