@@ -1016,11 +1016,12 @@ export function exportPawn(project, options = {}) {
   const checkpoints = project.checkpoints || [];
   for (let idx = 0; idx < checkpoints.length; idx++) {
     const cp = checkpoints[idx];
-    if (cp.blankLinesBefore > 0 && idx > 0) checkpointLines.push('');
     if (cp.preComment) {
       for (const pl of cp.preComment.split('\n')) {
         const t = pl.trim();
-        if (t) checkpointLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        if (t && !t.match(/^\/\/\s*checkpoints?:?$/i)) {
+          checkpointLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        }
       }
     }
     const cx = cp.x - center.x, cy = cp.y - center.y, cz = cp.z - center.z;
@@ -1037,11 +1038,12 @@ export function exportPawn(project, options = {}) {
   const mapIcons = project.mapIcons || [];
   for (let idx = 0; idx < mapIcons.length; idx++) {
     const mi = mapIcons[idx];
-    if (mi.blankLinesBefore > 0 && idx > 0) mapIconLines.push('');
     if (mi.preComment) {
       for (const pl of mi.preComment.split('\n')) {
         const t = pl.trim();
-        if (t) mapIconLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        if (t && !t.match(/^\/\/\s*mapicons?:?$/i)) {
+          mapIconLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        }
       }
     }
     const mx = mi.x - center.x, my = mi.y - center.y, mz = mi.z - center.z;

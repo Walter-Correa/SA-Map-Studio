@@ -43,8 +43,8 @@ export class Editor extends EventTarget {
     this.worldSelection = [];        // instâncias do mapa selecionadas
     this.mode = 'translate';
     this.space = 'world';
-    this.snap = { enabled: false, move: 0.5, rotate: 15, magnetic: true, magDist: 0.8 };
-    this.transformSpeed = { move: 1.0, rotate: 10.0 };
+    this.snap = { enabled: false, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 };
+    this.transformSpeed = { move: 1.0, rotate: 1.0 };
     this.placing = null;             // {model, ghost}
     this.matSel = [];                // índices de material escolhidos (0 a 15)
     this.slotHiddenMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -772,7 +772,7 @@ export class Editor extends EventTarget {
       if (this.tc) this.tc.translationSpeed = this.transformSpeed.move;
     }
     if (speeds.rotate !== undefined) {
-      this.transformSpeed.rotate = Math.min(10.0, Math.max(1.0, +speeds.rotate || 10.0));
+      this.transformSpeed.rotate = Math.min(10.0, Math.max(1.0, +speeds.rotate || 1.0));
       if (this.tc) this.tc.rotationSpeed = this.transformSpeed.rotate;
     }
   }
@@ -1019,6 +1019,8 @@ export class Editor extends EventTarget {
     const parentNode = this.nodes.get(parentUid);
     const childNode = this.nodes.get(childUid);
     if (!parentNode || !childNode) return null;
+    parentNode.updateMatrixWorld(true);
+    childNode.updateMatrixWorld(true);
     const invParentQuat = parentNode.quaternion.clone().invert();
     const relPos = childNode.position.clone().sub(parentNode.position).applyQuaternion(invParentQuat);
     const relQuat = invParentQuat.clone().multiply(childNode.quaternion);
@@ -1346,6 +1348,8 @@ export class Editor extends EventTarget {
       const data = pItems.map(s => {
         const itemCopy = JSON.parse(JSON.stringify(s.item));
         delete itemCopy.uid;
+        delete itemCopy.preComment;
+        delete itemCopy.blankLinesBefore;
         if (s.kind === 'checkpoints') {
           const dir = new THREE.Vector3();
           if (itemCopy.nextx !== undefined && (itemCopy.nextx !== itemCopy.x || itemCopy.nexty !== itemCopy.y)) {
@@ -1357,7 +1361,7 @@ export class Editor extends EventTarget {
           dir.normalize();
 
           const cpSize = Math.max(0.5, +itemCopy.size || 4.0);
-          const dist = Math.max(cpSize * 2.0, cpSize + 6.0, 12.0);
+          const dist = Math.max(cpSize * 1.0, (cpSize + 6.0) * 0.5, 6.0);
           itemCopy.x = Math.round((itemCopy.x + dir.x * dist) * 100) / 100;
           itemCopy.y = Math.round((itemCopy.y + dir.y * dist) * 100) / 100;
           itemCopy.z = Math.round((itemCopy.z + dir.z * dist) * 100) / 100;

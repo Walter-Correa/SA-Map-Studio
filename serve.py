@@ -1334,7 +1334,7 @@ def extract_gta_sound(gta_path, soundid):
         bank_id = 147 + (soundid - 2000) // 200
         slot_id = (soundid - 2000) % 200
         return _extract_sfx_bank_slot(gta_path, bank_id, slot_id)
-    if 2 <= soundid <= 999:
+    if 1 <= soundid <= 999:
         return _extract_stream_track(gta_path, soundid)
     if 1000 <= soundid <= 1199:
         if soundid in _FRONTEND_STREAM_MAP:

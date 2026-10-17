@@ -172,16 +172,16 @@ function setupToolbar(cfg) {
   setupPopover('#btnSnap', '#popSnap');
   setupPopover('#btnGoto', '#popGoto', () => setTimeout(() => $('#gotoInput')?.focus({ preventScroll: true }), 0));
   setupPopover('#btnView', '#popView');
-  const snap = store.get('snap', { enabled: false, move: 0.5, rotate: 15, magnetic: true, magDist: 0.8 });
+  const snap = store.get('snap', { enabled: false, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 });
   $('#snapOn').checked = snap.enabled; $('#snapMove').value = snap.move; $('#snapRot').value = snap.rotate;
-  $('#snapMagnetic').checked = snap.magnetic ?? true; $('#snapMagDist').value = snap.magDist ?? 0.8;
+  $('#snapMagnetic').checked = snap.magnetic ?? true; $('#snapMagDist').value = snap.magDist ?? 0.1;
   const applySnap = () => {
     const s = {
       enabled: $('#snapOn').checked,
-      move: Math.max(0.01, +$('#snapMove').value || 0.5),
-      rotate: Math.max(1, +$('#snapRot').value || 15),
+      move: Math.max(0.01, +$('#snapMove').value || 0.1),
+      rotate: Math.max(0.01, +$('#snapRot').value || 0.1),
       magnetic: $('#snapMagnetic').checked,
-      magDist: Math.max(0.05, +$('#snapMagDist').value || 0.8),
+      magDist: Math.max(0.01, +$('#snapMagDist').value || 0.1),
     };
     ed.setSnap(s);
     store.set('snap', s);
@@ -190,10 +190,10 @@ function setupToolbar(cfg) {
     $(s).addEventListener('change', applySnap);
     $(s).addEventListener('input', applySnap);
   });
-  const rawSpeed = store.get('transformSpeed', { move: 1.0, rotate: 10.0 });
+  const rawSpeed = store.get('transformSpeed', { move: 1.0, rotate: 1.0 });
   const initSpeed = {
     move: Math.max(1.0, +rawSpeed.move || 1.0),
-    rotate: Math.max(1.0, +rawSpeed.rotate || 10.0)
+    rotate: Math.max(1.0, +rawSpeed.rotate || 1.0)
   };
   ed.setTransformSpeed(initSpeed);
   $('#btnUndo').onclick = doUndo;

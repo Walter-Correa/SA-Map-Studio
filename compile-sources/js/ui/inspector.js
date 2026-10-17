@@ -272,9 +272,9 @@ const actionGrid = () => `<div class="btn-grid">
     </div>`;
 
 function speedSection() {
-  const sp = app.editor.transformSpeed || { move: 1.0, rotate: 10.0 };
+  const sp = app.editor.transformSpeed || { move: 1.0, rotate: 1.0 };
   const currentMove = Math.min(10.0, Math.max(1.0, +sp.move || 1.0));
-  const currentRotate = Math.min(10.0, Math.max(1.0, +sp.rotate || 10.0));
+  const currentRotate = Math.min(10.0, Math.max(1.0, +sp.rotate || 1.0));
 
   const options = [];
   for (let i = 1; i <= 10; i++) {
@@ -942,29 +942,47 @@ function bindItem(item) {
     chkAttach.onchange = () => {
       project.updateItems('Alterar Attach', [uid], (o) => {
         if (chkAttach.checked) {
-          const availVeh = (project.vehicles || []).find(v => getVehicleAttachedObjects(v.uid, project).length < MAX_VEHICLE_ATTACHED_OBJECTS);
-          if (availVeh) {
-            const rel = app.editor.calculateRelativeAttachOffset(uid, availVeh.uid);
+          const otherObjs = (project.objects || []).filter(x => x.uid !== uid);
+          const availVehs = (project.vehicles || []).filter(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
+
+          let bestCand = null;
+          let bestDist = Infinity;
+          let bestType = 'object';
+
+          for (const cand of otherObjs) {
+            const d = Math.hypot(cand.x - o.x, cand.y - o.y, cand.z - o.z);
+            if (d < bestDist) {
+              bestDist = d;
+              bestCand = cand;
+              bestType = 'object';
+            }
+          }
+          for (const cand of availVehs) {
+            const d = Math.hypot(cand.x - o.x, cand.y - o.y, cand.z - o.z);
+            if (d < bestDist) {
+              bestDist = d;
+              bestCand = cand;
+              bestType = 'vehicle';
+            }
+          }
+
+          if (bestCand) {
+            const rel = app.editor.calculateRelativeAttachOffset(uid, bestCand.uid);
             o.attach = {
-              type: 'vehicle',
-              to: availVeh.uid,
+              type: bestType,
+              to: bestCand.uid,
               ox: rel ? rel.ox : 0,
               oy: rel ? rel.oy : 0,
-              oz: rel ? rel.oz : 1.0,
+              oz: rel ? rel.oz : 0,
               rx: rel ? rel.rx : 0,
               ry: rel ? rel.ry : 0,
               rz: rel ? rel.rz : 0,
               syncRot: 1,
             };
           } else {
-            const firstOther = project.objects.find(x => x.uid !== uid);
-            o.attach = {
-              type: 'object',
-              to: firstOther ? firstOther.uid : '',
-              ox: 0, oy: 0, oz: 1.0,
-              rx: 0, ry: 0, rz: 0,
-              syncRot: 1,
-            };
+            toast('Nenhum outro objeto ou veículo disponível para acoplar.', 'warn');
+            chkAttach.checked = false;
+            o.attach = null;
           }
         } else {
           o.attach = null;
@@ -979,19 +997,49 @@ function bindItem(item) {
   if (selAttachType) {
     selAttachType.onchange = () => {
       const nextType = selAttachType.value === 'vehicle' ? 'vehicle' : 'object';
+      const cur = project.find(uid);
+      if (!cur || !cur.attach) return;
+
+      let bestCand = null;
+      let bestDist = Infinity;
+      if (nextType === 'vehicle') {
+        const availVehs = (project.vehicles || []).filter(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
+        for (const cand of availVehs) {
+          const d = Math.hypot(cand.x - cur.x, cand.y - cur.y, cand.z - cur.z);
+          if (d < bestDist) {
+            bestDist = d;
+            bestCand = cand;
+          }
+        }
+      } else {
+        const otherObjs = (project.objects || []).filter(x => x.uid !== uid);
+        for (const cand of otherObjs) {
+          const d = Math.hypot(cand.x - cur.x, cand.y - cur.y, cand.z - cur.z);
+          if (d < bestDist) {
+            bestDist = d;
+            bestCand = cand;
+          }
+        }
+      }
+
+      if (!bestCand) {
+        toast(`Nenhum ${nextType === 'vehicle' ? 'veículo' : 'objeto'} disponível para acoplar.`, 'warn');
+        renderInspector();
+        return;
+      }
+
+      const rel = app.editor.calculateRelativeAttachOffset(uid, bestCand.uid);
       project.updateItems('Alterar Tipo Attach', [uid], (o) => {
         if (!o.attach) return;
         o.attach.type = nextType;
-        if (nextType === 'vehicle') {
-          const availVeh = (project.vehicles || []).find(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
-          o.attach.to = availVeh ? availVeh.uid : '';
-          if (availVeh) {
-            const rel = app.editor.calculateRelativeAttachOffset(uid, availVeh.uid);
-            if (rel) Object.assign(o.attach, rel);
-          }
-        } else {
-          const firstOther = project.objects.find(x => x.uid !== uid);
-          o.attach.to = firstOther ? firstOther.uid : '';
+        o.attach.to = bestCand.uid;
+        if (rel) {
+          o.attach.ox = rel.ox;
+          o.attach.oy = rel.oy;
+          o.attach.oz = rel.oz;
+          o.attach.rx = rel.rx;
+          o.attach.ry = rel.ry;
+          o.attach.rz = rel.rz;
         }
       });
       app.editor.updateAttachedChildren();
@@ -1004,8 +1052,9 @@ function bindItem(item) {
     selParent.onchange = () => {
       const targetUid = selParent.value;
       const cur = project.find(uid);
-      const isVeh = cur?.attach?.type === 'vehicle' || (project.vehicles || []).some(v => v.uid === targetUid);
-      if (isVeh && targetUid) {
+      if (!cur || !cur.attach || !targetUid) return;
+      const isVeh = cur.attach.type === 'vehicle' || (project.vehicles || []).some(v => v.uid === targetUid);
+      if (isVeh) {
         const cnt = getVehicleAttachedObjects(targetUid, project).filter(x => x.uid !== uid).length;
         if (cnt >= MAX_VEHICLE_ATTACHED_OBJECTS) {
           toast(`Este veículo já atingiu o limite máximo de ${MAX_VEHICLE_ATTACHED_OBJECTS} objetos acoplados!`, 'warn');
@@ -1013,13 +1062,18 @@ function bindItem(item) {
           return;
         }
       }
+      const rel = app.editor.calculateRelativeAttachOffset(uid, targetUid);
       project.updateItems('Alterar Alvo do Acoplamento', [uid], (o) => {
         if (!o.attach) return;
         o.attach.type = isVeh ? 'vehicle' : 'object';
         o.attach.to = targetUid;
-        if (targetUid) {
-          const rel = app.editor.calculateRelativeAttachOffset(uid, targetUid);
-          if (rel) Object.assign(o.attach, rel);
+        if (rel) {
+          o.attach.ox = rel.ox;
+          o.attach.oy = rel.oy;
+          o.attach.oz = rel.oz;
+          o.attach.rx = rel.rx;
+          o.attach.ry = rel.ry;
+          o.attach.rz = rel.rz;
         }
       });
       app.editor.updateAttachedChildren();
@@ -1209,7 +1263,7 @@ function bindVehicle(v) {
           to: uid,
           ox: rel ? rel.ox : 0,
           oy: rel ? rel.oy : 0,
-          oz: rel ? rel.oz : 1.0,
+          oz: rel ? rel.oz : 0,
           rx: rel ? rel.rx : 0,
           ry: rel ? rel.ry : 0,
           rz: rel ? rel.rz : 0,
