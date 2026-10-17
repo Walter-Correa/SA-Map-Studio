@@ -7,17 +7,17 @@
 #include <open.mp>
 #include <streamer>
 
-#define SAMS_ARQUIVO        "samapstudio/mapa.txt"
-#define SAMS_MAX_OBJETOS    5000
-#define SAMS_MAX_REMOVIDOS  500
-#define SAMS_MAX_VEICULOS   500
-#define SAMS_MAX_ACTORS     250
-#define SAMS_MAX_LABELS     500
-#define SAMS_MAX_PICKUPS    500
-#define SAMS_MAX_GANGZONES  200
-#define SAMS_MAX_TEXTDRAWS  256
-#define SAMS_COR_INFO       0xF0A630FF
-#define SAMS_COR_OK         0x57B77AFF
+#define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
+#define SAMSP_MAX_OBJETOS    5000
+#define SAMSP_MAX_REMOVIDOS  500
+#define SAMSP_MAX_VEICULOS   500
+#define SAMSP_MAX_ACTORS     250
+#define SAMSP_MAX_LABELS     500
+#define SAMSP_MAX_PICKUPS    500
+#define SAMSP_MAX_GANGZONES  200
+#define SAMSP_MAX_TEXTDRAWS  256
+#define SAMSP_COR_INFO       0xF0A630FF
+#define SAMSP_COR_OK         0x57B77AFF
 
 new bool:gUseStreamer = false;
 
@@ -54,27 +54,27 @@ new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
 new bool:gPlayerSpawned[MAX_PLAYERS];
 
-new gObjetos[SAMS_MAX_OBJETOS];
+new gObjetos[SAMSP_MAX_OBJETOS];
 new gTotalObjetos;
-new Float:gRemovidos[SAMS_MAX_REMOVIDOS][4];
-new gRemovidosModelo[SAMS_MAX_REMOVIDOS];
+new Float:gRemovidos[SAMSP_MAX_REMOVIDOS][4];
+new gRemovidosModelo[SAMSP_MAX_REMOVIDOS];
 new gTotalRemovidos;
-new gVeiculos[SAMS_MAX_VEICULOS];
+new gVeiculos[SAMSP_MAX_VEICULOS];
 new gTotalVeiculos;
 new gTotalActors;
-new gActors[SAMS_MAX_ACTORS];
+new gActors[SAMSP_MAX_ACTORS];
 
-new Text3D:gLabels[SAMS_MAX_LABELS];
+new Text3D:gLabels[SAMSP_MAX_LABELS];
 new gTotalLabels;
-new gPickups[SAMS_MAX_PICKUPS];
+new gPickups[SAMSP_MAX_PICKUPS];
 new gTotalPickups;
-new gGangZones[SAMS_MAX_GANGZONES];
-new gGangZoneColors[SAMS_MAX_GANGZONES];
+new gGangZones[SAMSP_MAX_GANGZONES];
+new gGangZoneColors[SAMSP_MAX_GANGZONES];
 new gTotalGangZones;
-new Text:gTextDraws[SAMS_MAX_TEXTDRAWS];
+new Text:gTextDraws[SAMSP_MAX_TEXTDRAWS];
 new gTotalTextDraws;
 
-enum E_SAMS_ACTOR_ANIM
+enum E_SAMSP_ACTOR_ANIM
 {
     bool:act_hasAnim,
     act_lib[32],
@@ -86,7 +86,7 @@ enum E_SAMS_ACTOR_ANIM
     bool:act_freeze,
     act_time
 }
-new gActorAnim[SAMS_MAX_ACTORS][E_SAMS_ACTOR_ANIM];
+new gActorAnim[SAMSP_MAX_ACTORS][E_SAMSP_ACTOR_ANIM];
 new gAnimLibs[64][32];
 new gTotalAnimLibs = 0;
 new gIgnorados;
@@ -108,7 +108,7 @@ main()
 }
 
 // Copia o campo número "campo" (separado por |) da linha para "destino"
-stock SAMS_Campo(const linha[], campo, destino[], tamanho)
+stock SAMSP_Campo(const linha[], campo, destino[], tamanho)
 {
     new atual = 0, i = 0, j = 0;
     destino[0] = EOS;
@@ -133,7 +133,7 @@ stock SAMS_Campo(const linha[], campo, destino[], tamanho)
 }
 
 // Tudo a partir do campo número "campo" (usado no texto, que pode conter |)
-stock SAMS_Resto(const linha[], campo, destino[], tamanho)
+stock SAMSP_Resto(const linha[], campo, destino[], tamanho)
 {
     new atual = 0, i = 0, j = 0;
     destino[0] = EOS;
@@ -161,24 +161,24 @@ stock SAMS_Resto(const linha[], campo, destino[], tamanho)
     return j;
 }
 
-stock Float:SAMS_Float(const linha[], campo)
+stock Float:SAMSP_Float(const linha[], campo)
 {
     new valor[32];
-    SAMS_Campo(linha, campo, valor, sizeof(valor));
+    SAMSP_Campo(linha, campo, valor, sizeof(valor));
     return floatstr(valor);
 }
 
-stock SAMS_Int(const linha[], campo)
+stock SAMSP_Int(const linha[], campo)
 {
     new valor[32];
-    SAMS_Campo(linha, campo, valor, sizeof(valor));
+    SAMSP_Campo(linha, campo, valor, sizeof(valor));
     return strval(valor);
 }
 
-stock SAMS_HexOrInt(const linha[], campo)
+stock SAMSP_HexOrInt(const linha[], campo)
 {
     new valor[32];
-    SAMS_Campo(linha, campo, valor, sizeof(valor));
+    SAMSP_Campo(linha, campo, valor, sizeof(valor));
     if (valor[0] == '0' && (valor[1] == 'x' || valor[1] == 'X'))
     {
         new ret = 0, i = 2;
@@ -198,13 +198,9 @@ stock SAMS_HexOrInt(const linha[], campo)
     return strval(valor);
 }
 
-// Envia mensagem direta em ANSI (Windows-1252) ao jogador
-stock SAMS_SendClientMessage(playerid, color, const msg[])
-{
-    return SendClientMessage(playerid, color, msg);
-}
 
-stock SAMS_LimparLinha(linha[])
+
+stock SAMSP_LimparLinha(linha[])
 {
     new n = strlen(linha);
     while (n > 0 && (linha[n - 1] == '\r' || linha[n - 1] == '\n'))
@@ -214,19 +210,19 @@ stock SAMS_LimparLinha(linha[])
     }
 }
 
-stock SAMS_ToLower(c)
+stock SAMSP_ToLower(c)
 {
     if (c >= 'A' && c <= 'Z') return c + ('a' - 'A');
     return c;
 }
 
-stock SAMS_ToUpper(c)
+stock SAMSP_ToUpper(c)
 {
     if (c >= 'a' && c <= 'z') return c - ('a' - 'A');
     return c;
 }
 
-stock SAMS_NormalizeSprite(texto[], maxlen)
+stock SAMSP_NormalizeSprite(texto[], maxlen)
 {
     new start = 0;
     while (texto[start] == ' ' || texto[start] == '\t' || texto[start] == '"' || texto[start] == '\'') start++;
@@ -273,11 +269,11 @@ stock SAMS_NormalizeSprite(texto[], maxlen)
 
     new lib[64], tex[64];
     new i = 0;
-    for (; i < colon && i < sizeof(lib) - 1; i++) lib[i] = SAMS_ToLower(texto[i]);
+    for (; i < colon && i < sizeof(lib) - 1; i++) lib[i] = SAMSP_ToLower(texto[i]);
     lib[i] = EOS;
 
     new j = 0;
-    for (i = colon + 1; texto[i] != EOS && j < sizeof(tex) - 1; i++, j++) tex[j] = SAMS_ToLower(texto[i]);
+    for (i = colon + 1; texto[i] != EOS && j < sizeof(tex) - 1; i++, j++) tex[j] = SAMSP_ToLower(texto[i]);
     tex[j] = EOS;
 
     // Normalização de bibliotecas conhecidas do SA-MP
@@ -325,19 +321,19 @@ stock SAMS_NormalizeSprite(texto[], maxlen)
     }
     else if (lib[0] == 'l' && lib[1] == 'd' && lib[2] == '_')
     {
-        for (new k = 0; lib[k] != EOS; k++) lib[k] = SAMS_ToUpper(lib[k]);
+        for (new k = 0; lib[k] != EOS; k++) lib[k] = SAMSP_ToUpper(lib[k]);
     }
 
     format(texto, maxlen, "%s:%s", lib, tex);
 }
 
 
-stock SAMS_CarregarMapa()
+stock SAMSP_CarregarMapa()
 {
-    new File:arquivo = fopen(SAMS_ARQUIVO, io_read);
+    new File:arquivo = fopen(SAMSP_ARQUIVO, io_read);
     if (!arquivo)
     {
-        print("[SA Map Studio] Não encontrei " SAMS_ARQUIVO);
+        print("[SA Map Studio] Não encontrei " SAMSP_ARQUIVO);
         return 0;
     }
     new linha[1024], tipo[4], txd[64], textura[64], fonte[64], texto[900];
@@ -346,66 +342,66 @@ stock SAMS_CarregarMapa()
 
     while (fread(arquivo, linha))
     {
-        SAMS_LimparLinha(linha);
+        SAMSP_LimparLinha(linha);
         new pipePos = strfind(linha, "|");
         if (pipePos < 1 || pipePos > 3) continue;
-        SAMS_Campo(linha, 0, tipo, sizeof(tipo));
+        SAMSP_Campo(linha, 0, tipo, sizeof(tipo));
         switch (tipo[0])
         {
             case 'X':
             {
-                gUseStreamer = (SAMS_Int(linha, 1) != 0);
+                gUseStreamer = (SAMSP_Int(linha, 1) != 0);
             }
             case 'S':
             {
-                gSpawn[0] = SAMS_Float(linha, 1);
-                gSpawn[1] = SAMS_Float(linha, 2);
-                gSpawn[2] = SAMS_Float(linha, 3);
-                gSpawn[3] = SAMS_Float(linha, 4);
-                gSpawnInterior = SAMS_Int(linha, 5);
-                gSpawnMundo = SAMS_Int(linha, 6);
-                gJetpack = (SAMS_Int(linha, 7) != 0);
+                gSpawn[0] = SAMSP_Float(linha, 1);
+                gSpawn[1] = SAMSP_Float(linha, 2);
+                gSpawn[2] = SAMSP_Float(linha, 3);
+                gSpawn[3] = SAMSP_Float(linha, 4);
+                gSpawnInterior = SAMSP_Int(linha, 5);
+                gSpawnMundo = SAMSP_Int(linha, 6);
+                gJetpack = (SAMSP_Int(linha, 7) != 0);
             }
             case 'E':
             {
-                gClima = SAMS_Int(linha, 1);
+                gClima = SAMSP_Int(linha, 1);
                 if (gClima < 0 || gClima > 45) gClima = 10;
-                gHora = SAMS_Int(linha, 2);
+                gHora = SAMSP_Int(linha, 2);
                 if (gHora < 0 || gHora > 23) gHora = 10;
-                gMinuto = SAMS_Int(linha, 3);
+                gMinuto = SAMSP_Int(linha, 3);
                 if (gMinuto < 0 || gMinuto > 59) gMinuto = 0;
             }
             case 'C':
             {
-                gMapCenter[0] = SAMS_Float(linha, 1);
-                gMapCenter[1] = SAMS_Float(linha, 2);
-                gMapCenter[2] = SAMS_Float(linha, 3);
+                gMapCenter[0] = SAMSP_Float(linha, 1);
+                gMapCenter[1] = SAMSP_Float(linha, 2);
+                gMapCenter[2] = SAMSP_Float(linha, 3);
                 gHasMapCenter = true;
             }
             case 'O':
             {
-                if (gTotalObjetos >= SAMS_MAX_OBJETOS)
+                if (gTotalObjetos >= SAMSP_MAX_OBJETOS)
                 {
                     gIgnorados++;
                     continue;
                 }
-                new Float:ox = SAMS_Float(linha, 2);
-                new Float:oy = SAMS_Float(linha, 3);
-                new Float:oz = SAMS_Float(linha, 4);
-                new Float:orx = SAMS_Float(linha, 5);
-                new Float:ory = SAMS_Float(linha, 6);
-                new Float:orz = SAMS_Float(linha, 7);
-                new Float:odist = SAMS_Float(linha, 8);
+                new Float:ox = SAMSP_Float(linha, 2);
+                new Float:oy = SAMSP_Float(linha, 3);
+                new Float:oz = SAMSP_Float(linha, 4);
+                new Float:orx = SAMSP_Float(linha, 5);
+                new Float:ory = SAMSP_Float(linha, 6);
+                new Float:orz = SAMSP_Float(linha, 7);
+                new Float:odist = SAMSP_Float(linha, 8);
                 if (odist <= 0.0) odist = 300.0;
 
                 new id;
                 if (gUseStreamer)
                 {
-                    id = _:CreateDynamicObject(SAMS_Int(linha, 1), ox, oy, oz, orx, ory, orz, -1, -1, -1, (odist > 300.0 ? odist : 300.0), odist);
+                    id = _:CreateDynamicObject(SAMSP_Int(linha, 1), ox, oy, oz, orx, ory, orz, -1, -1, -1, (odist > 300.0 ? odist : 300.0), odist);
                 }
                 else
                 {
-                    id = CreateObject(SAMS_Int(linha, 1), ox, oy, oz, orx, ory, orz, odist);
+                    id = CreateObject(SAMSP_Int(linha, 1), ox, oy, oz, orx, ory, orz, odist);
                 }
                 gObjetos[gTotalObjetos] = id;
                 gTotalObjetos++;
@@ -418,72 +414,72 @@ stock SAMS_CarregarMapa()
             }
             case 'M':
             {
-                new indice = SAMS_Int(linha, 1);
+                new indice = SAMSP_Int(linha, 1);
                 if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
-                SAMS_Campo(linha, 4, txd, sizeof(txd));
-                SAMS_Campo(linha, 5, textura, sizeof(textura));
+                SAMSP_Campo(linha, 4, txd, sizeof(txd));
+                SAMSP_Campo(linha, 5, textura, sizeof(textura));
                 if (gUseStreamer)
                 {
-                    SetDynamicObjectMaterial(STREAMER_TAG_OBJECT:gObjetos[indice], SAMS_Int(linha, 2), SAMS_Int(linha, 3), txd, textura, SAMS_Int(linha, 6));
+                    SetDynamicObjectMaterial(STREAMER_TAG_OBJECT:gObjetos[indice], SAMSP_Int(linha, 2), SAMSP_Int(linha, 3), txd, textura, SAMSP_Int(linha, 6));
                 }
                 else
                 {
-                    SetObjectMaterial(gObjetos[indice], SAMS_Int(linha, 2), SAMS_Int(linha, 3), txd, textura, SAMS_Int(linha, 6));
+                    SetObjectMaterial(gObjetos[indice], SAMSP_Int(linha, 2), SAMSP_Int(linha, 3), txd, textura, SAMSP_Int(linha, 6));
                 }
             }
             case 'T':
             {
-                new indice = SAMS_Int(linha, 1);
+                new indice = SAMSP_Int(linha, 1);
                 if (indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
-                SAMS_Campo(linha, 9, fonte, sizeof(fonte));
-                SAMS_Resto(linha, 10, texto, sizeof(texto));
+                SAMSP_Campo(linha, 9, fonte, sizeof(fonte));
+                SAMSP_Resto(linha, 10, texto, sizeof(texto));
                 if (gUseStreamer)
                 {
-                    SetDynamicObjectMaterialText(STREAMER_TAG_OBJECT:gObjetos[indice], SAMS_Int(linha, 2), texto, SAMS_Int(linha, 3), fonte,
-                        SAMS_Int(linha, 4), bool:SAMS_Int(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), SAMS_Int(linha, 8));
+                    SetDynamicObjectMaterialText(STREAMER_TAG_OBJECT:gObjetos[indice], SAMSP_Int(linha, 2), texto, SAMSP_Int(linha, 3), fonte,
+                        SAMSP_Int(linha, 4), bool:SAMSP_Int(linha, 5), SAMSP_Int(linha, 6), SAMSP_Int(linha, 7), SAMSP_Int(linha, 8));
                 }
                 else
                 {
-                    SetObjectMaterialText(gObjetos[indice], texto, SAMS_Int(linha, 2), SAMS_Int(linha, 3), fonte,
-                        SAMS_Int(linha, 4), bool:SAMS_Int(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), SAMS_Int(linha, 8));
+                    SetObjectMaterialText(gObjetos[indice], texto, SAMSP_Int(linha, 2), SAMSP_Int(linha, 3), fonte,
+                        SAMSP_Int(linha, 4), bool:SAMSP_Int(linha, 5), SAMSP_Int(linha, 6), SAMSP_Int(linha, 7), SAMSP_Int(linha, 8));
                 }
             }
             case 'R':
             {
-                if (gTotalRemovidos >= SAMS_MAX_REMOVIDOS) continue;
-                gRemovidosModelo[gTotalRemovidos] = SAMS_Int(linha, 1);
-                gRemovidos[gTotalRemovidos][0] = SAMS_Float(linha, 2);
-                gRemovidos[gTotalRemovidos][1] = SAMS_Float(linha, 3);
-                gRemovidos[gTotalRemovidos][2] = SAMS_Float(linha, 4);
-                gRemovidos[gTotalRemovidos][3] = SAMS_Float(linha, 5);
+                if (gTotalRemovidos >= SAMSP_MAX_REMOVIDOS) continue;
+                gRemovidosModelo[gTotalRemovidos] = SAMSP_Int(linha, 1);
+                gRemovidos[gTotalRemovidos][0] = SAMSP_Float(linha, 2);
+                gRemovidos[gTotalRemovidos][1] = SAMSP_Float(linha, 3);
+                gRemovidos[gTotalRemovidos][2] = SAMSP_Float(linha, 4);
+                gRemovidos[gTotalRemovidos][3] = SAMSP_Float(linha, 5);
                 gTotalRemovidos++;
             }
             case 'V':
             {
                 if (tipo[1] == 'P')
                 {
-                    new vehIdx = SAMS_Int(linha, 1);
+                    new vehIdx = SAMSP_Int(linha, 1);
                     if (vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
                     {
-                        ChangeVehiclePaintjob(gVeiculos[vehIdx], SAMS_Int(linha, 2));
+                        ChangeVehiclePaintjob(gVeiculos[vehIdx], SAMSP_Int(linha, 2));
                     }
                     continue;
                 }
                 if (tipo[1] == 'C')
                 {
-                    new vehIdx = SAMS_Int(linha, 1);
+                    new vehIdx = SAMSP_Int(linha, 1);
                     if (vehIdx >= 0 && vehIdx < gTotalVeiculos && gVeiculos[vehIdx] != INVALID_VEHICLE_ID)
                     {
-                        AddVehicleComponent(gVeiculos[vehIdx], SAMS_Int(linha, 2));
+                        AddVehicleComponent(gVeiculos[vehIdx], SAMSP_Int(linha, 2));
                     }
                     continue;
                 }
-                if (gTotalVeiculos >= SAMS_MAX_VEICULOS) continue;
-                new Float:vx = SAMS_Float(linha, 2);
-                new Float:vy = SAMS_Float(linha, 3);
-                new Float:vz = SAMS_Float(linha, 4);
-                new veh = CreateVehicle(SAMS_Int(linha, 1), vx, vy, vz,
-                    SAMS_Float(linha, 5), SAMS_Int(linha, 6), SAMS_Int(linha, 7), -1);
+                if (gTotalVeiculos >= SAMSP_MAX_VEICULOS) continue;
+                new Float:vx = SAMSP_Float(linha, 2);
+                new Float:vy = SAMSP_Float(linha, 3);
+                new Float:vz = SAMSP_Float(linha, 4);
+                new veh = CreateVehicle(SAMSP_Int(linha, 1), vx, vy, vz,
+                    SAMSP_Float(linha, 5), SAMSP_Int(linha, 6), SAMSP_Int(linha, 7), -1);
                 gVeiculos[gTotalVeiculos] = veh;
                 gTotalVeiculos++;
 
@@ -494,31 +490,31 @@ stock SAMS_CarregarMapa()
             }
             case 'A':
             {
-                if (gTotalActors >= SAMS_MAX_ACTORS) continue;
-                new skin = SAMS_Int(linha, 1);
-                new Float:ax = SAMS_Float(linha, 2);
-                new Float:ay = SAMS_Float(linha, 3);
-                new Float:az = SAMS_Float(linha, 4);
-                new Float:aa = SAMS_Float(linha, 5);
+                if (gTotalActors >= SAMSP_MAX_ACTORS) continue;
+                new skin = SAMSP_Int(linha, 1);
+                new Float:ax = SAMSP_Float(linha, 2);
+                new Float:ay = SAMSP_Float(linha, 3);
+                new Float:az = SAMSP_Float(linha, 4);
+                new Float:aa = SAMSP_Float(linha, 5);
                 new actorid = CreateActor(skin, ax, ay, az, aa);
                 if (actorid != INVALID_ACTOR_ID)
                 {
-                    new world = SAMS_Int(linha, 6);
+                    new world = SAMSP_Int(linha, 6);
                     if (world != 0) SetActorVirtualWorld(actorid, world);
-                    new inv = SAMS_Int(linha, 7);
+                    new inv = SAMSP_Int(linha, 7);
                     if (inv != 0) SetActorInvulnerable(actorid, true);
                     new animLib[32], animName[32];
-                    SAMS_Campo(linha, 8, animLib, sizeof(animLib));
-                    SAMS_Campo(linha, 9, animName, sizeof(animName));
+                    SAMSP_Campo(linha, 8, animLib, sizeof(animLib));
+                    SAMSP_Campo(linha, 9, animName, sizeof(animName));
                     if (animLib[0] != EOS && animName[0] != EOS)
                     {
-                        new Float:delta = SAMS_Float(linha, 10);
+                        new Float:delta = SAMSP_Float(linha, 10);
                         if (delta <= 0.0) delta = 4.1;
-                        new loop = SAMS_Int(linha, 11);
-                        new lockx = SAMS_Int(linha, 12);
-                        new locky = SAMS_Int(linha, 13);
-                        new freeze = SAMS_Int(linha, 14);
-                        new time = SAMS_Int(linha, 15);
+                        new loop = SAMSP_Int(linha, 11);
+                        new lockx = SAMSP_Int(linha, 12);
+                        new locky = SAMSP_Int(linha, 13);
+                        new freeze = SAMSP_Int(linha, 14);
+                        new time = SAMSP_Int(linha, 15);
 
                         gActorAnim[gTotalActors][act_hasAnim] = true;
                         format(gActorAnim[gTotalActors][act_lib], 32, "%s", animLib);
@@ -562,16 +558,16 @@ stock SAMS_CarregarMapa()
             }
             case 'L':
             {
-                if (gTotalLabels >= SAMS_MAX_LABELS) continue;
-                new Float:lx = SAMS_Float(linha, 1);
-                new Float:ly = SAMS_Float(linha, 2);
-                new Float:lz = SAMS_Float(linha, 3);
-                new Float:ldist = SAMS_Float(linha, 4);
+                if (gTotalLabels >= SAMSP_MAX_LABELS) continue;
+                new Float:lx = SAMSP_Float(linha, 1);
+                new Float:ly = SAMSP_Float(linha, 2);
+                new Float:lz = SAMSP_Float(linha, 3);
+                new Float:ldist = SAMSP_Float(linha, 4);
                 if (ldist <= 0.0) ldist = 50.0;
-                new lcolor = SAMS_HexOrInt(linha, 5);
-                new lworld = SAMS_Int(linha, 6);
-                new ltestlos = SAMS_Int(linha, 7);
-                SAMS_Resto(linha, 8, texto, sizeof(texto));
+                new lcolor = SAMSP_HexOrInt(linha, 5);
+                new lworld = SAMSP_Int(linha, 6);
+                new ltestlos = SAMSP_Int(linha, 7);
+                SAMSP_Resto(linha, 8, texto, sizeof(texto));
                 if (gUseStreamer)
                 {
                     new Text3D:lbl = Text3D:CreateDynamic3DTextLabel(texto, lcolor, lx, ly, lz, ldist, INVALID_PLAYER_ID, INVALID_VEHICLE_ID, ltestlos, lworld);
@@ -586,14 +582,14 @@ stock SAMS_CarregarMapa()
             }
             case 'P':
             {
-                if (gTotalPickups >= SAMS_MAX_PICKUPS) continue;
-                new pmodel = SAMS_Int(linha, 1);
-                new ptype = SAMS_Int(linha, 2);
+                if (gTotalPickups >= SAMSP_MAX_PICKUPS) continue;
+                new pmodel = SAMSP_Int(linha, 1);
+                new ptype = SAMSP_Int(linha, 2);
                 if (ptype <= 0) ptype = 1;
-                new Float:px = SAMS_Float(linha, 3);
-                new Float:py = SAMS_Float(linha, 4);
-                new Float:pz = SAMS_Float(linha, 5);
-                new pworld = SAMS_Int(linha, 6);
+                new Float:px = SAMSP_Float(linha, 3);
+                new Float:py = SAMSP_Float(linha, 4);
+                new Float:pz = SAMSP_Float(linha, 5);
+                new pworld = SAMSP_Int(linha, 6);
                 if (gUseStreamer)
                 {
                     new pick = _:CreateDynamicPickup(pmodel, ptype, px, py, pz, pworld);
@@ -608,12 +604,12 @@ stock SAMS_CarregarMapa()
             }
             case 'G':
             {
-                if (gTotalGangZones >= SAMS_MAX_GANGZONES) continue;
-                new Float:gminx = SAMS_Float(linha, 1);
-                new Float:gminy = SAMS_Float(linha, 2);
-                new Float:gmaxx = SAMS_Float(linha, 3);
-                new Float:maxy = SAMS_Float(linha, 4);
-                new gcolor = SAMS_HexOrInt(linha, 5);
+                if (gTotalGangZones >= SAMSP_MAX_GANGZONES) continue;
+                new Float:gminx = SAMSP_Float(linha, 1);
+                new Float:gminy = SAMSP_Float(linha, 2);
+                new Float:gmaxx = SAMSP_Float(linha, 3);
+                new Float:maxy = SAMSP_Float(linha, 4);
+                new gcolor = SAMSP_HexOrInt(linha, 5);
                 new gz = GangZoneCreate(gminx, gminy, gmaxx, maxy);
                 if (gz != -1)
                 {
@@ -624,33 +620,33 @@ stock SAMS_CarregarMapa()
             }
             case 'D':
             {
-                if (gTotalTextDraws >= SAMS_MAX_TEXTDRAWS) continue;
-                new Float:tdx = SAMS_Float(linha, 1);
-                new Float:tdy = SAMS_Float(linha, 2);
-                new tdfont = SAMS_Int(linha, 3);
-                new Float:tdletx = SAMS_Float(linha, 4);
-                new Float:tdlety = SAMS_Float(linha, 5);
-                new Float:tdsizex = SAMS_Float(linha, 6);
-                new Float:tdsizey = SAMS_Float(linha, 7);
-                new tdcol = SAMS_HexOrInt(linha, 8);
-                new tdboxcol = SAMS_HexOrInt(linha, 9);
-                new tdbgcol = SAMS_HexOrInt(linha, 10);
-                new tdoutline = SAMS_Int(linha, 11);
-                new tdshadow = SAMS_Int(linha, 12);
-                new tdalign = SAMS_Int(linha, 13);
-                new tdusebox = SAMS_Int(linha, 14);
-                new tdprop = SAMS_Int(linha, 15);
-                new tdselect = SAMS_Int(linha, 16);
-                new tdmodel = SAMS_Int(linha, 17);
-                new Float:tdrotx = SAMS_Float(linha, 18);
-                new Float:tdroty = SAMS_Float(linha, 19);
-                new Float:tdrotz = SAMS_Float(linha, 20);
-                new Float:tdzoom = SAMS_Float(linha, 21);
-                SAMS_Resto(linha, 22, texto, sizeof(texto));
+                if (gTotalTextDraws >= SAMSP_MAX_TEXTDRAWS) continue;
+                new Float:tdx = SAMSP_Float(linha, 1);
+                new Float:tdy = SAMSP_Float(linha, 2);
+                new tdfont = SAMSP_Int(linha, 3);
+                new Float:tdletx = SAMSP_Float(linha, 4);
+                new Float:tdlety = SAMSP_Float(linha, 5);
+                new Float:tdsizex = SAMSP_Float(linha, 6);
+                new Float:tdsizey = SAMSP_Float(linha, 7);
+                new tdcol = SAMSP_HexOrInt(linha, 8);
+                new tdboxcol = SAMSP_HexOrInt(linha, 9);
+                new tdbgcol = SAMSP_HexOrInt(linha, 10);
+                new tdoutline = SAMSP_Int(linha, 11);
+                new tdshadow = SAMSP_Int(linha, 12);
+                new tdalign = SAMSP_Int(linha, 13);
+                new tdusebox = SAMSP_Int(linha, 14);
+                new tdprop = SAMSP_Int(linha, 15);
+                new tdselect = SAMSP_Int(linha, 16);
+                new tdmodel = SAMSP_Int(linha, 17);
+                new Float:tdrotx = SAMSP_Float(linha, 18);
+                new Float:tdroty = SAMSP_Float(linha, 19);
+                new Float:tdrotz = SAMSP_Float(linha, 20);
+                new Float:tdzoom = SAMSP_Float(linha, 21);
+                SAMSP_Resto(linha, 22, texto, sizeof(texto));
 
                 if (tdfont == 4)
                 {
-                    SAMS_NormalizeSprite(texto, sizeof(texto));
+                    SAMSP_NormalizeSprite(texto, sizeof(texto));
                     new Text:td = TextDrawCreate(tdx, tdy, texto);
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
@@ -768,7 +764,7 @@ public OnGameModeInit()
     UsePlayerPedAnims();
     DisableInteriorEnterExits();
     ShowPlayerMarkers(PLAYER_MARKERS_MODE_OFF);
-    SAMS_CarregarMapa();
+    SAMSP_CarregarMapa();
     AddPlayerClass(0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SetWorldTime(gHora);
     SetWeather(gClima);
@@ -776,7 +772,7 @@ public OnGameModeInit()
 }
 
 // Pré-carrega todas as bibliotecas IFP necessárias no cliente do jogador
-stock SAMS_PreloadAllAnims(playerid)
+stock SAMSP_PreloadAllAnims(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
     for (new i = 0; i < gTotalAnimLibs; i++)
@@ -787,11 +783,11 @@ stock SAMS_PreloadAllAnims(playerid)
 }
 
 // Sincroniza e reaplica as animaçõesções de todos os actors para o jogador
-forward SAMS_SyncActorAnims(playerid);
-public SAMS_SyncActorAnims(playerid)
+forward SAMSP_SyncActorAnims(playerid);
+public SAMSP_SyncActorAnims(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
-    SAMS_PreloadAllAnims(playerid);
+    SAMSP_PreloadAllAnims(playerid);
     for (new i = 0; i < gTotalActors; i++)
     {
         if (gActorAnim[i][act_hasAnim])
@@ -849,7 +845,7 @@ public OnPlayerConnect(playerid)
     {
         TextDrawShowForPlayer(playerid, gTextDraws[i]);
     }
-    SAMS_PreloadAllAnims(playerid);
+    SAMSP_PreloadAllAnims(playerid);
     return 1;
 }
 
@@ -870,12 +866,12 @@ public OnPlayerRequestClass(playerid, classid)
 {
     SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SpawnPlayer(playerid);
-    SetTimerEx("SAMS_Spawnar", 150, false, "i", playerid);
+    SetTimerEx("SAMSP_Spawnar", 150, false, "i", playerid);
     return 1;
 }
 
-forward SAMS_Spawnar(playerid);
-public SAMS_Spawnar(playerid)
+forward SAMSP_Spawnar(playerid);
+public SAMSP_Spawnar(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
     if (!gPlayerSpawned[playerid])
@@ -899,7 +895,7 @@ public OnPlayerDeath(playerid, killerid, reason)
     return 1;
 }
 
-stock SAMS_IrParaSpawn(playerid)
+stock SAMSP_IrParaSpawn(playerid)
 {
     SetPlayerInterior(playerid, gSpawnInterior);
     SetPlayerVirtualWorld(playerid, gSpawnMundo);
@@ -909,8 +905,8 @@ stock SAMS_IrParaSpawn(playerid)
     if (gJetpack) SetPlayerSpecialAction(playerid, SPECIAL_ACTION_USEJETPACK);
 }
 
-forward SAMS_ShowAllTextDraws(playerid);
-public SAMS_ShowAllTextDraws(playerid)
+forward SAMSP_ShowAllTextDraws(playerid);
+public SAMSP_ShowAllTextDraws(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
     for (new i = 0; i < gTotalTextDraws; i++)
@@ -926,11 +922,11 @@ public OnPlayerSpawn(playerid)
     gPlayerSpawned[playerid] = true;
     if (gReturningFromFly[playerid])
     {
-        SAMS_RestaurarPosVoo(playerid);
+        SAMSP_RestaurarPosVoo(playerid);
         return 1;
     }
 
-    SAMS_IrParaSpawn(playerid);
+    SAMSP_IrParaSpawn(playerid);
     SetPlayerTime(playerid, gHora, gMinuto);
     SetPlayerWeather(playerid, gClima);
     if (gUseStreamer)
@@ -941,14 +937,14 @@ public OnPlayerSpawn(playerid)
     {
         GangZoneShowForPlayer(playerid, gGangZones[i], gGangZoneColors[i]);
     }
-    SAMS_ShowAllTextDraws(playerid);
-    SetTimerEx("SAMS_ShowAllTextDraws", 400, false, "i", playerid);
-    SetTimerEx("SAMS_ShowAllTextDraws", 1200, false, "i", playerid);
-    SAMS_PreloadAllAnims(playerid);
-    SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
-    SetTimerEx("SAMS_SyncActorAnims", 1500, false, "i", playerid);
-    SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "SA Map Studio: teste do mapa.");
-    SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Comandos: /fly (/voar)  /map (/mapa)  /w [clima]  /t [hora]  /anim  /jetpack  /v [modelo]  /spawn  /pos");
+    SAMSP_ShowAllTextDraws(playerid);
+    SetTimerEx("SAMSP_ShowAllTextDraws", 400, false, "i", playerid);
+    SetTimerEx("SAMSP_ShowAllTextDraws", 1200, false, "i", playerid);
+    SAMSP_PreloadAllAnims(playerid);
+    SetTimerEx("SAMSP_SyncActorAnims", 500, false, "i", playerid);
+    SetTimerEx("SAMSP_SyncActorAnims", 1500, false, "i", playerid);
+    SendClientMessage(playerid, SAMSP_COR_INFO, "SA Map Studio: teste do mapa.");
+    SendClientMessage(playerid, SAMSP_COR_OK, "Comandos: /fly (/voar)  /map (/mapa)  /w [clima]  /t [hora]  /anim  /jetpack  /v [modelo]  /spawn  /pos");
     return 1;
 }
 
@@ -1061,7 +1057,7 @@ stock IniciarFlyMode(playerid)
     gNoClip[playerid][noclip_udold] = 0;
     gNoClip[playerid][noclip_lrold] = 0;
 
-    SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.");
+    SendClientMessage(playerid, SAMSP_COR_OK, "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.");
     return 1;
 }
 
@@ -1072,12 +1068,12 @@ stock CancelarFlyMode(playerid)
     gNoClip[playerid][noclip_cameramode] = CAMERA_MODE_NONE;
     gReturningFromFly[playerid] = true;
     TogglePlayerSpectating(playerid, false);
-    SetTimerEx("SAMS_RestaurarPosVoo", 150, false, "i", playerid);
+    SetTimerEx("SAMSP_RestaurarPosVoo", 150, false, "i", playerid);
     return 1;
 }
 
-forward SAMS_RestaurarPosVoo(playerid);
-public SAMS_RestaurarPosVoo(playerid)
+forward SAMSP_RestaurarPosVoo(playerid);
+public SAMSP_RestaurarPosVoo(playerid)
 {
     if (!IsPlayerConnected(playerid)) return 0;
     SetPlayerInterior(playerid, gFlySavedInterior[playerid]);
@@ -1086,9 +1082,9 @@ public SAMS_RestaurarPosVoo(playerid)
     SetPlayerFacingAngle(playerid, gFlySavedPos[playerid][3]);
     SetCameraBehindPlayer(playerid);
     gReturningFromFly[playerid] = false;
-    SetTimerEx("SAMS_SyncActorAnims", 500, false, "i", playerid);
-    SetTimerEx("SAMS_ShowAllTextDraws", 300, false, "i", playerid);
-    SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.");
+    SetTimerEx("SAMSP_SyncActorAnims", 500, false, "i", playerid);
+    SetTimerEx("SAMSP_ShowAllTextDraws", 300, false, "i", playerid);
+    SendClientMessage(playerid, SAMSP_COR_INFO, "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.");
     return 1;
 }
 
@@ -1111,8 +1107,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
     // Sincroniza e reaplica animações dos actors
     if (!strcmp(cmdtext, "/anim", true) || !strcmp(cmdtext, "/reanim", true) || !strcmp(cmdtext, "/animar", true))
     {
-        SAMS_SyncActorAnims(playerid);
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Animações dos actors sincronizadas e reaplicadas.");
+        SAMSP_SyncActorAnims(playerid);
+        SendClientMessage(playerid, SAMSP_COR_OK, "Animações dos actors sincronizadas e reaplicadas.");
         return 1;
     }
 
@@ -1123,7 +1119,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             StopPlayerObject(playerid, gNoClip[playerid][noclip_flyobject]);
             SetPlayerObjectPos(playerid, gNoClip[playerid][noclip_flyobject], gMapCenter[0], gMapCenter[1], gMapCenter[2]);
-            SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Câmera teleportada para o centro do mapa.");
+            SendClientMessage(playerid, SAMSP_COR_OK, "Câmera teleportada para o centro do mapa.");
             return 1;
         }
 
@@ -1141,7 +1137,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SetPlayerPos(playerid, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
             SetCameraBehindPlayer(playerid);
         }
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "Teleportado para o centro do mapa em teste.");
+        SendClientMessage(playerid, SAMSP_COR_OK, "Teleportado para o centro do mapa em teste.");
         return 1;
     }
 
@@ -1153,7 +1149,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (!strcmp(cmdtext, "/spawn", true))
     {
         if (gNoClip[playerid][noclip_cameramode] == CAMERA_MODE_FLY) CancelarFlyMode(playerid);
-        SAMS_IrParaSpawn(playerid);
+        SAMSP_IrParaSpawn(playerid);
         return 1;
     }
     if (!strcmp(cmdtext, "/pos", true))
@@ -1162,7 +1158,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         GetPlayerPos(playerid, x, y, z);
         GetPlayerFacingAngle(playerid, a);
         format(msg, sizeof(msg), "Posição: %.4f, %.4f, %.4f  Ângulo: %.1f  Interior: %d", x, y, z, a, GetPlayerInterior(playerid));
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, msg);
+        SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] %s", msg);
         return 1;
     }
@@ -1171,7 +1167,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new modelo = (cmdtext[2] == ' ') ? strval(cmdtext[3]) : 411;
         if (modelo < 400 || modelo > 611)
         {
-            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Use /v [modelo], de 400 a 611.");
+            SendClientMessage(playerid, SAMSP_COR_INFO, "Use /v [modelo], de 400 a 611.");
             return 1;
         }
         new Float:x, Float:y, Float:z, Float:a;
@@ -1200,14 +1196,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             new msg[128];
             format(msg, sizeof(msg), "Uso: /w [0 a 45] (ou /weather, /clima) - Clima atual: %d", gClima);
-            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, msg);
+            SendClientMessage(playerid, SAMSP_COR_INFO, msg);
             return 1;
         }
 
         new novoClima = strval(cmdtext[paramIdx]);
         if (novoClima < 0 || novoClima > 255)
         {
-            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "ID de clima inválido! Escolha um valor entre 0 e 45.");
+            SendClientMessage(playerid, SAMSP_COR_INFO, "ID de clima inválido! Escolha um valor entre 0 e 45.");
             return 1;
         }
 
@@ -1220,7 +1216,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         new msg[128];
         format(msg, sizeof(msg), "Clima alterado para %d.", gClima);
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, msg);
+        SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] Clima alterado para %d por player %d.", gClima, playerid);
         return 1;
     }
@@ -1243,7 +1239,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             new msg[128];
             format(msg, sizeof(msg), "Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horário atual: %02d:%02d", gHora, gMinuto);
-            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, msg);
+            SendClientMessage(playerid, SAMSP_COR_INFO, msg);
             return 1;
         }
 
@@ -1275,7 +1271,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59)
         {
-            SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
+            SendClientMessage(playerid, SAMSP_COR_INFO, "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
             return 1;
         }
 
@@ -1289,7 +1285,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         new msg[128];
         format(msg, sizeof(msg), "Horário alterado para %02d:%02d.", gHora, gMinuto);
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, msg);
+        SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] Horário alterado para %02d:%02d por player %d.", gHora, gMinuto, playerid);
         return 1;
     }
@@ -1297,14 +1293,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
     // Ajuda e lista de comandos
     if (!strcmp(cmdtext, "/ajuda", true) || !strcmp(cmdtext, "/help", true) || !strcmp(cmdtext, "/comandos", true))
     {
-        SAMS_SendClientMessage(playerid, SAMS_COR_INFO, "Comandos do servidor de teste:");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /fly (/voar) - Alternar voo livre da câmera");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /map (/mapa) - Teleportar ao centro do mapa em teste");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /w [0-45] - Alterar clima (ex: /w 10)");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /v [modelo] - Criar veículo (ex: /v 411)");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /anim - Ressincronizar animações dos actors");
-        SAMS_SendClientMessage(playerid, SAMS_COR_OK, "  /jetpack, /spawn, /pos - Utilidades gerais");
+        SendClientMessage(playerid, SAMSP_COR_INFO, "Comandos do servidor de teste:");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /fly (/voar) - Alternar voo livre da câmera");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /map (/mapa) - Teleportar ao centro do mapa em teste");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /w [0-45] - Alterar clima (ex: /w 10)");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /v [modelo] - Criar veículo (ex: /v 411)");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /anim - Ressincronizar animações dos actors");
+        SendClientMessage(playerid, SAMSP_COR_OK, "  /jetpack, /spawn, /pos - Utilidades gerais");
         return 1;
     }
     return 0;
