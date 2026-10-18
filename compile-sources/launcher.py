@@ -48,8 +48,30 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
     root.configure(bg="#1c2228")
     root.resizable(False, False)
 
+    # Carrega frames do ícone de carregamento animado
+    frames_dir = None
+    for cand in (
+        os.path.join(getattr(sys, "_MEIPASS", ""), "launcher_frames"),
+        os.path.join(exe_dir, "launcher_frames"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "launcher_frames"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "compile-sources", "launcher_frames"),
+    ):
+        if os.path.isdir(cand):
+            frames_dir = cand
+            break
+
+    frames = []
+    if frames_dir:
+        for i in range(50):
+            fp = os.path.join(frames_dir, f"frame_{i:02d}.png")
+            if os.path.isfile(fp):
+                try:
+                    frames.append(tk.PhotoImage(file=fp))
+                except Exception:
+                    pass
+
     # Dimensões e centralização
-    w, h = 460, 210
+    w, h = 440, (295 if frames else 210)
     sw = root.winfo_screenwidth()
     sh = root.winfo_screenheight()
     x = max(0, (sw - w) // 2)
@@ -85,14 +107,22 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
     )
 
     # Componentes Visuais
+    if frames:
+        icon_label = tk.Label(root, image=frames[0], bg="#1c2228")
+        icon_label.pack(pady=(16, 6))
+        title_pady = (0, 2)
+    else:
+        icon_label = None
+        title_pady = (22, 4)
+
     title_label = tk.Label(
         root,
         text="SA Map Studio",
-        font=("Segoe UI", 16, "bold"),
+        font=("Segoe UI", 15, "bold"),
         fg="#e6e2d8",
         bg="#1c2228",
     )
-    title_label.pack(pady=(22, 4))
+    title_label.pack(pady=title_pady)
 
     sub_label = tk.Label(
         root,
@@ -101,7 +131,7 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
         fg="#a8b1b8",
         bg="#1c2228",
     )
-    sub_label.pack(pady=(0, 16))
+    sub_label.pack(pady=(0, 12))
 
     prog_var = tk.DoubleVar(value=0.0)
     pbar = ttk.Progressbar(
@@ -109,9 +139,9 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
         variable=prog_var,
         maximum=100.0,
         style="Dark.Horizontal.TProgressbar",
-        length=380,
+        length=350,
     )
-    pbar.pack(pady=(0, 10))
+    pbar.pack(pady=(0, 8))
 
     status_var = tk.StringVar(value="Iniciando descompactação...")
     status_label = tk.Label(
@@ -137,6 +167,9 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
                     if idx % step == 0 or idx == total:
                         pct = (idx / total) * 100.0
                         prog_var.set(pct)
+                        if frames and icon_label:
+                            frame_idx = min(len(frames) - 1, int((pct / 100.0) * (len(frames) - 1)))
+                            icon_label.configure(image=frames[frame_idx])
                         name = os.path.basename(item.filename) or item.filename
                         if len(name) > 35:
                             name = name[:32] + "..."
@@ -149,6 +182,8 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
 
             status_var.set("Concluído! Abrindo o editor...")
             prog_var.set(100.0)
+            if frames and icon_label:
+                icon_label.configure(image=frames[-1])
             root.update_idletasks()
             time.sleep(0.4)
             success[0] = True
@@ -170,6 +205,13 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
     return success[0]
 
 def main():
+    if IS_WINDOWS:
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("samapstudio.pro")
+        except Exception:
+            pass
+
     exe_dir, res_dir, target_dir, target_exe = get_base_paths()
 
     # 1. Se o sistema já estiver descompactado e pronto, inicia imediatamente

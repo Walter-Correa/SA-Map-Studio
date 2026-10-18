@@ -1,0 +1,51 @@
+# UTF-8
+#
+# SA Map Studio - Metadados de Versao para Windows PE (VS_VERSION_INFO)
+#
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(3, 1, 0, 0),
+    prodvers=(3, 1, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '041604B0',
+          [
+            StringStruct('CompanyName', 'SA Map Studio'),
+            StringStruct('FileDescription', 'SA Map Studio'),
+            StringStruct('FileVersion', '3.1.0.0'),
+            StringStruct('InternalName', 'SA Map Studio'),
+            StringStruct('LegalCopyright', 'Copyright (C) 2026 SA Map Studio. Todos os direitos reservados.'),
+            StringStruct('OriginalFilename', 'SA Map Studio.exe'),
+            StringStruct('ProductName', 'SA Map Studio'),
+            StringStruct('ProductVersion', '3.1.0.0'),
+            StringStruct('Comments', 'Editor avancado de mapas para SA-MP e open.mp')
+          ]
+        ),
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', 'SA Map Studio'),
+            StringStruct('FileDescription', 'SA Map Studio'),
+            StringStruct('FileVersion', '3.1.0.0'),
+            StringStruct('InternalName', 'SA Map Studio'),
+            StringStruct('LegalCopyright', 'Copyright (C) 2026 SA Map Studio. All rights reserved.'),
+            StringStruct('OriginalFilename', 'SA Map Studio.exe'),
+            StringStruct('ProductName', 'SA Map Studio'),
+            StringStruct('ProductVersion', '3.1.0.0'),
+            StringStruct('Comments', 'Advanced map editor for SA-MP and open.mp')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct('Translation', [1046, 1200, 1033, 1200])])
+  ]
+)

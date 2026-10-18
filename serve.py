@@ -72,7 +72,46 @@ if not FROZEN and not os.path.isdir(CACHE_DIR) and os.path.isdir(COMPILE_CACHE_D
     CACHE_DIR = COMPILE_CACHE_DIR
 THUMBS_DIR = os.path.join(CACHE_DIR, "thumbnails") if os.path.isdir(os.path.join(CACHE_DIR, "thumbnails")) or not os.path.isdir(os.path.join(CACHE_DIR, "miniaturas")) else os.path.join(CACHE_DIR, "miniaturas")
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.join(CACHE_DIR, "animations")) or not os.path.isdir(os.path.join(CACHE_DIR, "animacoes")) else os.path.join(CACHE_DIR, "animacoes")
-WEBVIEW_DIR = os.path.join(DATA_DIR, "browser")
+def resolve_webview_dir():
+    """Resolve a pasta de dados do navegador (WebView2).
+    
+    O Microsoft Edge WebView2 proíbe expressamente criar o User Data Folder
+    dentro de 'Program Files', 'Program Files (x86)', 'Windows' ou pastas protegidas,
+    pois os processos filhos de sandbox rodam com tokens restritos. Se o editor estiver
+    em Program Files ou a escrita falhar, utiliza fallback seguro em %LOCALAPPDATA%.
+    """
+    cand = os.path.join(DATA_DIR, "browser")
+    abs_cand = os.path.abspath(cand).lower()
+    restricted_keywords = ["program files", "program files (x86)", "windows", "system32"]
+    for env_var in ("ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "SystemRoot", "windir"):
+        val = os.environ.get(env_var)
+        if val:
+            restricted_keywords.append(os.path.abspath(val).lower())
+    is_restricted = any(kw in abs_cand for kw in restricted_keywords if kw)
+    if not is_restricted:
+        try:
+            os.makedirs(cand, exist_ok=True)
+            test_file = os.path.join(cand, ".perm_test")
+            with open(test_file, "w") as f:
+                f.write("1")
+            os.remove(test_file)
+            return cand
+        except Exception:
+            pass
+    local_app = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+    if local_app:
+        fallback = os.path.join(local_app, "SA Map Studio", "browser")
+    else:
+        fallback = os.path.join(tempfile.gettempdir(), "SA Map Studio", "browser")
+    try:
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
+    except Exception:
+        fallback_tmp = os.path.join(tempfile.gettempdir(), "samapstudio_browser")
+        os.makedirs(fallback_tmp, exist_ok=True)
+        return fallback_tmp
+
+WEBVIEW_DIR = resolve_webview_dir()
 LOGS_DIR = os.path.join(DATA_DIR, "logs")
 TEST_DIR = os.path.join(BASE_DIR, "test-server")
 if FROZEN:
@@ -2126,6 +2165,8 @@ def open_window(url, httpd):
         except (AttributeError, TypeError):
             pass
         # Limita o uso de memoria do WebView2 (coleta de lixo do V8 e teto de cache)
+        if "WEBVIEW2_USER_DATA_FOLDER" not in os.environ and WEBVIEW_DIR:
+            os.environ["WEBVIEW2_USER_DATA_FOLDER"] = WEBVIEW_DIR
         if "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS" not in os.environ:
             os.environ["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = (
                 "--js-flags=--max-old-space-size=512 "
