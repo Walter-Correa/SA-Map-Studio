@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.0.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.4.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -229,6 +229,42 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.4.0 — 18/10/2026
+- **Executável único**: o programa inteiro vem compactado em `SA Map Studio.exe`, que na primeira execução
+  cria a pasta `sa-map-studio` (com barra de progresso e ícone animado) e nas seguintes abre o editor direto.
+- **Configuração automática do GTA**: com o executável dentro da pasta de instalação do jogo, a pasta é reconhecida
+  e configurada sozinha, sem pedir a instalação ao abrir.
+- Detecção do GTA mais confiável e em qualquer máquina: pasta padrão
+  (`C:\Program Files (x86)\Rockstar Games\GTA San Andreas`) em primeiro lugar, depois registro do Windows e outros
+  discos; sem instalação válida, a pasta padrão fica sugerida e o aviso aparece só ao avançar. A detecção apenas lê
+  as pastas do jogo.
+- Falha ao ler os arquivos do jogo volta para a escolha da pasta em vez de travar a abertura.
+- Funcionamento em `Program Files`: dados do WebView2 vão para a pasta do usuário quando o programa está numa pasta protegida.
+- Ícones oficiais com animação sincronizada ao carregamento e metadados de versão no `.exe`.
+- TextDraws com alinhamento e caixas iguais ao editor no servidor open.mp; duplicação sequencial e encaixe de
+  GangZones e MapIcons; nomes de câmeras preservados; desfazer corrigido ao arrastar.
+
+### 3.3.0 — 18/10/2026
+- Caixas de TextDraw proporcionais ao texto e `TextDrawTextSize` exato para cada alinhamento no servidor de teste.
+- Desfazer/refazer isolado nas janelas de MapIcons, GangZones e TextDraws.
+- Importação de câmeras Pawn (`SetPlayerCameraPos`, `SetPlayerCameraLookAt`, `InterpolateCameraPos`, `InterpolateCameraLookAt`).
+- Sons ficam só como ferramenta de prévia e teste, fora do código Pawn exportado.
+- Nomes de GangZones salvos e exportados; exportação Pawn sem seções duplicadas.
+
+### 3.2.0 — 18/10/2026
+- Editor de TextDraws com cores do GTA SA (`~r~`, `~g~`, `~b~`...) e símbolos direcionais, alinhamentos fiéis e caixa sem texto.
+- Duplicar GangZones e MapIcons (`Ctrl+C` / `Ctrl+D`).
+- Arrastar o objeto direto pelo terreno, mantendo a altura.
+- Bloqueio de acoplamento em objetos que já são pais; eixo padrão "Objeto".
+- Texto em objetos atualizado em tempo real e totais de cada categoria na lista de projetos.
+
+### 3.1.0 — 17/10/2026
+- Catálogo de sons (`PlayerPlaySound`) com 2.620 áudios, prévia e categorias.
+- Checkpoints e Race Checkpoints (tipos 0 a 4) com setas encadeadas e modelos fiéis.
+- Editor de MapIcons (`SetPlayerMapIcon`) com mapa de radar, 64 ícones e estilos.
+- Tuning com saias laterais e aerofólios corretos, também no servidor de teste.
+- Botão flutuante para alternar mover/girar e barra superior responsiva.
 
 ### 3.0.0 — 15/10/2026
 - Filtragem inteligente de tuning, paintjobs e cores de veículos: compatibilidade rigorosa com o modelo do veículo baseada nas regras oficiais do SA-MP/open.mp (`IsVehicleValidForColor`, `IsVehicleValidForModding`, `IsPaintjobValidForVehicle` e `IsModValidForVehicle`). O inspetor de veículos agora exibe exclusivamente os componentes de modding (spoilers, capôs, tetos, saias, escapamentos, nitro, rodas, som estéreo, hidráulica), paintjobs (0 a 2) e seletores de cor compatíveis com o modelo selecionado.

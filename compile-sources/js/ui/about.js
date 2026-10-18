@@ -6,6 +6,21 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.4.0', date: '18/10/2026', items: [
+      'Executável Único: o programa inteiro vem compactado em um só SA Map Studio.exe, que na primeira execução cria a pasta sa-map-studio com barra de progresso e ícone animado, e nas seguintes abre o editor direto.',
+      'Configuração Automática do GTA: com o executável dentro da pasta de instalação do GTA San Andreas, a pasta do jogo é reconhecida e configurada sozinha, sem pedir a instalação ao abrir.',
+      'Detecção do GTA Mais Confiável: prioridade para a pasta padrão de instalação, depois registro do Windows e outros discos; sem instalação válida, a pasta padrão fica sugerida e o aviso aparece só ao avançar. A detecção apenas lê as pastas do jogo, sem alterar nada.',
+      'Abertura sem Travamentos: falha ao ler os arquivos do jogo volta para a escolha da pasta com a explicação do problema.',
+      'Funcionamento em Program Files: dados do navegador interno movidos para uma pasta do usuário quando o programa está em uma pasta protegida do Windows.',
+      'Ícones Oficiais Atualizados: novo ícone com animação sincronizada ao carregamento e metadados de versão no executável.',
+      'TextDraws no open.mp: alinhamento e caixas ajustados para ficarem iguais ao editor dentro do servidor de teste.',
+      'GangZones e MapIcons: duplicação sequencial e encaixe aprimorados.',
+      'Câmeras: nomes preservados na importação e exportação e callback unificada com cases.',
+      'Desfazer ao Arrastar: histórico corrigido ao mover elementos arrastando.',
+      'Interface sem Reticências: textos de carregamento e campos de busca mais limpos.',
+    ],
+  },
+  {
     version: '3.3.0', date: '18/10/2026', items: [
       'Caixas de TextDraw Proporcionais: cálculo automático e justo de TextSize em torno do texto com padding ao ativar "Ativar Caixa", eliminando caixas gigantes em tela cheia.',
       'Alinhamentos de TextDraws com Caixa no Servidor de Teste: cálculo exato de TextDrawTextSize para alinhamentos à Esquerda, Centro e Direita segundo a especificação do SA-MP/open.mp.',
@@ -282,7 +297,7 @@ function render() {
   $('#aboutBody').innerHTML = `
     <div class="about-head">
       <svg class="brand-mark big" viewBox="0 0 120 120" aria-hidden="true"><use href="#i-brand-logo"/></svg>
-      <div><div class="about-title">SA Map Studio <span class="tag">versão ${esc(cfg.version || '3.0.0')}</span></div>
+      <div><div class="about-title">SA Map Studio <span class="tag">versão ${esc(cfg.version || CHANGELOG[0].version)}</span></div>
         <div class="about-sub">${when}</div></div>
     </div>
     <section><h3>Novidades</h3>
