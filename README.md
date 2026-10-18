@@ -236,6 +236,8 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
   letras, quebra de linha, alinhamento e caixa, na tela 640x448 do SA-MP em 16:9.
 - Editor, código Pawn exportado e servidor de teste usam os mesmos parâmetros de `TextDrawLetterSize` e
   `TextDrawTextSize`; TextDraws de projetos antigos são convertidas ao abrir.
+- Caixa alinhada à direita igual ao cliente SA-MP 0.3.7: vai da borda esquerda da tela até o texto.
+- Clicar em qualquer ponto de uma TextDraw seleciona e permite arrastar, inclusive no alto da tela.
 - A compilação não abre mais a pasta do programa ao terminar.
 
 ### 3.4.0 — 18/10/2026

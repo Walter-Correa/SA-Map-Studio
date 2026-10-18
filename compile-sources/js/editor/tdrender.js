@@ -195,12 +195,13 @@ export function layoutTextDraw(td) {
     return { x: lx, y: p.y + idx * lineH, width: l.width, glyphs: l.glyphs };
   });
 
-  // CFont::GetTextRect (caixa com 4 px de margem)
+  // CFont::GetTextRect (caixa com 4 px de margem). No cliente SA-MP 0.3.7 a caixa alinhada à direita
+  // ignora o TextSize e vai sempre da borda esquerda da tela até 4 px depois do x (medido no jogo).
   let box = null;
   if (td.useBox) {
     let left, right;
     if (align === 2) { left = p.x - (p.sizeY / 2 + 4); right = p.x + p.sizeY / 2 + 4; }
-    else if (align === 3) { left = p.sizeX - 4; right = p.x; }
+    else if (align === 3) { left = -4; right = p.x + 4; }
     else { left = p.x - 4; right = p.sizeX + 4; }
     box = { left, top: p.y - 4, right, bottom: p.y + 4 + lineH * out.length };
   }

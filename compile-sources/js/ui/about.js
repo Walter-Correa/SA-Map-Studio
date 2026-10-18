@@ -11,6 +11,8 @@ const CHANGELOG = [
       'Mesmos Valores em Todo Lugar: editor, código Pawn exportado e servidor de teste usam exatamente os mesmos parâmetros de TextDrawLetterSize e TextDrawTextSize, sem ajustes escondidos.',
       'Campos de Caixa Mais Claros: os rótulos de Text Size mudam conforme o alinhamento (fim da caixa, largura ou início da caixa).',
       'Projetos Antigos Convertidos: TextDraws salvas em versões anteriores são convertidas automaticamente para os valores do SA-MP ao abrir o projeto.',
+      'Caixa Alinhada à Direita como no Jogo: no cliente SA-MP 0.3.7 a caixa com alinhamento à direita vai da borda esquerda da tela até o texto; o editor agora mostra exatamente isso e avisa ao ativar.',
+      'Seleção Precisa no Editor de TextDraws: clicar em qualquer ponto da TextDraw seleciona e permite arrastar, inclusive nas que ficam no alto da tela.',
       'Compilação sem abrir a pasta do programa ao terminar.',
     ],
   },

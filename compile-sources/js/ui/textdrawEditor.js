@@ -3,6 +3,9 @@
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
 import { makeTextDraw, textDrawNative } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth } from '../editor/tdrender.js';
+import { toast } from './common.js';
+
+const RIGHT_BOX_HINT = 'No jogo, a caixa alinhada à direita vai da borda esquerda da tela até o texto';
 import { openSpritePicker } from './spritePicker.js';
 import { TEXTDRAW_SPRITES } from '../data/sprites.js';
 
@@ -178,11 +181,15 @@ export function initTextDrawEditor(app) {
 }
 
 // Coordenadas do mouse em unidades 640x448
+// O canvas usa object-fit: contain, então a imagem pode ter faixas vazias em volta dentro do elemento
 function canvasPoint(e) {
   const rect = canvasEl.getBoundingClientRect();
+  const scale = Math.min(rect.width / canvasEl.width, rect.height / canvasEl.height);
+  const w = canvasEl.width * scale, h = canvasEl.height * scale;
+  const left = rect.left + (rect.width - w) / 2, top = rect.top + (rect.height - h) / 2;
   return {
-    sx: (e.clientX - rect.left) * TD_WIDTH / rect.width,
-    sy: (e.clientY - rect.top) * TD_HEIGHT / rect.height,
+    sx: (e.clientX - left) * TD_WIDTH / w,
+    sy: (e.clientY - top) * TD_HEIGHT / h,
   };
 }
 
@@ -393,10 +400,11 @@ function bindFieldInputs() {
       const prevAlign = getTdAlign(td);
       const newAlign = +selAlign.value;
       if (prevAlign !== newAlign && td.useBox && td.font !== 4 && td.font !== 5) {
-        const boxW = Math.max(4, getTextDrawBounds(td).w - BOX_PAD_X * 2);
-        if (newAlign === 2) td.textSizeY = Math.round(boxW);
-        else if (newAlign === 3) td.textSizeX = Math.round(td.x - boxW);
-        else td.textSizeX = Math.round(td.x + boxW);
+        // A caixa à direita não usa TextSize no jogo; nos outros alinhamentos ela volta a envolver o texto
+        const textW = Math.ceil(textDrawTextWidth(td));
+        if (newAlign === 2) td.textSizeY = textW;
+        else if (newAlign === 1) td.textSizeX = Math.round(td.x + textW);
+        else toast(RIGHT_BOX_HINT, 'warn', 6000);
       }
       td.align = newAlign;
       td.alignment = newAlign;
@@ -417,7 +425,7 @@ function bindFieldInputs() {
         const align = getTdAlign(td);
         const textW = Math.ceil(textDrawTextWidth(td));
         if (align === 2) td.textSizeY = textW;
-        else if (align === 3) td.textSizeX = Math.round(td.x - textW);
+        else if (align === 3) toast(RIGHT_BOX_HINT, 'warn', 6000);
         else td.textSizeX = Math.round(td.x + textW);
       }
       appRef.project.modified = true;
@@ -646,12 +654,11 @@ function setupCanvasEvents() {
         // Sprite (Font 4) e Prévia de modelo 3D (Font 5): textSizeX e textSizeY são largura e altura
         td.textSizeX = newW;
         td.textSizeY = newH;
-      } else if (td.useBox) {
-        // Caixa: TextSize segue o alinhamento (esquerda = borda direita, centro = largura, direita = borda esquerda)
+      } else if (td.useBox && getTdAlign(td) !== 3) {
+        // Caixa: TextSize segue o alinhamento (esquerda = borda direita, centro = largura)
         const align = getTdAlign(td);
         const boxW = Math.max(4, newW - BOX_PAD_X * 2);
         if (align === 2) td.textSizeY = Math.round(boxW);
-        else if (align === 3) td.textSizeX = Math.round(td.x - boxW);
         else td.textSizeX = Math.round(td.x + boxW);
         if (isBoxOnly(td)) {
           const ratioY = newH / Math.max(4, isDraggingTd.origH);
@@ -1054,7 +1061,7 @@ function updateSidebarFields() {
   const lblX = dialogEl.querySelector('#tdSizeXLbl'), lblY = dialogEl.querySelector('#tdSizeYLbl');
   const special = td.font === 4 || td.font === 5;
   const alignNow = getTdAlign(td);
-  if (lblX) lblX.textContent = special ? 'Largura' : (alignNow === 2 ? 'Text Size X' : (alignNow === 3 ? 'Início da caixa (X)' : 'Fim da caixa (X)'));
+  if (lblX) lblX.textContent = special ? 'Largura' : (alignNow === 2 ? 'Text Size X' : (alignNow === 3 ? 'Text Size X' : 'Fim da caixa (X)'));
   if (lblY) lblY.textContent = special ? 'Altura' : (alignNow === 2 ? 'Largura da caixa' : 'Text Size Y');
   setVal('#tdFont', td.font);
   setVal('#tdAlign', getTdAlign(td));
@@ -1226,7 +1233,7 @@ function duplicateSelectedTextDraw() {
 function copyTextDrawsPawn() {
   const tds = appRef.project?.textDraws || [];
   if (!tds.length) {
-    appRef.toast('Nenhum TextDraw para exportar', 'info');
+    toast('Nenhum TextDraw para exportar', 'warn');
     return;
   }
 
@@ -1262,6 +1269,6 @@ function copyTextDrawsPawn() {
 
   const fullText = lines.join('\n');
   navigator.clipboard.writeText(fullText).then(() => {
-    appRef.toast(`${tds.length} TextDraw(s) copiados em formato Pawn!`, 'ok');
+    toast(`${tds.length} TextDraw(s) copiados em formato Pawn`, 'ok');
   });
 }
