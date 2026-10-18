@@ -58,7 +58,8 @@ export function render() {
     const open = p.id === openPath;
     const total = p.keys.slice(1).reduce((s, k) => s + k.time + k.hold, 0);
     const keys = open ? p.keys.map((k, i) => `<div class="cam-key" data-key="${i}">
-        <div class="cam-row"><b class="key-n">${i === 0 ? 'Início' : 'Ponto ' + i}</b>
+        <div class="cam-row">
+          <input class="cam-name" data-kfield="name" value="${esc(k.name || (i === 0 ? 'Início' : 'Câmera ' + i))}" placeholder="Nome da câmera" aria-label="Nome da câmera" style="flex:1; max-width:150px; font-weight:600; padding:2px 6px;">
           <button type="button" class="btn icon" data-act="key-view" title="Ver no editor"><svg><use href="#i-eye"/></svg></button>
           <button type="button" class="btn icon" data-act="key-set" title="Usar a vista atual"><svg><use href="#i-camera"/></svg></button>
           <button type="button" class="btn icon" data-act="key-up" title="Subir" ${i === 0 ? 'disabled' : ''}><svg><use href="#i-up"/></svg></button>
@@ -116,7 +117,7 @@ async function onClick(e) {
   else if (a === 'shot-del') { if (await showConfirm(`Apagar a câmera "${shot.name}"?`, { danger: true, confirmText: 'Apagar' })) { c.shots.splice(c.shots.indexOf(shot), 1); changed(); } }
   else if (a === 'shot-code') { await copyText(cameraFunctions({ shots: [shot], paths: [] }).code); toast('Código da câmera copiado'); }
   else if (a === 'path-add') {
-    const p = { id: uid('p'), name: 'Movimento ' + (c.paths.length + 1), end: 'behind', keys: [{ ...currentView(), time: 0, hold: 0, cut: 'cut' }] };
+    const p = { id: uid('p'), name: 'Movimento ' + (c.paths.length + 1), end: 'behind', keys: [{ ...currentView(), name: 'Início', time: 0, hold: 0, cut: 'cut' }] };
     c.paths.push(p); openPath = p.id; changed();
     toast('Agora mova a vista e clique em "Adicionar ponto"', 'ok', 4000);
   }
@@ -124,7 +125,11 @@ async function onClick(e) {
   else if (a === 'path-del') { if (await showConfirm(`Apagar o movimento "${path.name}"?`, { danger: true, confirmText: 'Apagar' })) { c.paths.splice(c.paths.indexOf(path), 1); if (openPath === path.id) openPath = null; changed(); } }
   else if (a === 'path-play') startPreview(path);
   else if (a === 'path-code') { await copyText(cameraFunctions({ shots: [], paths: [path] }).code); toast('Código do movimento copiado'); }
-  else if (a === 'key-add') { path.keys.push({ ...currentView(), time: 3000, hold: 0, cut: 'move' }); changed(); }
+  else if (a === 'key-add') {
+    const idx = path.keys.length;
+    path.keys.push({ ...currentView(), name: `Câmera ${idx}`, time: 3000, hold: 0, cut: 'move' });
+    changed();
+  }
   else if (a === 'key-view') viewFrom(path.keys[ki].pos, path.keys[ki].look);
   else if (a === 'key-set') { Object.assign(path.keys[ki], currentView()); changed(); }
   else if (a === 'key-del') { path.keys.splice(ki, 1); if (path.keys[0]) { path.keys[0].time = 0; } changed(); }
@@ -135,6 +140,9 @@ async function onClick(e) {
     // Troca só os pontos de vista; tempos ficam nos lugares
     [k[ki].pos, k[j].pos] = [k[j].pos, k[ki].pos];
     [k[ki].look, k[j].look] = [k[j].look, k[ki].look];
+    const tmpName = k[ki].name;
+    k[ki].name = k[j].name;
+    k[j].name = tmpName;
     changed();
   }
 }
@@ -151,8 +159,13 @@ function onChange(e) {
   } else if (t.dataset.kfield && path) {
     const k = path.keys[+t.closest('[data-key]').dataset.key];
     const f = t.dataset.kfield;
-    k[f] = f === 'cut' ? t.value : Math.max(f === 'time' ? 1 : 0, Math.round(+t.value || 0));
-    changed();
+    if (f === 'name') {
+      k.name = t.value.trim();
+      app.project.touch('cameras');
+    } else {
+      k[f] = f === 'cut' ? t.value : Math.max(f === 'time' ? 1 : 0, Math.round(+t.value || 0));
+      changed();
+    }
   }
 }
 

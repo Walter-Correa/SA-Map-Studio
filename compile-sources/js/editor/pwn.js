@@ -264,10 +264,114 @@ export function parsePwn(source) {
     'TextDrawSetPreviewModel', 'TextDrawSetPreviewRot', 'TextDrawSetPreviewVehCol', 'TextDrawUseBox'
   ]);
 
+  // Pré-parse de callbacks de movimento de câmera em lote com switch(step) e cases
+  const ignoredSpans = [];
+  const cbRegex = /(?:forward\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*;\s*)?public\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)\s*(?:\/\/\s*([^\r\n]*))?\s*\{([\s\S]*?)\n\}/g;
+  let cbm;
+  while ((cbm = cbRegex.exec(source))) {
+    const fnName = cbm[2];
+    const inlineName = (cbm[4] || '').trim();
+    const body = cbm[5];
+    if (body.includes('InterpolateCameraPos') || body.includes('InterpolateCameraLookAt')) {
+      const caseRegex = /case\s+(\d+)\s*:\s*(?:\/\/\s*([^\r\n]*))?\s*\{([\s\S]*?)\}/g;
+      let cm;
+      const cases = [];
+      while ((cm = caseRegex.exec(body))) {
+        const stepNum = parseInt(cm[1], 10);
+        const stepName = (cm[2] || '').trim();
+        const caseBody = cm[3];
+
+        let fromPos = null, toPos = null, time = 5000, cut = 'cut';
+        let fromLook = null, toLook = null;
+        let timerDelay = null;
+
+        const posM = /InterpolateCameraPos\s*\(([^)]+)\)/.exec(caseBody);
+        if (posM) {
+          const cArgs = splitArgs(posM[1]);
+          const o = (cArgs.length >= 8 && isNaN(Number(cArgs[0]))) ? 1 : 0;
+          if (cArgs.length >= 7 + o) {
+            fromPos = { x: num(cArgs[o]), y: num(cArgs[o + 1]), z: num(cArgs[o + 2]) };
+            toPos = { x: num(cArgs[o + 3]), y: num(cArgs[o + 4]), z: num(cArgs[o + 5]) };
+            time = Math.max(1, int(cArgs[o + 6], 5000));
+            cut = cArgs[o + 7] === 'CAMERA_MOVE' || int(cArgs[o + 7]) === 1 ? 'move' : 'cut';
+          }
+        }
+
+        const lookM = /InterpolateCameraLookAt\s*\(([^)]+)\)/.exec(caseBody);
+        if (lookM) {
+          const cArgs = splitArgs(lookM[1]);
+          const o = (cArgs.length >= 7 && isNaN(Number(cArgs[0]))) ? 1 : 0;
+          if (cArgs.length >= 6 + o) {
+            fromLook = { x: num(cArgs[o]), y: num(cArgs[o + 1]), z: num(cArgs[o + 2]) };
+            toLook = { x: num(cArgs[o + 3]), y: num(cArgs[o + 4]), z: num(cArgs[o + 5]) };
+          }
+        }
+
+        const timerM = /SetTimerEx\s*\(([^)]+)\)/.exec(caseBody);
+        if (timerM) {
+          const tArgs = splitArgs(timerM[1]);
+          timerDelay = int(tArgs[1], 0);
+        }
+
+        if (fromPos && toPos && fromLook && toLook) {
+          cases.push({
+            step: stepNum,
+            name: stepName,
+            fromPos,
+            toPos,
+            fromLook,
+            toLook,
+            time,
+            cut,
+            hold: timerDelay && timerDelay > time ? timerDelay - time : 0
+          });
+        }
+      }
+
+      if (cases.length > 0) {
+        cases.sort((a, b) => a.step - b.step);
+        let end = 'behind';
+        if (body.includes(fnName)) end = 'loop';
+
+        const keys = [
+          {
+            name: 'Início',
+            pos: cases[0].fromPos,
+            look: cases[0].fromLook,
+            time: 0,
+            hold: 0,
+            cut: 'cut'
+          }
+        ];
+
+        for (const c of cases) {
+          keys.push({
+            name: c.name || `Câmera ${c.step + 1}`,
+            pos: c.toPos,
+            look: c.toLook,
+            time: c.time,
+            hold: c.hold,
+            cut: c.cut
+          });
+        }
+
+        paths.push({
+          id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          name: inlineName || fnName,
+          end,
+          keys
+        });
+
+        ignoredSpans.push([cbm.index, cbm.index + cbm[0].length]);
+      }
+    }
+  }
+
   const re = new RegExp(FN_RE.source, 'g');
   let m;
   while ((m = re.exec(masked))) {
     const stmtStart = m.index;
+    if (ignoredSpans.some(([s, e]) => stmtStart >= s && stmtStart < e)) continue;
     let i = re.lastIndex, depth = 1, str = false;
     for (; i < masked.length && depth > 0; i++) {
       const ch = masked[i];
@@ -1164,14 +1268,13 @@ export function exportPawn(project, options = {}) {
     } else if (td.useBox) {
       if (align === 1) {
         expSizeX = td.x + w;
-        expSizeY = td.y + h;
+        expSizeY = 0.0;
       } else if (align === 2) {
-        // No SA-MP o alinhamento centralizado inverte altura e largura em TextDrawTextSize!
-        expSizeX = h;
-        expSizeY = w;
+        expSizeX = w;
+        expSizeY = 0.0;
       } else if (align === 3) {
         expSizeX = td.x - w;
-        expSizeY = td.y + h;
+        expSizeY = 0.0;
       }
     } else {
       expSizeX = (align === 3 ? 0.0 : 640.0);
@@ -1220,16 +1323,16 @@ export function exportPawn(project, options = {}) {
       textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);
     }
     textDrawLines.push(`TextDrawAlignment(${tdVar}, ${align});`);
-    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);
     textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
     textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
+    textDrawLines.push(`TextDrawSetProportional(${tdVar}, ${td.proportional ?? 1});`);
     if (td.useBox && td.font !== 5 && td.font !== 4) {
       textDrawLines.push(`TextDrawUseBox(${tdVar}, 1);`);
       textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${bHex});`);
     }
+    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawBackgroundColor(${tdVar}, ${bgHex});`);
-    textDrawLines.push(`TextDrawSetProportional(${tdVar}, ${td.proportional ?? 1});`);
     if (td.selectable) textDrawLines.push(`TextDrawSetSelectable(${tdVar}, 1);`);
     if (td.font === 5 && td.previewModel) {
       textDrawLines.push(`TextDrawSetPreviewModel(${tdVar}, ${td.previewModel});`);
@@ -1426,29 +1529,34 @@ export function cameraFunctions(cameras) {
       `    SetPlayerCameraLookAt(playerid, ${p3(s.look)}, ${cutName(s.cut)});`,
       '    return 1;', '}', '');
   }
+  let pathIdx = 1;
   for (const p of paths) {
-    const fn = camIdent('CamMov_', p.name, used);
-    usage.push(`${fn}(playerid, 0);  // ${p.name}`);
+    const fn = `CameraMove_${pathIdx++}`;
+    used.add(fn.toLowerCase());
+    const setName = (p.name || `Conjunto ${pathIdx - 1}`).trim();
+    usage.push(`${fn}(playerid, 0);  // ${setName}`);
     const k = p.keys;
-    const total = k.slice(1).reduce((s, x) => s + x.time + x.hold, 0);
-    out.push(`// Movimento de câmera: ${p.name} (${k.length - 1} ${k.length - 1 === 1 ? 'passo' : 'passos'}, ${(total / 1000).toFixed(1)} s)`,
-      `forward ${fn}(playerid, step);`, `public ${fn}(playerid, step)`, '{');
-    if (k.length === 1) {
-      out.push(`    #pragma unused step`, `    SetPlayerCameraPos(playerid, ${p3(k[0].pos)});`, `    SetPlayerCameraLookAt(playerid, ${p3(k[0].look)}, CAMERA_CUT);`, '    return 1;', '}', '');
-      continue;
-    }
-    out.push('    switch (step)', '    {');
+    out.push(`forward ${fn}(playerid, step);`,
+      `public ${fn}(playerid, step)//${setName}`,
+      '{',
+      '    switch (step)',
+      '    {');
     for (let s = 0; s < k.length - 1; s++) {
       const a = k[s], b = k[s + 1];
       const time = Math.max(1, b.time | 0);
-      out.push(`        case ${s}:`, '        {',
+      const camName = (b.name || a.name || `Câmera ${s + 1}`).trim();
+      out.push(`        case ${s}://${camName}`,
+        '        {',
         `            InterpolateCameraPos(playerid, ${p3(a.pos)}, ${p3(b.pos)}, ${time}, ${cutName(b.cut)});`,
         `            InterpolateCameraLookAt(playerid, ${p3(a.look)}, ${p3(b.look)}, ${time}, ${cutName(b.cut)});`,
         `            SetTimerEx("${fn}", ${time + (b.hold | 0)}, false, "ii", playerid, ${s + 1});`,
         '        }');
     }
-    if (p.end === 'behind') out.push('        default:', '        {', '            SetCameraBehindPlayer(playerid);', '        }');
-    else if (p.end === 'loop') out.push('        default:', '        {', `            ${fn}(playerid, 0);`, '        }');
+    if (p.end === 'loop') {
+      out.push('        default:', '        {', `            ${fn}(playerid, 0);`, '        }');
+    } else {
+      out.push('        default:', '        {', '            SetCameraBehindPlayer(playerid);', '        }');
+    }
     out.push('    }', '    return 1;', '}', '');
   }
   return { code: out.join('\n'), usage };

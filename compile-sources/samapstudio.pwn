@@ -869,26 +869,23 @@ stock SAMSP_CarregarMapa()
                         TextDrawFont(td, tdfont);
                         TextDrawLetterSize(td, (tdletx >= 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
                         TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
-                        if (!tdusebox)
+                        TextDrawColor(td, tdcol);
+                        TextDrawSetOutline(td, tdoutline);
+                        TextDrawSetShadow(td, tdshadow);
+                        TextDrawSetProportional(td, bool:tdprop);
+                        if (tdusebox)
+                        {
+                            TextDrawUseBox(td, true);
+                            TextDrawBoxColor(td, tdboxcol);
+                            TextDrawTextSize(td, tdsizex, tdsizey);
+                        }
+                        else
                         {
                             new Float:wrapX = (tdalign == 3) ? 0.0 : (tdsizex > 0.0 ? tdsizex : 640.0);
                             new Float:wrapY = (tdalign == 2) ? (tdsizey > 0.0 ? tdsizey : 640.0) : 480.0;
                             TextDrawTextSize(td, wrapX, wrapY);
                         }
-                        else
-                        {
-                            TextDrawTextSize(td, tdsizex, tdsizey);
-                        }
-                        TextDrawColor(td, tdcol);
-                        TextDrawSetOutline(td, tdoutline);
-                        TextDrawSetShadow(td, tdshadow);
-                        if (tdusebox)
-                        {
-                            TextDrawUseBox(td, true);
-                            TextDrawBoxColor(td, tdboxcol);
-                        }
                         TextDrawBackgroundColor(td, tdbgcol);
-                        TextDrawSetProportional(td, bool:tdprop);
                         if (tdselect) TextDrawSetSelectable(td, true);
                         gTextDraws[gTotalTextDraws] = td;
                         gTotalTextDraws++;

@@ -45,29 +45,95 @@ export function hexAndAlphaToGzColor(hexStr, alpha = 0.5) {
   return (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
 }
 
+// Gera o nome sequencial na duplicação: Zona 1 > Zona 1_2 > Zona 1_3
+export function getNextGangZoneName(origName, existingZones = []) {
+  const baseRaw = (origName || 'Zona 1').trim();
+  const m = baseRaw.match(/^(.*?)_(\d+)$/);
+  let prefix = baseRaw;
+  let nextNum = 2;
+  if (m) {
+    prefix = m[1];
+    nextNum = parseInt(m[2], 10) + 1;
+  }
+  let candidate = `${prefix}_${nextNum}`;
+  const existingNames = new Set(existingZones.map(z => (z.name || z.comment || '').trim()));
+  while (existingNames.has(candidate)) {
+    nextNum++;
+    candidate = `${prefix}_${nextNum}`;
+  }
+  return candidate;
+}
+
 // Auto-alinhamento magnético: encaixa as bordas de uma gangzone nas de outras zonas vizinhas
-export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0) {
+export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0, isMove = false) {
   let { minx, miny, maxx, maxy } = candidate;
-  let snappedX = false, snappedY = false;
+
+  let bestDiffX = threshold + 0.001;
+  let snapXDelta = 0;
+  let snapXVal = null;
+
+  let bestDiffY = threshold + 0.001;
+  let snapYDelta = 0;
+  let snapYVal = null;
 
   for (const gz of existingZones) {
-    if (gz.uid === candidate.uid) continue;
+    if (!gz || gz.uid === candidate.uid) continue;
 
-    // Encaixe horizontal X (minx e maxx podem colar em minx ou maxx de outro)
-    if (!snappedX) {
-      if (Math.abs(minx - gz.maxx) <= threshold) { minx = gz.maxx; snappedX = true; }
-      else if (Math.abs(minx - gz.minx) <= threshold) { minx = gz.minx; snappedX = true; }
-      else if (Math.abs(maxx - gz.minx) <= threshold) { maxx = gz.minx; snappedX = true; }
-      else if (Math.abs(maxx - gz.maxx) <= threshold) { maxx = gz.maxx; snappedX = true; }
+    // Todas as bordas X da zona vizinha
+    for (const otherX of [gz.minx, gz.maxx]) {
+      const diffMin = Math.abs(minx - otherX);
+      if (diffMin < bestDiffX) {
+        bestDiffX = diffMin;
+        snapXDelta = otherX - minx;
+        snapXVal = otherX;
+      }
+      const diffMax = Math.abs(maxx - otherX);
+      if (diffMax < bestDiffX) {
+        bestDiffX = diffMax;
+        snapXDelta = otherX - maxx;
+        snapXVal = otherX;
+      }
     }
 
-    // Encaixe vertical Y (miny e maxy podem colar em miny ou maxy de outro)
-    if (!snappedY) {
-      if (Math.abs(miny - gz.maxy) <= threshold) { miny = gz.maxy; snappedY = true; }
-      else if (Math.abs(miny - gz.miny) <= threshold) { miny = gz.miny; snappedY = true; }
-      else if (Math.abs(maxy - gz.miny) <= threshold) { maxy = gz.miny; snappedY = true; }
-      else if (Math.abs(maxy - gz.maxy) <= threshold) { maxy = gz.maxy; snappedY = true; }
+    // Todas as bordas Y da zona vizinha
+    for (const otherY of [gz.miny, gz.maxy]) {
+      const diffMin = Math.abs(miny - otherY);
+      if (diffMin < bestDiffY) {
+        bestDiffY = diffMin;
+        snapYDelta = otherY - miny;
+        snapYVal = otherY;
+      }
+      const diffMax = Math.abs(maxy - otherY);
+      if (diffMax < bestDiffY) {
+        bestDiffY = diffMax;
+        snapYDelta = otherY - maxy;
+        snapYVal = otherY;
+      }
     }
+  }
+
+  const snapLines = [];
+
+  if (bestDiffX <= threshold) {
+    if (isMove) {
+      minx += snapXDelta;
+      maxx += snapXDelta;
+    } else {
+      if (Math.abs(minx + snapXDelta - snapXVal) < 0.01) minx += snapXDelta;
+      else maxx += snapXDelta;
+    }
+    if (snapXVal !== null) snapLines.push({ type: 'x', val: snapXVal });
+  }
+
+  if (bestDiffY <= threshold) {
+    if (isMove) {
+      miny += snapYDelta;
+      maxy += snapYDelta;
+    } else {
+      if (Math.abs(miny + snapYDelta - snapYVal) < 0.01) miny += snapYDelta;
+      else maxy += snapYDelta;
+    }
+    if (snapYVal !== null) snapLines.push({ type: 'y', val: snapYVal });
   }
 
   return {
@@ -75,7 +141,8 @@ export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0) {
     maxx: Math.max(minx, maxx),
     miny: Math.min(miny, maxy),
     maxy: Math.max(miny, maxy),
-    snapped: snappedX || snappedY,
+    snapped: (bestDiffX <= threshold) || (bestDiffY <= threshold),
+    snapLines,
   };
 }
 

@@ -372,8 +372,20 @@ function bindFieldInputs() {
     selAlign.onchange = () => {
       const td = getSelectedTd();
       if (!td) return;
-      td.align = +selAlign.value;
-      td.alignment = td.align;
+      tdPushUndo();
+      const prevAlign = getTdAlign(td);
+      const newAlign = +selAlign.value;
+      if (prevAlign !== newAlign && td.useBox && td.font !== 4 && td.font !== 5) {
+        const bounds = getTextDrawBounds(td);
+        const curW = bounds.w;
+        if (newAlign === 1) td.textSizeX = Math.round(td.x + curW);
+        else if (newAlign === 2) td.textSizeX = Math.round(curW);
+        else if (newAlign === 3) td.textSizeX = Math.round(td.x - curW);
+      }
+      td.align = newAlign;
+      td.alignment = newAlign;
+      appRef.project.modified = true;
+      updateSidebarFields();
       redrawCanvas();
     };
   }
@@ -386,20 +398,18 @@ function bindFieldInputs() {
       tdPushUndo();
       td.useBox = chkBox.checked ? 1 : 0;
       if (td.useBox && td.font !== 4 && td.font !== 5) {
-        if (!td.textSizeX || td.textSizeX >= 550 || !td.textSizeY || td.textSizeY >= 350 || td.textSizeX <= 0) {
-          const autoBounds = getTextDrawBounds({ ...td, useBox: 0 });
-          const align = getTdAlign(td);
-          const autoW = Math.max(30, Math.round(autoBounds.w + 16));
-          const autoH = Math.max(16, Math.round(autoBounds.h + 8));
-          if (align === 1) {
-            td.textSizeX = Math.round(td.x + autoW);
-          } else if (align === 2) {
-            td.textSizeX = autoW;
-          } else if (align === 3) {
-            td.textSizeX = Math.round(td.x - autoW);
-          }
-          td.textSizeY = autoH;
+        const autoBounds = getTextDrawBounds({ ...td, useBox: 0 });
+        const align = getTdAlign(td);
+        const autoW = Math.max(30, Math.round(autoBounds.w + 16));
+        const autoH = Math.max(16, Math.round(autoBounds.h + 8));
+        if (align === 1) {
+          td.textSizeX = Math.round(td.x + autoW);
+        } else if (align === 2) {
+          td.textSizeX = autoW;
+        } else if (align === 3) {
+          td.textSizeX = Math.round(td.x - autoW);
         }
+        td.textSizeY = autoH;
       }
       appRef.project.modified = true;
       updateSidebarFields();
@@ -1415,14 +1425,14 @@ function copyTextDrawsPawn() {
       expSizeY = td.textSizeY > 0 ? td.textSizeY : (td.font === 4 ? 64.0 : 80.0);
     } else if (td.useBox) {
       if (align === 1) {
-        expSizeX = bounds.x + bounds.w;
-        expSizeY = bounds.y + bounds.h;
+        expSizeX = td.x + bounds.w;
+        expSizeY = 0.0;
       } else if (align === 2) {
-        expSizeX = bounds.h;
-        expSizeY = bounds.w;
+        expSizeX = bounds.w;
+        expSizeY = 0.0;
       } else if (align === 3) {
         expSizeX = td.x - bounds.w;
-        expSizeY = bounds.y + bounds.h;
+        expSizeY = 0.0;
       }
     } else {
       expSizeX = (align === 3 ? 0.0 : 640.0);
@@ -1455,16 +1465,16 @@ function copyTextDrawsPawn() {
       }
     }
     lines.push(`TextDrawAlignment(${varName}, ${align});`);
-    lines.push(`TextDrawTextSize(${varName}, ${Number(expSizeX).toFixed(1)}, ${Number(expSizeY).toFixed(1)});`);
     lines.push(`TextDrawColor(${varName}, ${cHex});`);
     lines.push(`TextDrawSetOutline(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
     lines.push(`TextDrawSetShadow(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
+    lines.push(`TextDrawSetProportional(${varName}, ${td.proportional ?? 1});`);
     if (td.useBox && td.font !== 5 && td.font !== 4) {
       lines.push(`TextDrawUseBox(${varName}, 1);`);
       lines.push(`TextDrawBoxColor(${varName}, ${bHex});`);
     }
+    lines.push(`TextDrawTextSize(${varName}, ${Number(expSizeX).toFixed(1)}, ${Number(expSizeY).toFixed(1)});`);
     lines.push(`TextDrawBackgroundColor(${varName}, ${bgHex});`);
-    lines.push(`TextDrawSetProportional(${varName}, ${td.proportional ?? 1});`);
     if (td.selectable) lines.push(`TextDrawSetSelectable(${varName}, 1);`);
     if (td.font === 5 && td.previewModel) {
       lines.push(`TextDrawSetPreviewModel(${varName}, ${td.previewModel});`);

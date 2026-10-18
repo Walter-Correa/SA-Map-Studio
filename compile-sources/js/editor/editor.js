@@ -7,8 +7,8 @@ import { normalizeMaterial, isText, keepsTexture, parseColor, MAX_MATERIAL_INDEX
 import { CAR_COLORS } from '../world/vehicleMods.js';
 import { createLabelNode } from '../world/labels.js';
 import { createPickupFallbackMesh } from '../world/pickups.js';
-import { createGangZoneNode } from '../world/gangzones.js';
-import { createCheckpointNode, updateRaceCheckpointsChain } from '../world/checkpoints.js';
+import { createGangZoneNode, getNextGangZoneName } from '../world/gangzones.js';
+import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
 import { createMapIconNode } from '../world/mapicons.js';
 import { createSoundNode } from '../world/sounds.js';
 
@@ -918,7 +918,23 @@ export class Editor extends EventTarget {
 
     this.updateAttachedChildren();
     this.refreshSelectionBoxes();
+    if (this.selection.some(u => this.kindOf(u) === 'checkpoints')) {
+      this.refreshCheckpointsChain();
+    }
     this.emit('live');
+  }
+
+  refreshCheckpointsChain() {
+    const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
+    for (const p of projects) {
+      if (p.checkpoints && p.checkpoints.length) {
+        updateRaceCheckpointsChain(p.checkpoints);
+        for (const cp of p.checkpoints) {
+          const node = this.nodes.get(cp.uid);
+          if (node) refreshCheckpointVisual(node, cp);
+        }
+      }
+    }
   }
 
   endDrag() {
@@ -936,6 +952,9 @@ export class Editor extends EventTarget {
       const before = uids.map(u => beforeMap.get(u)).filter(Boolean);
       const after = uids.map(u => p.snapshot(u));
       p.record(this.mode === 'rotate' ? 'Girar' : 'Mover', before, after);
+    }
+    if (this.selection.some(u => this.kindOf(u) === 'checkpoints')) {
+      this.refreshCheckpointsChain();
     }
     this.dragStart = null;
     this.attachGizmo();
@@ -1210,6 +1229,10 @@ export class Editor extends EventTarget {
                   y: s.item.y,
                   z: s.item.z
                 })),
+                beforeStates: selItems.map(s => {
+                  const p = this.findProjectOf(s.uid);
+                  return p ? { proj: p, snap: p.snapshot(s.uid) } : null;
+                }).filter(Boolean),
                 active: false
               };
             }
@@ -1260,6 +1283,9 @@ export class Editor extends EventTarget {
             }
             this.refreshSelectionBoxes();
             this.updateAttachedChildren();
+            if (directDrag.itemStarts.some(it => this.kindOf(it.uid) === 'checkpoints')) {
+              this.refreshCheckpointsChain();
+            }
             this.attachGizmo();
             this.emit('change');
             return;
@@ -1271,11 +1297,24 @@ export class Editor extends EventTarget {
     dom.addEventListener('pointerup', (e) => {
       if (directDrag) {
         const wasActive = directDrag.active;
+        const dragInfo = directDrag;
         directDrag = null;
         dom.style.cursor = 'default';
         if (wasActive) {
           down = null;
-          this.saveUndoState('Mover');
+          const byProject = new Map();
+          for (const st of (dragInfo.beforeStates || [])) {
+            if (!byProject.has(st.proj)) byProject.set(st.proj, []);
+            byProject.get(st.proj).push(st.snap);
+          }
+          for (const [proj, befores] of byProject.entries()) {
+            const afters = befores.map(b => proj.snapshot(b.uid)).filter(Boolean);
+            proj.record('Mover', befores, afters);
+          }
+          if (dragInfo.itemStarts.some(it => this.kindOf(it.uid) === 'checkpoints')) {
+            this.refreshCheckpointsChain();
+          }
+          this.attachGizmo();
           this.emit('change');
           return;
         }
@@ -1493,12 +1532,14 @@ export class Editor extends EventTarget {
           itemCopy.maxx = Math.round(itemCopy.maxx + chosen[0]);
           itemCopy.miny = Math.round(itemCopy.miny + chosen[1]);
           itemCopy.maxy = Math.round(itemCopy.maxy + chosen[1]);
+          itemCopy.name = getNextGangZoneName(s.item.name || s.item.comment, p.gangZones);
+          itemCopy.comment = itemCopy.name;
         }
         return { ...itemCopy, kind: s.kind };
       });
       const uids = p.addItems(pItems.length > 1 ? `Duplicar ${pItems.length} itens` : 'Duplicar', data);
       if (pItems.some(s => s.kind === 'checkpoints')) {
-        updateRaceCheckpointsChain(p.checkpoints);
+        this.refreshCheckpointsChain();
       }
       createdUids.push(...uids);
     }

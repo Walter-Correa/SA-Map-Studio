@@ -1,7 +1,6 @@
 // Editor e gerenciador visual de GangZones (GangZoneCreate)
 // Modal com mapa do radar do GTA SA (-3000 a +3000), zoom, pan,
-// desenho interativo de retângulos, alinhamento magnético (snap) e cores RGBA.
-import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges } from '../world/gangzones.js';
+import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
 import { toast } from './common.js';
 
@@ -518,11 +517,14 @@ function setupCanvasEvents() {
         let newMaxY = newMinY + hLen;
 
         if (snap) {
-          const snapped = snapGangZoneEdges({ uid: z.uid, minx: newMinX, miny: newMinY, maxx: newMaxX, maxy: newMaxY }, appRef.project.gangZones);
+          const snapped = snapGangZoneEdges({ uid: z.uid, minx: newMinX, miny: newMinY, maxx: newMaxX, maxy: newMaxY }, appRef.project.gangZones, 25.0, true);
           newMinX = snapped.minx;
           newMinY = snapped.miny;
           newMaxX = snapped.maxx;
           newMaxY = snapped.maxy;
+          activeSnapLines = snapped.snapLines || [];
+        } else {
+          activeSnapLines = [];
         }
 
         z.minx = Math.round(newMinX);
@@ -542,11 +544,14 @@ function setupCanvasEvents() {
         if (isDraggingHandle.handle.includes('n')) maxy += dy;
 
         if (snap) {
-          const snapped = snapGangZoneEdges({ uid: z.uid, minx, miny, maxx, maxy }, appRef.project.gangZones);
+          const snapped = snapGangZoneEdges({ uid: z.uid, minx, miny, maxx, maxy }, appRef.project.gangZones, 25.0, false);
           minx = snapped.minx;
           miny = snapped.miny;
           maxx = snapped.maxx;
           maxy = snapped.maxy;
+          activeSnapLines = snapped.snapLines || [];
+        } else {
+          activeSnapLines = [];
         }
 
         z.minx = Math.round(Math.min(minx, maxx));
@@ -1160,7 +1165,7 @@ function duplicateSelectedZone() {
     }
   }
 
-  const dupName = `${z.name || 'GangZone'} (Cópia)`;
+  const dupName = getNextGangZoneName(z.name || z.comment, allZones);
   const newZ = makeGangZone({
     name: dupName,
     comment: dupName,

@@ -138,8 +138,20 @@ export function initMapIconDialog() {
 }
 
 function getSelectedMapIcon() {
-  if (!selectedUid || !app.project?.mapIcons) return null;
-  return app.project.mapIcons.find(m => m.uid === selectedUid) || null;
+  if (!app.project?.mapIcons || !app.project.mapIcons.length) return null;
+  if (selectedUid) {
+    const found = app.project.mapIcons.find(m => m.uid === selectedUid);
+    if (found) return found;
+  }
+  const sel3d = app.editor?.selection || [];
+  for (const uid of sel3d) {
+    const found = app.project.mapIcons.find(m => m.uid === uid);
+    if (found) {
+      selectedUid = found.uid;
+      return found;
+    }
+  }
+  return app.project.mapIcons[0] || null;
 }
 
 function findIconAtCanvas(cx, cy) {
@@ -382,24 +394,6 @@ function setupDialogEvents() {
       toast('MapIcon removido', 'info');
     };
   }
-
-  dialogEl.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'd' || e.key === 'D')) {
-      const activeTag = document.activeElement?.tagName?.toLowerCase();
-      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
-      e.preventDefault();
-      e.stopPropagation();
-      duplicateSelectedMapIcon();
-      return;
-    }
-    if (e.key === 'Delete' || e.key === 'Del') {
-      const activeTag = document.activeElement?.tagName?.toLowerCase();
-      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
-      e.preventDefault();
-      e.stopPropagation();
-      btnDel?.click();
-    }
-  });
 }
 
 function duplicateSelectedMapIcon() {

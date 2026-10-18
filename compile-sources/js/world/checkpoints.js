@@ -132,6 +132,7 @@ export function createCheckpointNode(cp) {
 
     const lookMat = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
     ringHolder.quaternion.setFromRotationMatrix(lookMat);
+    group.userData.ringHolder = ringHolder;
     group.add(ringHolder);
   } else {
     // Cilindro vertical no solo (Checkpoint comum ou Race Checkpoint 0, 1, 2)
@@ -176,6 +177,7 @@ export function createCheckpointNode(cp) {
       arrow.position.set(0, 0, Math.min(2.4, height * 0.45));
       const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
       arrow.rotation.z = yaw;
+      group.userData.arrow = arrow;
       group.add(arrow);
     } else if (isRace && rType === 1) {
       // Tipo 1: Cilindro de chegada / Finish com textura de bandeira quadriculada no interior
@@ -198,6 +200,27 @@ export function createCheckpointNode(cp) {
   group.userData.isCheckpoint = true;
   group.userData.kind = 'checkpoints';
   return group;
+}
+
+export function refreshCheckpointVisual(node, cp) {
+  if (!node || !cp) return;
+  const isRace = Boolean(cp.isRace || cp.cpKind === 'race');
+  if (!isRace) return;
+  const dx = (cp.nextx ?? (cp.x + 15)) - (cp.x || 0);
+  const dy = (cp.nexty ?? (cp.y || 0)) - (cp.y || 0);
+  const dz = (cp.nextz ?? (cp.z || 0)) - (cp.z || 0);
+  const dir = new THREE.Vector3(dx, dy, dz);
+  if (dir.lengthSq() < 0.001) dir.set(1, 0, 0);
+  dir.normalize();
+
+  if (node.userData.arrow) {
+    const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
+    node.userData.arrow.rotation.z = yaw;
+  }
+  if (node.userData.ringHolder) {
+    const lookMat = new THREE.Matrix4().lookAt(dir, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1));
+    node.userData.ringHolder.quaternion.setFromRotationMatrix(lookMat);
+  }
 }
 
 function buildDirectionArrow(len = 1.8, colorHex = 0xffcc00) {

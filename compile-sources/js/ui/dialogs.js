@@ -323,14 +323,13 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       } else if (td.useBox) {
         if (align === 1) {
           sizeX = td.x + w;
-          sizeY = td.y + h;
+          sizeY = 0.0;
         } else if (align === 2) {
-          // No SA-MP o alinhamento centralizado inverte altura e largura em TextDrawTextSize!
-          sizeX = h;
-          sizeY = w;
+          sizeX = w;
+          sizeY = 0.0;
         } else if (align === 3) {
           sizeX = td.x - w;
-          sizeY = td.y + h;
+          sizeY = 0.0;
         }
       } else {
         sizeX = (align === 3 ? 0.0 : 640.0);
