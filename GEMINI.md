@@ -21,6 +21,7 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 ## 4. Arquivos e Compilação
 - **Sem LEIA-ME.txt**: Nunca incluir o arquivo `LEIA-ME.txt` em lugar algum ao compilar o projeto (`build.bat` / `build-clean.bat`).
 - **Organização e Pasta testing**: A pasta raiz do projeto deve permanecer sempre limpa e organizada, contendo apenas os arquivos e pastas estruturais do projeto. Todos os testes, scripts temporários e arquivos de verificação devem ser criados e executados exclusivamente dentro da pasta `testing/`.
+- **Limpeza de Testes**: Ao finalizar cada tarefa, todos os arquivos e pastas criados para testes dentro de `testing/` devem ser rigorosamente apagados, mantendo apenas arquivos essenciais que serão utilizados em testes futuros (e o `.gitkeep`).
 
 ## 5. Demonstração Visual (Prints de Novas Funcionalidades)
 - **Sempre exibir prints ao final da tarefa**: Sempre que uma nova funcionalidade ou melhoria visual for adicionada ao editor, é obrigatório capturar e mostrar na resposta final uma ou mais prints demonstrando a funcionalidade em ação.
