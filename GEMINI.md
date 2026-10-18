@@ -8,12 +8,15 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 
 ## 2. Controle de Versão (Git)
 - **Sempre realizar commit e push ao final de cada tarefa**.
-- Mensagens de commit devem ser claras, objetivas e em português.
+- Mensagens de commit devem ser claras, objetivas e em português, seguindo um padrão único:
+  - Título começando com verbo no presente, 3ª pessoa do singular (`Adiciona`, `Corrige`, `Remove`, `Atualiza`, `Ajusta`), com acentuação correta.
+  - Sem prefixos em inglês (`feat:`, `fix:`, `docs:`) e sem ponto final no título.
+  - Várias mudanças no mesmo commit: listar no título separadas por vírgula ou detalhar no corpo da mensagem.
 
 ## 3. Padrões de Nomenclatura, Interface e Conteúdo
-- **Nome do Projeto e Nomenclatura**: O nome oficial do projeto é `SA Map Studio`, gerando o executável `SA Map Studio.exe` e a pasta de distribuição `compiled\SA Map Studio\`. Todas as pastas e arquivos internos de dados e sistema do projeto devem ser nomeados estritamente em inglês e letras minúsculas (sem português e sem letras maiúsculas), como `data`, `test-server`, `system`, `projects`, `exported`, `compile-sources`, `models`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `gemini.md`.
-- **Nomes curtos e objetivos**: Títulos, botões e labels da interface não devem estourar o espaço visual nem exibir reticências ("...").
-- **Fontes e citações**: Nunca citar fontes externas em lugar nenhum da interface ou do projeto.
+- **Nome do Projeto e Nomenclatura**: O nome oficial do projeto é `SA Map Studio`, gerando o executável `SA Map Studio.exe` e a pasta de distribuição `compiled\SA Map Studio\`. Todas as pastas e arquivos internos de dados e sistema do projeto devem ser nomeados estritamente em inglês e letras minúsculas (sem português e sem letras maiúsculas), como `data`, `test-server`, `system`, `projects`, `exported`, `compile-sources`, `models`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `gemini.md`. Exceções: módulos JavaScript (`.js`) podem usar letras maiúsculas em camelCase (ex.: `animPicker.js`, `textdrawEditor.js`), e arquivos de terceiros ou com nomes oficiais do jogo (fontes, bibliotecas em `vendor/`, bibliotecas de animação do GTA) mantêm o nome original.
+- **Nomes curtos e objetivos**: Títulos, botões, labels, placeholders, mensagens de status e avisos que aparecem dentro do editor compilado não devem estourar o espaço visual nem exibir reticências ("..."). A regra vale apenas para textos exibidos no programa compilado; documentação (`readme.md`, `gemini.md`), comentários de código e mensagens de console/log podem usar reticências.
+- **Fontes e citações**: Nunca citar fontes externas dentro do editor compilado (interface, textos de ajuda, novidades). A regra não se aplica à documentação do repositório (`readme.md`), onde créditos e licenças podem ser citados.
 - **Janela inicial**: O editor deve abrir por padrão maximizado.
 - **Formatação de Cores**: Cores de Textos 3D (Create3DTextLabel) devem usar alpha total (`0x...FF`, não `0x...AA`).
 - **Codificação**: Os scripts pawn e arquivos de mapa do servidor de teste (como `samapstudio.pwn` e `mapa.txt`) devem ser escritos e salvos estritamente em ANSI (Windows-1252), padrão nativo do SA-MP/GTA SA para acentuação e caracteres sem corrupção. Os demais arquivos de código-fonte web/sistema (HTML, JS, CSS, Python) permanecem em UTF-8.

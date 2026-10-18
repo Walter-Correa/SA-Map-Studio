@@ -543,7 +543,7 @@ function vehicleInspector(v) {
         <div style="margin-top:8px;">
           <label>Acoplar objeto existente (${attachedObjs.length}/${MAX_VEHICLE_ATTACHED_OBJECTS})
             <select id="selAttachObjToVeh" style="width:100%;">
-              <option value="">Escolha um objeto do projeto...</option>
+              <option value="">Escolha um objeto do projeto</option>
               ${unattachedObjs.map(obj => `<option value="${obj.uid}">${esc(modelLabel(obj.model))} (ID ${obj.model}) - ${obj.uid.slice(0, 6)}</option>`).join('')}
             </select>
           </label>
@@ -717,7 +717,7 @@ function worldMultiInspector(insts) {
     <button type="button" class="btn danger block" data-act="wremove" style="margin: 8px 0 10px;"><svg><use href="#i-demolish"/></svg>Remover ${insts.length} objetos</button>
     <div class="insp-section">
       <div class="stat-line"><span>Total selecionado</span><b>${insts.length} objetos</b></div>
-      <div class="stat-line"><span>Modelos</span><b>${models.slice(0, 8).join(', ')}${models.length > 8 ? '...' : ''}</b></div>
+      <div class="stat-line"><span>Modelos</span><b>${models.slice(0, 8).join(', ')}${models.length > 8 ? ` +${models.length - 8}` : ''}</b></div>
     </div>
     <button type="button" class="btn primary block" data-act="wadd" title="Cria cópias em cima dos originais, já com o gizmo de mover"><svg><use href="#i-plus"/></svg>Duplicar (${insts.length})</button>
     <button type="button" class="btn block" data-act="wconvert"><svg><use href="#i-edit"/></svg>Tornar editáveis (${insts.length})</button>
@@ -2308,7 +2308,7 @@ function labelCreateInspector(draft) {
         <span>Texto (\n quebra, {RRGGBB} cor)</span>
         <span id="lblDraftCharCount" style="font-family:monospace; font-size:11px; color:var(--paper-dim);">${get3DTextCleanLength(draft.text || '')} / 1024</span>
       </div>
-      <textarea id="lblDraftText" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:13px; resize:vertical; padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff;" placeholder="Digite o texto 3D...">${esc(draft.text || '')}</textarea>
+      <textarea id="lblDraftText" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:13px; resize:vertical; padding:6px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff;" placeholder="Digite o texto 3D">${esc(draft.text || '')}</textarea>
       <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
         ${STANDARD_LABEL_COLORS.map(c => `
           <button type="button" class="btn small" data-lbl-draft-tag="${c.tag}" style="font-size:10px; padding:2px 6px; border-left:3px solid ${c.hex};" title="Inserir cor ${c.name}">${c.tag}</button>

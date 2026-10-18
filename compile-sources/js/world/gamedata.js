@@ -50,7 +50,7 @@ export class GameData {
 
   async load(onProgress = () => {}) {
     const fs = this.fs;
-    onProgress('Lendo gta.dat...', 0.02);
+    onProgress('Lendo gta.dat', 0.02);
     const gtaDat = parseDat(await fs.text('data/gta.dat'));
     const defDat = parseDat((await fs.tryText('data/default.dat')) || '');
 
@@ -61,7 +61,7 @@ export class GameData {
     await pool(ideList, 8, async (p, k) => {
       ideTexts[k] = await fs.tryText(p);
       if (ideTexts[k] === null && !/custom/i.test(p)) this.warnings.push('IDE não encontrado: ' + p);
-      onProgress('Lendo definições de objetos...', 0.05 + 0.15 * (++done / ideList.length));
+      onProgress('Lendo definições de objetos', 0.05 + 0.15 * (++done / ideList.length));
     });
     ideList.forEach((p, k) => {
       if (!ideTexts[k]) return;
@@ -115,7 +115,7 @@ export class GameData {
     const imgList = ['models/gta3.img', 'models/gta_int.img', 'models/cutscene.img', 'SAMP/SAMP.img', 'SAMP/custom.img'];
     done = 0;
     for (const img of imgList) {
-      onProgress('Indexando ' + img + '...', 0.2 + 0.2 * (done++ / imgList.length));
+      onProgress('Indexando ' + img, 0.2 + 0.2 * (done++ / imgList.length));
       try {
         const head = await fs.read(img, 0, 8);
         const count = parseImgHeader(head);
@@ -142,7 +142,7 @@ export class GameData {
     const iplTexts = new Array(iplList.length);
     await pool(iplList, 8, async (p, k) => {
       iplTexts[k] = await fs.tryText(p);
-      onProgress('Lendo posicionamento do mapa...', 0.4 + 0.2 * (++done / iplList.length));
+      onProgress('Lendo posicionamento do mapa', 0.4 + 0.2 * (++done / iplList.length));
     });
     iplList.forEach((p, k) => {
       if (!iplTexts[k]) return;
@@ -166,7 +166,7 @@ export class GameData {
         const buf = await fs.read(s.e.img, s.e.offset, s.e.size);
         if (isBinaryIpl(buf)) results[k] = parseIplBinary(buf).inst;
       } catch (err) { this.warnings.push('IPL ' + s.name + ': ' + err.message); }
-      onProgress('Lendo mapa em streaming...', 0.6 + 0.35 * (++done / streams.length));
+      onProgress('Lendo mapa em streaming', 0.6 + 0.35 * (++done / streams.length));
     });
     streams.forEach((s, k) => {
       if (!results[k]) return;

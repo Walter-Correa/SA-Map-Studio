@@ -126,7 +126,7 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
 
     sub_label = tk.Label(
         root,
-        text="Preparando o editor pela primeira vez...",
+        text="Preparando o editor pela primeira vez",
         font=("Segoe UI", 10),
         fg="#a8b1b8",
         bg="#1c2228",
@@ -143,7 +143,7 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
     )
     pbar.pack(pady=(0, 8))
 
-    status_var = tk.StringVar(value="Iniciando descompactação...")
+    status_var = tk.StringVar(value="Iniciando descompactação")
     status_label = tk.Label(
         root,
         textvariable=status_var,
@@ -172,7 +172,7 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
                             icon_label.configure(image=frames[frame_idx])
                         name = os.path.basename(item.filename) or item.filename
                         if len(name) > 35:
-                            name = name[:32] + "..."
+                            name = name[:32]
                         status_var.set(f"Extraindo: {name} ({int(pct)}%)")
                         root.update_idletasks()
 
@@ -180,7 +180,7 @@ def extract_with_ui(bundle_zip, target_parent_dir, target_exe, exe_dir):
             for folder in ("projects", "exported", "data"):
                 os.makedirs(os.path.join(target_parent_dir, "sa-map-studio", folder), exist_ok=True)
 
-            status_var.set("Concluído! Abrindo o editor...")
+            status_var.set("Concluído! Abrindo o editor")
             prog_var.set(100.0)
             if frames and icon_label:
                 icon_label.configure(image=frames[-1])

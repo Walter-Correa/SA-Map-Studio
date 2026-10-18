@@ -53,9 +53,6 @@ if not exist "%VPY%" (
     if not defined PY (
         python -c "import sys" >nul 2>nul && set "PY=python"
     )
-    if not defined PY if exist "%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" (
-        "%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" -c "import sys" >nul 2>nul && set "PY="%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe""
-    )
     if not defined PY (
         for %%P in (
             "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
@@ -129,31 +126,11 @@ set "ARGS=%ARGS% --uac-admin"
 if exist "%VERFILE%" set "ARGS=%ARGS% --version-file "%VERFILE%""
 set "ARGS=%ARGS% --distpath "%SRC%build\engine" --workpath "%SRC%build\tmp_engine" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;.""
-if exist "%SRC%compile-sources\css" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\css;css""
-) else if exist "%SRC%css" (
-    set "ARGS=%ARGS% --add-data "%SRC%css;css""
-)
-if exist "%SRC%compile-sources\js" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\js;js""
-) else if exist "%SRC%js" (
-    set "ARGS=%ARGS% --add-data "%SRC%js;js""
-)
-if exist "%SRC%compile-sources\fonts" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\fonts;fonts""
-) else if exist "%SRC%fonts" (
-    set "ARGS=%ARGS% --add-data "%SRC%fonts;fonts""
-)
-if exist "%SRC%compile-sources\anim-list.json" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
-) else if exist "%SRC%anim-list.json" (
-    set "ARGS=%ARGS% --add-data "%SRC%anim-list.json;.""
-)
-if exist "%SRC%compile-sources\models" (
-    set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
-) else if exist "%SRC%models" (
-    set "ARGS=%ARGS% --add-data "%SRC%models;models""
-)
+set "ARGS=%ARGS% --add-data "%SRC%compile-sources\css;css""
+set "ARGS=%ARGS% --add-data "%SRC%compile-sources\js;js""
+set "ARGS=%ARGS% --add-data "%SRC%compile-sources\fonts;fonts""
+set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
+set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
 "%VPY%" -m PyInstaller %ARGS% "%SRC%serve.py"

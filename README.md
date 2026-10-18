@@ -152,19 +152,22 @@ Stop-Process -Name "SA Map Studio" -Force -ErrorAction SilentlyContinue
 
 ## A pasta do programa
 
-Depois de compilado, tudo fica numa pasta só:
+A compilação gera um executável único. Na primeira vez que é aberto, ele cria ao lado a pasta
+`sa-map-studio` com tudo dentro:
 
 ```
 SA Map Studio\
-├── SA Map Studio.exe  o programa
-├── projects\              seus mapas (salvos sozinhos)
-├── exported\              .pwn / .ipl exportados
-├── data\                  configuração, cache de texturas, miniaturas e registros
-├── test-server\           servidor usado pelo "Testar no jogo"
-└── system\                arquivos internos do programa
+├── SA Map Studio.exe      o programa (launcher com o pacote embutido)
+└── sa-map-studio\
+    ├── projects\              seus mapas (salvos sozinhos)
+    ├── exported\              .pwn / .ipl exportados
+    ├── data\                  configuração, cache de texturas, miniaturas e registros
+    ├── test-server\           servidor usado pelo "Testar no jogo"
+    └── system\                arquivos internos do programa
 ```
 
-A pasta inteira pode ser movida ou copiada para outro computador.
+Para levar o programa para outro computador, basta copiar o `SA Map Studio.exe` (ou a pasta inteira,
+para manter projetos e configurações).
 
 ---
 
@@ -193,19 +196,32 @@ A pasta inteira pode ser movida ou copiada para outro computador.
 ## Estrutura do código
 
 ```
-serve.py                 servidor local (Python, só biblioteca padrão) + janela própria (pywebview)
-index.html, css/         interface
-js/app.js                inicialização
-js/ui/                   abas, inspetor, paleta de cores, câmeras, diálogos, projetos
-js/editor/               núcleo: editor, projeto, materiais, importação, exportação Pawn/IPL
-js/world/                dados do jogo, streaming do mapa, modelos, categorias, workers
-js/formats/              leitores dos formatos do GTA (IMG, IDE, IPL, DFF, TXD)
-js/vendor/               Three.js r186
-compile-sources/         recursos de compilacao, modelos, icones e gamemode
-fonts/                   fonte Barlow (SIL Open Font License)
-build.bat                compila mantendo os dados
-build-clean.bat          compila uma versao limpa
-start.bat                inicia o servidor e editor via Python
+serve.py                       servidor local (Python, só biblioteca padrão) + janela própria (pywebview)
+index.html, favicon.svg        página principal da interface
+icon.ico                       ícone do executável
+compile-sources/
+├── css/                       estilos da interface
+├── js/app.js                  inicialização
+├── js/ui/                     abas, inspetor, paleta de cores, câmeras, diálogos, projetos, editores
+├── js/editor/                 núcleo: editor, projeto, materiais, importação, exportação Pawn/IPL
+├── js/world/                  dados do jogo, streaming do mapa, modelos, categorias, workers
+├── js/formats/                leitores dos formatos do GTA (IMG, IDE, IPL, DFF, TXD)
+├── js/data/                   catálogos estáticos (sprites)
+├── js/vendor/                 Three.js r186
+├── fonts/                     fonte Barlow (SIL Open Font License)
+├── models/                    modelos usados pelo editor
+├── cache/                     miniaturas, skins, sprites, mapicons, sons, animações e radar
+├── launcher.py                executável único: extrai o programa na primeira execução
+├── launcher_frames/           quadros do ícone animado do launcher
+├── package_bundle.py          empacota o programa no zip do launcher
+├── samapstudio.pwn / .amx     gamemode do servidor de teste
+├── anim-list.json             lista de animações
+└── version_info.txt           metadados de versão do .exe
+omp-server-source/             servidor open.mp base usado no "Testar no jogo"
+testing/                       scripts de teste temporários
+build.bat                      compila mantendo os dados
+build-clean.bat                compila uma versão limpa
+start.bat                      inicia o servidor e o editor via Python
 ```
 
 A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece no editor é o que aparece no servidor.
@@ -314,7 +330,7 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ## Créditos e licenças
 
 - [Three.js](https://threejs.org/) (MIT) para a renderização 3D.
-- Fonte [Barlow](https://github.com/jpt/barlow) (SIL Open Font License, ver `fonts/OFL.txt`).
+- Fonte [Barlow](https://github.com/jpt/barlow) (SIL Open Font License, ver `compile-sources/fonts/OFL.txt`).
 - GTA San Andreas é marca da Rockstar Games. Os arquivos do jogo não fazem parte deste repositório:
   o editor usa a cópia instalada no computador de quem o abre.
 

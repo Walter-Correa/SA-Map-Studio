@@ -99,7 +99,7 @@ export function setupImport() {
     $('#importGo').disabled = !total;
   };
   const analyzeBytes = async (bytes, name) => {
-    summary.textContent = 'Analisando...';
+    summary.textContent = 'Analisando';
     try { parsed = await importAny(bytes, { filename: name, gd: app.gd, readSqlite }); }
     catch (err) { parsed = null; summary.textContent = 'Não consegui ler esse arquivo: ' + err.message; return; }
     show();
@@ -479,11 +479,11 @@ export function setupTest() {
     const center = projectCenter(app.project);
 
     $('#testGo').disabled = true;
-    $('#testStatus').textContent = 'Preparando o servidor de teste...';
+    $('#testStatus').textContent = 'Preparando o servidor de teste';
     try {
       const res = await postJSON('/api/test/start', { map: mapLines(app.project, spawn, env, center, streamer), launch: $('#testLaunch').checked, streamer });
       if (!res.ok) { $('#testStatus').textContent = ''; toast(res.error || 'Não consegui iniciar o teste', 'error', 7000); if (res.log) showInfo({ ...info, log: res.log }); return; }
-      $('#testStatus').textContent = res.launched ? `Abrindo o jogo em ${res.address}...` : `Servidor pronto. Conecte o SA-MP em ${res.address}.`;
+      $('#testStatus').textContent = res.launched ? `Abrindo o jogo em ${res.address}` : `Servidor pronto. Conecte o SA-MP em ${res.address}.`;
       toast(res.launched ? 'Abrindo o GTA SA no seu mapa' : `Servidor de teste pronto em ${res.address}`, 'ok', 6000);
       await refresh();
       clearInterval(poll);

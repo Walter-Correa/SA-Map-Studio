@@ -60,7 +60,7 @@ export function setupAnimPicker() {
         toast('Download em lote pausado.', 'info', 3000);
       } else {
         await fetch('/api/anim_cache/download_all', { method: 'POST' });
-        toast('Iniciando download do pacote offline em segundo plano...', 'ok', 4000);
+        toast('Download do pacote offline iniciado em segundo plano', 'ok', 4000);
       }
       refreshCacheStatusUI();
     };
@@ -172,7 +172,7 @@ function playVideo(lib, name) {
   if (!video || !overlay) return;
 
   overlay.style.display = 'flex';
-  overlay.innerHTML = '<span style="color:var(--gold-400);">Carregando prévia do vídeo...</span>';
+  overlay.innerHTML = '<span style="color:var(--gold-400);">Carregando prévia do vídeo</span>';
   video.style.display = 'none';
 
   const videoUrl = `/api/anim_video?lib=${encodeURIComponent(lib)}&name=${encodeURIComponent(name)}`;

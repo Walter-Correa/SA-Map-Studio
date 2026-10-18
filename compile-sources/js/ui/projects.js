@@ -41,7 +41,7 @@ export function saveNow() {
 
 async function doSave(project) {
   if (!project) return;
-  if (app.project === project) setSaveState('Salvando...', 'dirty');
+  if (app.project === project) setSaveState('Salvando', 'dirty');
   if (app.project === project) {
     const p = app.vp.camera.position;
     project.camera = { x: p.x, y: p.y, z: p.z, yaw: app.vp.fly.yaw, pitch: app.vp.fly.pitch };

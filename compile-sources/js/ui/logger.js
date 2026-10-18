@@ -272,7 +272,7 @@ export function setupLogsDialog() {
 
   const refreshViewer = async () => {
     if (!viewer) return;
-    viewer.textContent = 'Carregando registros e diagnóstico...';
+    viewer.textContent = 'Carregando registros e diagnóstico';
     try {
       const rep = await AppLogger.buildDiagnosticReport();
       viewer.textContent = rep;
