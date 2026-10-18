@@ -129,6 +129,8 @@ O programa não precisa de Python, Visual C++ ou outra instalação: tudo vai de
   separado em `compile-sources\.venv-build`).
 - Para rodar pelo código, só a biblioteca padrão do Python; o pywebview é opcional (sem ele, abre no navegador).
 - Tudo o mais (gamemode, compilador Pawn, servidor open.mp, miniaturas, sprites, skins e sons) já está no repositório.
+- Clone numa pasta de caminho curto (por exemplo `C:\Projetos\SA-Map-Studio`): o Windows limita caminhos a 260
+  caracteres e o ambiente de compilação não é criado em pastas muito profundas.
 
 ### Rodar pelo código-fonte
 

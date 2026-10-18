@@ -124,7 +124,8 @@ if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 
 if exist "omp-server-source\pawno\pawncc.exe" (
     echo Compilando gamemode samapstudio.pwn...
-    "omp-server-source\pawno\pawncc.exe" "%SRC%compile-sources\samapstudio.pwn" -o"%SRC%compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
+    rem Caminhos relativos: o .amx sai igual em qualquer pasta/PC
+    "omp-server-source\pawno\pawncc.exe" "compile-sources\samapstudio.pwn" -o"compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
 )
 
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
