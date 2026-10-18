@@ -12,7 +12,7 @@ import { TextureLibrary } from './editor/textures.js';
 import { WORLD_PLACES, INTERIOR_PLACES, PLACES, regionOf } from './editor/places.js';
 import { isText } from './editor/materials.js';
 import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, postJSON, showConfirm } from './ui/common.js';
-import { setupProjects, openInitialProject, saveNow } from './ui/projects.js';
+import { setupProjects, openInitialProject, saveNow, autosaveOnClose } from './ui/projects.js';
 import { setupCatalog, renderCatalogRows } from './ui/catalog.js';
 import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.js';
 import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel } from './ui/inspector.js';
@@ -178,6 +178,9 @@ async function start(cfg) {
   initTextDrawEditor(app);
   initMapIconDialog();
   initSoundDialog();
+  autosaveOnClose($('#dlgTextDraw'), 'textDraws');
+  autosaveOnClose($('#dlgMapIcons'), 'mapIcons');
+  autosaveOnClose($('#dlgGangZones'), 'gangZones');
   await openInitialProject();
   $('#overlay').hidden = true;
   for (const w of gd.warnings) toast(w, 'warn', 6000);

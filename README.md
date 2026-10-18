@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.4.1-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.5.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -97,7 +97,8 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
   O código gerado compila **sem warnings**.
 
 ### Projetos
-- Salvos sozinhos na pasta `projects`; abrir outro projeto salva e fecha o que estava aberto.
+- Salvos sozinhos na pasta `projects`, inclusive ao fechar as janelas de edição e ao fechar o programa; abrir
+  outro projeto salva e fecha o que estava aberto.
 
 ---
 
@@ -230,6 +231,12 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.5.0 — 19/10/2026
+- Ao fechar o programa, todos os projetos abertos são salvos antes de encerrar.
+- Alterações nas janelas de TextDraws, MapIcons e GangZones são salvas ao fechar pelo X, Concluir ou Esc.
+- Depois de importar, nenhum item fica selecionado automaticamente.
+- Ícone do programa nas caixas de confirmação e maior na barra superior.
 
 ### 3.4.1 — 19/10/2026
 - TextDraws iguais ao jogo: o editor desenha com as fontes do GTA SA e reproduz as contas do jogo para tamanho das

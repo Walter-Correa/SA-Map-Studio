@@ -154,7 +154,7 @@ export function showConfirm(message, {
         <form method="dialog" class="dialog-body" id="confirmForm" style="display: flex; flex-direction: column; margin: 0;">
           <header class="dialog-head" style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: #15181d; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <svg style="width: 18px; height: 18px; color: var(--gold-400, #ffb300);"><use href="#i-cube"/></svg>
+              <svg class="brand-mark" viewBox="0 0 120 120" style="width: 26px; height: 26px;" aria-hidden="true"><use href="#i-brand-logo"/></svg>
               <h2 id="confirmTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.3px;">SA Map Studio</h2>
             </div>
             <button class="btn icon" type="button" id="confirmCloseBtn" aria-label="Fechar" style="width: 28px; height: 28px;"><svg><use href="#i-x"/></svg></button>

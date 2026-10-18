@@ -180,7 +180,7 @@ export function setupImport() {
       if ((parsed.pwnHeader || parsed.preservedHeader) && !project.pwnHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
       if (parsed.rawPawn && !project.rawPawn) project.rawPawn = parsed.rawPawn;
     }
-    const uids = items.length ? project.addItems(`Importar ${items.length} itens`, items) : [];
+    if (items.length) project.addItems(`Importar ${items.length} itens`, items);
     if (parsed.cameras) {
       const c = normalizeCameras(parsed.cameras);
       if ($('#importReplace').checked) project.cameras = normalizeCameras(null);
@@ -200,8 +200,9 @@ export function setupImport() {
       ...(parsed.checkpoints || []),
       ...(parsed.mapIcons || []),
     ];
+    // Depois de importar nada fica selecionado: só a câmera vai até os itens
+    ed.select([]);
     if (placed.length) {
-      ed.select(uids.filter(u => project.kindOf(u) !== 'removed' && project.kindOf(u) !== 'textDraws' && project.kindOf(u) !== 'gangZones'));
       positionCameraOverProject({ objects: placed });
       const first = placed[0];
       if (first.interior > 0 && Math.abs(first.z) > 500) app.emit('view-interiors', true);

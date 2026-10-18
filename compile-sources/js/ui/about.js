@@ -6,6 +6,14 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.5.0', date: '19/10/2026', items: [
+      'Salvamento ao Fechar o Programa: ao fechar a janela do SA Map Studio, todos os projetos abertos são salvos antes de encerrar.',
+      'Salvamento ao Fechar os Editores: as alterações feitas nas janelas de TextDraws, MapIcons e GangZones são salvas ao fechar pelo X, pelo botão Concluir ou pela tecla Esc.',
+      'Importação sem Seleção Automática: depois de importar, nenhum item fica selecionado; a câmera apenas vai até o mapa importado.',
+      'Ícone do Programa: o ícone oficial aparece nas caixas de confirmação e ficou maior na barra superior.',
+    ],
+  },
+  {
     version: '3.4.1', date: '19/10/2026', items: [
       'TextDraws Iguais ao Jogo: o editor desenha os textos com as fontes do próprio GTA SA e calcula tamanho das letras, quebra de linha, alinhamento e caixa exatamente como o jogo, na tela 640x448 do SA-MP em 16:9.',
       'Mesmos Valores em Todo Lugar: editor, código Pawn exportado e servidor de teste usam exatamente os mesmos parâmetros de TextDrawLetterSize e TextDrawTextSize, sem ajustes escondidos.',

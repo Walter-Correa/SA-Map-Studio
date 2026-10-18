@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.4.1"
+VERSION = "3.5.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -652,6 +652,8 @@ class State:
     last_ping = 0.0   # último sinal de vida da página aberta no navegador
     stopping = False  # True quando o programa está fechando de propósito
     test_proc = None  # servidor de teste em execução
+    close_ready = False     # projetos já salvos: a janela pode fechar
+    closing_started = False  # salvamento antes de fechar em andamento
 
 
 def editor_gta_folder():
@@ -2327,6 +2329,33 @@ def get_initial_window_geometry():
     return win_w, win_h, x, y, (min(min_w, win_w), min(min_h, win_h))
 
 
+def on_window_closing():
+    """Fechar a janela: cancela o primeiro pedido, salva os projetos abertos e fecha em seguida."""
+    if State.close_ready or State.window is None:
+        return True
+    if not State.closing_started:
+        State.closing_started = True
+        threading.Thread(target=save_projects_then_close, daemon=True).start()
+    return False
+
+
+def save_projects_then_close():
+    win = State.window
+    done = threading.Event()
+    try:
+        if win.evaluate_js("typeof window.__samapSaveAll === 'function'"):
+            win.evaluate_js("window.__samapSaveAll()", lambda _result: done.set())
+            if not done.wait(10):
+                print("Salvamento antes de fechar demorou demais; fechando assim mesmo.")
+    except Exception as err:
+        print("Não foi possível salvar antes de fechar: %s" % err)
+    State.close_ready = True
+    try:
+        win.destroy()
+    except Exception:
+        pass
+
+
 def open_window(url, httpd):
     """Abre o editor numa janela própria (pywebview/WebView2) já maximizada. Retorna False se não der."""
     try:
@@ -2355,6 +2384,7 @@ def open_window(url, httpd):
                                              min_size=min_size,
                                              maximized=True,
                                              background_color="#1c2228", text_select=True)
+        State.window.events.closing += on_window_closing
         try:
             webview.start(private_mode=False, storage_path=WEBVIEW_DIR)
         except TypeError:  # versões antigas do pywebview

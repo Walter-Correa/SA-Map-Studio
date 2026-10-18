@@ -34,6 +34,27 @@ export function saveProject(project) {
   return chain;
 }
 
+// Janelas de edição (TextDraws, MapIcons, GangZones) mexem direto no projeto:
+// ao fechar (X, Concluir ou Esc), salva na hora se algo mudou desde que a janela abriu
+export function autosaveOnClose(dialogEl, kind) {
+  if (!dialogEl) return;
+  let before = null;
+  const snap = () => JSON.stringify(app.project?.[kind] || []);
+  // O atributo "open" muda em qualquer forma de abrir ou fechar o <dialog>
+  new MutationObserver(() => {
+    if (dialogEl.open) {
+      if (before === null) before = snap();
+      return;
+    }
+    const changed = before !== null && app.project && snap() !== before;
+    before = null;
+    if (!changed) return;
+    app.project.modified = true;
+    saveProject(app.project);
+    app.emit('project-change', { type: 'edit', kind });
+  }).observe(dialogEl, { attributes: true, attributeFilter: ['open'] });
+}
+
 export function saveNow() {
   const list = [app.project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])];
   return Promise.all(list.map(p => saveProject(p)));
@@ -331,6 +352,8 @@ export function setupProjects() {
       }
     };
   }
+  // Chamado pela janela do programa (serve.py) antes de fechar: salva tudo e só então a janela fecha
+  window.__samapSaveAll = () => saveNow().then(() => true, () => false);
   window.addEventListener('beforeunload', (e) => {
     if (isDirty()) { saveNow(); e.preventDefault(); e.returnValue = ''; }
   });
