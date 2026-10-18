@@ -46,43 +46,18 @@ if exist "%VPY%" (
 )
 
 rem Ambiente separado so para a compilacao (nao mexe no seu Python)
-if not exist "%VPY%" (
-    echo Procurando instalacao funcional do Python...
-    set "PY="
-    py -3 -c "import sys" >nul 2>nul && set "PY=py -3"
-    if not defined PY (
-        python -c "import sys" >nul 2>nul && set "PY=python"
-    )
-    if not defined PY (
-        for %%P in (
-            "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
-            "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
-            "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
-            "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
-            "C:\Python313\python.exe"
-            "C:\Python312\python.exe"
-            "C:\Python311\python.exe"
-            "C:\Python310\python.exe"
-            "C:\Program Files\Python313\python.exe"
-            "C:\Program Files\Python312\python.exe"
-            "C:\Program Files\Python311\python.exe"
-            "C:\Program Files\Python310\python.exe"
-        ) do (
-            if not defined PY if exist %%P (
-                %%P -c "import sys" >nul 2>nul && set "PY=%%P"
-            )
-        )
-    )
-    if not defined PY (
-        echo ERRO: Nenhuma instalacao funcional do Python foi encontrada!
-        echo Instale o Python para poder compilar o executavel.
-        goto erro
-    )
-    echo Criando ambiente de compilacao com: %PY%...
-    if not exist "%SRC%compile-sources" mkdir "%SRC%compile-sources"
-    %PY% -m venv "%VENV_DIR%"
-    if errorlevel 1 goto erro
+if exist "%VPY%" goto venv_pronto
+echo Procurando instalacao funcional do Python...
+call :procura_python
+if not defined PY (
+    echo ERRO: Nenhuma instalacao funcional do Python foi encontrada!
+    echo Instale o Python 3.10 ou mais novo em https://www.python.org/downloads/ e rode de novo.
+    goto erro
 )
+echo Criando ambiente de compilacao com: %PY%
+%PY% -m venv "%VENV_DIR%"
+if errorlevel 1 goto erro
+:venv_pronto
 
 echo Atualizando pip, PyInstaller e pywebview para as versoes mais recentes...
 "%VPY%" -m pip install --upgrade --quiet pip
@@ -150,7 +125,6 @@ if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 if exist "omp-server-source\pawno\pawncc.exe" (
     echo Compilando gamemode samapstudio.pwn...
     "omp-server-source\pawno\pawncc.exe" "%SRC%compile-sources\samapstudio.pwn" -o"%SRC%compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
-    if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "omp-server-source\gamemodes\samapstudio.amx" >nul
 )
 
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
@@ -342,3 +316,29 @@ rmdir /s /q "%SRC%build" 2>nul
 del /q "%SRC%build-info.json" 2>nul
 if not defined NO_PAUSE pause
 exit /b 1
+
+rem Procura um Python que funcione de verdade (o atalho da Microsoft Store nao serve)
+:procura_python
+set "PY="
+py -3 -c "import sys, venv" >nul 2>nul && set "PY=py -3"
+if defined PY exit /b 0
+python -c "import sys, venv" >nul 2>nul && set "PY=python"
+if defined PY exit /b 0
+for %%P in (
+    "%LOCALAPPDATA%\Programs\Python\Python314\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+    "%ProgramFiles%\Python314\python.exe"
+    "%ProgramFiles%\Python313\python.exe"
+    "%ProgramFiles%\Python312\python.exe"
+    "%ProgramFiles%\Python311\python.exe"
+    "%ProgramFiles%\Python310\python.exe"
+    "C:\Python314\python.exe"
+    "C:\Python313\python.exe"
+    "C:\Python312\python.exe"
+    "C:\Python311\python.exe"
+    "C:\Python310\python.exe"
+) do if not defined PY if exist %%P %%P -c "import sys, venv" >nul 2>nul && set PY=%%P
+exit /b 0

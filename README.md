@@ -104,26 +104,45 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 
 ## Como usar
 
-### Requisitos
-- Windows 10 ou 11.
-- GTA San Andreas original (a mesma versão que roda o SA-MP). A Definitive Edition não é compatível.
-- Para rodar pelo código: **Python 3.8 ou mais novo** (só a biblioteca padrão).
-- Para o "Testar no jogo": cliente SA-MP ou open.mp instalado no GTA e um servidor open.mp / SA-MP.
+### Requisitos para usar o programa compilado
+
+| Item | Detalhe |
+|---|---|
+| Sistema | Windows 10 ou 11 de 64 bits. |
+| Permissão | Conta com acesso de administrador: o programa pede elevação (UAC) ao abrir. |
+| Navegador interno | Microsoft Edge WebView2 Runtime (já vem no Windows 11 e no Windows 10 atualizado). Sem ele, o editor abre no navegador padrão. |
+| Placa de vídeo | Compatível com WebGL 2 e com driver atualizado. |
+| Memória | 4 GB de RAM ou mais (8 GB recomendados para mapas grandes). |
+| Disco | Cerca de 200 MB livres: 86 MB do `SA Map Studio.exe` + 115 MB da pasta `sa-map-studio` criada na primeira execução. |
+| Tela | Pelo menos 1050 x 650. |
+| Jogo | GTA San Andreas original para PC (a mesma versão do SA-MP), com `gta_sa.exe`, `data\gta.dat` e `models\gta3.img`. A Definitive Edition não é compatível. O editor só lê os arquivos do jogo. |
+| Testar no jogo | Cliente SA-MP 0.3.7 (ou open.mp) instalado na pasta do GTA. O servidor open.mp de teste já vem junto e usa a porta UDP 7777 (o Firewall do Windows pode pedir permissão). |
+| Internet | Não é necessária. Só é usada para baixar prévias extras de animações. |
+
+O programa não precisa de Python, Visual C++ ou outra instalação: tudo vai dentro do `.exe`.
+
+### Requisitos para continuar o desenvolvimento em outro PC
+
+- Git e **Python 3.10 ou mais novo** do site oficial (https://www.python.org/downloads/), com o launcher `py`.
+  O atalho "python" da Microsoft Store não serve.
+- Conexão com a internet na primeira compilação (o `build.bat` instala PyInstaller e pywebview num ambiente
+  separado em `compile-sources\.venv-build`).
+- Para rodar pelo código, só a biblioteca padrão do Python; o pywebview é opcional (sem ele, abre no navegador).
+- Tudo o mais (gamemode, compilador Pawn, servidor open.mp, miniaturas, sprites, skins e sons) já está no repositório.
 
 ### Rodar pelo código-fonte
 
 ```powershell
 git clone https://github.com/Walter-Correa/SA-Map-Studio.git
 cd SA-Map-Studio
-python serve.py
+.\start.bat
 ```
 
-Ou dê dois cliques em **`start.bat`**.
-
-O editor procura o GTA sozinho (registro do Windows, Steam e pastas comuns). Para indicar a pasta:
+Ou `py -3 serve.py`. O editor procura o GTA sozinho (pasta padrão de instalação, registro do Windows, Steam e
+pastas comuns). Para indicar a pasta:
 
 ```powershell
-python serve.py --gta "D:\Jogos\GTA San Andreas"
+py -3 serve.py --gta "D:\Jogos\GTA San Andreas"
 ```
 
 Outras opções: `--port 8777`, `--no-browser` e `--navegador` (abre no navegador mesmo com o pywebview instalado).
