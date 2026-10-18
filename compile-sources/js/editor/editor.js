@@ -717,15 +717,25 @@ export class Editor extends EventTarget {
     const items = this.selectedItems();
     if (!items.length) { this.tc.detach(); return; }
 
-    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0) + (this.project.checkpoints?.length || 0) + (this.project.mapIcons?.length || 0) + (this.project.sounds?.length || 0);
+    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0) + (this.project.checkpoints?.length || 0) + (this.project.mapIcons?.length || 0);
     const isAll = items.length >= totalProjectItems && totalProjectItems > 0;
 
     if (items.length === 1) {
-      this.pivot.position.set(items[0].item.x, items[0].item.y, items[0].item.z);
-      this.pivot.rotation.copy(eulerFromItem(items[0].item, items[0].kind));
+      const node = this.nodes.get(items[0].uid);
+      if (node) {
+        this.pivot.position.copy(node.position);
+        this.pivot.quaternion.copy(node.quaternion);
+      } else {
+        this.pivot.position.set(items[0].item.x, items[0].item.y, items[0].item.z);
+        this.pivot.rotation.copy(eulerFromItem(items[0].item, items[0].kind));
+      }
     } else {
       const c = new THREE.Vector3();
-      for (const s of items) c.add(new THREE.Vector3(s.item.x, s.item.y, s.item.z));
+      for (const s of items) {
+        const node = this.nodes.get(s.uid);
+        if (node) c.add(node.position);
+        else c.add(new THREE.Vector3(s.item.x, s.item.y, s.item.z));
+      }
       c.divideScalar(items.length);
       this.pivot.position.copy(c);
       this.pivot.rotation.set(0, 0, 0, 'ZXY');
@@ -735,7 +745,7 @@ export class Editor extends EventTarget {
     this.tc.attach(this.pivot);
     this.tc.setMode(this.mode);
     this.tc.setSpace(this.mode === 'rotate' && items.length === 1 ? this.space : this.space);
-    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'sounds');
+    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons');
     this.tc.showX = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showY = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showZ = true;

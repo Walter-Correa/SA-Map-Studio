@@ -27,7 +27,7 @@ const round = (v, d = 4) => Math.round((+v || 0) * 10 ** d) / 10 ** d;
 
 export function getTotalProjectItems() {
   const p = app.project;
-  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.checkpoints?.length || 0) + (p.mapIcons?.length || 0) + (p.sounds?.length || 0);
+  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.checkpoints?.length || 0) + (p.mapIcons?.length || 0);
 }
 
 export function getVehicleAttachedObjects(vehicleUid, project = app.project) {
@@ -234,7 +234,6 @@ function emptyInspector() {
     <div class="stat-line"><span>Pickups</span><b>${p.pickups?.length || 0}</b></div>
     <div class="stat-line"><span>Checkpoints</span><b>${p.checkpoints?.length || 0}</b></div>
     <div class="stat-line"><span>MapIcons</span><b>${p.mapIcons?.length || 0}</b></div>
-    <div class="stat-line"><span>Sons</span><b>${p.sounds?.length || 0}</b></div>
     <div class="stat-line"><span>GangZones</span><b>${p.gangZones?.length || 0}</b></div>
     <div class="stat-line"><span>TextDraws</span><b>${p.textDraws?.length || 0}</b></div>
     <div class="stat-line"><span>Objetos removidos</span><b>${p.removed?.length || 0}</b></div>
@@ -1879,7 +1878,14 @@ function bindMaterials(objs) {
     else { showAllIndices = !showAllIndices; renderInspector(); }
   });
 
-  $$('#inspector [data-mattab]').forEach(b => b.onclick = () => { matTab = b.dataset.mattab; store.set('matTab', matTab); renderInspector(); });
+  $$('#inspector [data-mattab]').forEach(b => b.onclick = () => {
+    matTab = b.dataset.mattab;
+    store.set('matTab', matTab);
+    if (matTab === 'text') {
+      applyTextLive(uids, idx, textDraft);
+    }
+    renderInspector();
+  });
   $('#inspector [data-goto-tex]')?.addEventListener('click', (e) => { e.preventDefault(); app.emit('show-tab', 'textures'); });
 
   const code = $('#matCode');
@@ -1948,6 +1954,7 @@ function applyTextLive(uids, idx, draft) {
   suppress = true;
   try {
     app.editor.applyText(uids, idx, draft);
+    app.editor.syncAll();
   } finally {
     suppress = false;
   }
@@ -1963,7 +1970,11 @@ function applyTextNow(uids, idx) {
 
 function bindTextEditor(uids, o, idx) {
   const cur = matOf(o, idx[0]);
-  if (cur && isText(cur)) textDraft = { ...textDraft, ...cur };
+  if (cur && isText(cur)) {
+    textDraft = { ...textDraft, ...cur };
+  } else {
+    applyTextLive(uids, idx, textDraft);
+  }
   let timer = null;
   const changed = () => {
     textDraft = { ...textDraft, ...readText() };

@@ -804,7 +804,6 @@ function setupOutline() {
       group('Pickups', 'pickups', order(project.pickups || []), 'i-diamond', 'Nenhum pickup criado.') +
       group('Checkpoints', 'checkpoints', order(project.checkpoints || []), 'i-flag', 'Nenhum checkpoint criado.') +
       group('MapIcons', 'mapIcons', order(project.mapIcons || []), 'i-pin', 'Nenhum mapicon criado.') +
-      group('Sons', 'sounds', order(project.sounds || []), 'i-sound', 'Nenhum som posicionado.') +
       group('GangZones', 'gangZones', order(project.gangZones || []), 'i-map', 'Nenhuma gangzone criada.') +
       group('TextDraws', 'textDraws', order(project.textDraws || []), 'i-text', 'Nenhum textdraw criado.') +
       group('Objetos', 'objects', regularObjs, 'i-cube', 'Nenhum objeto padrão.') +
@@ -820,7 +819,6 @@ function setupOutline() {
       (project.pickups?.length || 0) +
       (project.checkpoints?.length || 0) +
       (project.mapIcons?.length || 0) +
-      (project.sounds?.length || 0) +
       (project.gangZones?.length || 0) +
       (project.textDraws?.length || 0) +
       project.removed.length;

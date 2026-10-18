@@ -263,14 +263,29 @@ export class ModelCache {
       });
       group.userData.dummies = dummies;
     }
-    const isParticle = isParticleModel(id, def);
-    if (!group.children.length || isParticle) {
-      group.add(createParticleMarkerMesh(id, def));
-      if (!slotInfo.length) slotInfo[0] = { texture: '', txd: '', color: [255, 100, 0, 255] };
-    }
+    // Detecção estritamente por estrutura e textura:
+    // Identifica objetos que não carregam malha visível, possuem geometria microscópica/degenerada (< 8cm)
+    // ou materiais 100% invisíveis/transparentes. Nunca filtra por nome.
     let box = new THREE.Box3().setFromObject(group);
-    if (box.isEmpty() || box.getSize(new THREE.Vector3()).length() < 0.15) {
-      group.add(createParticleMarkerMesh(id, def));
+    const boxSize = box.isEmpty() ? new THREE.Vector3(0, 0, 0) : box.getSize(new THREE.Vector3());
+    const isDegenerate = box.isEmpty() || boxSize.length() < 0.08;
+
+    let hasVisibleMesh = false;
+    group.traverse(child => {
+      if (child.isMesh && child.geometry) {
+        const posCount = child.geometry.attributes?.position?.count || 0;
+        const idxCount = child.geometry.index?.count || 0;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        const hasVisibleMat = mats.some(m => m && m.visible !== false && (!m.transparent || m.opacity > 0.02));
+        if (posCount > 0 && (idxCount > 3 || !isDegenerate) && hasVisibleMat) {
+          hasVisibleMesh = true;
+        }
+      }
+    });
+
+    const isInvisible = !hasVisibleMesh || isDegenerate;
+    if (isInvisible) {
+      group.add(createInvisibleMarkerMesh(id, def));
       box = new THREE.Box3().setFromObject(group);
       if (!slotInfo.length) slotInfo[0] = { texture: '', txd: '', color: [255, 100, 0, 255] };
     }
@@ -536,6 +551,7 @@ export function materialTextTexture(ov) {
   canvas.width = w; canvas.height = h;
   drawMaterialText(canvas.getContext('2d'), t, w, h);
   const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.flipY = false;
   tex.anisotropy = 4;
   tex.colorSpace = THREE.NoColorSpace;
@@ -544,31 +560,20 @@ export function materialTextTexture(ov) {
 }
 
 // ---------------------------------------------------------------------------
-// Objetos invisíveis, fogo, fumaça e emissores de partículas:
+// Objetos invisíveis, dummies e emissores de partículas:
 // Cria um marcador geométrico 3D visível para permitir visualização, clique,
 // gizmo e destaque vermelho padrão quando selecionado.
 // ---------------------------------------------------------------------------
-export function isParticleModel(id, def) {
-  if (id >= 18668 && id <= 18749) return true;
-  const name = String(def?.model || '').toLowerCase();
-  return /fire|smoke|prt_|particle|gunsmoke|riot_smoke/i.test(name);
-}
-
-export function createParticleMarkerMesh(id, def) {
+export function createInvisibleMarkerMesh(id, def) {
   const g = new THREE.Group();
-  g.userData.isParticleMarker = true;
+  g.userData.isInvisibleMarker = true;
 
   // Marcador octaédrico estilizado
   const geo = new THREE.OctahedronGeometry(0.55, 0);
   geo.computeVertexNormals();
 
-  const name = String(def?.model || '').toLowerCase();
-  let baseColor = 0xff6600; // Fogo padrão
-  if (name.includes('smoke')) baseColor = 0x90a4ae; // Fumaça
-  else if (name.includes('water') || name.includes('splash')) baseColor = 0x29b6f6;
-
   const mat = new THREE.MeshLambertMaterial({
-    color: baseColor,
+    color: 0xff7700,
     transparent: true,
     opacity: 0.70,
     depthWrite: false,
@@ -576,7 +581,7 @@ export function createParticleMarkerMesh(id, def) {
   });
 
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.name = 'particle_marker';
+  mesh.name = 'invisible_marker';
   mesh.userData.slots = [0]; // Permite destacar e selecionar em vermelho normalmente
   g.add(mesh);
 
@@ -587,7 +592,7 @@ export function createParticleMarkerMesh(id, def) {
   wire.userData.noPick = true;
   g.add(wire);
 
-  // Núcleo central pulsante
+  // Núcleo central
   const coreGeo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
   const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
   const core = new THREE.Mesh(coreGeo, coreMat);

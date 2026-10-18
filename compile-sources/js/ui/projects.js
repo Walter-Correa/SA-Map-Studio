@@ -175,6 +175,31 @@ async function openProjectsDialog() {
     const isCoexisting = !!extraEntry;
     const isReadonly = !!extraEntry?.readonly;
 
+    const counts = isCurrent ? {
+      objects: app.project.objects?.length || 0,
+      vehicles: app.project.vehicles?.length || 0,
+      actors: app.project.actors?.length || 0,
+      pickups: app.project.pickups?.length || 0,
+      labels: app.project.labels?.length || 0,
+      gangZones: app.project.gangZones?.length || 0,
+      mapIcons: app.project.mapIcons?.length || 0,
+      checkpoints: app.project.checkpoints?.length || 0,
+      textDraws: app.project.textDraws?.length || 0,
+      removed: app.project.removed?.length || 0,
+    } : {
+      objects: p.counts?.objects || 0,
+      vehicles: p.counts?.vehicles || 0,
+      actors: p.counts?.actors || 0,
+      pickups: p.counts?.pickups || 0,
+      labels: p.counts?.labels || 0,
+      gangZones: p.counts?.gangZones || 0,
+      mapIcons: p.counts?.mapIcons || 0,
+      checkpoints: p.counts?.checkpoints || 0,
+      textDraws: p.counts?.textDraws || 0,
+      removed: p.counts?.removed || 0,
+    };
+    const statsLine = `Objetos: ${counts.objects} | Veículos: ${counts.vehicles} | Actors: ${counts.actors} | Pickups: ${counts.pickups} | 3D Texts: ${counts.labels} | GangZones: ${counts.gangZones} | Map Icons: ${counts.mapIcons} | Checkpoints: ${counts.checkpoints} | TextDraws: ${counts.textDraws} | Removidos: ${counts.removed}`;
+
     if (isCurrent) li.className = 'current';
     li.innerHTML = `
       <div style="flex:1; display:flex; flex-direction:column; gap:2px; min-width: 140px;">
@@ -184,6 +209,7 @@ async function openProjectsDialog() {
           ${isCoexisting ? `<span class="tag" style="background:${isReadonly ? '#64748b' : '#3b82f6'}; color:#fff; font-size:10px;">${isReadonly ? 'Coexistindo (Não editável)' : 'Coexistindo (Editável)'}</span>` : ''}
         </div>
         <span class="pl-date">${new Date(p.modified * 1000).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+        <span class="pl-stats" style="font-size:11px; color:var(--paper-dim); margin-top:2px; line-height:1.3;">${statsLine}</span>
       </div>
       <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
         ${isCurrent ? '<button type="button" class="btn small" disabled>Aberto</button>' : '<button type="button" class="btn small" data-open title="Salvar atual e abrir este projeto">Abrir</button>'}

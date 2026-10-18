@@ -1917,7 +1917,33 @@ class Handler(SimpleHTTPRequestHandler):
             for n in os.listdir(PROJECTS_DIR):
                 if n.lower().endswith(".json"):
                     full = os.path.join(PROJECTS_DIR, n)
-                    items.append({"name": n[:-5], "modified": os.path.getmtime(full), "size": os.path.getsize(full)})
+                    counts = {
+                        "objects": 0, "vehicles": 0, "actors": 0, "pickups": 0,
+                        "labels": 0, "gangZones": 0, "mapIcons": 0, "checkpoints": 0,
+                        "textDraws": 0, "removed": 0
+                    }
+                    try:
+                        with open(full, "r", encoding="utf-8", errors="replace") as pf:
+                            pdata = json.load(pf)
+                            if isinstance(pdata, dict):
+                                counts["objects"] = len(pdata.get("objects") or [])
+                                counts["vehicles"] = len(pdata.get("vehicles") or [])
+                                counts["actors"] = len(pdata.get("actors") or [])
+                                counts["pickups"] = len(pdata.get("pickups") or [])
+                                counts["labels"] = len(pdata.get("labels") or [])
+                                counts["gangZones"] = len(pdata.get("gangZones") or [])
+                                counts["mapIcons"] = len(pdata.get("mapIcons") or [])
+                                counts["checkpoints"] = len(pdata.get("checkpoints") or [])
+                                counts["textDraws"] = len(pdata.get("textDraws") or [])
+                                counts["removed"] = len(pdata.get("removed") or [])
+                    except Exception:
+                        pass
+                    items.append({
+                        "name": n[:-5],
+                        "modified": os.path.getmtime(full),
+                        "size": os.path.getsize(full),
+                        "counts": counts
+                    })
             items.sort(key=lambda i: -i["modified"])
         self.send_json({"projects": items, "folder": PROJECTS_DIR})
 
