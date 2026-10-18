@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.4.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.4.1-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -62,7 +62,8 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - Seletor de cores RGBA com opacidade/transparência e projeção plana 3D no chão do mapa.
 
 ### TextDraws (Editor Visual)
-- Editor visual dedicado na resolução nativa do SA-MP (640x480) com linhas de margem segura e grade.
+- Editor visual na tela nativa do SA-MP (640x448, mostrada em 16:9) com margem segura e grade; os textos usam as
+  fontes do próprio GTA SA (`fonts.txd` e `fonts.dat`), então o que aparece no editor é o que aparece no jogo.
 - Criação e edição de textos e caixas (`TextDrawCreate` / `CreatePlayerTextDraw`).
 - Fontes 0 a 5, cores de texto e caixa com transparência, alinhamento (esquerda, centro, direita), tamanho de letras e caixas, contorno (`outline`) e sombra (`shadow`).
 - **Pré-visualização 3D de modelos (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com ajuste de rotação (RX, RY, RZ) e zoom.
@@ -229,6 +230,13 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.4.1 — 19/10/2026
+- TextDraws iguais ao jogo: o editor desenha com as fontes do GTA SA e reproduz as contas do jogo para tamanho das
+  letras, quebra de linha, alinhamento e caixa, na tela 640x448 do SA-MP em 16:9.
+- Editor, código Pawn exportado e servidor de teste usam os mesmos parâmetros de `TextDrawLetterSize` e
+  `TextDrawTextSize`; TextDraws de projetos antigos são convertidas ao abrir.
+- A compilação não abre mais a pasta do programa ao terminar.
 
 ### 3.4.0 — 18/10/2026
 - **Executável único**: o programa inteiro vem compactado em `SA Map Studio.exe`, que na primeira execução

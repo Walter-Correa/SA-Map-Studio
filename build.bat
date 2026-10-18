@@ -332,7 +332,6 @@ echo  Ao abrir pela primeira vez, ele criara a pasta sa-map-studio com tudo dent
 ) else (
 echo    projects\, exported\, data\ - seus mapas e configuracoes locais ^(mantidos^)
 )
-if not defined NO_EXPLORER explorer "%OUT%"
 if not defined NO_PAUSE pause
 exit /b 0
 

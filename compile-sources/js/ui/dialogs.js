@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
-import { normalizeCameras } from '../editor/project.js';
+import { normalizeCameras, textDrawNative } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject } from './projects.js';
 import { app, $, esc, plural, store, toast, copyText, postJSON } from './common.js';
@@ -302,80 +302,13 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       miIdx++;
     }
     for (const td of p.textDraws || []) {
-      const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
-      const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
-      let w = 100;
-      if (align === 1) {
-        w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(20, td.textSizeX || 100);
-      } else if (align === 2) {
-        w = Math.max(20, td.textSizeX || 100);
-      } else if (align === 3) {
-        if (td.textSizeX < td.x && td.textSizeX > 0) w = td.x - td.textSizeX;
-        else w = Math.max(20, td.textSizeX || 100);
-      }
-      const h = td.textSizeY > 0 ? td.textSizeY : (isBoxPure ? 20 : 23);
-      let sizeX = td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0);
-      let sizeY = td.textSizeY ?? (td.font === 4 ? 64.0 : 480.0);
-
-      if (td.font === 4 || td.font === 5) {
-        sizeX = td.textSizeX > 0 ? td.textSizeX : (td.font === 4 ? 64.0 : 80.0);
-        sizeY = td.textSizeY > 0 ? td.textSizeY : (td.font === 4 ? 64.0 : 80.0);
-      } else if (td.useBox) {
-        if (align === 1) {
-          sizeX = td.x + w;
-          sizeY = h;
-        } else if (align === 2) {
-          sizeX = h;
-          sizeY = w;
-        } else if (align === 3) {
-          sizeX = td.x - w;
-          sizeY = h;
-        }
-      } else {
-        sizeX = (align === 3 ? 0.0 : 640.0);
-        sizeY = (align === 2 ? 640.0 : 480.0);
-      }
-      let letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
-      let letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
-      if (isBoxPure && td.useBox) {
-        letX = 0.0;
-        letY = h / 22.0;
-      }
-      let colVal = td.color ?? 0xFFFFFFFF;
-      if (td.font === 4 && (colVal === 0 || colVal === 0xFF || (colVal & 0xFF) === 0)) colVal = 0xFFFFFFFF;
-      const cInt = signed(colVal);
-      const bInt = signed(td.boxColor ?? 0x00000080);
-      const bgRaw = td.font === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0x00000000) : (td.backgroundColor ?? 0x000000FF);
-      const bgInt = signed(bgRaw);
-      const useBoxVal = (td.font === 4 || td.font === 5) ? 0 : (td.useBox ? 1 : 0);
+      const n = textDrawNative(td);
       const hasRot = Boolean(td.previewRotX || td.previewRotY || td.previewRotZ);
-      const rotX = (td.font === 5 && !hasRot) ? -16.0 : (td.previewRotX || 0);
-      const rotY = (td.font === 5 && !hasRot) ? 0.0 : (td.previewRotY || 0);
-      const rotZ = (td.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
-      let rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
-      if (td.font === 4) {
-        const colon = rawText.indexOf(':');
-        if (colon !== -1) {
-          const libPart = rawText.slice(0, colon).toLowerCase();
-          const texPart = rawText.slice(colon + 1);
-          if (libPart === 'loadscs' || libPart === 'loadsuk') {
-            const tLow = texPart.toLowerCase();
-            rawText = 'LOADSUK:' + (tLow === 'loadsc0' ? 'loadscuk' : tLow);
-          } else if (libPart.startsWith('loadsc')) {
-            rawText = libPart.toLowerCase() + ':' + texPart.toLowerCase();
-          } else if (libPart === 'hud') {
-            if (texPart.toLowerCase() === 'radar_ring' || texPart.toLowerCase() === 'radarringplane') {
-              rawText = 'hud:radarRingPlane';
-            } else {
-              rawText = 'hud:' + texPart;
-            }
-          } else if (libPart.startsWith('ld_')) {
-            rawText = libPart.toUpperCase() + ':' + texPart.toLowerCase();
-          }
-        }
-      }
-      const textEsc = rawText.replace(/\\n/g, '\n').replace(/\r?\n/g, '~n~').replace(/\r/g, '');
-      lines.push(`D|${td.x.toFixed(2)}|${td.y.toFixed(2)}|${td.font ?? 1}|${letX.toFixed(2)}|${letY.toFixed(2)}|${sizeX.toFixed(2)}|${sizeY.toFixed(2)}|${cInt}|${bInt}|${bgInt}|${td.outline ?? 0}|${td.shadow ?? 1}|${align}|${useBoxVal}|${td.proportional ?? 1}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${textEsc}`);
+      const rotX = (n.font === 5 && !hasRot) ? -16.0 : (td.previewRotX || 0);
+      const rotY = (n.font === 5 && !hasRot) ? 0.0 : (td.previewRotY || 0);
+      const rotZ = (n.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
+      const f = (v) => (+v || 0).toFixed(4);
+      lines.push(`D|${f(td.x)}|${f(td.y)}|${n.font}|${f(n.letterSizeX)}|${f(n.letterSizeY)}|${f(n.textSizeX)}|${f(n.textSizeY)}|${signed(n.color)}|${signed(n.boxColor)}|${signed(n.backgroundColor)}|${n.outline}|${n.shadow}|${n.align}|${n.useBox}|${n.proportional}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${n.text}`);
     }
   }
   return lines.join('\n') + '\n';

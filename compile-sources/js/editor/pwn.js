@@ -2,6 +2,7 @@
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
+import { textDrawNative } from './project.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -802,6 +803,7 @@ export function parsePwn(source) {
           rawTdText = 'LOADSUK:' + (tex === 'loadsc0' ? 'loadscuk' : tex);
         }
         const td = {
+          tdv: 2,
           isPlayer: Boolean(o),
           x: num(a[o]), y: num(a[o + 1]),
           text: rawTdText,
@@ -1247,94 +1249,28 @@ export function exportPawn(project, options = {}) {
         if (t && !isStudioSectionComment(t)) textDrawLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
-    const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
-    const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
-    let w = 100;
-    if (align === 1) {
-      w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(20, td.textSizeX || 100);
-    } else if (align === 2) {
-      w = Math.max(20, td.textSizeX || 100);
-    } else if (align === 3) {
-      if (td.textSizeX < td.x && td.textSizeX > 0) w = td.x - td.textSizeX;
-      else w = Math.max(20, td.textSizeX || 100);
-    }
-    const h = td.textSizeY > 0 ? td.textSizeY : (isBoxPure ? 20 : 23);
-    let expSizeX = td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0);
-    let expSizeY = td.textSizeY ?? (td.font === 4 ? 64.0 : 480.0);
-
-    if (td.font === 4 || td.font === 5) {
-      expSizeX = td.textSizeX > 0 ? td.textSizeX : (td.font === 4 ? 64.0 : 80.0);
-      expSizeY = td.textSizeY > 0 ? td.textSizeY : (td.font === 4 ? 64.0 : 80.0);
-    } else if (td.useBox) {
-      if (align === 1) {
-        expSizeX = td.x + w;
-        expSizeY = h;
-      } else if (align === 2) {
-        expSizeX = h;
-        expSizeY = w;
-      } else if (align === 3) {
-        expSizeX = td.x - w;
-        expSizeY = h;
-      }
-    } else {
-      expSizeX = (align === 3 ? 0.0 : 640.0);
-      expSizeY = (align === 2 ? 640.0 : 480.0);
-    }
+    const n = textDrawNative(td);
+    const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
-    let rawText = String(td.text || (td.font === 4 ? 'hud:radardisc' : '_')).trim().replace(/^"|"$/g, '');
-    if (td.font === 4) {
-      const colon = rawText.indexOf(':');
-      if (colon !== -1) {
-        const libPart = rawText.slice(0, colon).toLowerCase();
-        const texPart = rawText.slice(colon + 1);
-        if (libPart === 'loadscs' || libPart === 'loadsuk') {
-          const tLow = texPart.toLowerCase();
-          rawText = 'LOADSUK:' + (tLow === 'loadsc0' ? 'loadscuk' : tLow);
-        } else if (libPart.startsWith('loadsc')) {
-          rawText = libPart.toLowerCase() + ':' + texPart.toLowerCase();
-        } else if (libPart === 'hud') {
-          if (texPart.toLowerCase() === 'radar_ring' || texPart.toLowerCase() === 'radarringplane') {
-            rawText = 'hud:radarRingPlane';
-          } else {
-            rawText = 'hud:' + texPart;
-          }
-        } else if (libPart.startsWith('ld_')) {
-          rawText = libPart.toUpperCase() + ':' + texPart.toLowerCase();
-        }
-      }
-    }
-    const escText = JSON.stringify(rawText);
-    let colVal = td.color ?? 0xFFFFFFFF;
-    if (td.font === 4 && (colVal === 0 || colVal === 0xFF || (colVal & 0xFF) === 0)) colVal = 0xFFFFFFFF;
-    const cHex = '0x' + (Number(colVal) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const bHex = '0x' + (Number(td.boxColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
-    const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const tdVar = `td_${idx}`;
-    textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${escText});${cmt}`);
-    textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
-    const letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
-    const letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
-    if (isBoxPure && td.useBox) {
-      textDrawLines.push(`TextDrawLetterSize(${tdVar}, 0.00, ${formatCoord(h / 22.0, null)});`);
-    } else {
-      textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);
-    }
-    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${align});`);
-    textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);
-    textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
-    textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
-    textDrawLines.push(`TextDrawSetProportional(${tdVar}, ${td.proportional ?? 1});`);
-    if (td.useBox && td.font !== 5 && td.font !== 4) {
+    textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${JSON.stringify(n.text)});${cmt}`);
+    textDrawLines.push(`TextDrawFont(${tdVar}, ${n.font});`);
+    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(n.letterSizeX, null)}, ${formatCoord(n.letterSizeY, null)});`);
+    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${n.align});`);
+    textDrawLines.push(`TextDrawColor(${tdVar}, ${hex(n.color)});`);
+    textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${n.outline});`);
+    textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${n.shadow});`);
+    textDrawLines.push(`TextDrawSetProportional(${tdVar}, ${n.proportional});`);
+    if (n.useBox) {
       textDrawLines.push(`TextDrawUseBox(${tdVar}, 1);`);
-      textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${bHex});`);
+      textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${hex(n.boxColor)});`);
     }
-    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
-    textDrawLines.push(`TextDrawBackgroundColor(${tdVar}, ${bgHex});`);
+    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(n.textSizeX, null)}, ${formatCoord(n.textSizeY, null)});`);
+    textDrawLines.push(`TextDrawBackgroundColor(${tdVar}, ${hex(n.backgroundColor)});`);
     if (td.selectable) textDrawLines.push(`TextDrawSetSelectable(${tdVar}, 1);`);
-    if (td.font === 5 && td.previewModel) {
+    if (n.font === 5 && td.previewModel) {
       textDrawLines.push(`TextDrawSetPreviewModel(${tdVar}, ${td.previewModel});`);
       textDrawLines.push(`TextDrawSetPreviewRot(${tdVar}, ${formatCoord(td.previewRotX ?? -16)}, ${formatCoord(td.previewRotY ?? 0)}, ${formatCoord(td.previewRotZ ?? -55)}, ${formatCoord(td.previewZoom || 1)});`);
       textDrawLines.push(`TextDrawSetPreviewVehCol(${tdVar}, ${td.previewColor1 ?? 1}, ${td.previewColor2 ?? 1});`);

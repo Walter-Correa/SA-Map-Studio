@@ -149,9 +149,80 @@ export function makeGangZone(data) {
   };
 }
 
+// Versão 2: os campos guardam exatamente os parâmetros do SA-MP (TextDrawLetterSize, TextDrawTextSize...).
+// Projetos antigos guardavam largura/altura do editor e eram convertidos só na exportação.
+const TD_VERSION = 2;
+
+function migrateLegacyTextDraw(data) {
+  const d = { ...data };
+  const font = d.font !== undefined ? (d.font | 0) : 1;
+  if (font === 4 || font === 5) return d;
+  const align = d.align ?? d.alignment ?? 1;
+  const x = +d.x || 0;
+  const sizeX = +d.textSizeX || 0, sizeY = +d.textSizeY || 0;
+  const isBoxPure = d.isBox || d.text === '_' || !d.text || String(d.text).trim() === '';
+  if (d.useBox) {
+    let w;
+    if (align === 1) w = sizeX > x ? sizeX - x : Math.max(20, sizeX || 100);
+    else if (align === 3) w = sizeX < x && sizeX > 0 ? x - sizeX : Math.max(20, sizeX || 100);
+    else w = Math.max(20, sizeX || 100);
+    const h = sizeY > 0 ? sizeY : (isBoxPure ? 20 : 23);
+    if (align === 2) { d.textSizeX = h; d.textSizeY = w; }
+    else { d.textSizeX = align === 3 ? x - w : x + w; d.textSizeY = h; }
+    if (isBoxPure) { d.letterSizeX = 0; d.letterSizeY = +(h / 22).toFixed(4); }
+  } else {
+    d.textSizeX = align === 3 ? 0 : 640;
+    d.textSizeY = align === 2 ? 640 : 480;
+  }
+  return d;
+}
+
+// Nome do sprite como o jogo encontra (biblioteca e textura)
+function normalizeSpriteName(text) {
+  const colon = text.indexOf(':');
+  if (colon === -1) return text;
+  const lib = text.slice(0, colon).toLowerCase();
+  const tex = text.slice(colon + 1);
+  const tLow = tex.toLowerCase();
+  if (lib === 'loadscs' || lib === 'loadsuk') return 'LOADSUK:' + (tLow === 'loadsc0' ? 'loadscuk' : tLow);
+  if (lib.startsWith('loadsc')) return lib + ':' + tLow;
+  if (lib === 'hud') return 'hud:' + (tLow === 'radar_ring' || tLow === 'radarringplane' ? 'radarRingPlane' : tex);
+  if (lib.startsWith('ld_')) return lib.toUpperCase() + ':' + tLow;
+  return text;
+}
+
+// Parâmetros finais das funções TextDraw*, usados na exportação Pawn e no servidor de teste
+export function textDrawNative(td) {
+  const font = td.font ?? 1;
+  const special = font === 4 || font === 5;
+  let text = String(td.text ?? '').replace(/\r?\n/g, '~n~').trim().replace(/^"|"$/g, '');
+  if (!text) text = font === 4 ? 'hud:radardisc' : '_';
+  if (font === 4) text = normalizeSpriteName(text);
+  let color = td.color ?? 0xFFFFFFFF;
+  if (font === 4 && (color === 0 || color === 0xFF || (color & 0xFF) === 0)) color = 0xFFFFFFFF;
+  const defSize = font === 4 ? 64 : 80;
+  return {
+    text, font,
+    align: special ? 1 : (td.align ?? td.alignment ?? 1),
+    letterSizeX: font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35),
+    letterSizeY: font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4),
+    textSizeX: special ? (td.textSizeX > 0 ? td.textSizeX : defSize) : (td.textSizeX ?? 640),
+    textSizeY: special ? (td.textSizeY > 0 ? td.textSizeY : defSize) : (td.textSizeY ?? 480),
+    color,
+    useBox: special ? 0 : (td.useBox ? 1 : 0),
+    boxColor: td.boxColor ?? 0x00000080,
+    backgroundColor: font === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0) : (td.backgroundColor ?? 0x000000FF),
+    outline: special ? 0 : (td.outline ?? 0),
+    shadow: special ? 0 : (td.shadow ?? 1),
+    proportional: td.proportional ?? 1,
+  };
+}
+
 export function makeTextDraw(data) {
+  if (data.tdv === undefined && data.uid) data = migrateLegacyTextDraw(data);
   const alignVal = data.align !== undefined ? (data.align | 0) : (data.alignment !== undefined ? (data.alignment | 0) : 1);
   return {
+    tdv: TD_VERSION,
     uid: data.uid || newUid(),
     name: data.name ? String(data.name) : 'Textdraw0',
     isPlayer: Boolean(data.isPlayer),

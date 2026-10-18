@@ -873,46 +873,13 @@ stock SAMSP_CarregarMapa()
                         TextDrawSetOutline(td, tdoutline);
                         TextDrawSetShadow(td, tdshadow);
                         TextDrawSetProportional(td, bool:tdprop);
+                        // Mesmos valores do editor e do código exportado, sem ajustes
                         if (tdusebox)
                         {
-                            if (tdalign == 3)
-                            {
-                                // No GTA SA/SA-MP, TextDrawAlignment 3 com UseBox estica a caixa ate X=0.
-                                // Para reproduzir com fidelidade visual 100% identica ao editor:
-                                // Criamos uma caixa pura (alinhamento 1) no fundo de tdx - w ate tdx,
-                                // e o texto alinhado a direita na frente com usebox = false.
-                                new Float:boxLeft = (tdsizex < tdx && tdsizex > 0.0) ? tdsizex : (tdx - 100.0);
-                                new Text:tdBox = TextDrawCreate(boxLeft, tdy, "_");
-                                if (tdBox != Text:INVALID_TEXT_DRAW)
-                                {
-                                    TextDrawFont(tdBox, 1);
-                                    TextDrawLetterSize(tdBox, 0.0, (tdsizey > 0.0 ? (tdsizey / 22.0) : (tdlety > 0.0 ? tdlety : 1.4)));
-                                    TextDrawTextSize(tdBox, tdx, 0.0);
-                                    TextDrawAlignment(tdBox, 1);
-                                    TextDrawUseBox(tdBox, true);
-                                    TextDrawBoxColor(tdBox, tdboxcol);
-                                    TextDrawBackgroundColor(tdBox, tdbgcol);
-                                    if (gTotalTextDraws < SAMSP_MAX_TEXTDRAWS)
-                                    {
-                                        gTextDraws[gTotalTextDraws] = tdBox;
-                                        gTotalTextDraws++;
-                                    }
-                                }
-                                TextDrawUseBox(td, false);
-                            }
-                            else
-                            {
-                                TextDrawUseBox(td, true);
-                                TextDrawBoxColor(td, tdboxcol);
-                                TextDrawTextSize(td, tdsizex, tdsizey);
-                            }
+                            TextDrawUseBox(td, true);
+                            TextDrawBoxColor(td, tdboxcol);
                         }
-                        else
-                        {
-                            new Float:wrapX = (tdalign == 3) ? 0.0 : (tdsizex > 0.0 ? tdsizex : 640.0);
-                            new Float:wrapY = (tdalign == 2) ? (tdsizey > 0.0 ? tdsizey : 640.0) : 480.0;
-                            TextDrawTextSize(td, wrapX, wrapY);
-                        }
+                        TextDrawTextSize(td, tdsizex, tdsizey);
                         TextDrawBackgroundColor(td, tdbgcol);
                         if (tdselect) TextDrawSetSelectable(td, true);
                         gTextDraws[gTotalTextDraws] = td;

@@ -6,6 +6,15 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.4.1', date: '19/10/2026', items: [
+      'TextDraws Iguais ao Jogo: o editor desenha os textos com as fontes do próprio GTA SA e calcula tamanho das letras, quebra de linha, alinhamento e caixa exatamente como o jogo, na tela 640x448 do SA-MP em 16:9.',
+      'Mesmos Valores em Todo Lugar: editor, código Pawn exportado e servidor de teste usam exatamente os mesmos parâmetros de TextDrawLetterSize e TextDrawTextSize, sem ajustes escondidos.',
+      'Campos de Caixa Mais Claros: os rótulos de Text Size mudam conforme o alinhamento (fim da caixa, largura ou início da caixa).',
+      'Projetos Antigos Convertidos: TextDraws salvas em versões anteriores são convertidas automaticamente para os valores do SA-MP ao abrir o projeto.',
+      'Compilação sem abrir a pasta do programa ao terminar.',
+    ],
+  },
+  {
     version: '3.4.0', date: '18/10/2026', items: [
       'Executável Único: o programa inteiro vem compactado em um só SA Map Studio.exe, que na primeira execução cria a pasta sa-map-studio com barra de progresso e ícone animado, e nas seguintes abre o editor direto.',
       'Configuração Automática do GTA: com o executável dentro da pasta de instalação do GTA San Andreas, a pasta do jogo é reconhecida e configurada sozinha, sem pedir a instalação ao abrir.',

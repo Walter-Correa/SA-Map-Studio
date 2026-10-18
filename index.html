@@ -182,7 +182,7 @@
       <button id="btnCheckpoints" class="btn ghost" title="Criar Checkpoint ou Race Checkpoint (Tipos 0 a 4)"><svg><use href="#i-flag"/></svg><span class="lbl2">Checkpoints</span></button>
       <button id="btnMapIcons" class="btn ghost" title="Criar e editar MapIcons no mapa (IDs 0 a 63)"><svg><use href="#i-pin"/></svg><span class="lbl2">MapIcons</span></button>
       <button id="btnGangZones" class="btn ghost" title="Criar e editar GangZones no mapa do radar"><svg><use href="#i-map"/></svg><span class="lbl2">GangZones</span></button>
-      <button id="btnTextDraws" class="btn ghost" title="Editor visual de TextDraws (640x480)"><svg><use href="#i-text"/></svg><span class="lbl2">TextDraws</span></button>
+      <button id="btnTextDraws" class="btn ghost" title="Editor visual de TextDraws (640x448)"><svg><use href="#i-text"/></svg><span class="lbl2">TextDraws</span></button>
       <button id="btn3DText" class="btn ghost" title="Criar Texto 3D no mapa"><svg><use href="#i-text3d"/></svg><span class="lbl2">3DText</span></button>
       <button id="btnSounds" class="btn ghost" title="Catálogo de sons (PlayerPlaySound) com prévia de áudio"><svg><use href="#i-sound"/></svg><span class="lbl2">Sons</span></button>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
@@ -907,10 +907,10 @@
         <button type="button" class="btn small ghost" id="tdBtnRedo" title="Refazer (Ctrl+Y)" disabled><svg><use href="#i-redo"/></svg></button>
         <span class="divider"></span>
         <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Arraste os elementos para mover ou use a alça no canto para redimensionar</span>
-        <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;">640 x 480</span>
+        <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;">640 x 448</span>
       </div>
       <div id="tdCanvasWrap" style="flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 6px; background: radial-gradient(circle, #10141f 0%, #06080d 100%);">
-        <canvas id="tdCanvas" width="640" height="480" style="max-width: 100%; max-height: 100%; width: auto; height: 100%; aspect-ratio: 4/3; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.8); border: 1px solid var(--line); border-radius: 4px; cursor: default;"></canvas>
+        <canvas id="tdCanvas" width="1920" height="1080" style="max-width: 100%; max-height: 100%; width: auto; height: 100%; aspect-ratio: 16/9; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.8); border: 1px solid var(--line); border-radius: 4px; cursor: default;"></canvas>
       </div>
     </div>
 
@@ -933,7 +933,7 @@
 
         <div class="pair">
           <label>Pos X (0-640)<input type="number" id="tdPosX" step="1"></label>
-          <label>Pos Y (0-480)<input type="number" id="tdPosY" step="1"></label>
+          <label>Pos Y (0-448)<input type="number" id="tdPosY" step="1"></label>
         </div>
 
         <div class="pair">
@@ -962,8 +962,8 @@
         </div>
 
         <div class="pair">
-          <label>Text Size X (Box/Largura)<input type="number" id="tdSizeX" step="1"></label>
-          <label>Text Size Y (Altura Box)<input type="number" id="tdSizeY" step="1"></label>
+          <label><span id="tdSizeXLbl">Fim da caixa (X)</span><input type="number" id="tdSizeX" step="1"></label>
+          <label><span id="tdSizeYLbl">Text Size Y</span><input type="number" id="tdSizeY" step="1"></label>
         </div>
 
         <div class="pair">
