@@ -183,3 +183,22 @@ export function createMapIconNode(mi) {
   group.userData.kind = 'mapIcons';
   return group;
 }
+
+// Gera o nome sequencial na duplicação: MapIcon 1 > MapIcon 1_2 > MapIcon 1_3
+export function getNextMapIconName(origName, existingIcons = []) {
+  const baseRaw = (origName || 'MapIcon 1').trim();
+  const m = baseRaw.match(/^(.*?)_(\d+)$/);
+  let prefix = baseRaw;
+  let nextNum = 2;
+  if (m) {
+    prefix = m[1];
+    nextNum = parseInt(m[2], 10) + 1;
+  }
+  let candidate = `${prefix}_${nextNum}`;
+  const existingNames = new Set(existingIcons.map(mi => (mi.comment || mi.name || '').trim()));
+  while (existingNames.has(candidate)) {
+    nextNum++;
+    candidate = `${prefix}_${nextNum}`;
+  }
+  return candidate;
+}

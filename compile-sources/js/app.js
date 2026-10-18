@@ -49,7 +49,32 @@ async function browseGta(initial) {
   try { return await postJSON('/api/browse', { initial }); } catch { return { path: '' }; }
 }
 
+function setBootProgress(p) {
+  const wrap = $('#bootIconWrap');
+  if (!wrap) return;
+  if (p === null || p === undefined) {
+    wrap.classList.remove('is-syncing');
+    wrap.style.removeProperty('--sync-time');
+    const anims = wrap.getAnimations ? wrap.getAnimations({ subtree: true }) : [];
+    for (const a of anims) {
+      try { a.play(); } catch (_) {}
+    }
+  } else {
+    wrap.classList.add('is-syncing');
+    const clamped = Math.max(0, Math.min(1.0, +p || 0));
+    wrap.style.setProperty('--sync-time', (clamped * 3.0).toFixed(3) + 's');
+    const anims = wrap.getAnimations ? wrap.getAnimations({ subtree: true }) : [];
+    for (const a of anims) {
+      try {
+        a.pause();
+        a.currentTime = clamped * 3000;
+      } catch (_) {}
+    }
+  }
+}
+
 function showSetup(path, problem, needsSetup) {
+  setBootProgress(null);
   $('#bootBody').hidden = true;
   const form = $('#setupForm');
   form.hidden = false;
@@ -94,12 +119,18 @@ async function start(cfg) {
   const status = $('#bootStatus'), bar = $('#bootBar');
   const gd = new GameData(new GameFS('/gta/'));
   try {
-    await gd.load((msg, p) => { status.textContent = msg; bar.style.width = Math.round(p * 100) + '%'; });
+    await gd.load((msg, p) => {
+      status.textContent = msg;
+      bar.style.width = Math.round(p * 100) + '%';
+      setBootProgress(p);
+    });
   } catch (err) {
+    setBootProgress(null);
     status.textContent = 'Erro ao ler os arquivos do jogo: ' + err.message;
     status.classList.add('error');
     return;
   }
+  setBootProgress(null);
   status.textContent = 'Abrindo o editor...';
   $('#app').hidden = false;
   const vp = new Viewport($('#viewport'));

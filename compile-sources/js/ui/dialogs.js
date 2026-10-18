@@ -323,13 +323,13 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       } else if (td.useBox) {
         if (align === 1) {
           sizeX = td.x + w;
-          sizeY = 0.0;
+          sizeY = h;
         } else if (align === 2) {
-          sizeX = w;
-          sizeY = 0.0;
+          sizeX = h;
+          sizeY = w;
         } else if (align === 3) {
           sizeX = td.x - w;
-          sizeY = 0.0;
+          sizeY = h;
         }
       } else {
         sizeX = (align === 3 ? 0.0 : 640.0);

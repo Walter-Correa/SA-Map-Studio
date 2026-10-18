@@ -9,7 +9,7 @@ import { createLabelNode } from '../world/labels.js';
 import { createPickupFallbackMesh } from '../world/pickups.js';
 import { createGangZoneNode, getNextGangZoneName } from '../world/gangzones.js';
 import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
-import { createMapIconNode } from '../world/mapicons.js';
+import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
 import { createSoundNode } from '../world/sounds.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -710,6 +710,11 @@ export class Editor extends EventTarget {
   }
 
   selectedItems() { return this.selection.map(u => { const p = this.findProjectOf(u); return { uid: u, kind: p.kindOf(u), item: p.find(u), project: p }; }).filter(s => s.item); }
+
+  kindOf(uid) {
+    const p = this.findProjectOf(uid);
+    return p ? p.kindOf(uid) : (this.project?.kindOf(uid) || null);
+  }
 
   attachGizmo() {
     if (!this.selection.length || this.placing || this.mode === 'texture') { this.tc.detach(); this.updateSlotHighlight(); return; }
@@ -1516,6 +1521,8 @@ export class Editor extends EventTarget {
           }
           itemCopy.x = Math.round((itemCopy.x + ox) * 10) / 10;
           itemCopy.y = Math.round((itemCopy.y + oy) * 10) / 10;
+          itemCopy.comment = getNextMapIconName(s.item.comment || s.item.name || `MapIcon ${s.item.type ?? 0}`, p.mapIcons);
+          itemCopy.name = itemCopy.comment;
         } else if (s.kind === 'gangZones') {
           const w = Math.max(30, (itemCopy.maxx || 0) - (itemCopy.minx || 0));
           const h = Math.max(30, (itemCopy.maxy || 0) - (itemCopy.miny || 0));

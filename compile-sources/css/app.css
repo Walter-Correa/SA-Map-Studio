@@ -102,8 +102,7 @@ body.cursor-hidden * {
 
 /* ---------------------------------------------------------------- topo */
 .brand { display: flex; align-items: center; gap: 5px; font-family: var(--font-cond); font-weight: 700; font-size: 14.5px; white-space: nowrap; flex-shrink: 0; }
-.brand-mark { width: 22px; height: 22px; fill: var(--sign); stroke: var(--sign-edge); stroke-width: 1.6; }
-.brand-mark path:last-child { fill: none; }
+.brand-mark { width: 22px; height: 22px; display: block; flex-shrink: 0; }
 .project-box { display: flex; align-items: center; gap: 4px; min-width: 0; padding-left: 6px; border-left: 1px solid var(--line); flex-shrink: 0; }
 .project-name {
   width: 100px; min-width: 80px; flex-shrink: 0;
@@ -462,8 +461,22 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 }
 .boot { width: min(520px, 92vw); text-align: center; }
 .boot h1 { font-family: var(--font-cond); font-size: 34px; margin: 10px 0 18px; font-weight: 700; }
-.boot-mark { width: 72px; height: 72px; fill: var(--sign); stroke: var(--sign-edge); stroke-width: 1.4; }
-.boot-mark path:last-child { fill: none; }
+.boot-icon-wrap {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+}
+.boot-icon-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.boot-icon-wrap.is-syncing * {
+  animation-play-state: paused !important;
+  animation-delay: calc(var(--sync-time, 0s) * -1) !important;
+}
 .boot-status { color: var(--paper-dim); margin: 0 0 10px; min-height: 20px; }
 .bar { height: 6px; background: var(--asphalt-600); border-radius: 3px; overflow: hidden; }
 .bar-fill { height: 100%; width: 0; background: var(--sodium); transition: width .2s; }
@@ -676,8 +689,7 @@ legend.sub { margin-top: 8px; }
 .dialog.about { width: min(720px, 94vw); }
 .about-body { overflow-y: auto; max-height: calc(90vh - 130px); min-height: 0; padding-right: 6px; display: grid; gap: 18px; }
 .about-head { display: flex; gap: 14px; align-items: center; }
-.brand-mark.big { width: 46px; height: 46px; fill: var(--sign); stroke: var(--sign-edge); stroke-width: 1.4; }
-.brand-mark.big path:last-child { fill: none; }
+.brand-mark.big { width: 56px; height: 56px; display: block; flex-shrink: 0; }
 .about-title { font-family: var(--font-cond); font-size: 22px; font-weight: 700; display: flex; gap: 8px; align-items: center; }
 .about-sub { color: var(--paper-dim); font-size: 13px; margin-top: 2px; }
 .about-sub b { color: var(--sodium); font-weight: 600; }

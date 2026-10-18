@@ -1,5 +1,5 @@
 // Editor visual 2D de MapIcons (semelhante ao de GangZones) + Janela de Lista Visual de MapIcons (IDs 0 a 63)
-import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl } from '../world/mapicons.js';
+import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl, getNextMapIconName } from '../world/mapicons.js';
 import { makeMapIcon } from '../editor/project.js';
 import { app, $, $$, esc, toast, copyText } from './common.js';
 
@@ -434,7 +434,7 @@ function duplicateSelectedMapIcon() {
     color: m.color ?? 0xFF0000FF,
     style: m.style ?? 0,
     streamDist: m.streamDist ?? 200,
-    comment: m.comment ? `${m.comment} (Cópia)` : getMapIconInfo(m.type ?? 0).label,
+    comment: getNextMapIconName(m.comment || getMapIconInfo(m.type ?? 0).label, app.project.mapIcons || []),
   });
 
   if (!app.project.mapIcons) app.project.mapIcons = [];

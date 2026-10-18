@@ -273,13 +273,13 @@ export function parsePwn(source) {
     const inlineName = (cbm[4] || '').trim();
     const body = cbm[5];
     if (body.includes('InterpolateCameraPos') || body.includes('InterpolateCameraLookAt')) {
-      const caseRegex = /case\s+(\d+)\s*:\s*(?:\/\/\s*([^\r\n]*))?\s*\{([\s\S]*?)\}/g;
+      const caseRegex = /(?:\/\/\s*([^\r\n]*)\r?\n\s*)?case\s+(\d+)\s*:\s*(?:\/\/\s*([^\r\n]*))?\s*\{([\s\S]*?)\}/g;
       let cm;
       const cases = [];
       while ((cm = caseRegex.exec(body))) {
-        const stepNum = parseInt(cm[1], 10);
-        const stepName = (cm[2] || '').trim();
-        const caseBody = cm[3];
+        const stepNum = parseInt(cm[2], 10);
+        const stepName = (cm[3] || cm[1] || '').trim();
+        const caseBody = cm[4];
 
         let fromPos = null, toPos = null, time = 5000, cut = 'cut';
         let fromLook = null, toLook = null;
@@ -1268,13 +1268,13 @@ export function exportPawn(project, options = {}) {
     } else if (td.useBox) {
       if (align === 1) {
         expSizeX = td.x + w;
-        expSizeY = 0.0;
+        expSizeY = h;
       } else if (align === 2) {
-        expSizeX = w;
-        expSizeY = 0.0;
+        expSizeX = h;
+        expSizeY = w;
       } else if (align === 3) {
         expSizeX = td.x - w;
-        expSizeY = 0.0;
+        expSizeY = h;
       }
     } else {
       expSizeX = (align === 3 ? 0.0 : 640.0);

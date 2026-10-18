@@ -1,117 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <!-- Background Gradient -->
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1e232d"/>
-      <stop offset="100%" stop-color="#12151b"/>
-    </linearGradient>
-
-    <!-- Stainless Steel Frame Gradient -->
-    <linearGradient id="steelGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#8a94a2"/>
-      <stop offset="25%" stop-color="#c4cbd6"/>
-      <stop offset="50%" stop-color="#e2e8f0"/>
-      <stop offset="75%" stop-color="#bcc4d0"/>
-      <stop offset="100%" stop-color="#7a8492"/>
-    </linearGradient>
-
-    <!-- Handle Chrome Gradient -->
-    <linearGradient id="handleGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#94a3b8"/>
-    </linearGradient>
-
-    <!-- Oven Interior Warm Glow -->
-    <radialGradient id="ovenGlow" cx="50%" cy="55%" r="60%">
-      <stop offset="0%" stop-color="#ff9900" stop-opacity="0.95"/>
-      <stop offset="45%" stop-color="#e65100" stop-opacity="0.8"/>
-      <stop offset="85%" stop-color="#2d1305" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#140802"/>
-    </radialGradient>
-
-    <!-- Control Fascia Strip -->
-    <linearGradient id="controlGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#252a33"/>
-      <stop offset="100%" stop-color="#171a20"/>
-    </linearGradient>
-
-    <!-- Knob Gradient -->
-    <radialGradient id="knobGrad" cx="40%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#94a3b8"/>
-      <stop offset="60%" stop-color="#475569"/>
-      <stop offset="100%" stop-color="#1e293b"/>
-    </radialGradient>
-  </defs>
-
-  <!-- Outer Rounded Tile -->
-  <rect x="1" y="1" width="30" height="30" rx="7" fill="url(#bgGrad)" stroke="#f39c12" stroke-width="1.2"/>
-
-  <!-- Oven Outer Stainless Steel Chassis (Centered Front View) -->
-  <rect x="4.5" y="4.5" width="23.0" height="23.0" rx="2.0" fill="url(#steelGrad)" stroke="#475569" stroke-width="0.5"/>
-
-  <!-- Top Control Panel Fascia -->
-  <rect x="5.5" y="5.5" width="21.0" height="4.6" rx="0.8" fill="url(#controlGrad)"/>
-  <line x1="5.5" y1="10.1" x2="26.5" y2="10.1" stroke="#333c4d" stroke-width="0.3"/>
-
-  <!-- Left Knobs -->
-  <circle cx="7.7" cy="7.8" r="1.1" fill="url(#knobGrad)" stroke="#64748b" stroke-width="0.25"/>
-  <line x1="7.7" y1="6.9" x2="7.7" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
-
-  <circle cx="10.5" cy="7.8" r="1.1" fill="url(#knobGrad)" stroke="#64748b" stroke-width="0.25"/>
-  <line x1="10.5" y1="6.9" x2="10.5" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
-
-  <!-- Center Digital Clock / Display -->
-  <rect x="13.0" y="6.5" width="6.0" height="2.6" rx="0.5" fill="#090d14" stroke="#334155" stroke-width="0.3"/>
-  <!-- Digital Clock digits: 12:00 in cyan LED glow -->
-  <text x="16.0" y="8.5" font-size="1.9" font-family="monospace, monospace" font-weight="bold" fill="#38bdf8" text-anchor="middle" letter-spacing="0.2">12:00</text>
-
-  <!-- Right Knobs -->
-  <circle cx="21.5" cy="7.8" r="1.1" fill="url(#knobGrad)" stroke="#64748b" stroke-width="0.25"/>
-  <line x1="21.5" y1="6.9" x2="21.5" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
-
-  <circle cx="24.3" cy="7.8" r="1.1" fill="url(#knobGrad)" stroke="#64748b" stroke-width="0.25"/>
-  <line x1="24.3" y1="6.9" x2="24.3" y2="7.8" stroke="#f1f5f9" stroke-width="0.35" stroke-linecap="round"/>
-
-  <!-- Main Oven Door Upper Handle -->
-  <!-- Handle Stand-offs -->
-  <rect x="6.8" y="11.0" width="1.0" height="1.6" rx="0.3" fill="#64748b"/>
-  <rect x="24.2" y="11.0" width="1.0" height="1.6" rx="0.3" fill="#64748b"/>
-  <!-- Handle Main Bar -->
-  <rect x="6.2" y="11.1" width="19.6" height="1.4" rx="0.7" fill="url(#handleGrad)" stroke="#475569" stroke-width="0.25"/>
-  <line x1="7.0" y1="11.4" x2="25.0" y2="11.4" stroke="#ffffff" stroke-width="0.3" stroke-linecap="round" opacity="0.8"/>
-
-  <!-- Oven Glass Window (Outer Dark Border) -->
-  <rect x="6.8" y="13.2" width="18.4" height="9.0" rx="1.0" fill="#14181f" stroke="#334155" stroke-width="0.4"/>
-
-  <!-- Oven Interior Glowing Chamber -->
-  <rect x="7.6" y="14.0" width="16.8" height="7.4" rx="0.6" fill="url(#ovenGlow)"/>
-
-  <!-- Oven Interior Wire Racks (Horizontal chrome grates) -->
-  <line x1="8.2" y1="16.2" x2="23.8" y2="16.2" stroke="#fed7aa" stroke-width="0.45" stroke-linecap="round"/>
-  <line x1="8.2" y1="18.8" x2="23.8" y2="18.8" stroke="#fed7aa" stroke-width="0.45" stroke-linecap="round"/>
-
-  <!-- Vertical wire grill ticks -->
-  <line x1="11.0" y1="15.8" x2="11.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
-  <line x1="14.0" y1="15.8" x2="14.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
-  <line x1="18.0" y1="15.8" x2="18.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
-  <line x1="21.0" y1="15.8" x2="21.0" y2="16.6" stroke="#ffedd5" stroke-width="0.35"/>
-
-  <line x1="11.0" y1="18.4" x2="11.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
-  <line x1="14.0" y1="18.4" x2="14.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
-  <line x1="18.0" y1="18.4" x2="18.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
-  <line x1="21.0" y1="18.4" x2="21.0" y2="19.2" stroke="#ffedd5" stroke-width="0.35"/>
-
-  <!-- Glass Light Reflection Streak (Diagonal sheen) -->
-  <polygon points="8.0,14.2 11.5,14.2 8.0,19.5" fill="#ffffff" opacity="0.12"/>
-  <polygon points="12.5,14.2 16.0,14.2 9.5,21.2 8.0,21.2" fill="#ffffff" opacity="0.08"/>
-
-  <!-- Lower Warming Drawer Separation Line -->
-  <line x1="5.5" y1="23.2" x2="26.5" y2="23.2" stroke="#334155" stroke-width="0.4"/>
-
-  <!-- Lower Warming Drawer Panel -->
-  <rect x="5.5" y="23.5" width="21.0" height="3.4" rx="0.6" fill="url(#controlGrad)"/>
-
-  <!-- Lower Handle -->
-  <rect x="11.0" y="24.7" width="10.0" height="1.0" rx="0.5" fill="url(#handleGrad)" stroke="#475569" stroke-width="0.2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+<title>SA Map Studio - papel-claro</title>
+<g transform="translate(-9,4.2) scale(1.15)">
+<polygon points="60,37 70,36.5 80,48 90,47.5 100,59 60,81 50,69.5 40,70 30,58.5 20,59" fill="#C9A45E"/>
+<polygon points="60,34 70,33.5 30,55.5 20,56" fill="#F6E2B5"/>
+<polygon points="70,33.5 80,45 40,67 30,55.5" fill="#E7C98E"/>
+<polygon points="80,45 90,44.5 50,66.5 40,67" fill="#F6E2B5"/>
+<polygon points="90,44.5 100,56 60,78 50,66.5" fill="#E7C98E"/>
+<line x1="70" y1="33.5" x2="30" y2="55.5" stroke="#CDAE74" stroke-width="1"/>
+<line x1="80" y1="45" x2="40" y2="67" stroke="#CDAE74" stroke-width="1"/>
+<line x1="90" y1="44.5" x2="50" y2="66.5" stroke="#CDAE74" stroke-width="1"/>
+<polyline points="40,45 50,44.5 60,56 70,55.5 80,67" fill="none" stroke="#F5A623" stroke-width="2.5" stroke-linejoin="round"/>
+<line x1="75" y1="39.25" x2="35" y2="61.25" stroke="#F5A623" stroke-width="2.5"/>
+<line x1="95" y1="50.25" x2="55" y2="72.25" stroke="#F5A623" stroke-width="2.5"/>
+<polygon points="60,34 70,33.5 80,45 90,44.5 100,56 60,78 50,66.5 40,67 30,55.5 20,56" fill="none" stroke="#C77A0A" stroke-width="1.5" stroke-linejoin="round"/>
+<polygon points="38,21 47,26 38,31 29,26" fill="#F5A623"/>
+<polygon points="29,26 38,31 38,59 29,54" fill="#C77A0A"/>
+<polygon points="38,31 47,26 47,54 38,59" fill="#7A4A08"/>
+<polygon points="82,29 91,34 82,39 73,34" fill="#F5A623"/>
+<polygon points="73,34 82,39 82,59 73,54" fill="#C77A0A"/>
+<polygon points="82,39 91,34 91,54 82,59" fill="#7A4A08"/>
+<polygon points="46,43.5 54,48 46,52.5 38,48" fill="#F5A623"/>
+<polygon points="38,48 46,52.5 46,64.5 38,60" fill="#C77A0A"/>
+<polygon points="46,52.5 54,48 54,60 46,64.5" fill="#7A4A08"/>
+<polygon points="74,47.5 82,52 74,56.5 66,52" fill="#F5A623"/>
+<polygon points="66,52 74,56.5 74,66.5 66,62" fill="#C77A0A"/>
+<polygon points="74,56.5 82,52 82,62 74,66.5" fill="#7A4A08"/>
+<path d="M60 16 C50 16 44 23 44 31 C44 41 60 56 60 56 C60 56 76 41 76 31 C76 23 70 16 60 16 Z" fill="#F5A623" stroke="#1E222A" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="60" cy="31" r="9.5" fill="#1E222A"/>
+<line x1="60" y1="31" x2="60" y2="24" stroke="#3B82F6" stroke-width="2.4" stroke-linecap="round"/>
+<line x1="60" y1="31" x2="66" y2="35" stroke="#EF4444" stroke-width="2.4" stroke-linecap="round"/>
+<line x1="60" y1="31" x2="54" y2="35" stroke="#22C55E" stroke-width="2.4" stroke-linecap="round"/>
+</g>
 </svg>

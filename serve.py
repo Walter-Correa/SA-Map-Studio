@@ -2135,6 +2135,12 @@ def open_window(url, httpd):
 
 
 def main():
+    if IS_WINDOWS:
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("samapstudio.pro")
+        except Exception:
+            pass
     setup_logging()
     migrate_old_layout()
     os.makedirs(DATA_DIR, exist_ok=True)

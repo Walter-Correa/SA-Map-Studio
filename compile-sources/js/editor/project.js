@@ -516,7 +516,7 @@ export function normalizeCameras(c) {
     id: p.id || 'p' + Date.now().toString(36) + i,
     name: String(p.name || 'Movimento ' + (i + 1)),
     end: ['behind', 'keep', 'loop'].includes(p.end) ? p.end : 'behind',
-    keys: (p.keys || []).map(k => ({ pos: vec(k.pos), look: vec(k.look), time: Math.max(0, Math.round(+k.time || 0)), hold: Math.max(0, Math.round(+k.hold || 0)), cut: k.cut === 'cut' ? 'cut' : 'move' })),
+    keys: (p.keys || []).map(k => ({ name: k.name ? String(k.name) : '', pos: vec(k.pos), look: vec(k.look), time: Math.max(0, Math.round(+k.time || 0)), hold: Math.max(0, Math.round(+k.hold || 0)), cut: k.cut === 'cut' ? 'cut' : 'move' })),
   }));
   return out;
 }
