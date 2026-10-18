@@ -877,7 +877,7 @@ stock SAMSP_CarregarMapa()
                         }
                         else
                         {
-                            TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 80.0), (tdsizey > 0.0 ? tdsizey : 80.0));
+                            TextDrawTextSize(td, tdsizex, tdsizey);
                         }
                         TextDrawColor(td, tdcol);
                         TextDrawSetOutline(td, tdoutline);

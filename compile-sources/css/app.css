@@ -616,14 +616,14 @@ legend.sub { margin-top: 8px; }
 }
 
 /* Diálogo de Sons (PlayerPlaySound) - cabeçalho e filtros fixos, apenas a lista scrolla */
-#dlgSounds {
+#dlgSounds:not([open]) {
+  display: none !important;
+}
+#dlgSounds[open] {
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   padding: 16px 20px !important;
-}
-#dlgSounds[open] {
-  display: flex !important;
 }
 #dlgSounds .dialog-head {
   flex-shrink: 0;

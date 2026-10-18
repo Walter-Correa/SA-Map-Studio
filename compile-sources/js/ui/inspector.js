@@ -2674,9 +2674,26 @@ function bindGangZone(gz) {
 
   const nameInp = $('#gzName');
   if (nameInp) {
+    nameInp.oninput = () => {
+      const it = project.find(uid);
+      if (it) {
+        it.name = nameInp.value;
+        it.comment = nameInp.value;
+        project.modified = true;
+      }
+    };
     nameInp.onchange = () => {
-      project.updateItems('Renomear GangZone', [uid], (o) => { o.name = nameInp.value; });
+      project.updateItems('Renomear GangZone', [uid], (o) => {
+        o.name = nameInp.value.trim();
+        o.comment = nameInp.value.trim();
+      });
       updateGangZoneCode(project.find(uid));
+    };
+    nameInp.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        nameInp.blur();
+      }
     };
   }
 

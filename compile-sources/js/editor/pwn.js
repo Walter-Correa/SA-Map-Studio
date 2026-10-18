@@ -107,6 +107,12 @@ function splitNamed(args) {
   return { pos, named };
 }
 
+export function isStudioSectionComment(str) {
+  if (!str) return false;
+  const t = String(str).trim();
+  return /^\/\/\s*(textos?\s*3d|3d\s*text(s|label)?|pickups?|gang\s*zones?|checkpoints?|map\s*icons?|text\s*draws?|actors?|ve[íi]culos|vehicles?|sons\s*\(playerplaysound\)|sons?|extras dos objetos|coloque em onplayerconnect|c[âa]meras):?$/i.test(t);
+}
+
 function extractPreceding(between) {
   const lines = between.split('\n');
   const commentLines = [];
@@ -116,7 +122,9 @@ function extractPreceding(between) {
     if (!t) {
       blankLines++;
     } else if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*') || t.endsWith('*/')) {
-      commentLines.push(t);
+      if (!isStudioSectionComment(t)) {
+        commentLines.push(t);
+      }
     }
   }
   return {
@@ -188,7 +196,9 @@ function splitHeaderAndFirstItem(between) {
       headerLines.push(l);
     } else if (hasCodeHeader) {
       if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*') || t.endsWith('*/')) {
-        itemComments.push(t);
+        if (!isStudioSectionComment(t)) {
+          itemComments.push(t);
+        }
       } else if (!t) {
         blankCount++;
       }
@@ -212,7 +222,9 @@ function splitHeaderAndFirstItem(between) {
     const t = l.trim();
     if (!t) blanks++;
     else if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*') || t.endsWith('*/')) {
-      allComments.push(t);
+      if (!isStudioSectionComment(t)) {
+        allComments.push(t);
+      }
     }
   }
   return {
@@ -525,32 +537,54 @@ export function parsePwn(source) {
         }
       }
     } else if (fn === 'SetPlayerCameraPos') {
-      if (a.length >= 3) pendingShot = { pos: { x: num(a[0]), y: num(a[1]), z: num(a[2]) }, look: { x: 0, y: 0, z: 0 }, cut: 'cut' };
+      const o = (a.length >= 4 && isNaN(Number(a[0]))) ? 1 : (a.length >= 4 ? 1 : 0);
+      if (a.length >= 3 + o) {
+        pendingShot = {
+          pos: { x: num(a[o]), y: num(a[o + 1]), z: num(a[o + 2]) },
+          look: { x: 0, y: 0, z: 0 },
+          cut: 'cut',
+          name: `Câmera ${shots.length + 1}`
+        };
+      }
     } else if (fn === 'SetPlayerCameraLookAt') {
-      if (pendingShot && a.length >= 3) {
-        pendingShot.look = { x: num(a[0]), y: num(a[1]), z: num(a[2]) };
-        pendingShot.cut = a[3] === 'CAMERA_MOVE' || int(a[3]) === 1 ? 'move' : 'cut';
-        shots.push(pendingShot);
-        pendingShot = null;
+      if (pendingShot) {
+        const o = (a.length >= 4 && isNaN(Number(a[0]))) ? 1 : (a.length >= 4 ? 1 : 0);
+        if (a.length >= 3 + o) {
+          pendingShot.look = { x: num(a[o]), y: num(a[o + 1]), z: num(a[o + 2]) };
+          const cutArg = a[o + 3];
+          pendingShot.cut = cutArg === 'CAMERA_MOVE' || int(cutArg) === 1 ? 'move' : 'cut';
+          shots.push(pendingShot);
+          pendingShot = null;
+        }
       }
     } else if (fn === 'InterpolateCameraPos') {
-      if (a.length >= 7) {
+      const o = (a.length >= 8 && isNaN(Number(a[0]))) ? 1 : (a.length >= 8 ? 1 : 0);
+      if (a.length >= 7 + o) {
         pendingMove = {
-          fromPos: { x: num(a[0]), y: num(a[1]), z: num(a[2]) },
-          toPos: { x: num(a[3]), y: num(a[4]), z: num(a[5]) },
-          time: Math.max(0, int(a[6])),
-          cut: a[7] === 'CAMERA_MOVE' || int(a[7]) === 1 ? 'move' : 'cut',
+          fromPos: { x: num(a[o]), y: num(a[o + 1]), z: num(a[o + 2]) },
+          toPos: { x: num(a[o + 3]), y: num(a[o + 4]), z: num(a[o + 5]) },
+          time: Math.max(0, int(a[o + 6])),
+          cut: a[o + 7] === 'CAMERA_MOVE' || int(a[o + 7]) === 1 ? 'move' : 'cut',
         };
       }
     } else if (fn === 'InterpolateCameraLookAt') {
-      if (pendingMove && a.length >= 6) {
-        paths.push({
-          fromPos: pendingMove.fromPos, toPos: pendingMove.toPos,
-          fromLook: { x: num(a[0]), y: num(a[1]), z: num(a[2]) },
-          toLook: { x: num(a[3]), y: num(a[4]), z: num(a[5]) },
-          time: pendingMove.time, cut: pendingMove.cut,
-        });
-        pendingMove = null;
+      if (pendingMove) {
+        const o = (a.length >= 7 && isNaN(Number(a[0]))) ? 1 : (a.length >= 7 ? 1 : 0);
+        if (a.length >= 6 + o) {
+          const fromLook = { x: num(a[o]), y: num(a[o + 1]), z: num(a[o + 2]) };
+          const toLook = { x: num(a[o + 3]), y: num(a[o + 4]), z: num(a[o + 5]) };
+          const time = Math.max(0, int(a[o + 6] !== undefined ? a[o + 6] : pendingMove.time));
+          const cut = (a[o + 7] !== undefined ? (a[o + 7] === 'CAMERA_MOVE' || int(a[o + 7]) === 1 ? 'move' : 'cut') : pendingMove.cut);
+          paths.push({
+            name: `Movimento ${paths.length + 1}`,
+            end: 'behind',
+            keys: [
+              { pos: pendingMove.fromPos, look: fromLook, time: 0, hold: 0, cut: 'cut' },
+              { pos: pendingMove.toPos, look: toLook, time: time || 5000, hold: 0, cut: cut }
+            ]
+          });
+          pendingMove = null;
+        }
       }
     } else if (fn === 'Create3DTextLabel' || fn === 'CreateDynamic3DTextLabel') {
       if (a.length >= 6) {
@@ -582,10 +616,13 @@ export function parsePwn(source) {
       }
     } else if (fn === 'GangZoneCreate') {
       if (a.length >= 4) {
+        const rawName = inlineComment ? inlineComment.replace(/^\/\/\s*/, '').trim() : '';
+        const gzName = rawName || `Zona ${gangZones.length + 1}`;
         const gz = {
+          name: gzName,
           minx: num(a[0]), miny: num(a[1]), maxx: num(a[2]), maxy: num(a[3]),
           color: 0xFF000080,
-          comment: inlineComment, preComment, blankLinesBefore,
+          comment: gzName, preComment, blankLinesBefore,
         };
         gangZones.push(gz);
         if (variable) vars.set(variable, gz);
@@ -650,14 +687,8 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, mi);
       }
     } else if (fn === 'PlayerPlaySound') {
-      if (a.length >= 5) {
-        const snd = {
-          soundid: int(a[1], 1052),
-          x: num(a[2]), y: num(a[3]), z: num(a[4]),
-          comment: inlineComment, preComment, blankLinesBefore,
-        };
-        sounds.push(snd);
-      }
+      // Sons são apenas para preview e cópia rápida de código no editor;
+      // não são importados como elementos do projeto.
     } else if (fn === 'TextDrawCreate' || fn === 'CreatePlayerTextDraw') {
       const o = fn === 'CreatePlayerTextDraw' ? 1 : 0;
       if (a.length >= 3 + o) {
@@ -1004,7 +1035,7 @@ export function exportPawn(project, options = {}) {
     if (l.preComment) {
       for (const pl of l.preComment.split('\n')) {
         const t = pl.trim();
-        if (t) labelLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        if (t && !isStudioSectionComment(t)) labelLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
     const isRel = Boolean(opt.relative && (center.x || center.y || center.z));
@@ -1027,7 +1058,7 @@ export function exportPawn(project, options = {}) {
     if (pk.preComment) {
       for (const pl of pk.preComment.split('\n')) {
         const t = pl.trim();
-        if (t) pickupLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        if (t && !isStudioSectionComment(t)) pickupLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
     const isRel = Boolean(opt.relative && (center.x || center.y || center.z));
@@ -1048,7 +1079,7 @@ export function exportPawn(project, options = {}) {
     if (gz.preComment) {
       for (const pl of gz.preComment.split('\n')) {
         const t = pl.trim();
-        if (t) gangZoneLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+        if (t && !isStudioSectionComment(t)) gangZoneLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
     }
     const colorHex = '0x' + (Number(gz.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
@@ -1056,7 +1087,8 @@ export function exportPawn(project, options = {}) {
     const miny = gz.miny ?? gz.minY ?? 0;
     const maxx = gz.maxx ?? gz.maxX ?? 0;
     const maxy = gz.maxy ?? gz.maxY ?? 0;
-    const cmt = commentSuffix(gz);
+    const gzName = gz.name || (gz.comment ? String(gz.comment).replace(/^\/\/\s*/, '').trim() : '');
+    const cmt = gzName ? ` // ${gzName}` : '';
     gangZoneLines.push(`gangzoneid = GangZoneCreate(${formatCoord(minx)}, ${formatCoord(miny)}, ${formatCoord(maxx)}, ${formatCoord(maxy)});${cmt}`);
     gangZoneLines.push(`GangZoneShowForAll(gangzoneid, ${colorHex});`);
   }
@@ -1068,7 +1100,7 @@ export function exportPawn(project, options = {}) {
     if (cp.preComment) {
       for (const pl of cp.preComment.split('\n')) {
         const t = pl.trim();
-        if (t && !t.match(/^\/\/\s*checkpoints?:?$/i)) {
+        if (t && !isStudioSectionComment(t)) {
           checkpointLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
         }
       }
@@ -1090,7 +1122,7 @@ export function exportPawn(project, options = {}) {
     if (mi.preComment) {
       for (const pl of mi.preComment.split('\n')) {
         const t = pl.trim();
-        if (t && !t.match(/^\/\/\s*mapicons?:?$/i)) {
+        if (t && !isStudioSectionComment(t)) {
           mapIconLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
         }
       }
@@ -1101,26 +1133,16 @@ export function exportPawn(project, options = {}) {
     mapIconLines.push(`SetPlayerMapIcon(playerid, ${mi.iconid !== undefined ? mi.iconid : idx}, ${formatCoord(mx)}, ${formatCoord(my)}, ${formatCoord(mz)}, ${mi.type ?? 0}, ${colorHex}, ${mi.style ?? 0});${cmt}`);
   }
 
-  const soundLines = [];
-  const sounds = project.sounds || [];
-  for (let idx = 0; idx < sounds.length; idx++) {
-    const s = sounds[idx];
-    if (s.blankLinesBefore > 0 && idx > 0) soundLines.push('');
-    if (s.preComment) {
-      for (const pl of s.preComment.split('\n')) {
-        const t = pl.trim();
-        if (t) soundLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
-      }
-    }
-    const sx = s.x - center.x, sy = s.y - center.y, sz = s.z - center.z;
-    const cmt = commentSuffix(s);
-    soundLines.push(`PlayerPlaySound(playerid, ${s.soundid ?? 1052}, ${formatCoord(sx)}, ${formatCoord(sy)}, ${formatCoord(sz)});${cmt}`);
-  }
-
   const textDrawLines = [];
   const textDraws = project.textDraws || [];
   for (let idx = 0; idx < textDraws.length; idx++) {
     const td = textDraws[idx];
+    if (td.preComment) {
+      for (const pl of td.preComment.split('\n')) {
+        const t = pl.trim();
+        if (t && !isStudioSectionComment(t)) textDrawLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
+      }
+    }
     const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
     const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
     let w = 100;
@@ -1132,7 +1154,7 @@ export function exportPawn(project, options = {}) {
       if (td.textSizeX < td.x && td.textSizeX > 0) w = td.x - td.textSizeX;
       else w = Math.max(20, td.textSizeX || 100);
     }
-    const h = td.textSizeY > 0 ? td.textSizeY : 100;
+    const h = td.textSizeY > 0 ? td.textSizeY : (isBoxPure ? 20 : 23);
     let expSizeX = td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0);
     let expSizeY = td.textSizeY ?? (td.font === 4 ? 64.0 : 480.0);
 
@@ -1142,12 +1164,15 @@ export function exportPawn(project, options = {}) {
     } else if (td.useBox) {
       if (align === 1) {
         expSizeX = td.x + w;
+        expSizeY = td.y + h;
       } else if (align === 2) {
-        expSizeX = w;
+        // No SA-MP o alinhamento centralizado inverte altura e largura em TextDrawTextSize!
+        expSizeX = h;
+        expSizeY = w;
       } else if (align === 3) {
         expSizeX = td.x - w;
+        expSizeY = td.y + h;
       }
-      expSizeY = h;
     } else {
       expSizeX = (align === 3 ? 0.0 : 640.0);
       expSizeY = (align === 2 ? 640.0 : 480.0);
@@ -1282,7 +1307,6 @@ export function exportPawn(project, options = {}) {
     if (gangZoneLines.length) lines.push('', '// GangZones:', ...gangZoneLines);
     if (checkpointLines.length) lines.push('', '// Checkpoints:', ...checkpointLines);
     if (mapIconLines.length) lines.push('', '// MapIcons:', ...mapIconLines);
-    if (soundLines.length) lines.push('', '// Sons (PlayerPlaySound):', ...soundLines);
     if (textDrawLines.length) lines.push('', '// TextDraws:', ...textDrawLines);
     if (remLines.length) lines.push('', '// Coloque em OnPlayerConnect (Objetos removidos):', ...remLines);
     if (cams.code) lines.push('', cams.code);
@@ -1297,8 +1321,8 @@ export function exportPawn(project, options = {}) {
   lines.push(`// Mapa: ${project.name}`);
   lines.push(`// Gerado pelo SA Map Studio em ${date}`);
   lines.push(`// Objetos: ${objs.length}   Veículos: ${vehs.length}   Actors: ${actors.length}   Objetos removidos: ${rems.length}`);
-  if (labels.length || pickups.length || gangZones.length || textDraws.length || checkpoints.length || mapIcons.length || sounds.length) {
-    lines.push(`// Textos 3D: ${labels.length}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   Checkpoints: ${checkpoints.length}   MapIcons: ${mapIcons.length}   Sons: ${sounds.length}   TextDraws: ${textDraws.length}`);
+  if (labels.length || pickups.length || gangZones.length || textDraws.length || checkpoints.length || mapIcons.length) {
+    lines.push(`// Textos 3D: ${labels.length}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   Checkpoints: ${checkpoints.length}   MapIcons: ${mapIcons.length}   TextDraws: ${textDraws.length}`);
   }
   lines.push('// ----------------------------------------------------------------');
   lines.push('// Como usar:');
@@ -1349,7 +1373,6 @@ export function exportPawn(project, options = {}) {
   if (gangZoneLines.length) { lines.push('', '    // GangZones:'); for (const l of gangZoneLines) lines.push(indent(l)); }
   if (checkpointLines.length) { lines.push('', '    // Checkpoints:'); for (const l of checkpointLines) lines.push(indent(l)); }
   if (mapIconLines.length) { lines.push('', '    // MapIcons:'); for (const l of mapIconLines) lines.push(indent(l)); }
-  if (soundLines.length) { lines.push('', '    // Sons (PlayerPlaySound):'); for (const l of soundLines) lines.push(indent(l)); }
   if (textDrawLines.length) { lines.push('', '    // TextDraws:'); for (const l of textDrawLines) lines.push(indent(l)); }
   lines.push('    return 1;');
   lines.push('}');

@@ -218,7 +218,24 @@ function setupDialogEvents() {
       const z = getSelectedZone();
       if (!z) return;
       z.name = e.target.value;
+      z.comment = e.target.value;
+      appRef.project.modified = true;
       updateSidebarList();
+    };
+    nameInput.onchange = (e) => {
+      const z = getSelectedZone();
+      if (!z) return;
+      gzPushUndo();
+      z.name = e.target.value.trim();
+      z.comment = e.target.value.trim();
+      appRef.project.modified = true;
+      updateSidebarList();
+    };
+    nameInput.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        nameInput.blur();
+      }
     };
   }
 
@@ -232,10 +249,12 @@ function setupDialogEvents() {
     inp.onchange = () => {
       const z = getSelectedZone();
       if (!z) return;
+      gzPushUndo();
       z.minx = Math.min(+minXInput.value, +maxXInput.value);
       z.maxx = Math.max(+minXInput.value, +maxXInput.value);
       z.miny = Math.min(+minYInput.value, +maxYInput.value);
       z.maxy = Math.max(+minYInput.value, +maxYInput.value);
+      appRef.project.modified = true;
       appRef.editor?.syncAll();
       redrawCanvas();
     };
@@ -597,8 +616,8 @@ function setupCanvasEvents() {
       });
       if (dragStartSnapshot && dragStartSnapshot !== current) {
         gzPushUndoSnapshot(dragStartSnapshot);
+        appRef.project.modified = true;
       }
-      appRef.editor?.saveUndoState?.('Alterar GangZone');
       redrawCanvas();
     }
 
@@ -617,13 +636,14 @@ function setupCanvasEvents() {
         const count = appRef.project.gangZones.length + 1;
         const newZ = makeGangZone({
           name: `Zona ${count}`,
+          comment: `Zona ${count}`,
           minx, miny, maxx, maxy,
           color: 0x33AA3390, // Grove Street verde translúcido por padrão
         });
         appRef.project.gangZones.push(newZ);
+        appRef.project.modified = true;
         selectedUid = newZ.uid;
         appRef.editor?.syncAll();
-        appRef.editor?.saveUndoState?.('Criar GangZone');
         updateSidebarFields();
         updateSidebarList();
       }
@@ -738,6 +758,11 @@ export function openGangZoneDialog() {
   if (!dialogEl) return;
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
+
+  gzUndoStack = [];
+  gzRedoStack = [];
+  updateGzUndoButtons();
+
   resizeCanvas();
 
   if (!radarImg) {
@@ -749,7 +774,6 @@ export function openGangZoneDialog() {
 
   updateSidebarList();
   updateSidebarFields();
-  updateGzUndoButtons();
 }
 
 export function closeGangZoneDialog() {
@@ -1048,13 +1072,14 @@ function createNewZoneAtCenter() {
   const count = appRef.project.gangZones.length + 1;
   const newZ = makeGangZone({
     name: `Zona ${count}`,
+    comment: `Zona ${count}`,
     minx: -150, miny: -150, maxx: 150, maxy: 150,
     color: 0x33AA3390,
   });
   appRef.project.gangZones.push(newZ);
+  appRef.project.modified = true;
   selectedUid = newZ.uid;
   appRef.editor?.syncAll();
-  appRef.editor?.saveUndoState?.('Criar GangZone');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1067,9 +1092,9 @@ function deleteSelectedZone() {
   const idx = appRef.project.gangZones.indexOf(z);
   if (idx >= 0) {
     appRef.project.gangZones.splice(idx, 1);
+    appRef.project.modified = true;
     selectedUid = null;
     appRef.editor?.syncAll();
-    appRef.editor?.saveUndoState?.('Excluir GangZone');
     toast('GangZone excluída', 'info');
     updateSidebarFields();
     updateSidebarList();
@@ -1135,8 +1160,10 @@ function duplicateSelectedZone() {
     }
   }
 
+  const dupName = `${z.name || 'GangZone'} (Cópia)`;
   const newZ = makeGangZone({
-    name: `${z.name || 'GangZone'} (Cópia)`,
+    name: dupName,
+    comment: dupName,
     minx: Math.round(z.minx + bestOffset.x),
     miny: Math.round(z.miny + bestOffset.y),
     maxx: Math.round(z.maxx + bestOffset.x),
@@ -1146,9 +1173,9 @@ function duplicateSelectedZone() {
 
   if (!appRef.project.gangZones) appRef.project.gangZones = [];
   appRef.project.gangZones.push(newZ);
+  appRef.project.modified = true;
   selectedUid = newZ.uid;
   appRef.editor?.syncAll();
-  appRef.editor?.saveUndoState?.('Duplicar GangZone');
   toast('GangZone duplicada no espaço livre mais próximo!', 'ok');
   updateSidebarFields();
   updateSidebarList();

@@ -132,15 +132,17 @@ export function makePickup(data) {
 }
 
 export function makeGangZone(data) {
+  const rawName = data.name ? String(data.name).trim() : (data.comment ? String(data.comment).replace(/^\/\/\s*/, '').trim() : '');
+  const gzName = rawName || 'GangZone';
   return {
     uid: data.uid || newUid(),
-    name: data.name ? String(data.name) : 'GangZone',
+    name: gzName,
     minx: Number(data.minx !== undefined ? data.minx : data.minX) || 0,
     miny: Number(data.miny !== undefined ? data.miny : data.minY) || 0,
     maxx: Number(data.maxx !== undefined ? data.maxx : data.maxX) || 0,
     maxy: Number(data.maxy !== undefined ? data.maxy : data.maxY) || 0,
     color: data.color !== undefined ? (data.color | 0) : 0xFF000080,
-    comment: data.comment ? String(data.comment) : '',
+    comment: gzName,
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
@@ -389,6 +391,12 @@ export class Project {
     this.undoStack.push(op);
     this.emit({ type: 'redo', label: op.label, uids: op.after.map(s => s.uid) });
     return op.label;
+  }
+
+  clearHistory() {
+    this.undoStack.length = 0;
+    this.redoStack.length = 0;
+    this.emit({ type: 'clearHistory', uids: [] });
   }
 
   // Adiciona um item de qualquer tipo suportado com registro de undo/redo

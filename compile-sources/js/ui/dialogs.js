@@ -79,9 +79,8 @@ export function setupImport() {
     const gangZones = parsed.gangZones || [];
     const checkpoints = parsed.checkpoints || [];
     const mapIcons = parsed.mapIcons || [];
-    const sounds = parsed.sounds || [];
     const textDraws = parsed.textDraws || [];
-    const total = objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + checkpoints.length + mapIcons.length + sounds.length + textDraws.length;
+    const total = objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + checkpoints.length + mapIcons.length + textDraws.length;
     const parts = [plural(objs.length, 'objeto', 'objetos'), plural(mats - texts, 'textura trocada', 'texturas trocadas'), plural(texts, 'texto', 'textos'),
       plural((parsed.vehicles || []).length, 'veículo', 'veículos')];
     if (actors.length) parts.push(plural(actors.length, 'actor', 'actors'));
@@ -90,7 +89,6 @@ export function setupImport() {
     if (gangZones.length) parts.push(plural(gangZones.length, 'gangzone', 'gangzones'));
     if (checkpoints.length) parts.push(plural(checkpoints.length, 'checkpoint', 'checkpoints'));
     if (mapIcons.length) parts.push(plural(mapIcons.length, 'mapicon', 'mapicons'));
-    if (sounds.length) parts.push(plural(sounds.length, 'som', 'sons'));
     if (textDraws.length) parts.push(plural(textDraws.length, 'textdraw', 'textdraws'));
     parts.push(plural((parsed.removed || []).length, 'objeto removido', 'objetos removidos'), plural(cams, 'câmera', 'câmeras'));
     summary.innerHTML = total
@@ -148,7 +146,6 @@ export function setupImport() {
       ...(parsed.gangZones || []).map(g => ({ ...g, kind: 'gangZones', uid: undefined })),
       ...(parsed.checkpoints || []).map(cp => ({ ...cp, kind: 'checkpoints', uid: undefined })),
       ...(parsed.mapIcons || []).map(mi => ({ ...mi, kind: 'mapIcons', uid: undefined })),
-      ...(parsed.sounds || []).map(s => ({ ...s, kind: 'sounds', uid: undefined })),
       ...(parsed.textDraws || []).map(t => ({ ...t, kind: 'textDraws', uid: undefined })),
     ];
     if ($('#importReplace').checked) {
@@ -162,7 +159,6 @@ export function setupImport() {
         ...(project.gangZones || []),
         ...(project.checkpoints || []),
         ...(project.mapIcons || []),
-        ...(project.sounds || []),
         ...(project.textDraws || []),
       ].map(o => o.uid);
       if (all.length) project.deleteItems('Limpar projeto', all);
@@ -203,7 +199,6 @@ export function setupImport() {
       ...(parsed.pickups || []),
       ...(parsed.checkpoints || []),
       ...(parsed.mapIcons || []),
-      ...(parsed.sounds || []),
     ];
     if (placed.length) {
       ed.select(uids.filter(u => project.kindOf(u) !== 'removed' && project.kindOf(u) !== 'textDraws' && project.kindOf(u) !== 'gangZones'));
@@ -211,6 +206,10 @@ export function setupImport() {
       const first = placed[0];
       if (first.interior > 0 && Math.abs(first.z) > 500) app.emit('view-interiors', true);
     }
+    // Toda vez que uma importação é feita o histórico de desfazer/refazer é limpo
+    project.clearHistory?.();
+    ed.clearUndoState?.();
+    window.__updateUndoButtons?.();
   };
 }
 
@@ -302,9 +301,6 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       lines.push(`MI|${mi.iconid !== undefined ? mi.iconid : miIdx}|${mi.x.toFixed(4)}|${mi.y.toFixed(4)}|${mi.z.toFixed(4)}|${mi.type ?? 0}|${colorInt}|${mi.style ?? 0}`);
       miIdx++;
     }
-    for (const snd of p.sounds || []) {
-      lines.push(`SND|${snd.soundid ?? 1052}|${snd.x.toFixed(4)}|${snd.y.toFixed(4)}|${snd.z.toFixed(4)}`);
-    }
     for (const td of p.textDraws || []) {
       const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
       const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
@@ -317,7 +313,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
         if (td.textSizeX < td.x && td.textSizeX > 0) w = td.x - td.textSizeX;
         else w = Math.max(20, td.textSizeX || 100);
       }
-      const h = td.textSizeY > 0 ? td.textSizeY : 100;
+      const h = td.textSizeY > 0 ? td.textSizeY : (isBoxPure ? 20 : 23);
       let sizeX = td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0);
       let sizeY = td.textSizeY ?? (td.font === 4 ? 64.0 : 480.0);
 
@@ -327,12 +323,15 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       } else if (td.useBox) {
         if (align === 1) {
           sizeX = td.x + w;
+          sizeY = td.y + h;
         } else if (align === 2) {
-          sizeX = w;
+          // No SA-MP o alinhamento centralizado inverte altura e largura em TextDrawTextSize!
+          sizeX = h;
+          sizeY = w;
         } else if (align === 3) {
           sizeX = td.x - w;
+          sizeY = td.y + h;
         }
-        sizeY = h;
       } else {
         sizeX = (align === 3 ? 0.0 : 640.0);
         sizeY = (align === 2 ? 640.0 : 480.0);

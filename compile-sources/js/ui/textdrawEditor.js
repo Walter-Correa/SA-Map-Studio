@@ -383,7 +383,26 @@ function bindFieldInputs() {
     chkBox.onchange = () => {
       const td = getSelectedTd();
       if (!td) return;
+      tdPushUndo();
       td.useBox = chkBox.checked ? 1 : 0;
+      if (td.useBox && td.font !== 4 && td.font !== 5) {
+        if (!td.textSizeX || td.textSizeX >= 550 || !td.textSizeY || td.textSizeY >= 350 || td.textSizeX <= 0) {
+          const autoBounds = getTextDrawBounds({ ...td, useBox: 0 });
+          const align = getTdAlign(td);
+          const autoW = Math.max(30, Math.round(autoBounds.w + 16));
+          const autoH = Math.max(16, Math.round(autoBounds.h + 8));
+          if (align === 1) {
+            td.textSizeX = Math.round(td.x + autoW);
+          } else if (align === 2) {
+            td.textSizeX = autoW;
+          } else if (align === 3) {
+            td.textSizeX = Math.round(td.x - autoW);
+          }
+          td.textSizeY = autoH;
+        }
+      }
+      appRef.project.modified = true;
+      updateSidebarFields();
       redrawCanvas();
     };
   }
@@ -675,8 +694,8 @@ function setupCanvasEvents() {
       });
       if (dragStartTdSnapshot && dragStartTdSnapshot !== current) {
         tdPushUndoSnapshot(dragStartTdSnapshot);
+        appRef.project.modified = true;
       }
-      appRef.editor?.saveUndoState?.('Editar TextDraw');
       redrawCanvas();
     }
   });
@@ -761,6 +780,11 @@ export function openTextDrawEditor() {
   loadGameBg();
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
+
+  tdUndoStack = [];
+  tdRedoStack = [];
+  updateTdUndoButtons();
+
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
 
   if (appRef.project.textDraws.length === 0) {
@@ -771,7 +795,6 @@ export function openTextDrawEditor() {
 
   updateSidebarList();
   updateSidebarFields();
-  updateTdUndoButtons();
   redrawCanvas();
 }
 
@@ -1254,8 +1277,8 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
     font: 1,
     letterSizeX: 0.35,
     letterSizeY: 1.4,
-    textSizeX: 640,
-    textSizeY: 480,
+    textSizeX: 0,
+    textSizeY: 0,
     color: 0xFFFFFFFF,
     align: 2,
     alignment: 2,
@@ -1264,8 +1287,8 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
     proportional: 1,
   });
   appRef.project.textDraws.push(td);
+  appRef.project.modified = true;
   selectedIdx = appRef.project.textDraws.length - 1;
-  appRef.editor?.saveUndoState?.('Criar TextDraw');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1284,8 +1307,8 @@ function createNewBox() {
     boxColor: 0x00000080,
   });
   appRef.project.textDraws.push(td);
+  appRef.project.modified = true;
   selectedIdx = appRef.project.textDraws.length - 1;
-  appRef.editor?.saveUndoState?.('Criar Caixa TextDraw');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1313,8 +1336,8 @@ function createNewModelPreview() {
     backgroundColor: 0x00000000,
   });
   appRef.project.textDraws.push(td);
+  appRef.project.modified = true;
   selectedIdx = appRef.project.textDraws.length - 1;
-  appRef.editor?.saveUndoState?.('Criar Model Preview');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1334,8 +1357,8 @@ function createNewSprite() {
     useBox: 0,
   });
   appRef.project.textDraws.push(td);
+  appRef.project.modified = true;
   selectedIdx = appRef.project.textDraws.length - 1;
-  appRef.editor?.saveUndoState?.('Criar Sprite');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1346,8 +1369,8 @@ function deleteSelectedTextDraw() {
   if (!tds[selectedIdx]) return;
   tdPushUndo();
   tds.splice(selectedIdx, 1);
+  appRef.project.modified = true;
   selectedIdx = Math.max(0, selectedIdx - 1);
-  appRef.editor?.saveUndoState?.('Excluir TextDraw');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1359,8 +1382,8 @@ function duplicateSelectedTextDraw() {
   tdPushUndo();
   const copy = makeTextDraw({ ...td, uid: null, x: td.x + 10, y: td.y + 10 });
   appRef.project.textDraws.push(copy);
+  appRef.project.modified = true;
   selectedIdx = appRef.project.textDraws.length - 1;
-  appRef.editor?.saveUndoState?.('Duplicar TextDraw');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -1393,12 +1416,14 @@ function copyTextDrawsPawn() {
     } else if (td.useBox) {
       if (align === 1) {
         expSizeX = bounds.x + bounds.w;
+        expSizeY = bounds.y + bounds.h;
       } else if (align === 2) {
-        expSizeX = bounds.w;
+        expSizeX = bounds.h;
+        expSizeY = bounds.w;
       } else if (align === 3) {
-        expSizeX = bounds.x;
+        expSizeX = td.x - bounds.w;
+        expSizeY = bounds.y + bounds.h;
       }
-      expSizeY = bounds.h;
     } else {
       expSizeX = (align === 3 ? 0.0 : 640.0);
       expSizeY = (align === 2 ? 640.0 : 480.0);

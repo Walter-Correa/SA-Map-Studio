@@ -6,6 +6,17 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.3.0', date: '18/10/2026', items: [
+      'Caixas de TextDraw Proporcionais: cálculo automático e justo de TextSize em torno do texto com padding ao ativar "Ativar Caixa", eliminando caixas gigantes em tela cheia.',
+      'Alinhamentos de TextDraws com Caixa no Servidor de Teste: cálculo exato de TextDrawTextSize para alinhamentos à Esquerda, Centro e Direita segundo a especificação do SA-MP/open.mp.',
+      'Isolamento Completo de Desfazer/Refazer: janelas de MapIcons, GangZones e TextDraws com histórico local independente; reset automático ao abrir diálogos e ao importar projetos para proteger o mapa contra Ctrl+Z acidental.',
+      'Importação de Câmeras Pawn: leitura e importação de posições estáticas e interpolações de câmera (SetPlayerCameraPos, SetPlayerCameraLookAt, InterpolateCameraPos, InterpolateCameraLookAt).',
+      'Remoção de Sons na Importação e Exportação: sons mantidos como ferramenta de teste e prévia sem inclusão de linhas ou cabeçalhos no código Pawn do mapa.',
+      'Persistência e Exportação de Nomes de GangZones: salvamento imediato do nome ao digitar ou pressionar Enter e exportação/importação sincronizada via comentários inline.',
+      'Exportação Pawn sem Duplicação de Seções: eliminação de repetições de comentários de grupo (Textos 3D, GangZones, Pickups).',
+    ],
+  },
+  {
     version: '3.2.0', date: '18/10/2026', items: [
       'Aperfeiçoamento do Editor de TextDraws: suporte nativo a tags de cores do GTA SA (~r~, ~g~, ~b~, ~w~, ~y~, ~p~, ~l~, ~s~, ~h~) e símbolos direcionais (~<~, ~>~, ~u~, ~d~), renderização e exportação Pawn precisa de alinhamentos (Esquerda, Centro, Direita) e modelo Caixa pura sem caracteres de texto.',
       'Duplicação de GangZones e MapIcons: novos botões "Duplicar" e suporte aos atalhos universais Ctrl+C e Ctrl+D nos editores 2D e inspetores, criando a cópia no espaço livre adjacente com seleção imediata.',

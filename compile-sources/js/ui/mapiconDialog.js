@@ -14,6 +14,72 @@ let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let defaultMarkerType = 0;
 
+let miUndoStack = [];
+let miRedoStack = [];
+let dragStartMiSnapshot = null;
+
+function updateMiUndoButtons() {
+  const btnU = dialogEl?.querySelector('#miBtnUndo');
+  const btnR = dialogEl?.querySelector('#miBtnRedo');
+  if (btnU) btnU.disabled = miUndoStack.length === 0;
+  if (btnR) btnR.disabled = miRedoStack.length === 0;
+}
+
+function miPushUndo() {
+  const current = JSON.stringify({
+    mapIcons: app.project?.mapIcons || [],
+    selectedUid
+  });
+  if (miUndoStack.length > 0 && miUndoStack[miUndoStack.length - 1] === current) return;
+  miUndoStack.push(current);
+  if (miUndoStack.length > 50) miUndoStack.shift();
+  miRedoStack = [];
+  updateMiUndoButtons();
+}
+
+function miPushUndoSnapshot(snapshotStr) {
+  if (!snapshotStr) return;
+  if (miUndoStack.length > 0 && miUndoStack[miUndoStack.length - 1] === snapshotStr) return;
+  miUndoStack.push(snapshotStr);
+  if (miUndoStack.length > 50) miUndoStack.shift();
+  miRedoStack = [];
+  updateMiUndoButtons();
+}
+
+function miUndo() {
+  if (miUndoStack.length === 0) return;
+  const current = JSON.stringify({
+    mapIcons: app.project?.mapIcons || [],
+    selectedUid
+  });
+  miRedoStack.push(current);
+  const prev = JSON.parse(miUndoStack.pop());
+  app.project.mapIcons = prev.mapIcons || [];
+  selectedUid = prev.selectedUid;
+  app.editor?.syncAll();
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+  updateMiUndoButtons();
+}
+
+function miRedo() {
+  if (miRedoStack.length === 0) return;
+  const current = JSON.stringify({
+    mapIcons: app.project?.mapIcons || [],
+    selectedUid
+  });
+  miUndoStack.push(current);
+  const next = JSON.parse(miRedoStack.pop());
+  app.project.mapIcons = next.mapIcons || [];
+  selectedUid = next.selectedUid;
+  app.editor?.syncAll();
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+  updateMiUndoButtons();
+}
+
 const iconImages = new Map();
 function getLoadedIconImage(type) {
   const id = Math.max(0, Math.min(63, Number(type) || 0));
@@ -103,6 +169,7 @@ function setupDialogEvents() {
         const gz = app.editor.getSurfaceZAt(pos.x, pos.y, Math.max(pos.z + 50, 100));
         if (gz !== null) pos.z = gz;
       }
+      miPushUndo();
       const item = makeMapIcon({
         type: defaultMarkerType,
         x: Math.round(pos.x * 100) / 100,
@@ -112,7 +179,9 @@ function setupDialogEvents() {
         style: 0,
         comment: getMapIconInfo(defaultMarkerType).label,
       });
-      app.project.addItems('Criar MapIcon', 'mapIcons', [item]);
+      if (!app.project.mapIcons) app.project.mapIcons = [];
+      app.project.mapIcons.push(item);
+      app.project.modified = true;
       selectedUid = item.uid;
       app.editor?.syncAll();
       updateSidebarList();
@@ -130,9 +199,9 @@ function setupDialogEvents() {
         updateDefaultPickerButton();
         const sel = getSelectedMapIcon();
         if (sel) {
-          app.project.updateItems('Alterar Ícone MapIcon', [sel.uid], (o) => {
-            o.type = newType;
-          });
+          miPushUndo();
+          sel.type = newType;
+          app.project.modified = true;
           app.editor?.syncAll();
           updateSidebarList();
           updateSidebarFields();
@@ -150,9 +219,9 @@ function setupDialogEvents() {
       openMapIconPickerModal(sel.type ?? 0, (newType) => {
         defaultMarkerType = newType;
         updateDefaultPickerButton();
-        app.project.updateItems('Alterar Ícone MapIcon', [sel.uid], (o) => {
-          o.type = newType;
-        });
+        miPushUndo();
+        sel.type = newType;
+        app.project.modified = true;
         app.editor?.syncAll();
         updateSidebarList();
         updateSidebarFields();
@@ -192,33 +261,32 @@ function setupDialogEvents() {
 
   const undoBtn = dialogEl.querySelector('#miBtnUndo');
   if (undoBtn) {
-    undoBtn.onclick = () => {
-      app.project?.undo();
-      app.editor?.syncAll();
-      updateSidebarList();
-      updateSidebarFields();
-      redrawCanvas();
+    undoBtn.onclick = (e) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      miUndo();
     };
   }
 
   const redoBtn = dialogEl.querySelector('#miBtnRedo');
   if (redoBtn) {
-    redoBtn.onclick = () => {
-      app.project?.redo();
-      app.editor?.syncAll();
-      updateSidebarList();
-      updateSidebarFields();
-      redrawCanvas();
+    redoBtn.onclick = (e) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      miRedo();
     };
   }
 
   dialogEl.addEventListener('keydown', (e) => {
+    e.stopPropagation();
     if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
     if (e.key === 'Delete' || e.key === 'Backspace') {
       const m = getSelectedMapIcon();
       if (!m) return;
       e.preventDefault();
-      app.project.deleteItems('Apagar MapIcon', [m.uid]);
+      miPushUndo();
+      app.project.mapIcons = (app.project.mapIcons || []).filter(x => x.uid !== m.uid);
+      app.project.modified = true;
       selectedUid = app.project.mapIcons?.[0]?.uid || null;
       app.editor?.syncAll();
       updateSidebarList();
@@ -227,19 +295,14 @@ function setupDialogEvents() {
       toast('MapIcon removido', 'info');
     } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
       e.preventDefault();
-      if (e.shiftKey) app.project?.redo();
-      else app.project?.undo();
-      app.editor?.syncAll();
-      updateSidebarList();
-      updateSidebarFields();
-      redrawCanvas();
-    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      if (e.shiftKey) miRedo();
+      else miUndo();
+    } else if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'Y') || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
       e.preventDefault();
-      app.project?.redo();
-      app.editor?.syncAll();
-      updateSidebarList();
-      updateSidebarFields();
-      redrawCanvas();
+      miRedo();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'd' || e.key === 'D')) {
+      e.preventDefault();
+      duplicateSelectedMapIcon();
     }
   });
 
@@ -249,6 +312,7 @@ function setupDialogEvents() {
     el.onchange = () => {
       const m = getSelectedMapIcon();
       if (!m) return;
+      miPushUndo();
       if (prop === 'comment') {
         m.comment = el.value.trim();
       } else if (prop === 'color') {
@@ -262,6 +326,7 @@ function setupDialogEvents() {
           m[prop] = isInt ? Math.trunc(v) : v;
         }
       }
+      app.project.modified = true;
       app.editor?.syncAll();
       updateSidebarList();
       updateSidebarFields();
@@ -306,7 +371,9 @@ function setupDialogEvents() {
     btnDel.onclick = () => {
       const m = getSelectedMapIcon();
       if (!m) return;
-      app.project.deleteItems('Apagar MapIcon', [m.uid]);
+      miPushUndo();
+      app.project.mapIcons = (app.project.mapIcons || []).filter(x => x.uid !== m.uid);
+      app.project.modified = true;
       selectedUid = app.project.mapIcons?.[0]?.uid || null;
       app.editor?.syncAll();
       updateSidebarList();
@@ -364,6 +431,7 @@ function duplicateSelectedMapIcon() {
     if (gz !== null) zGuess = Math.round(gz * 100) / 100;
   }
 
+  miPushUndo();
   const item = makeMapIcon({
     type: m.type ?? 0,
     x: bestPos.x,
@@ -375,7 +443,9 @@ function duplicateSelectedMapIcon() {
     comment: m.comment ? `${m.comment} (Cópia)` : getMapIconInfo(m.type ?? 0).label,
   });
 
-  app.project.addItems('Duplicar MapIcon', 'mapIcons', [item]);
+  if (!app.project.mapIcons) app.project.mapIcons = [];
+  app.project.mapIcons.push(item);
+  app.project.modified = true;
   selectedUid = item.uid;
   app.editor?.syncAll();
   updateSidebarList();
@@ -418,6 +488,10 @@ function setupCanvasEvents() {
       if (hit) {
         selectedUid = hit.uid;
         isDraggingIcon = hit;
+        dragStartMiSnapshot = JSON.stringify({
+          mapIcons: JSON.parse(JSON.stringify(app.project?.mapIcons || [])),
+          selectedUid
+        });
         updateSidebarList();
         updateSidebarFields();
         redrawCanvas();
@@ -429,6 +503,7 @@ function setupCanvasEvents() {
         const gz = app.editor.getSurfaceZAt(w.x, w.y);
         if (gz !== null) zGuess = Math.round(gz * 100) / 100;
       }
+      miPushUndo();
       const item = makeMapIcon({
         type: defaultMarkerType,
         x: Math.round(w.x * 100) / 100,
@@ -438,9 +513,12 @@ function setupCanvasEvents() {
         style: 0,
         comment: getMapIconInfo(defaultMarkerType).label,
       });
-      app.project.addItems('Criar MapIcon no Mapa 2D', 'mapIcons', [item]);
+      if (!app.project.mapIcons) app.project.mapIcons = [];
+      app.project.mapIcons.push(item);
+      app.project.modified = true;
       selectedUid = item.uid;
       isDraggingIcon = item;
+      dragStartMiSnapshot = null;
       app.editor?.syncAll();
       updateSidebarList();
       updateSidebarFields();
@@ -487,6 +565,17 @@ function setupCanvasEvents() {
       if (canvasEl) canvasEl.style.cursor = 'crosshair';
     }
     if (isDraggingIcon) {
+      if (dragStartMiSnapshot) {
+        const curSnapshot = JSON.stringify({
+          mapIcons: JSON.parse(JSON.stringify(app.project?.mapIcons || [])),
+          selectedUid
+        });
+        if (curSnapshot !== dragStartMiSnapshot) {
+          miPushUndoSnapshot(dragStartMiSnapshot);
+          app.project.modified = true;
+        }
+        dragStartMiSnapshot = null;
+      }
       isDraggingIcon = null;
       redrawCanvas();
     }
@@ -505,6 +594,10 @@ export function openMapIconDialog() {
   if (!dialogEl) return;
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
+
+  miUndoStack = [];
+  miRedoStack = [];
+  updateMiUndoButtons();
 
   const wrap = dialogEl.querySelector('#miCanvasWrap');
   if (wrap && canvasEl) {
