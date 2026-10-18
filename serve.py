@@ -127,18 +127,22 @@ IS_WINDOWS = os.name == "nt"
 
 def migrate_old_layout():
     """Move pastas e arquivos da raiz para dentro de sa-map-studio e remove pastas legadas e __pycache__."""
-    # Se o editor estiver rodando dentro do GTA San Andreas, a raiz é a pasta do próprio jogo!
-    # NUNCA migre ou mova pastas da raiz do GTA para dentro de sa-map-studio.
-    if is_editor_inside_gta():
+    # O .exe pode estar em qualquer pasta (a do GTA, Downloads, Área de Trabalho...).
+    # Só mexe na raiz quando ela é claramente do programa: nunca dentro do GTA e, no .exe,
+    # só no layout antigo (que tinha a pasta system ao lado do executável).
+    if editor_gta_folder() or looks_like_gta_dir(ROOT_DIR):
+        return
+    if FROZEN and not os.path.isdir(os.path.join(ROOT_DIR, "system")):
         return
 
-    # Remove qualquer __pycache__ encontrado recursivamente
-    for root, dirs, _ in os.walk(ROOT_DIR):
-        if "__pycache__" in dirs:
-            try:
-                shutil.rmtree(os.path.join(root, "__pycache__"), ignore_errors=True)
-            except OSError:
-                pass
+    # Remove os __pycache__ do código-fonte (só no modo de desenvolvimento)
+    if not FROZEN:
+        for root, dirs, _ in os.walk(ROOT_DIR):
+            if "__pycache__" in dirs:
+                try:
+                    shutil.rmtree(os.path.join(root, "__pycache__"), ignore_errors=True)
+                except OSError:
+                    pass
 
     def merge_and_remove(src_dir, dst_dir):
         if not os.path.isdir(src_dir) or os.path.abspath(src_dir) == os.path.abspath(dst_dir):
@@ -184,8 +188,10 @@ def migrate_old_layout():
     ):
         src = os.path.join(ROOT_DIR, old_name)
         if old_name in ("data", "dados", "Dados"):
-            # Se for a pasta data de um GTA (contém gta.dat), nunca mover!
-            if os.path.isfile(os.path.join(src, "gta.dat")):
+            # Só move a pasta de dados do próprio programa (nunca a data de um GTA)
+            if resolve_ci(src, "gta.dat") or not any(
+                os.path.exists(os.path.join(src, marker)) for marker in ("config.json", "cache", "logs", "registros")
+            ):
                 continue
         merge_and_remove(src, target_dir)
 
@@ -298,18 +304,6 @@ def setup_logging():
 
 
 
-COMMON_GTA_PATHS = [
-    r"C:\Program Files (x86)\Rockstar Games\GTA San Andreas",
-    r"C:\Program Files\Rockstar Games\GTA San Andreas",
-    r"C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto San Andreas",
-    r"C:\Program Files\Steam\steamapps\common\Grand Theft Auto San Andreas",
-    r"C:\Games\GTA San Andreas",
-    r"D:\GTA San Andreas",
-    r"D:\Games\GTA San Andreas",
-    r"D:\Jogos\GTA San Andreas",
-    r"C:\GTA San Andreas",
-]
-
 MIME = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -358,27 +352,52 @@ def resolve_ci(root, rel):
     return cur
 
 
+GTA_EXES = ("gta_sa.exe", "gta-sa.exe", "gta.exe", "samp.exe")
+
+
+def get_canonical_default_gta():
+    """Pasta de instalação padrão do GTA San Andreas nesta máquina (Program Files (x86) do Windows)."""
+    pf86 = os.environ.get("ProgramFiles(x86)")
+    if pf86:
+        return os.path.join(pf86, "Rockstar Games", "GTA San Andreas")
+    pf = os.environ.get("ProgramFiles") or r"C:\Program Files"
+    return os.path.join(pf, "Rockstar Games", "GTA San Andreas")
+
+
+def get_default_gta_candidates():
+    """Pastas padrão de instalação, na ordem de prioridade (x86 primeiro, depois Program Files)."""
+    cands = [get_canonical_default_gta()]
+    for env in ("ProgramFiles", "ProgramW6432"):
+        base = os.environ.get(env)
+        if base:
+            cands.append(os.path.join(base, "Rockstar Games", "GTA San Andreas"))
+    out = []
+    for c in cands:
+        if os.path.normcase(os.path.abspath(c)) not in [os.path.normcase(os.path.abspath(o)) for o in out]:
+            out.append(c)
+    return out
+
+
+def has_gta_exe(path):
+    return bool(path) and any(resolve_ci(path, exe) for exe in GTA_EXES)
+
+
+def looks_like_gta_dir(path):
+    """Pasta que é uma instalação do GTA (tem o executável do jogo), mesmo que esteja incompleta."""
+    if not path or not os.path.isdir(path) or not has_gta_exe(path):
+        return False
+    return bool(resolve_ci(path, "models") or resolve_ci(path, "data") or resolve_ci(path, "anim"))
+
+
 def is_gta_dir(path):
+    """Verifica (só lendo, sem alterar nada) se a pasta é uma instalação completa do GTA San Andreas."""
     if not path or not os.path.isdir(path):
         return False
-    # 1. Se tem data/gta.dat diretamente
-    if os.path.isfile(resolve_ci(path, "data/gta.dat") or ""):
-        return True
-    # 2. Se tem gta_sa.exe / samp.exe e models/gta3.img
-    has_exe = bool(
-        resolve_ci(path, "gta_sa.exe") or
-        resolve_ci(path, "gta-sa.exe") or
-        resolve_ci(path, "gta.exe") or
-        resolve_ci(path, "samp.exe")
-    )
-    has_assets = bool(
-        resolve_ci(path, "models/gta3.img") or
-        resolve_ci(path, "models/gta_int.img") or
-        resolve_ci(path, "anim/ped.ifp")
-    )
-    if has_exe and has_assets:
-        return True
-    return False
+    if not os.path.isfile(resolve_ci(path, "data/gta.dat") or ""):
+        return False
+    if not has_gta_exe(path):
+        return False
+    return bool(resolve_ci(path, "models/gta3.img") or resolve_ci(path, "models/gta_int.img"))
 
 
 def load_config():
@@ -404,12 +423,16 @@ def update_config(**values):
 def gta_problem(path):
     """Explica por que a pasta não serve (ou devolve "" se está tudo certo)."""
     if not path or not os.path.isdir(path):
-        return "Essa pasta não existe."
-    if not is_gta_dir(path):
-        if os.path.isdir(resolve_ci(path, "Gameface") or "") or os.path.isdir(resolve_ci(path, "SanAndreas") or ""):
-            return "Essa é a versão Definitive Edition. O editor precisa do GTA San Andreas original (o mesmo que roda o SA-MP)."
         return "Não encontrei os arquivos do GTA San Andreas nessa pasta. Escolha a pasta onde fica o gta_sa.exe."
-    return ""
+    if is_gta_dir(path):
+        return ""
+    if os.path.isdir(resolve_ci(path, "Gameface") or "") or os.path.isdir(resolve_ci(path, "SanAndreas") or ""):
+        return "Essa é a versão Definitive Edition. O editor precisa do GTA San Andreas original (o mesmo que roda o SA-MP)."
+    if not has_gta_exe(path):
+        return "Não encontrei os arquivos do GTA San Andreas nessa pasta. Escolha a pasta onde fica o gta_sa.exe."
+    if not os.path.isfile(resolve_ci(path, "data/gta.dat") or ""):
+        return "A instalação do GTA San Andreas nessa pasta está incompleta: falta o arquivo data/gta.dat."
+    return "A instalação do GTA San Andreas nessa pasta está incompleta: falta o arquivo models/gta3.img."
 
 
 def registry_candidates():
@@ -472,113 +495,76 @@ def registry_candidates():
     return out
 
 
-def detect_all_gta_candidates():
-    """Retorna uma lista ordenada de possíveis pastas de instalação do GTA San Andreas."""
+def get_other_gta_candidates():
+    """Outros locais possíveis do GTA San Andreas (fora da pasta padrão), em qualquer máquina Windows."""
     out = []
+    seen = {os.path.normcase(os.path.abspath(c)) for c in get_default_gta_candidates()}
 
-    # 1. Candidatos vindos do registro
-    for p in registry_candidates():
-        if p and p not in out:
+    def add(p):
+        if not p:
+            return
+        key = os.path.normcase(os.path.abspath(p))
+        if key not in seen and os.path.isdir(p):
+            seen.add(key)
             out.append(p)
 
-    # 2. Caminhos comuns e busca em discos locais
+    # 1. Registro do Windows (SA-MP, Rockstar Games, Steam e MTA)
+    for p in registry_candidates():
+        add(p)
+
+    # 2. Pastas comuns em todos os discos
     drives = []
     if IS_WINDOWS:
         import string
-        for d in string.ascii_uppercase:
-            drv = f"{d}:\\"
-            if os.path.exists(drv):
-                drives.append(drv)
-    else:
-        drives = ["/"]
-
-    common_bases = [
+        drives = [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
+    common_bases = (
         r"Program Files (x86)\Rockstar Games\GTA San Andreas",
         r"Program Files\Rockstar Games\GTA San Andreas",
+        r"Rockstar Games\GTA San Andreas",
         r"Games\GTA San Andreas",
         r"Jogos\GTA San Andreas",
         r"GTA San Andreas",
-        r"Jogos\GTA San Andreas - Modificado",
-        r"Jogos\GTA San Andreas - Sem Mods",
-        r"Arquivos de Jogos\Grand Theft Auto San Andreas",
-    ]
-
+        r"SteamLibrary\steamapps\common\Grand Theft Auto San Andreas",
+        r"Steam\steamapps\common\Grand Theft Auto San Andreas",
+    )
     for drv in drives:
         for cb in common_bases:
-            cand = os.path.join(drv, cb)
-            if cand not in out and os.path.isdir(cand):
-                out.append(cand)
+            add(os.path.join(drv, cb))
 
-    # 3. Varredura inteligente de 1 nível em pastas de jogos em todos os discos
-    scan_roots = [
-        "Jogos", "Games", "Arquivos de Jogos", "Program Files", "Program Files (x86)",
-        "Program Files (x86)\\Rockstar Games", "Program Files\\Rockstar Games",
-        "SteamLibrary\\steamapps\\common", "Steam\\steamapps\\common"
-    ]
+    # 3. Um nível dentro das pastas de jogos de cada disco (nomes com "gta" ou "san andreas")
+    scan_roots = ("Games", "Jogos", "Rockstar Games", r"SteamLibrary\steamapps\common", r"Steam\steamapps\common")
     for drv in drives:
         for sroot in scan_roots:
             pdir = os.path.join(drv, sroot)
-            if os.path.isdir(pdir):
-                try:
-                    for entry in os.listdir(pdir):
-                        el = entry.lower()
-                        if "gta" in el or "san andreas" in el:
-                            cand = os.path.join(pdir, entry)
-                            if cand not in out and os.path.isdir(cand):
-                                out.append(cand)
-                except OSError:
-                    pass
-
+            if not os.path.isdir(pdir):
+                continue
+            try:
+                entries = sorted(os.listdir(pdir), key=str.lower)
+            except OSError:
+                continue
+            for entry in entries:
+                el = entry.lower()
+                if "gta" in el or "san andreas" in el:
+                    add(os.path.join(pdir, entry))
     return out
 
 
-def restore_gta_data_if_needed(path):
-    """Restaura a pasta data do GTA a partir de outra instalação do sistema, caso tenha sido perdida."""
-    if not path or not os.path.isdir(path):
-        return
-    if os.path.isfile(resolve_ci(path, "data/gta.dat") or ""):
-        return
-    for other in detect_all_gta_candidates():
-        if os.path.abspath(other).lower() == os.path.abspath(path).lower():
-            continue
-        other_dat = resolve_ci(other, "data/gta.dat")
-        if other_dat and os.path.isfile(other_dat):
-            src_data = os.path.dirname(other_dat)
-            dst_data = os.path.join(path, "data")
-            try:
-                os.makedirs(dst_data, exist_ok=True)
-                for item in os.listdir(src_data):
-                    s = os.path.join(src_data, item)
-                    d = os.path.join(dst_data, item)
-                    if os.path.isfile(s) and not os.path.exists(d):
-                        try:
-                            shutil.copy2(s, d)
-                        except OSError:
-                            pass
-                break
-            except OSError:
-                pass
-
-
 def detect_gta(saved_path=""):
-    """Detecta automaticamente uma pasta válida do GTA San Andreas instalada no sistema."""
+    """Detecta a pasta do GTA San Andreas (só lendo, nunca altera as pastas do jogo):
+    1. Caminho já salvo, se continuar válido.
+    2. Pasta padrão de instalação, sempre em primeiro lugar quando tem os arquivos do jogo.
+    3. Se a padrão não existir ou estiver incompleta: registro do Windows e outros discos.
+    4. Se nada for encontrado: devolve a pasta padrão como sugestão (o erro só aparece ao avançar).
+    """
     if saved_path and is_gta_dir(saved_path):
-        restore_gta_data_if_needed(saved_path)
         return saved_path
-
-    candidates = detect_all_gta_candidates()
-    # Prioriza pastas completas que já tenham data/gta.dat
-    for cand in candidates:
-        if is_gta_dir(cand) and os.path.isfile(resolve_ci(cand, "data/gta.dat") or ""):
-            return cand
-
-    # Fallback para pastas válidas com executável e modelos
-    for cand in candidates:
+    for cand in get_default_gta_candidates():
         if is_gta_dir(cand):
-            restore_gta_data_if_needed(cand)
             return cand
-
-    return ""
+    for cand in get_other_gta_candidates():
+        if is_gta_dir(cand):
+            return cand
+    return get_canonical_default_gta()
 
 
 def browse_folder(initial="", title="Escolha uma pasta"):
@@ -668,27 +654,24 @@ class State:
     test_proc = None  # servidor de teste em execução
 
 
-def is_editor_inside_gta():
-    """Retorna o caminho caso o editor esteja rodando dentro da instalação do GTA San Andreas."""
-    starts = [
-        ROOT_DIR,
-        os.getcwd(),
-        BASE_DIR,
-    ]
-    if hasattr(sys, "argv") and sys.argv and sys.argv[0]:
-        starts.append(os.path.dirname(os.path.abspath(sys.argv[0])))
-    for start in starts:
-        if not start:
-            continue
-        cur = os.path.abspath(start)
-        for _ in range(6):
-            if is_gta_dir(cur):
-                return cur
-            parent = os.path.dirname(cur)
-            if not parent or parent == cur:
-                break
-            cur = parent
+def editor_gta_folder():
+    """Pasta do GTA onde o SA Map Studio.exe foi colocado (ou numa subpasta dela), ou "".
+    Devolve a pasta mesmo que a instalação esteja incompleta; quem chama confere com is_gta_dir."""
+    cur = os.path.abspath(ROOT_DIR)
+    for _ in range(3):
+        if looks_like_gta_dir(cur):
+            return cur
+        parent = os.path.dirname(cur)
+        if not parent or parent == cur:
+            break
+        cur = parent
     return ""
+
+
+def is_editor_inside_gta():
+    """Caminho do GTA quando o editor está numa instalação completa do jogo (configuração automática)."""
+    folder = editor_gta_folder()
+    return folder if is_gta_dir(folder) else ""
 
 
 
@@ -1780,15 +1763,17 @@ class Handler(SimpleHTTPRequestHandler):
                 is_valid = is_gta_dir(State.gta_path)
                 needs_setup = (not gta_confirmed or not is_valid)
                 detected_path = State.detected_gta or detect_gta(cfg.get("gta_path") or "")
+                if not detected_path:
+                    detected_path = get_canonical_default_gta()
                 if detected_path and not State.detected_gta:
                     State.detected_gta = detected_path
-                if not State.gta_path and detected_path:
+                if not State.gta_path and is_gta_dir(detected_path):
                     State.gta_path = detected_path
                 gta_path_resp = State.gta_path if (gta_confirmed and is_valid) else ""
 
             return self.send_json({
                 "gtaPath": gta_path_resp,
-                "detectedPath": detected_path if is_gta_dir(detected_path) else "",
+                "detectedPath": detected_path or get_canonical_default_gta(),
                 "needsSetup": needs_setup,
                 "ok": is_valid and not needs_setup,
                 "insideGta": inside_gta,
@@ -2414,8 +2399,8 @@ def main():
             State.detected_gta = saved_gta
         else:
             detected = detect_gta(saved_gta)
-            State.detected_gta = detected if is_gta_dir(detected) else ""
-            State.gta_path = State.detected_gta
+            State.detected_gta = detected or get_canonical_default_gta()
+            State.gta_path = detected if is_gta_dir(detected) else ""
 
     port = args.port or cfg.get("port") or 8777
     httpd = make_server(port)

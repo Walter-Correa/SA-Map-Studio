@@ -125,13 +125,14 @@ async function start(cfg) {
       setBootProgress(p);
     });
   } catch (err) {
+    // Volta para a escolha da pasta, mostrando o erro, em vez de travar na abertura
     setBootProgress(null);
-    status.textContent = 'Erro ao ler os arquivos do jogo: ' + err.message;
-    status.classList.add('error');
+    bar.style.width = '0%';
+    showSetup(cfg.gtaPath || '', 'Erro ao ler os arquivos do jogo: ' + err.message, false);
     return;
   }
   setBootProgress(null);
-  status.textContent = 'Abrindo o editor...';
+  status.textContent = 'Abrindo o editor';
   $('#app').hidden = false;
   const vp = new Viewport($('#viewport'));
   const models = new ModelCache(gd, vp.renderer);
