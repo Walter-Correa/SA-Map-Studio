@@ -95,41 +95,36 @@ async function fetchProject(name) {
   return Project.fromJSON(await res.json());
 }
 
+// Câmera ao abrir ou importar: calcula o centro de todos os itens do projeto e foca no item mais próximo dele
+const SPATIAL_KINDS = ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons'];
+
+export function projectFocusItem(p) {
+  const items = SPATIAL_KINDS.flatMap(k => p?.[k] || [])
+    .filter(o => Number.isFinite(o?.x) && Number.isFinite(o?.y) && Number.isFinite(o?.z));
+  if (!items.length) return null;
+  const c = items.reduce((a, o) => ({ x: a.x + o.x, y: a.y + o.y, z: a.z + o.z }), { x: 0, y: 0, z: 0 });
+  c.x /= items.length; c.y /= items.length; c.z /= items.length;
+  let nearest = items[0], best = Infinity;
+  for (const o of items) {
+    const d = (o.x - c.x) ** 2 + (o.y - c.y) ** 2 + (o.z - c.z) ** 2;
+    if (d < best) { best = d; nearest = o; }
+  }
+  return nearest;
+}
+
 export function positionCameraOverProject(p) {
   if (!p) return;
-  const all = [...(p.objects || []), ...(p.vehicles || []), ...(p.actors || [])];
-  if (!all.length) {
+  const focus = projectFocusItem(p);
+  if (!focus) {
     if (p.camera) {
       const c = p.camera;
       app.vp.fly.setPose(new THREE.Vector3(c.x, c.y, c.z), c.yaw, c.pitch);
     }
     return;
   }
-  // Foca no objeto do projeto mais próximo do centro do mapa (0, 0, 0)
-  let nearest = null;
-  let minDist = Infinity;
-  for (const o of all) {
-    if (typeof o.x === 'number' && typeof o.y === 'number' && typeof o.z === 'number') {
-      const d = Math.hypot(o.x, o.y, o.z);
-      if (d < minDist) {
-        minDist = d;
-        nearest = o;
-      }
-    }
-  }
-
-  if (nearest) {
-    const target = new THREE.Vector3(nearest.x, nearest.y, nearest.z);
-    const camPos = new THREE.Vector3(nearest.x, nearest.y - 14, nearest.z + 8);
-    app.vp.camera.position.copy(camPos);
-    app.vp.fly.lookAt(target);
-  } else {
-    const o = all[0];
-    const target = new THREE.Vector3(o.x || 0, o.y || 0, o.z || 0);
-    const camPos = new THREE.Vector3((o.x || 0), (o.y || 0) - 14, (o.z || 0) + 8);
-    app.vp.camera.position.copy(camPos);
-    app.vp.fly.lookAt(target);
-  }
+  const target = new THREE.Vector3(focus.x, focus.y, focus.z);
+  app.vp.camera.position.set(focus.x, focus.y - 14, focus.z + 8);
+  app.vp.fly.lookAt(target);
   app.streamer.invalidate();
 }
 

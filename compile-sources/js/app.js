@@ -31,6 +31,43 @@ import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
 let water = null;
 let hintDismissed = false;
 
+// Barra superior: mostra todos os rótulos que couberem; quando falta espaço, primeiro aperta os
+// espaçamentos e depois esconde os rótulos menos importantes, um por vez (os ícones continuam)
+const TOPBAR_HIDE_ORDER = [
+  '#saveState', '.brand', '.seg-btn[data-mode="texture"]', '.seg-btn[data-mode="rotate"]', '.seg-btn[data-mode="translate"]',
+  '#btnSpace', '#btnSnap', '#btnProjects', '#btnSounds', '#btn3DText', '#btnGangZones', '#btnTextDraws',
+  '#btnMapIcons', '#btnCheckpoints', '#btnImport', '#btnView', '#btnGoto', '#btnExport', '#btnTest',
+];
+
+export function fitTopbar() {
+  const bar = $('.topbar');
+  if (!bar || !bar.clientWidth) return;
+  const els = TOPBAR_HIDE_ORDER.map(s => bar.querySelector(s)).filter(Boolean);
+  bar.classList.remove('tight');
+  els.forEach(el => el.classList.remove('no-lbl'));
+  const fits = () => bar.scrollWidth <= bar.clientWidth + 1;
+  if (fits()) return;
+  bar.classList.add('tight');
+  for (const el of els) {
+    if (fits()) return;
+    el.classList.add('no-lbl');
+  }
+}
+
+function setupTopbarFit() {
+  let raf = 0;
+  const schedule = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; fitTopbar(); });
+  };
+  window.addEventListener('resize', schedule);
+  document.fonts?.ready?.then(schedule);
+  // O botão Mundo/Objeto troca de texto: reajusta quando o rótulo muda
+  const space = $('#btnSpace');
+  if (space) new MutationObserver(schedule).observe(space, { childList: true, subtree: true, characterData: true });
+  schedule();
+}
+
 // =====================================================================  abertura
 async function boot() {
   const status = $('#bootStatus');
@@ -352,6 +389,8 @@ function setupToolbar(cfg) {
     }
     vp.resize();
   };
+
+  setupTopbarFit();
 
   $('#btnToggleLeftSidebar')?.addEventListener('click', () => setLeftCollapsed(!leftCollapsed));
   $('#btnToggleRightSidebar')?.addEventListener('click', () => setRightCollapsed(!rightCollapsed));

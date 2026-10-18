@@ -557,39 +557,12 @@ legend.sub { margin-top: 8px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* ---------------------------------------------------------------- telas menores / responsividade */
+/* Os rótulos da barra superior somem um a um só quando não cabem (fitTopbar em app.js) */
 .lbl, .lbl2, .lbl-seg, .lbl-keep, .lbl-export, .lbl-test { display: inline; }
-
-@media (max-width: 1420px) {
-  .lbl-seg { display: none; }
-  .actions .btn { padding: 0 4px; gap: 3px; font-size: 11px; }
-  .actions { gap: 2px; }
-  .tools { gap: 2px; }
-}
-@media (max-width: 1280px) {
-  .lbl { display: none; }
-  .lbl-keep { display: none; }
-  .project-name { max-width: 85px; }
-}
-@media (max-width: 1160px) {
-  #btn3DText .lbl2, #btnTextDraws .lbl2, #btnGangZones .lbl2, #btnSounds .lbl2, #btnImport .lbl2 { display: none; }
-  .actions .btn { padding: 0 3px; }
-}
-@media (max-width: 1000px) {
-  .lbl2 { display: none; }
-  .project-name { max-width: 70px; }
-  .brand span { display: none; }
-  .save-state { display: none; }
-}
-@media (max-width: 850px) {
-  .lbl-export { display: none; }
-  .actions { gap: 1px; }
-  .tools { gap: 1px; }
-}
-@media (max-width: 720px) {
-  .lbl-test { display: none; }
-  .btn { padding: 0 3px; font-size: 11px; }
-  .seg-btn { padding: 0 2px; font-size: 10px; }
-}
+.topbar .no-lbl > span[class^="lbl"], .brand.no-lbl > span, .save-state.no-lbl { display: none; }
+.topbar.tight .btn, .topbar.tight .seg-btn { padding: 0 3px; gap: 3px; }
+.topbar.tight .tools, .topbar.tight .actions { gap: 1px; }
+.topbar.tight .project-name { width: 80px; min-width: 70px; }
 
 /* Botão flutuante nas setas do Gizmo para alternar Mover / Girar */
 .gizmo-mode-toggle {

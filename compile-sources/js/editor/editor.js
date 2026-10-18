@@ -794,12 +794,10 @@ export class Editor extends EventTarget {
     if (all.length) {
       this.mode = 'translate';
       this.select(all);
-      if (focus) {
-        this.focusSelection();
-      }
       this.setMode('translate');
       this.attachGizmo();
       this.emit('mode');
+      if (focus) this.focusGizmo();
     }
   }
   resetRotationSelection() {
@@ -1685,6 +1683,17 @@ export class Editor extends EventTarget {
     }
     if (box.isEmpty()) return;
     this.focusBox(box);
+  }
+
+  // Leva a câmera até as setas de edição (centro da seleção), mantendo a direção atual da visão
+  focusGizmo(distance = 18) {
+    if (!this.tc.object) { this.focusSelection(); return; }
+    const center = this.pivot.getWorldPosition(new THREE.Vector3());
+    const pos = center.clone().addScaledVector(this.vp.fly.direction(), -distance);
+    pos.z = Math.max(pos.z, center.z + distance * 0.3);
+    this.vp.camera.position.copy(pos);
+    this.vp.fly.lookAt(center);
+    this.streamer.invalidate();
   }
 
   focusBox(box) {

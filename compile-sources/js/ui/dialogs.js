@@ -203,7 +203,7 @@ export function setupImport() {
     // Depois de importar nada fica selecionado: só a câmera vai até os itens
     ed.select([]);
     if (placed.length) {
-      positionCameraOverProject({ objects: placed });
+      positionCameraOverProject(project);
       const first = placed[0];
       if (first.interior > 0 && Math.abs(first.z) > 500) app.emit('view-interiors', true);
     }

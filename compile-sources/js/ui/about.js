@@ -6,6 +6,15 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.5.1', date: '19/10/2026', items: [
+      'Barra Superior Adaptável: os rótulos dos botões aparecem sempre que cabem e somem um a um, só quando falta espaço, priorizando os mais usados.',
+      'Redimensionamento sem Travamentos: as listas de objetos e texturas só são redesenhadas quando o trecho visível muda.',
+      'Câmera ao Abrir e Importar: calcula o centro de todos os itens do projeto e foca no item mais próximo desse centro.',
+      'Mover Todo o Projeto: a câmera vai direto até as setas de edição.',
+      'Sprite splash1 de volta ao catálogo de TextDraws.',
+    ],
+  },
+  {
     version: '3.5.0', date: '19/10/2026', items: [
       'Salvamento ao Fechar o Programa: ao fechar a janela do SA Map Studio, todos os projetos abertos são salvos antes de encerrar.',
       'Salvamento ao Fechar os Editores: as alterações feitas nas janelas de TextDraws, MapIcons e GangZones são salvas ao fechar pelo X, pelo botão Concluir ou pela tecla Esc.',

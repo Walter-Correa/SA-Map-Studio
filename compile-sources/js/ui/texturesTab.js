@@ -43,8 +43,14 @@ export function setupTexturesTab() {
   let t;
   $('#texSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(filterTextures, 150); });
   const list = $('#texList');
-  list.addEventListener('scroll', renderTexRows);
-  new ResizeObserver(renderTexRows).observe(list);
+  // Rolagem e redimensionamento: no máximo uma vez por quadro e só quando as linhas visíveis mudam
+  let rowsRaf = 0;
+  const scheduleRows = () => {
+    if (rowsRaf) return;
+    rowsRaf = requestAnimationFrame(() => { rowsRaf = 0; renderTexRows(false); });
+  };
+  list.addEventListener('scroll', scheduleRows);
+  new ResizeObserver(scheduleRows).observe(list);
   list.addEventListener('click', async (e) => {
     const tile = e.target.closest('.tile'); if (!tile) return;
     const item = texlib.byKey.get(tile.dataset.key); if (!item) return;
@@ -170,7 +176,10 @@ function activeKey() {
   return m && !isText(m) && m.texture && m.texture !== 'none' ? String(m.txd).toLowerCase() + '/' + String(m.texture).toLowerCase() : null;
 }
 
-export function renderTexRows() {
+let texRowsKey = '';
+
+// force = false: não recria os blocos se o trecho visível e o número de colunas continuam iguais
+export function renderTexRows(force = true) {
   const texlib = app.texlib;
   const list = $('#texList');
   if (!list || list.offsetParent === null || !texlib.items.length) return;
@@ -180,6 +189,9 @@ export function renderTexRows() {
   inner.style.height = rows * rowH + 'px';
   const start = Math.max(0, Math.floor(list.scrollTop / rowH) - 2);
   const end = Math.min(rows, Math.ceil((list.scrollTop + list.clientHeight) / rowH) + 2);
+  const key = `${start}:${end}:${cols}:${rowH}:${filtered.length}`;
+  if (force === false && key === texRowsKey) return;
+  texRowsKey = key;
   const favs = new Set(store.get('texFavs', []));
   const aliases = store.get('texFavAliases', {});
   const active = activeKey();

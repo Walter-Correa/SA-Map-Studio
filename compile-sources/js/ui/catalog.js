@@ -42,8 +42,14 @@ export function setupCatalog() {
   let t;
   $('#catalogSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(filterCatalog, 120); });
   const list = $('#catalogList');
-  list.addEventListener('scroll', renderCatalogRows);
-  new ResizeObserver(renderCatalogRows).observe(list);
+  // Rolagem e redimensionamento: no máximo uma vez por quadro e só quando as linhas visíveis mudam
+  let rowsRaf = 0;
+  const scheduleRows = () => {
+    if (rowsRaf) return;
+    rowsRaf = requestAnimationFrame(() => { rowsRaf = 0; renderCatalogRows(false); });
+  };
+  list.addEventListener('scroll', scheduleRows);
+  new ResizeObserver(scheduleRows).observe(list);
   list.addEventListener('click', async (e) => {
     const row = e.target.closest('.row');
     if (!row) return;
@@ -150,12 +156,18 @@ export function filterCatalog() {
   renderCatalogRows();
 }
 
-export function renderCatalogRows() {
+let catalogRowsKey = '';
+
+// force = false: não recria as linhas se o trecho visível da lista continua o mesmo
+export function renderCatalogRows(force = true) {
   const list = $('#catalogList');
   if (!list || list.offsetParent === null) return;
   const inner = list.firstElementChild;
   const start = Math.max(0, Math.floor(list.scrollTop / ROW_H) - 3);
   const end = Math.min(filtered.length, Math.ceil((list.scrollTop + list.clientHeight) / ROW_H) + 3);
+  const key = `${start}:${end}:${filtered.length}`;
+  if (force === false && key === catalogRowsKey) return;
+  catalogRowsKey = key;
   const favs = new Set(store.get('favs', []));
   const aliases = store.get('favAliases', {});
   const placingId = app.editor.placing?.model;
