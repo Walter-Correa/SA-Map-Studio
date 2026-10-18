@@ -3,23 +3,24 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 set "SRC=%~dp0"
 
-rem Modo: sem parametro = mantem os dados | "limpo" = remove dados de usuario antigos
+rem Modo: sem parametro = mantem os dados | "clean"/"limpo" = versao limpa de arquivo unico
 set "MODO=%~1"
 title Compilando o SA Map Studio
 set "OUT=%~dp0compiled\SA Map Studio"
 set "BASE=%OUT%\sa-map-studio"
-set "DADOS=%BASE%"
+set "STAGE=%SRC%build\staging\sa-map-studio"
 
 if /i "%MODO%"=="clean" set "MODO=clean"
 if /i "%MODO%"=="limpo" set "MODO=clean"
 
 echo ============================================================
 if /i "%MODO%"=="clean" (
-echo  Compilando o SA Map Studio - VERSAO LIMPA
-echo  Resultado: compiled\SA Map Studio\  ^(sem projetos ou dados antigos^)
+echo  Compilando o SA Map Studio - VERSAO LIMPA (ARQUIVO UNICO)
+echo  Resultado: compiled\SA Map Studio\SA Map Studio.exe
+echo  (A pasta sa-map-studio fica compactada dentro do executavel)
 ) else (
 echo  Compilando o SA Map Studio - VERSAO NORMAL
-echo  Resultado: compiled\SA Map Studio\  ^(seus projetos e dados sao mantidos^)
+echo  Resultado: compiled\SA Map Studio\SA Map Studio.exe
 )
 echo ============================================================
 
@@ -96,9 +97,9 @@ if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no na
 
 echo Fechando o SA Map Studio, se estiver aberto...
 taskkill /im "SA Map Studio.exe" /f >nul 2>nul
+taskkill /im "sa-map-studio.exe" /f >nul 2>nul
 taskkill /im "SA Map Studio.exe" /f >nul 2>nul
 taskkill /im "sa-map-studio.exe" /f >nul 2>nul
-powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 powershell -NoProfile -Command "Stop-Process -Name 'sa-map-studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
 taskkill /im "omp-server.exe" /f >nul 2>nul
@@ -109,15 +110,23 @@ rem Data e hora desta compilacao (aparece em "Novidades" dentro do programa)
 for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'dd/MM/yyyy HH:mm:ss'"`) do set "BUILDTIME=%%T"
 > "build-info.json" echo {"builtAt": "%BUILDTIME%"}
 
-rem Compila numa pasta temporaria (assim projects, exported e data nunca sao apagados)
+rem Prepara a estrutura temporaria de staging
 if exist "build" rmdir /s /q "build"
-set "ARGS=--noconfirm --clean --onedir --windowed --contents-directory sa-map-studio\system"
+if not exist "%STAGE%\system" mkdir "%STAGE%\system"
+if not exist "%STAGE%\projects" mkdir "%STAGE%\projects"
+if not exist "%STAGE%\exported" mkdir "%STAGE%\exported"
+if not exist "%STAGE%\data\cache" mkdir "%STAGE%\data\cache"
+if not exist "%STAGE%\test-server" mkdir "%STAGE%\test-server"
+
 set "ICONFILE=%SRC%compile-sources\icon.ico"
 if not exist "%ICONFILE%" set "ICONFILE=%SRC%icon.ico"
-set "ARGS=%ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
-rem Solicita privilegios de administrador ao abrir o executavel (UAC manifest)
+
+rem ---------------- 1. Compila o Motor do Sistema (sa-map-studio.exe)
+echo Compilando o motor do sistema...
+set "ARGS=--noconfirm --clean --onedir --windowed"
+set "ARGS=%ARGS% --name "sa-map-studio" --icon "%ICONFILE%""
 set "ARGS=%ARGS% --uac-admin"
-set "ARGS=%ARGS% --distpath "%SRC%build\saida" --workpath "%SRC%build\tmp" --specpath "%SRC%build""
+set "ARGS=%ARGS% --distpath "%SRC%build\engine" --workpath "%SRC%build\tmp_engine" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;.""
 if exist "%SRC%compile-sources\css" (
     set "ARGS=%ARGS% --add-data "%SRC%compile-sources\css;css""
@@ -138,8 +147,6 @@ if exist "%SRC%compile-sources\anim-list.json" (
     set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
 ) else if exist "%SRC%anim-list.json" (
     set "ARGS=%ARGS% --add-data "%SRC%anim-list.json;.""
-) else if exist "%SRC%anim_list.json" (
-    set "ARGS=%ARGS% --add-data "%SRC%anim_list.json;.""
 )
 if exist "%SRC%compile-sources\models" (
     set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
@@ -148,64 +155,20 @@ if exist "%SRC%compile-sources\models" (
 )
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
-rem Garante suporte a pasta de conteudo aninhada sa-map-studio\system no PyInstaller
-"%VPY%" -c "import PyInstaller.building.api as a, inspect; p = inspect.getfile(a); s = open(p, 'r', encoding='utf-8').read(); s = s.replace('elif self.contents_directory == \"..\" or \"/\" in self.contents_directory or \"\\\\\" in self.contents_directory:', 'elif self.contents_directory == \"..\" or \"..\" in self.contents_directory:'); open(p, 'w', encoding='utf-8').write(s)"
-
-echo Gerando o programa...
 "%VPY%" -m PyInstaller %ARGS% "%SRC%serve.py"
 if errorlevel 1 goto erro
 
-rem A versao limpa limpa os dados de usuario antigos da pasta compilada
-if /i "%MODO%"=="clean" if exist "%OUT%" (
-    if exist "%BASE%\projects" rmdir /s /q "%BASE%\projects" 2>nul
-    if exist "%BASE%\exported" rmdir /s /q "%BASE%\exported" 2>nul
-    if exist "%BASE%\data\config.json" del /q "%BASE%\data\config.json" 2>nul
-    if exist "%BASE%\data\browser" rmdir /s /q "%BASE%\data\browser" 2>nul
-    if exist "%BASE%\data\logs" rmdir /s /q "%BASE%\data\logs" 2>nul
-    if exist "%BASE%\data\cache\miniaturas" rmdir /s /q "%BASE%\data\cache\miniaturas" 2>nul
-    if exist "%BASE%\data\cache\texturas.json" del /q "%BASE%\data\cache\texturas.json" 2>nul
-    if exist "%BASE%\Projetos" rmdir /s /q "%BASE%\Projetos" 2>nul
-    if exist "%BASE%\Exportados" rmdir /s /q "%BASE%\Exportados" 2>nul
-    if exist "%BASE%\Dados" rmdir /s /q "%BASE%\Dados" 2>nul
-    if exist "%BASE%\Servidor de Teste" rmdir /s /q "%BASE%\Servidor de Teste" 2>nul
-    if exist "%BASE%\Sistema" rmdir /s /q "%BASE%\Sistema" 2>nul
-)
-
-rem Limpa qualquer arquivo solto em sa-map-studio (todos os arquivos internos pertencem a system)
-for %%F in ("%BASE%\*.*") do del /q "%%F" 2>nul
-if exist "%BASE%\_tcl_data" rmdir /s /q "%BASE%\_tcl_data" 2>nul
-if exist "%BASE%\_tk_data" rmdir /s /q "%BASE%\_tk_data" 2>nul
-if exist "%BASE%\clr_loader" rmdir /s /q "%BASE%\clr_loader" 2>nul
-if exist "%BASE%\compile-sources" rmdir /s /q "%BASE%\compile-sources" 2>nul
-if exist "%BASE%\system\compile-sources" rmdir /s /q "%BASE%\system\compile-sources" 2>nul
-if exist "%BASE%\models" rmdir /s /q "%BASE%\models" 2>nul
-if exist "%BASE%\css" rmdir /s /q "%BASE%\css" 2>nul
-if exist "%BASE%\fonts" rmdir /s /q "%BASE%\fonts" 2>nul
-if exist "%BASE%\js" rmdir /s /q "%BASE%\js" 2>nul
-if exist "%BASE%\pythonnet" rmdir /s /q "%BASE%\pythonnet" 2>nul
-if exist "%BASE%\setuptools" rmdir /s /q "%BASE%\setuptools" 2>nul
-if exist "%BASE%\tcl8" rmdir /s /q "%BASE%\tcl8" 2>nul
-if exist "%BASE%\webview" rmdir /s /q "%BASE%\webview" 2>nul
-
-echo Copiando o programa...
-if not exist "%OUT%" mkdir "%OUT%"
-if not exist "%BASE%" mkdir "%BASE%"
-if not exist "%BASE%\system" mkdir "%BASE%\system"
-robocopy "build\saida\SA Map Studio\sa-map-studio\system" "%BASE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
+echo Copiando motor para o staging...
+robocopy "%SRC%build\engine\sa-map-studio" "%STAGE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto erro
-if exist "%BASE%\system\webview\lib\pywebview-android.jar" del /q "%BASE%\system\webview\lib\pywebview-android.jar" 2>nul
-if exist "%BASE%\system\pythonnet\runtime\Python.Runtime.xml" del /q "%BASE%\system\pythonnet\runtime\Python.Runtime.xml" 2>nul
-copy /y "build\saida\SA Map Studio\SA Map Studio.exe" "%OUT%\SA Map Studio.exe" >nul
-if errorlevel 1 goto erro
-del /q "%OUT%\LEIA-ME.txt" 2>nul
-del /q "%BASE%\LEIA-ME.txt" 2>nul
+if exist "%STAGE%\system\webview\lib\pywebview-android.jar" del /q "%STAGE%\system\webview\lib\pywebview-android.jar" 2>nul
+if exist "%STAGE%\system\pythonnet\runtime\Python.Runtime.xml" del /q "%STAGE%\system\pythonnet\runtime\Python.Runtime.xml" 2>nul
 
-rem ---------------- test-server (dentro da pasta sa-map-studio)
-set "ST=%BASE%\test-server"
+rem ---------------- 2. test-server
+set "ST=%STAGE%\test-server"
 if not exist "%ST%\gamemodes" mkdir "%ST%\gamemodes"
 if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 
-rem Compila o gamemode samapstudio.pwn se o compilador pawno existir
 if exist "omp-server-source\pawno\pawncc.exe" (
     echo Compilando gamemode samapstudio.pwn...
     "omp-server-source\pawno\pawncc.exe" "%SRC%compile-sources\samapstudio.pwn" -o"%SRC%compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
@@ -216,36 +179,24 @@ if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\sa
 if exist "%SRC%compile-sources\samapstudio.pwn" copy /y "%SRC%compile-sources\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
 del /q "%ST%\LEIA-ME.txt" 2>nul
 
-rem Arquivos do servidor: carregados da base omp-server-source
 set "SRVSRC="
 if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
 if not defined SRVSRC if exist "%BASE%\test-server\omp-server.exe" set "SRVSRC=%BASE%\test-server"
 if not defined SRVSRC if exist "%BASE%\test-server\samp-server.exe" set "SRVSRC=%BASE%\test-server"
-if not defined SRVSRC if exist "%OUT%\test-server\omp-server.exe" set "SRVSRC=%OUT%\test-server"
-if not defined SRVSRC if exist "%OUT%\test-server\samp-server.exe" set "SRVSRC=%OUT%\test-server"
-if not defined SRVSRC if exist "%BASE%\data\config.json" (
-    for /f "usebackq delims=" %%S in (`powershell -NoProfile -Command "try { (Get-Content -Raw -LiteralPath '%BASE%\data\config.json' | ConvertFrom-Json).server_path } catch { }"`) do set "SRVSRC=%%S"
-)
-if not defined SRVSRC if exist "%OUT%\data\config.json" (
-    for /f "usebackq delims=" %%S in (`powershell -NoProfile -Command "try { (Get-Content -Raw -LiteralPath '%OUT%\data\config.json' | ConvertFrom-Json).server_path } catch { }"`) do set "SRVSRC=%%S"
-)
-if defined SRVSRC if /i not "%SRVSRC%"=="%ST%" (
+if defined SRVSRC (
     echo Copiando o servidor de teste de: "%SRVSRC%"
     robocopy "%SRVSRC%" "%ST%" omp-server.exe samp-server.exe *.dll /NFL /NDL /NJH /NJS /NP >nul
     if exist "%SRVSRC%\components" robocopy "%SRVSRC%\components" "%ST%\components" /E /NFL /NDL /NJH /NJS /NP >nul
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if exist "omp-server-source\plugins" robocopy "omp-server-source\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
-rem Remove simbolos de depuracao (.pdb) e dumps desnecessarios para o servidor de teste
 del /q /s "%ST%\components\*.pdb" 2>nul
 del /q /s "%ST%\components\*.dmp" 2>nul
 del /q /s "%ST%\plugins\*.pdb" 2>nul
 del /q /s "%ST%\plugins\*.dmp" 2>nul
 del /q /s "%ST%\*.pdb" 2>nul
 del /q /s "%ST%\*.dmp" 2>nul
-if not defined SRVSRC echo Aviso: nenhum servidor open.mp/SA-MP encontrado. Coloque os arquivos em "test-server".
 
-rem Garante config.json, server.cfg e mapa.txt padrao no test-server
 if exist "omp-server-source\config.json" copy /y "omp-server-source\config.json" "%ST%\config.json" >nul
 if not exist "%ST%\server.cfg" (
     > "%ST%\server.cfg" (
@@ -276,143 +227,126 @@ if not exist "%ST%\scriptfiles\samapstudio\mapa.txt" (
     echo S^|0.0^|0.0^|3.0^|0.0^|0^|0^|1> "%ST%\scriptfiles\samapstudio\mapa.txt"
 )
 
-rem ---------------- Miniaturas do Catalogo
+rem ---------------- 3. Miniaturas e Dados do Catalogo
 set "THUMBSRC="
 if exist "%SRC%compile-sources\cache\thumbnails\objects" set "THUMBSRC=%SRC%compile-sources\cache\thumbnails"
 if not defined THUMBSRC if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
 if not defined THUMBSRC if exist "%BASE%\data\cache\thumbnails\objects" set "THUMBSRC=%BASE%\data\cache\thumbnails"
-if not defined THUMBSRC if exist "%OUT%\data\cache\thumbnails\objects" set "THUMBSRC=%OUT%\data\cache\thumbnails"
 if defined THUMBSRC (
     echo Copiando miniaturas do catalogo de: "%THUMBSRC%"...
-    if not exist "%BASE%\data\cache\thumbnails" mkdir "%BASE%\data\cache\thumbnails"
-    robocopy "%THUMBSRC%" "%BASE%\data\cache\thumbnails" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    if not exist "%STAGE%\data\cache\thumbnails" mkdir "%STAGE%\data\cache\thumbnails"
+    robocopy "%THUMBSRC%" "%STAGE%\data\cache\thumbnails" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem ---------------- Texturas do Catalogo
 set "TEXSRC="
 if exist "%SRC%compile-sources\cache\textures.json" set "TEXSRC=%SRC%compile-sources\cache\textures.json"
 if not defined TEXSRC if exist "%SRC%compile-sources\cache\texturas.json" set "TEXSRC=%SRC%compile-sources\cache\texturas.json"
 if not defined TEXSRC if exist "%BASE%\data\cache\textures.json" set "TEXSRC=%BASE%\data\cache\textures.json"
-if not defined TEXSRC if exist "%OUT%\data\cache\textures.json" set "TEXSRC=%OUT%\data\cache\textures.json"
 if defined TEXSRC (
-    if not exist "%BASE%\data\cache" mkdir "%BASE%\data\cache"
-    copy /y "%TEXSRC%" "%BASE%\data\cache\textures.json" >nul
+    copy /y "%TEXSRC%" "%STAGE%\data\cache\textures.json" >nul
 )
 
-rem ---------------- Sprites
 set "SPRITESRC="
 if exist "%SRC%compile-sources\cache\sprites" set "SPRITESRC=%SRC%compile-sources\cache\sprites"
 if not defined SPRITESRC if exist "%BASE%\data\cache\sprites" set "SPRITESRC=%BASE%\data\cache\sprites"
-if not defined SPRITESRC if exist "%OUT%\data\cache\sprites" set "SPRITESRC=%OUT%\data\cache\sprites"
 if defined SPRITESRC (
     echo Copiando sprites de: "%SPRITESRC%"...
-    if not exist "%BASE%\data\cache\sprites" mkdir "%BASE%\data\cache\sprites"
-    robocopy "%SPRITESRC%" "%BASE%\data\cache\sprites" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    if not exist "%STAGE%\data\cache\sprites" mkdir "%STAGE%\data\cache\sprites"
+    robocopy "%SPRITESRC%" "%STAGE%\data\cache\sprites" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem ---------------- Skins
 set "SKINSRC="
 if exist "%SRC%compile-sources\cache\skins" set "SKINSRC=%SRC%compile-sources\cache\skins"
 if not defined SKINSRC if exist "%BASE%\data\cache\skins" set "SKINSRC=%BASE%\data\cache\skins"
-if not defined SKINSRC if exist "%OUT%\data\cache\skins" set "SKINSRC=%OUT%\data\cache\skins"
 if defined SKINSRC (
     echo Copiando skins de: "%SKINSRC%"...
-    if not exist "%BASE%\data\cache\skins" mkdir "%BASE%\data\cache\skins"
-    robocopy "%SKINSRC%" "%BASE%\data\cache\skins" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    if not exist "%STAGE%\data\cache\skins" mkdir "%STAGE%\data\cache\skins"
+    robocopy "%SKINSRC%" "%STAGE%\data\cache\skins" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem ---------------- Animacoes (videos de preview)
 set "ANIMSRC="
 if exist "%SRC%compile-sources\cache\animations" set "ANIMSRC=%SRC%compile-sources\cache\animations"
 if not defined ANIMSRC if exist "%BASE%\data\cache\animations" set "ANIMSRC=%BASE%\data\cache\animations"
-if not defined ANIMSRC if exist "%OUT%\data\cache\animations" set "ANIMSRC=%OUT%\data\cache\animations"
 if defined ANIMSRC (
     echo Copiando animacoes do catalogo de: "%ANIMSRC%"...
-    if not exist "%BASE%\data\cache\animations" mkdir "%BASE%\data\cache\animations"
-    robocopy "%ANIMSRC%" "%BASE%\data\cache\animations" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    if not exist "%STAGE%\data\cache\animations" mkdir "%STAGE%\data\cache\animations"
+    robocopy "%ANIMSRC%" "%STAGE%\data\cache\animations" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem ---------------- MapIcons
 set "MAPICONSRC="
 if exist "%SRC%compile-sources\cache\mapicons" set "MAPICONSRC=%SRC%compile-sources\cache\mapicons"
 if not defined MAPICONSRC if exist "%BASE%\data\cache\mapicons" set "MAPICONSRC=%BASE%\data\cache\mapicons"
-if not defined MAPICONSRC if exist "%OUT%\data\cache\mapicons" set "MAPICONSRC=%OUT%\data\cache\mapicons"
 if defined MAPICONSRC (
     echo Copiando mapicons de: "%MAPICONSRC%"...
-    if not exist "%BASE%\data\cache\mapicons" mkdir "%BASE%\data\cache\mapicons"
-    robocopy "%MAPICONSRC%" "%BASE%\data\cache\mapicons" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    if not exist "%STAGE%\data\cache\mapicons" mkdir "%STAGE%\data\cache\mapicons"
+    robocopy "%MAPICONSRC%" "%STAGE%\data\cache\mapicons" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem ---------------- Radarmap
 set "RADARSRC="
 if exist "%SRC%compile-sources\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\cache\radarmap.png"
 if not defined RADARSRC if exist "%BASE%\data\cache\radarmap.png" set "RADARSRC=%BASE%\data\cache\radarmap.png"
-if not defined RADARSRC if exist "%OUT%\data\cache\radarmap.png" set "RADARSRC=%OUT%\data\cache\radarmap.png"
 if defined RADARSRC (
-    if not exist "%BASE%\data\cache" mkdir "%BASE%\data\cache"
-    copy /y "%RADARSRC%" "%BASE%\data\cache\radarmap.png" >nul
+    copy /y "%RADARSRC%" "%STAGE%\data\cache\radarmap.png" >nul
 )
 
-rem ---------------- Sons (PlayerPlaySound)
 set "SOUNDSRC="
 if exist "%SRC%compile-sources\cache\sounds" set "SOUNDSRC=%SRC%compile-sources\cache\sounds"
 if not defined SOUNDSRC if exist "%BASE%\data\cache\sounds" set "SOUNDSRC=%BASE%\data\cache\sounds"
-if not defined SOUNDSRC if exist "%OUT%\data\cache\sounds" set "SOUNDSRC=%OUT%\data\cache\sounds"
 if defined SOUNDSRC (
-    if not exist "%BASE%\data\cache\sounds" mkdir "%BASE%\data\cache\sounds"
-    robocopy "%SOUNDSRC%" "%BASE%\data\cache\sounds" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    if not exist "%STAGE%\data\cache\sounds" mkdir "%STAGE%\data\cache\sounds"
+    robocopy "%SOUNDSRC%" "%STAGE%\data\cache\sounds" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem ---------------- Modelos 3D
-rem Modelos 3D (cj.dff, cj.txd) sao empacotados internamente dentro de system\models
-if exist "%BASE%\models" rmdir /s /q "%BASE%\models" 2>nul
-if exist "%BASE%\system\compile-sources" rmdir /s /q "%BASE%\system\compile-sources" 2>nul
+rem Remove qualquer arquivo solto indesejado no staging
+del /q /s "%STAGE%\*.pdb" 2>nul
+del /q /s "%STAGE%\*.dmp" 2>nul
+del /q /s "%STAGE%\*LEIA-ME*" 2>nul
 
-rem Garante que na raiz de %OUT% existam SOMENTE o executavel e a pasta sa-map-studio
-if exist "%OUT%\system" rmdir /s /q "%OUT%\system" 2>nul
-if exist "%OUT%\test-server" rmdir /s /q "%OUT%\test-server" 2>nul
-if exist "%OUT%\data" rmdir /s /q "%OUT%\data" 2>nul
-if exist "%OUT%\models" rmdir /s /q "%OUT%\models" 2>nul
-if exist "%OUT%\projects" rmdir /s /q "%OUT%\projects" 2>nul
-if exist "%OUT%\exported" rmdir /s /q "%OUT%\exported" 2>nul
-if exist "%OUT%\Projetos" rmdir /s /q "%OUT%\Projetos" 2>nul
-if exist "%OUT%\Exportados" rmdir /s /q "%OUT%\Exportados" 2>nul
-if exist "%OUT%\Dados" rmdir /s /q "%OUT%\Dados" 2>nul
-if exist "%OUT%\Servidor de Teste" rmdir /s /q "%OUT%\Servidor de Teste" 2>nul
-if exist "%OUT%\Sistema" rmdir /s /q "%OUT%\Sistema" 2>nul
-for %%F in ("%BASE%\*.*") do del /q "%%F" 2>nul
+rem ---------------- 4. Compacta o Pacote sa-map-studio.zip
+echo Compactando pacote sa-map-studio.zip...
+"%VPY%" "%SRC%compile-sources\package_bundle.py" "%STAGE%" "%SRC%build\sa-map-studio.zip"
+if errorlevel 1 goto erro
+
+rem ---------------- 5. Compila o Launcher Auto-Extrator (SA Map Studio.exe)
+echo Gerando o executavel unico SA Map Studio.exe...
+if not exist "%OUT%" mkdir "%OUT%"
+"%VPY%" -m PyInstaller --noconfirm --clean --onefile --windowed --uac-admin --name "SA Map Studio" --icon "%ICONFILE%" --distpath "%OUT%" --workpath "%SRC%build\tmp_launcher" --specpath "%SRC%build" --add-data "%SRC%build\sa-map-studio.zip;." --add-data "%ICONFILE%;." "%SRC%compile-sources\launcher.py"
+if errorlevel 1 goto erro
+
+rem ---------------- 6. Tratamento do Modo Limpo vs Normal
+if /i "%MODO%"=="clean" (
+    rem Na versao limpa, mantem rigorosamente SOMENTE o executavel unico
+    if exist "%BASE%" rmdir /s /q "%BASE%" 2>nul
+    echo Versao limpa configurada: a pasta sa-map-studio sera criada na primeira execucao.
+) else (
+    rem No modo normal, se a pasta de desenvolvimento ja existir, atualiza o motor
+    if exist "%BASE%\system" robocopy "%STAGE%\system" "%BASE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
+    if exist "%BASE%\test-server\gamemodes" copy /y "%STAGE%\test-server\gamemodes\*.*" "%BASE%\test-server\gamemodes\" >nul
+)
+
 del /q "%OUT%\LEIA-ME.txt" 2>nul
 del /q "%OUT%\*.txt" 2>nul
-del /q "%BASE%\LEIA-ME.txt" 2>nul
-del /q "%BASE%\*.txt" 2>nul
+if exist "%BASE%\LEIA-ME.txt" del /q "%BASE%\LEIA-ME.txt" 2>nul
 
-rem Limpa pastas e logs da raiz do projeto para manter o repositorio perfeitamente limpo
+rem Limpa pastas temporarias de build
+rmdir /s /q "%SRC%build" 2>nul
+del /q "%SRC%build-info.json" 2>nul
+del /q "%SRC%sa-map-studio.spec" 2>nul
+del /q "%SRC%SA Map Studio.spec" 2>nul
+del /q "%SRC%mini_launcher.spec" 2>nul 2>nul
 if exist "%SRC%__pycache__" rmdir /s /q "%SRC%__pycache__" 2>nul
-if exist "%SRC%projects" rmdir /s /q "%SRC%projects" 2>nul
-if exist "%SRC%data" rmdir /s /q "%SRC%data" 2>nul
-if exist "%SRC%sa-map-studio" rmdir /s /q "%SRC%sa-map-studio" 2>nul
-if exist "%SRC%sa-map-studio.log" del /q "%SRC%sa-map-studio.log" 2>nul
-if exist "%SRC%sa-map-studio.log" del /q "%SRC%sa-map-studio.log" 2>nul
-if exist "%BASE%\data\logs\sa-map-studio.log" del /q "%BASE%\data\logs\sa-map-studio.log" 2>nul
-
-rem Limpa pastas legadas se existirem
-if exist "%~dp0compiled\sa-map-studio\" rmdir /s /q "%~dp0compiled\sa-map-studio" 2>nul
-if exist "%~dp0compiled\SA Map Studio\" rmdir /s /q "%~dp0compiled\SA Map Studio" 2>nul
-if exist "dist\" rmdir /s /q "dist" 2>nul
-if exist "dist-limpo\" rmdir /s /q "dist-limpo" 2>nul
-rmdir /s /q "build" 2>nul
-del /q "build-info.json" 2>nul
 
 echo.
 echo ============================================================
-echo  Pronto! Pasta do programa: %OUT%
-echo    SA Map Studio.exe   - abra este
-echo    sa-map-studio\      - pasta contendo data, exported, projects, test-server, system
+echo  Pronto! Executavel unico gerado com sucesso:
+echo    %OUT%\SA Map Studio.exe
+echo.
 if /i "%MODO%"=="clean" (
-echo  Versao limpa: projects, exported e data sao criados vazios na
-echo  primeira vez que o programa abrir. Pronta para enviar a outra pessoa.
+echo  Versao limpa de arquivo unico: para compartilhar ou mover o programa,
+echo  basta copiar somente o 'SA Map Studio.exe'.
+echo  Ao abrir pela primeira vez, ele criara a pasta sa-map-studio com tudo dentro.
 ) else (
-echo    projects\, exported\, data\ - seus mapas e configuracoes ^(mantidos^)
+echo    projects\, exported\, data\ - seus mapas e configuracoes locais ^(mantidos^)
 )
 if not defined NO_EXPLORER explorer "%OUT%"
 if not defined NO_PAUSE pause
@@ -421,6 +355,7 @@ exit /b 0
 :erro
 echo.
 echo A compilacao falhou. Veja a mensagem acima.
-del /q "build-info.json" 2>nul
+rmdir /s /q "%SRC%build" 2>nul
+del /q "%SRC%build-info.json" 2>nul
 if not defined NO_PAUSE pause
 exit /b 1

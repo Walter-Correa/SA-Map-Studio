@@ -45,17 +45,21 @@ from urllib.parse import quote, unquote, urlparse, parse_qs
 VERSION = "3.1.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
-ROOT_DIR = os.path.dirname(os.path.abspath(sys.executable)) if FROZEN else os.path.dirname(os.path.abspath(__file__))
-# Na versao compilada, as pastas ficam dentro de sa-map-studio ao lado do executavel.
-# No modo de desenvolvimento, usa a pasta da versao compilada para manter a raiz do repositorio sempre limpa.
 if FROZEN:
-    BASE_DIR = os.path.join(ROOT_DIR, "sa-map-studio")
+    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+    # Se o executável do sistema estiver dentro de sa-map-studio\system\
+    if os.path.basename(exe_dir).lower() == "system" and os.path.basename(os.path.dirname(exe_dir)).lower() == "sa-map-studio":
+        BASE_DIR = os.path.dirname(exe_dir)
+        ROOT_DIR = os.path.dirname(BASE_DIR)
+    else:
+        ROOT_DIR = exe_dir
+        BASE_DIR = os.path.join(ROOT_DIR, "sa-map-studio")
+    APP_DIR = getattr(sys, "_MEIPASS", None) or exe_dir
 else:
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
     BASE_DIR = os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio")
+    APP_DIR = getattr(sys, "_MEIPASS", None) or ROOT_DIR
 os.makedirs(BASE_DIR, exist_ok=True)
-
-# Arquivos do editor (html/js/css)
-APP_DIR = getattr(sys, "_MEIPASS", None) or ROOT_DIR
 PROJECTS_DIR = os.path.join(BASE_DIR, "projects")
 EXPORTS_DIR = os.path.join(BASE_DIR, "exported")
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -71,7 +75,14 @@ ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.
 WEBVIEW_DIR = os.path.join(DATA_DIR, "browser")
 LOGS_DIR = os.path.join(DATA_DIR, "logs")
 TEST_DIR = os.path.join(BASE_DIR, "test-server")
-MODELS_DIR = os.path.join(APP_DIR, "models") if FROZEN else os.path.join(COMPILE_SOURCES_DIR, "models")
+if FROZEN:
+    MODELS_DIR = os.path.join(APP_DIR, "models")
+    if not os.path.isdir(MODELS_DIR):
+        alt_m = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), "models")
+        if os.path.isdir(alt_m):
+            MODELS_DIR = alt_m
+else:
+    MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
 IS_WINDOWS = os.name == "nt"
 
 
@@ -1789,6 +1800,13 @@ class Handler(SimpleHTTPRequestHandler):
             path = "/index.html"
         rel = path.lstrip("/")
         full = os.path.normpath(os.path.join(APP_DIR, rel))
+        if not os.path.isfile(full) and FROZEN:
+            exe_folder = os.path.dirname(os.path.abspath(sys.executable))
+            for alt_dir in (exe_folder, os.path.join(exe_folder, "_internal")):
+                alt = os.path.normpath(os.path.join(alt_dir, rel))
+                if os.path.isfile(alt):
+                    full = alt
+                    break
         if not os.path.isfile(full) and not FROZEN:
             cand = os.path.normpath(os.path.join(COMPILE_SOURCES_DIR, rel))
             if os.path.isfile(cand):
