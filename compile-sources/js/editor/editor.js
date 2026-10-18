@@ -42,7 +42,7 @@ export class Editor extends EventTarget {
     this.selection = [];             // uids do projeto
     this.worldSelection = [];        // instâncias do mapa selecionadas
     this.mode = 'translate';
-    this.space = 'world';
+    this.space = 'local';
     this.snap = { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 };
     this.transformSpeed = { move: 1.0, rotate: 1.0 };
     this.placing = null;             // {model, ghost}
@@ -1173,27 +1173,113 @@ export class Editor extends EventTarget {
   bindPointer() {
     const dom = this.vp.renderer.domElement;
     let down = null;
+    let directDrag = null;
+
     dom.addEventListener('pointerdown', (e) => {
       if (e.button === 2 && this.placing) {
         e.preventDefault();
         e.stopPropagation();
         this.cancelPlacing();
         down = null;
+        directDrag = null;
         return;
       }
-      if (e.button === 0) down = { x: e.clientX, y: e.clientY, t: performance.now() };
+      if (e.button === 0) {
+        down = { x: e.clientX, y: e.clientY, t: performance.now() };
+        // Se já houver itens selecionados e não estiver usando as setas do manipulador (gizmo)
+        if (!this.tc.axis && !this.tc.dragging && !this.placing && this.selection.length > 0 && this.mode === 'translate') {
+          const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());
+          const hitUid = hit?.object?.userData?.uid;
+          if (hitUid && this.selection.includes(hitUid)) {
+            const selItems = this.selectedItems();
+            const firstNode = this.nodes.get(this.selection[0]);
+            const startZ = firstNode ? firstNode.position.z : (selItems[0]?.item?.z || 0);
+            const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -startZ);
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(this.vp.ndc(e), this.vp.camera);
+            const planeHit = new THREE.Vector3();
+            if (ray.ray.intersectPlane(plane, planeHit)) {
+              directDrag = {
+                startX: e.clientX,
+                startY: e.clientY,
+                plane,
+                startPlaneHit: planeHit.clone(),
+                itemStarts: selItems.map(s => ({
+                  uid: s.uid,
+                  x: s.item.x,
+                  y: s.item.y,
+                  z: s.item.z
+                })),
+                active: false
+              };
+            }
+          }
+        }
+      }
     }, true);
+
     dom.addEventListener('contextmenu', (e) => {
       if (this.placing) {
         e.preventDefault();
         e.stopPropagation();
       }
     }, true);
+
     dom.addEventListener('pointermove', (e) => {
       this.lastPointer = e;
       if (this.placing) this.updateGhost(e);
+      if (directDrag) {
+        const dist = Math.hypot(e.clientX - directDrag.startX, e.clientY - directDrag.startY);
+        if (dist > 4) {
+          directDrag.active = true;
+          dom.style.cursor = 'move';
+          const ray = new THREE.Raycaster();
+          ray.setFromCamera(this.vp.ndc(e), this.vp.camera);
+          const curPlaneHit = new THREE.Vector3();
+          if (ray.ray.intersectPlane(directDrag.plane, curPlaneHit)) {
+            let dx = curPlaneHit.x - directDrag.startPlaneHit.x;
+            let dy = curPlaneHit.y - directDrag.startPlaneHit.y;
+            if (this.snap.enabled && this.snap.move > 0) {
+              const step = this.snap.move;
+              dx = Math.round(dx / step) * step;
+              dy = Math.round(dy / step) * step;
+            }
+            for (const it of directDrag.itemStarts) {
+              const proj = this.findProjectOf(it.uid);
+              const curItem = proj?.find(it.uid);
+              if (curItem) {
+                curItem.x = round(it.x + dx);
+                curItem.y = round(it.y + dy);
+                curItem.z = it.z; // Z estritamente inalterado!
+                const node = this.nodes.get(it.uid);
+                if (node) {
+                  node.position.set(curItem.x, curItem.y, curItem.z);
+                  node.updateMatrixWorld(true);
+                }
+              }
+            }
+            this.refreshSelectionBoxes();
+            this.updateAttachedChildren();
+            this.attachGizmo();
+            this.emit('change');
+            return;
+          }
+        }
+      }
     });
+
     dom.addEventListener('pointerup', (e) => {
+      if (directDrag) {
+        const wasActive = directDrag.active;
+        directDrag = null;
+        dom.style.cursor = 'default';
+        if (wasActive) {
+          down = null;
+          this.saveUndoState('Mover');
+          this.emit('change');
+          return;
+        }
+      }
       if (e.button !== 0 || !down) return;
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4;
       down = null;
@@ -1376,6 +1462,37 @@ export class Editor extends EventTarget {
           itemCopy.nextx = Math.round((itemCopy.x + dir.x * dist) * 100) / 100;
           itemCopy.nexty = Math.round((itemCopy.y + dir.y * dist) * 100) / 100;
           itemCopy.nextz = Math.round((itemCopy.z + dir.z * dist) * 100) / 100;
+        } else if (s.kind === 'mapIcons') {
+          // Desloca para o espaço vazio mais próximo (evita ficar em cima de outro mapicon)
+          const existing = p.mapIcons || [];
+          const dist = 20.0;
+          let ox = dist, oy = dist;
+          const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+          for (const ang of angles) {
+            const rad = (ang * Math.PI) / 180;
+            const tx = itemCopy.x + Math.cos(rad) * dist;
+            const ty = itemCopy.y + Math.sin(rad) * dist;
+            const busy = existing.some(m => Math.hypot(m.x - tx, m.y - ty) < dist * 0.7);
+            if (!busy) { ox = Math.cos(rad) * dist; oy = Math.sin(rad) * dist; break; }
+          }
+          itemCopy.x = Math.round((itemCopy.x + ox) * 10) / 10;
+          itemCopy.y = Math.round((itemCopy.y + oy) * 10) / 10;
+        } else if (s.kind === 'gangZones') {
+          const w = Math.max(30, (itemCopy.maxx || 0) - (itemCopy.minx || 0));
+          const h = Math.max(30, (itemCopy.maxy || 0) - (itemCopy.miny || 0));
+          const existing = p.gangZones || [];
+          const candOffsets = [[w, 0], [0, h], [-w, 0], [0, -h], [w, h], [-w, h], [-w, -h], [w, -h]];
+          let chosen = [w, 0];
+          for (const [cx, cy] of candOffsets) {
+            const nMinX = itemCopy.minx + cx, nMaxX = itemCopy.maxx + cx;
+            const nMinY = itemCopy.miny + cy, nMaxY = itemCopy.maxy + cy;
+            const busy = existing.some(g => !(nMaxX <= g.minx || nMinX >= g.maxx || nMaxY <= g.miny || nMinY >= g.maxy));
+            if (!busy) { chosen = [cx, cy]; break; }
+          }
+          itemCopy.minx = Math.round(itemCopy.minx + chosen[0]);
+          itemCopy.maxx = Math.round(itemCopy.maxx + chosen[0]);
+          itemCopy.miny = Math.round(itemCopy.miny + chosen[1]);
+          itemCopy.maxy = Math.round(itemCopy.maxy + chosen[1]);
         }
         return { ...itemCopy, kind: s.kind };
       });
@@ -1770,7 +1887,12 @@ export class Editor extends EventTarget {
     if (ctrl && k === 'a') { this.selectAll(); return true; }
     if (k === 'escape') { if (this.placing) this.cancelPlacing(); else this.clearSelection(); return true; }
     if (this.placing && (k === 'r' || k === 'x')) { this.rotateGhost(e.shiftKey ? -15 : (k === 'x' ? 90 : 15)); return true; }
-    if (ctrl && k === 'd') { this.duplicateSelection(); return true; }
+    if (ctrl && (k === 'd' || k === 'c')) {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return false;
+      this.duplicateSelection();
+      return true;
+    }
     if (k === 'delete' || (k === 'backspace' && !ctrl)) { this.deleteSelection(); return true; }
     if (!ctrl && (k === 'g' || k === '1')) { this.setMode('translate'); return true; }
     if (!ctrl && (k === 'r' || k === '2')) { this.setMode('rotate'); return true; }

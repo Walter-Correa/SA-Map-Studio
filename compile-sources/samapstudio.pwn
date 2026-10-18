@@ -867,7 +867,8 @@ stock SAMSP_CarregarMapa()
                     if (td != Text:INVALID_TEXT_DRAW)
                     {
                         TextDrawFont(td, tdfont);
-                        TextDrawLetterSize(td, (tdletx > 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
+                        TextDrawLetterSize(td, (tdletx >= 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
+                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
                         if (!tdusebox)
                         {
                             new Float:wrapX = (tdalign == 3) ? 0.0 : (tdsizex > 0.0 ? tdsizex : 640.0);
@@ -881,7 +882,6 @@ stock SAMSP_CarregarMapa()
                         TextDrawColor(td, tdcol);
                         TextDrawSetOutline(td, tdoutline);
                         TextDrawSetShadow(td, tdshadow);
-                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
                         if (tdusebox)
                         {
                             TextDrawUseBox(td, true);

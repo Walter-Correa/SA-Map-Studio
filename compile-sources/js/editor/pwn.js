@@ -1122,9 +1122,36 @@ export function exportPawn(project, options = {}) {
   for (let idx = 0; idx < textDraws.length; idx++) {
     const td = textDraws[idx];
     const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
-    const isTextNoBox = (td.font <= 3) && !td.useBox;
-    const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0));
-    const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? (td.font === 4 ? 64.0 : 100.0));
+    const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
+    let w = 100;
+    if (align === 1) {
+      w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(20, td.textSizeX || 100);
+    } else if (align === 2) {
+      w = Math.max(20, td.textSizeX || 100);
+    } else if (align === 3) {
+      if (td.textSizeX < td.x && td.textSizeX > 0) w = td.x - td.textSizeX;
+      else w = Math.max(20, td.textSizeX || 100);
+    }
+    const h = td.textSizeY > 0 ? td.textSizeY : 100;
+    let expSizeX = td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0);
+    let expSizeY = td.textSizeY ?? (td.font === 4 ? 64.0 : 480.0);
+
+    if (td.font === 4 || td.font === 5) {
+      expSizeX = td.textSizeX > 0 ? td.textSizeX : (td.font === 4 ? 64.0 : 80.0);
+      expSizeY = td.textSizeY > 0 ? td.textSizeY : (td.font === 4 ? 64.0 : 80.0);
+    } else if (td.useBox) {
+      if (align === 1) {
+        expSizeX = td.x + w;
+      } else if (align === 2) {
+        expSizeX = w;
+      } else if (align === 3) {
+        expSizeX = td.x - w;
+      }
+      expSizeY = h;
+    } else {
+      expSizeX = (align === 3 ? 0.0 : 640.0);
+      expSizeY = (align === 2 ? 640.0 : 480.0);
+    }
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
@@ -1162,12 +1189,16 @@ export function exportPawn(project, options = {}) {
     textDrawLines.push(`TextDrawFont(${tdVar}, ${td.font ?? 1});`);
     const letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
     const letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
-    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);
+    if (isBoxPure && td.useBox) {
+      textDrawLines.push(`TextDrawLetterSize(${tdVar}, 0.00, ${formatCoord(h / 22.0, null)});`);
+    } else {
+      textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(letX, null)}, ${formatCoord(letY, null)});`);
+    }
+    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${align});`);
     textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(expSizeX, null)}, ${formatCoord(expSizeY, null)});`);
     textDrawLines.push(`TextDrawColor(${tdVar}, ${cHex});`);
     textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
     textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
-    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${align});`);
     if (td.useBox && td.font !== 5 && td.font !== 4) {
       textDrawLines.push(`TextDrawUseBox(${tdVar}, 1);`);
       textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${bHex});`);

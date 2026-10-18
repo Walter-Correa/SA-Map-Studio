@@ -6,6 +6,18 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.2.0', date: '18/10/2026', items: [
+      'Aperfeiçoamento do Editor de TextDraws: suporte nativo a tags de cores do GTA SA (~r~, ~g~, ~b~, ~w~, ~y~, ~p~, ~l~, ~s~, ~h~) e símbolos direcionais (~<~, ~>~, ~u~, ~d~), renderização e exportação Pawn precisa de alinhamentos (Esquerda, Centro, Direita) e modelo Caixa pura sem caracteres de texto.',
+      'Duplicação de GangZones e MapIcons: novos botões "Duplicar" e suporte aos atalhos universais Ctrl+C e Ctrl+D nos editores 2D e inspetores, criando a cópia no espaço livre adjacente com seleção imediata.',
+      'Movimentação Direta no Terreno: arraste direto do objeto ou elemento selecionado pelo terreno no plano horizontal (X e Y) preservando a cota Z e respeitando o alinhamento de grade.',
+      'Proteção Estrutural de Acoplamento: bloqueio de acoplamento para objetos pais que já possuam outros objetos acoplados a eles, prevenindo inconsistências e ciclos de hierarquia.',
+      'Eixo de Edição Padrão: manipulador do editor configurado por padrão no modo "Eixo: Objeto" (coordenadas locais).',
+      'Textos em Objetos em Tempo Real: renderização e atualização dinâmica de textos aplicados sobre a superfície de objetos na viewport 3D.',
+      'Lista de Projetos com Estatísticas Completas: exibição detalhada de totais de cada categoria (Objetos, Veículos, Actors, Pickups, Textos 3D, GangZones, MapIcons, Checkpoints, TextDraws e Removidos) na seleção de projetos.',
+      'Exportação Pawn Otimizada: geração limpa e sem duplicação de comentários de grupos no código de carregamento do mapa.',
+    ],
+  },
+  {
     version: '3.1.0', date: '17/10/2026', items: [
       'Catálogo de Sons Oficial (PlayerPlaySound): catálogo completo com 2.620 áudios oficiais, reprodução e prévia com extração de bancos GENRL/SA-MP, 9 categorias temáticas e cabeçalho fixo com rolagem independente.',
       'Suporte Completo a Checkpoints e Race Checkpoints: suporte a Checkpoints normais proporcionais e Race Checkpoints (tipos 0 a 4), argolas aéreas com torus, setas direcionais dinâmicas conectadas ao próximo ponto, cilindros e discos de chegada quadriculados, duplicação direcional e preservação estrita de modelo.',

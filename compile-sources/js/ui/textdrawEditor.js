@@ -265,6 +265,14 @@ function setupDialogEvents() {
       tdRedo();
       return;
     }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'd' || e.key === 'D')) {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      e.preventDefault();
+      e.stopPropagation();
+      duplicateSelectedTextDraw();
+      return;
+    }
     if (e.key === 'Delete' || e.key === 'Del') {
       const activeTag = document.activeElement?.tagName?.toLowerCase();
       if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
@@ -609,8 +617,14 @@ function setupCanvasEvents() {
         td.textSizeX = newW;
         td.textSizeY = newH;
       } else if (td.useBox) {
-        // Caixa padrão: textSizeX é a coordenada X final da caixa (td.x + newW), textSizeY é altura
-        td.textSizeX = Math.round(td.x + newW);
+        const align = getTdAlign(td);
+        if (align === 1) {
+          td.textSizeX = Math.round(td.x + newW);
+        } else if (align === 2) {
+          td.textSizeX = Math.round(newW);
+        } else if (align === 3) {
+          td.textSizeX = Math.round(td.x - newW);
+        }
         td.textSizeY = newH;
       } else {
         // Texto normal: escala letterSizeX e letterSizeY proporcionalmente ao arrasto da caixa
@@ -625,12 +639,22 @@ function setupCanvasEvents() {
       const newX = Math.round(Math.max(0, Math.min(640, isDraggingTd.origX + dx)));
       const newY = Math.round(Math.max(0, Math.min(480, isDraggingTd.origY + dy)));
 
-      if (td.useBox && td.font !== 4 && td.font !== 5 && isDraggingTd.origSizeX > isDraggingTd.origX) {
-        // Mantém a largura da caixa ao arrastá-la de posição
-        const boxW = isDraggingTd.origSizeX - isDraggingTd.origX;
-        td.x = newX;
-        td.textSizeX = newX + boxW;
-        td.y = newY;
+      if (td.useBox && td.font !== 4 && td.font !== 5) {
+        const align = getTdAlign(td);
+        if (align === 1 && isDraggingTd.origSizeX > isDraggingTd.origX) {
+          const boxW = isDraggingTd.origSizeX - isDraggingTd.origX;
+          td.x = newX;
+          td.textSizeX = newX + boxW;
+          td.y = newY;
+        } else if (align === 3 && isDraggingTd.origSizeX < isDraggingTd.origX) {
+          const boxW = isDraggingTd.origX - isDraggingTd.origSizeX;
+          td.x = newX;
+          td.textSizeX = newX - boxW;
+          td.y = newY;
+        } else {
+          td.x = newX;
+          td.y = newY;
+        }
       } else {
         td.x = newX;
         td.y = newY;
@@ -666,6 +690,7 @@ function getTextDrawBounds(td) {
   const letterY = td.letterSizeY || 1.4;
   const letterX = td.letterSizeX || 0.35;
   const fontH = letterY * 20;
+  const isBoxPure = td.isBox || td.text === '_' || !td.text || td.text.trim() === '';
   const lines = String(td.text || '').split(/(?:\r?\n|~n~)/);
   const lineCount = Math.max(1, lines.length);
 
@@ -675,12 +700,28 @@ function getTextDrawBounds(td) {
     return { x: td.x, y: td.y, w, h };
   }
 
+  const align = getTdAlign(td);
   let w = 100;
   let h = 100;
 
   if (td.useBox) {
-    w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(30, td.textSizeX || 100);
-    h = (td.textSizeY > 0) ? td.textSizeY : Math.max(18, Math.round(lineCount * fontH));
+    if (align === 1) {
+      w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(20, td.textSizeX || 100);
+    } else if (align === 2) {
+      w = Math.max(20, td.textSizeX || 100);
+    } else if (align === 3) {
+      if (td.textSizeX < td.x && td.textSizeX > 0) {
+        w = td.x - td.textSizeX;
+      } else {
+        w = Math.max(20, td.textSizeX || 100);
+      }
+    }
+
+    if (isBoxPure) {
+      h = (td.textSizeY > 0) ? td.textSizeY : Math.max(18, Math.round(letterY * 22));
+    } else {
+      h = (td.textSizeY > 0) ? td.textSizeY : Math.max(18, Math.round(lineCount * fontH));
+    }
   } else {
     const fontFam = getFontFamily(td.font);
     const fontSize = Math.max(8, Math.round(letterY * 18));
@@ -703,7 +744,6 @@ function getTextDrawBounds(td) {
     h = Math.max(14, Math.round(lineCount * fontH));
   }
 
-  const align = getTdAlign(td);
   let x = td.x;
   if (align === 2) x -= w / 2; // Centro
   else if (align === 3) x -= w; // Direita
@@ -819,14 +859,13 @@ function renderTextDraw(td, isSelected) {
     ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
   }
 
-  // 2. Se for Font 5 (Prévia de Modelo 3D)
+  // 2. Se for modelo de Caixa (ou texto vazio / '_'), não desenha texto
+  const isBoxPure = td.isBox || td.text === '_' || !td.text || td.text.trim() === '';
   if (td.font === 5) {
     renderModelPreview(td, bounds, isSelected);
   } else if (td.font === 4) {
-    // 3. Se for Font 4 (Sprite)
     renderSpriteTextDraw(td, bounds);
-  } else {
-    // 4. Renderiza Texto normal
+  } else if (!isBoxPure) {
     renderTextDrawString(td, bounds);
   }
 
@@ -887,7 +926,7 @@ function renderTextDrawString(td, bounds) {
       ctx.fillText(stripColorTags(line), td.shadow, td.shadow);
     }
 
-    // Texto com suporte a tags {RRGGBB}
+    // Texto com suporte a tags {RRGGBB} e ~w~, ~y~, etc.
     drawFormattedLine(line, 0, 0, toHexRgba(td.color ?? 0xE1E1E1FF).css, align);
     ctx.restore();
   });
@@ -915,8 +954,25 @@ function drawFormattedLine(line, x, y, defaultColor, align = 1) {
   }
 }
 
+const GTA_SA_COLORS = {
+  'r': '#E83C3C',
+  'g': '#33AA33',
+  'b': '#3366FF',
+  'w': '#FFFFFF',
+  'y': '#FFDD00',
+  'p': '#9B59B6',
+  'l': '#000000',
+};
+
+const GTA_SA_SYMBOLS = {
+  '<': '◀',
+  '>': '▶',
+  'u': '▲',
+  'd': '▼',
+};
+
 function parseColorTags(str, defColor) {
-  const regex = /\{([A-Fa-f0-9]{6})\}/g;
+  const regex = /\{([A-Fa-f0-9]{6})\}|~([a-zA-Z<>ud])~/g;
   const parts = [];
   let lastIdx = 0;
   let curColor = defColor;
@@ -926,7 +982,20 @@ function parseColorTags(str, defColor) {
     if (m.index > lastIdx) {
       parts.push({ text: str.slice(lastIdx, m.index), color: curColor });
     }
-    curColor = `#${m[1]}`;
+    if (m[1]) {
+      curColor = `#${m[1]}`;
+    } else if (m[2]) {
+      const code = m[2].toLowerCase();
+      if (GTA_SA_COLORS[code]) {
+        curColor = GTA_SA_COLORS[code];
+      } else if (code === 's') {
+        curColor = defColor;
+      } else if (code === 'h') {
+        curColor = lightenColor(curColor, 0.3);
+      } else if (GTA_SA_SYMBOLS[m[2]]) {
+        parts.push({ text: GTA_SA_SYMBOLS[m[2]], color: curColor });
+      }
+    }
     lastIdx = regex.lastIndex;
   }
   if (lastIdx < str.length) {
@@ -936,7 +1005,21 @@ function parseColorTags(str, defColor) {
 }
 
 function stripColorTags(str) {
-  return String(str || '').replace(/\{[A-Fa-f0-9]{6}\}/g, '');
+  let s = String(str || '').replace(/\{[A-Fa-f0-9]{6}\}/g, '');
+  s = s.replace(/~([<>ud])~/g, (_, sym) => GTA_SA_SYMBOLS[sym] || sym);
+  s = s.replace(/~[a-zA-Z]~/g, '');
+  return s;
+}
+
+function lightenColor(color, factor = 0.3) {
+  if (!color || typeof color !== 'string' || !color.startsWith('#') || color.length < 7) return '#FFFFFF';
+  let r = parseInt(color.slice(1, 3), 16) || 0;
+  let g = parseInt(color.slice(3, 5), 16) || 0;
+  let b = parseInt(color.slice(5, 7), 16) || 0;
+  r = Math.min(255, Math.round(r + (255 - r) * factor));
+  g = Math.min(255, Math.round(g + (255 - g) * factor));
+  b = Math.min(255, Math.round(b + (255 - b) * factor));
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
 function getFontFamily(fontId) {
@@ -1299,9 +1382,27 @@ function copyTextDrawsPawn() {
     const bHex = '0x' + (Number(td.boxColor) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const rawBg = td.font === 5 ? (td.useBox ? td.boxColor : 0x00000000) : td.backgroundColor;
     const bgHex = '0x' + (Number(rawBg) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const isTextNoBox = (td.font <= 3) && !td.useBox;
-    const expSizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? 640.0);
-    const expSizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? 480.0);
+    const bounds = getTextDrawBounds(td);
+    const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
+    let expSizeX = td.textSizeX ?? 640.0;
+    let expSizeY = td.textSizeY ?? 480.0;
+
+    if (td.font === 4 || td.font === 5) {
+      expSizeX = td.textSizeX > 0 ? td.textSizeX : (td.font === 4 ? 64.0 : 80.0);
+      expSizeY = td.textSizeY > 0 ? td.textSizeY : (td.font === 4 ? 64.0 : 80.0);
+    } else if (td.useBox) {
+      if (align === 1) {
+        expSizeX = bounds.x + bounds.w;
+      } else if (align === 2) {
+        expSizeX = bounds.w;
+      } else if (align === 3) {
+        expSizeX = bounds.x;
+      }
+      expSizeY = bounds.h;
+    } else {
+      expSizeX = (align === 3 ? 0.0 : 640.0);
+      expSizeY = (align === 2 ? 640.0 : 480.0);
+    }
 
     if (td.font === 4) {
       let rawText = td.text || 'hud:radardisc';
@@ -1319,15 +1420,20 @@ function copyTextDrawsPawn() {
       lines.push(`TextDrawFont(${varName}, 4);`);
       lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX || 0.5).toFixed(2)}, ${(td.letterSizeY || 1.0).toFixed(2)});`);
     } else {
-      lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${td.text || '_'}");`);
+      const pwnText = (td.text && td.text.trim() !== '') ? td.text : '_';
+      lines.push(`new ${prefix}${varName} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${td.x}.0, ${td.y}.0, "${pwnText}");`);
       lines.push(`TextDrawFont(${varName}, ${td.font ?? 1});`);
-      lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.35).toFixed(2)}, ${(td.letterSizeY ?? 1.4).toFixed(2)});`);
+      if (isBoxPure && td.useBox) {
+        lines.push(`TextDrawLetterSize(${varName}, 0.00, ${(bounds.h / 22.0).toFixed(2)});`);
+      } else {
+        lines.push(`TextDrawLetterSize(${varName}, ${(td.letterSizeX ?? 0.35).toFixed(2)}, ${(td.letterSizeY ?? 1.4).toFixed(2)});`);
+      }
     }
+    lines.push(`TextDrawAlignment(${varName}, ${align});`);
     lines.push(`TextDrawTextSize(${varName}, ${Number(expSizeX).toFixed(1)}, ${Number(expSizeY).toFixed(1)});`);
     lines.push(`TextDrawColor(${varName}, ${cHex});`);
     lines.push(`TextDrawSetOutline(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.outline ?? 0)});`);
     lines.push(`TextDrawSetShadow(${varName}, ${(td.font === 4 || td.font === 5) ? 0 : (td.shadow ?? 1)});`);
-    lines.push(`TextDrawAlignment(${varName}, ${align});`);
     if (td.useBox && td.font !== 5 && td.font !== 4) {
       lines.push(`TextDrawUseBox(${varName}, 1);`);
       lines.push(`TextDrawBoxColor(${varName}, ${bHex});`);

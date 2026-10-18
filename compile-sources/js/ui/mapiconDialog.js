@@ -294,6 +294,13 @@ function setupDialogEvents() {
     };
   }
 
+  const btnDup = dialogEl.querySelector('#miBtnDup');
+  if (btnDup) {
+    btnDup.onclick = () => {
+      duplicateSelectedMapIcon();
+    };
+  }
+
   const btnDel = dialogEl.querySelector('#miBtnDelete');
   if (btnDel) {
     btnDel.onclick = () => {
@@ -308,6 +315,73 @@ function setupDialogEvents() {
       toast('MapIcon removido', 'info');
     };
   }
+
+  dialogEl.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'd' || e.key === 'D')) {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      e.preventDefault();
+      e.stopPropagation();
+      duplicateSelectedMapIcon();
+      return;
+    }
+    if (e.key === 'Delete' || e.key === 'Del') {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      e.preventDefault();
+      e.stopPropagation();
+      btnDel?.click();
+    }
+  });
+}
+
+function duplicateSelectedMapIcon() {
+  const m = getSelectedMapIcon();
+  if (!m) return;
+  const list = app.project?.mapIcons || [];
+
+  // Encontra a posição livre mais próxima radialmente
+  let bestPos = { x: m.x + 25, y: m.y };
+  let found = false;
+  for (const radius of [25, 40, 60, 80]) {
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const testX = Math.round((m.x + Math.cos(angle) * radius) * 100) / 100;
+      const testY = Math.round((m.y + Math.sin(angle) * radius) * 100) / 100;
+      const collides = list.some(other => Math.hypot(other.x - testX, other.y - testY) < 18);
+      if (!collides) {
+        bestPos = { x: testX, y: testY };
+        found = true;
+        break;
+      }
+    }
+    if (found) break;
+  }
+
+  let zGuess = m.z ?? 15.0;
+  if (app.editor?.getSurfaceZAt) {
+    const gz = app.editor.getSurfaceZAt(bestPos.x, bestPos.y);
+    if (gz !== null) zGuess = Math.round(gz * 100) / 100;
+  }
+
+  const item = makeMapIcon({
+    type: m.type ?? 0,
+    x: bestPos.x,
+    y: bestPos.y,
+    z: zGuess,
+    color: m.color ?? 0xFF0000FF,
+    style: m.style ?? 0,
+    streamDist: m.streamDist ?? 200,
+    comment: m.comment ? `${m.comment} (Cópia)` : getMapIconInfo(m.type ?? 0).label,
+  });
+
+  app.project.addItems('Duplicar MapIcon', 'mapIcons', [item]);
+  selectedUid = item.uid;
+  app.editor?.syncAll();
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+  toast('MapIcon duplicado no espaço livre mais próximo!', 'ok');
 }
 
 function setupCanvasEvents() {

@@ -1841,16 +1841,17 @@ class Handler(SimpleHTTPRequestHandler):
         full = thumb_file(kind, key)
         if full and os.path.isfile(full):
             return self.send_file(full, cache="max-age=86400")
-        if kind == "obj" and key == "0":
+        if kind == "obj":
             for sdir in (
                 os.path.join(DATA_DIR, "cache", "skins"),
                 os.path.join(COMPILE_CACHE_DIR, "skins"),
                 os.path.join(APP_DIR, "data", "cache", "skins"),
                 os.path.join(APP_DIR, "Dados", "cache", "skins"),
             ):
-                cj_skin = os.path.join(sdir, "0.png")
-                if os.path.isfile(cj_skin):
-                    return self.send_file(cj_skin, cache="max-age=86400")
+                for ext in (".png", ".webp"):
+                    skin_f = os.path.join(sdir, f"{key}{ext}")
+                    if os.path.isfile(skin_f):
+                        return self.send_file(skin_f, cache="max-age=86400")
         if not full or not os.path.isfile(full):
             return self.send_error(HTTPStatus.NOT_FOUND)
         self.send_file(full, cache="max-age=86400")
@@ -1886,6 +1887,22 @@ class Handler(SimpleHTTPRequestHandler):
                 objs = [int(n[:-5]) for n in os.listdir(d) if n.endswith(".webp") and n[:-5].isdigit()]
                 if objs:
                     break
+        skin_candidates = [
+            os.path.join(DATA_DIR, "cache", "skins"),
+            os.path.join(COMPILE_CACHE_DIR, "skins"),
+            os.path.join(APP_DIR, "data", "cache", "skins"),
+            os.path.join(APP_DIR, "Dados", "cache", "skins"),
+        ]
+        skin_ids = set()
+        for sd in skin_candidates:
+            if os.path.isdir(sd):
+                for f in os.listdir(sd):
+                    base, ext = os.path.splitext(f)
+                    if ext.lower() in (".png", ".webp") and base.isdigit():
+                        skin_ids.add(int(base))
+        for sid in skin_ids:
+            if sid not in objs:
+                objs.append(sid)
         if 0 not in objs:
             objs.append(0)
         d_candidates_tex = [

@@ -307,11 +307,42 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
     }
     for (const td of p.textDraws || []) {
       const align = (td.font === 4 || td.font === 5) ? 1 : (td.align ?? td.alignment ?? 1);
-      const isTextNoBox = (td.font <= 3) && !td.useBox;
-      const letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
-      const letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
-      const sizeX = isTextNoBox ? (align === 3 ? 0.0 : 640.0) : (td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0));
-      const sizeY = isTextNoBox ? (align === 2 ? 640.0 : 480.0) : (td.textSizeY ?? (td.font === 4 ? 64.0 : 100.0));
+      const isBoxPure = (td.font <= 3) && (td.isBox || td.text === '_' || !td.text || td.text.trim() === '');
+      let w = 100;
+      if (align === 1) {
+        w = td.textSizeX > td.x ? (td.textSizeX - td.x) : Math.max(20, td.textSizeX || 100);
+      } else if (align === 2) {
+        w = Math.max(20, td.textSizeX || 100);
+      } else if (align === 3) {
+        if (td.textSizeX < td.x && td.textSizeX > 0) w = td.x - td.textSizeX;
+        else w = Math.max(20, td.textSizeX || 100);
+      }
+      const h = td.textSizeY > 0 ? td.textSizeY : 100;
+      let sizeX = td.textSizeX ?? (td.font === 4 ? 64.0 : 640.0);
+      let sizeY = td.textSizeY ?? (td.font === 4 ? 64.0 : 480.0);
+
+      if (td.font === 4 || td.font === 5) {
+        sizeX = td.textSizeX > 0 ? td.textSizeX : (td.font === 4 ? 64.0 : 80.0);
+        sizeY = td.textSizeY > 0 ? td.textSizeY : (td.font === 4 ? 64.0 : 80.0);
+      } else if (td.useBox) {
+        if (align === 1) {
+          sizeX = td.x + w;
+        } else if (align === 2) {
+          sizeX = w;
+        } else if (align === 3) {
+          sizeX = td.x - w;
+        }
+        sizeY = h;
+      } else {
+        sizeX = (align === 3 ? 0.0 : 640.0);
+        sizeY = (align === 2 ? 640.0 : 480.0);
+      }
+      let letX = td.font === 4 ? (td.letterSizeX || 0.5) : (td.letterSizeX ?? 0.35);
+      let letY = td.font === 4 ? (td.letterSizeY || 1.0) : (td.letterSizeY ?? 1.4);
+      if (isBoxPure && td.useBox) {
+        letX = 0.0;
+        letY = h / 22.0;
+      }
       let colVal = td.color ?? 0xFFFFFFFF;
       if (td.font === 4 && (colVal === 0 || colVal === 0xFF || (colVal & 0xFF) === 0)) colVal = 0xFFFFFFFF;
       const cInt = signed(colVal);

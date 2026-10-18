@@ -306,6 +306,15 @@ function setupDialogEvents() {
     };
   }
 
+  const btnDup = dialogEl.querySelector('#gzBtnDup');
+  if (btnDup) {
+    btnDup.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      duplicateSelectedZone();
+    };
+  }
+
   const btnDel = dialogEl.querySelector('#gzBtnDelete');
   if (btnDel) {
     btnDel.onclick = (e) => {
@@ -335,6 +344,14 @@ function setupDialogEvents() {
       e.preventDefault();
       e.stopPropagation();
       gzRedo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'd' || e.key === 'D')) {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      e.preventDefault();
+      e.stopPropagation();
+      duplicateSelectedZone();
       return;
     }
     if (e.key === 'Delete' || e.key === 'Del') {
@@ -1076,6 +1093,66 @@ function focusSelectedZone() {
   redrawCanvas();
 
   toast(`Visão centralizada na GangZone "${z.name || 'Zona'}"`, 'ok');
+}
+
+function duplicateSelectedZone() {
+  const z = getSelectedZone();
+  if (!z) return;
+  gzPushUndo();
+  const allZones = appRef.project?.gangZones || [];
+  const w = Math.abs(z.maxx - z.minx) || 100;
+  const h = Math.abs(z.maxy - z.miny) || 100;
+
+  // Busca o espaço vazio mais próximo do item original
+  let bestOffset = { x: w + 20, y: 0 };
+  const candidates = [
+    { x: w + 20, y: 0 },
+    { x: -(w + 20), y: 0 },
+    { x: 0, y: -(h + 20) },
+    { x: 0, y: h + 20 },
+    { x: w + 20, y: -(h + 20) },
+    { x: -(w + 20), y: -(h + 20) },
+    { x: w + 20, y: h + 20 },
+    { x: -(w + 20), y: h + 20 },
+    { x: (w + 20) * 2, y: 0 },
+    { x: 0, y: -(h + 20) * 2 },
+  ];
+
+  for (const cand of candidates) {
+    const testMinX = z.minx + cand.x;
+    const testMaxX = z.maxx + cand.x;
+    const testMinY = z.miny + cand.y;
+    const testMaxY = z.maxy + cand.y;
+
+    const collides = allZones.some(other => {
+      if (other.uid === z.uid) return false;
+      return !(testMaxX < other.minx || testMinX > other.maxx || testMaxY < other.miny || testMinY > other.maxy);
+    });
+
+    if (!collides) {
+      bestOffset = cand;
+      break;
+    }
+  }
+
+  const newZ = makeGangZone({
+    name: `${z.name || 'GangZone'} (Cópia)`,
+    minx: Math.round(z.minx + bestOffset.x),
+    miny: Math.round(z.miny + bestOffset.y),
+    maxx: Math.round(z.maxx + bestOffset.x),
+    maxy: Math.round(z.maxy + bestOffset.y),
+    color: z.color ?? 0x33AA3390,
+  });
+
+  if (!appRef.project.gangZones) appRef.project.gangZones = [];
+  appRef.project.gangZones.push(newZ);
+  selectedUid = newZ.uid;
+  appRef.editor?.syncAll();
+  appRef.editor?.saveUndoState?.('Duplicar GangZone');
+  toast('GangZone duplicada no espaço livre mais próximo!', 'ok');
+  updateSidebarFields();
+  updateSidebarList();
+  redrawCanvas();
 }
 
 function copyAllGangZonesPawn() {

@@ -317,6 +317,7 @@ function objectInspector(o) {
   const mats = materialSection([o]);
   const first = app.editor.mode === 'texture';
   const attachType = o.attach ? (o.attach.type === 'vehicle' || (app.project.vehicles || []).some(v => v.uid === o.attach.to) ? 'vehicle' : 'object') : 'vehicle';
+  const hasChildren = (app.project.objects || []).some(x => x.attach && x.attach.to === o.uid);
   return `${titleBlock(o.model, `ID ${o.model} <span class="tag">${esc(def ? categoryOf(def) : 'Não existe no jogo')}</span>`)}
     <div class="insp-section" style="margin-top: 4px; padding-bottom: 4px;">
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
@@ -366,8 +367,8 @@ function objectInspector(o) {
     <!-- AttachObjectToVehicle / AttachObjectToObject -->
     <div class="insp-section">
       <div class="insp-label">Acoplar (AttachObject)</div>
-      <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkAttach" ${o.attach ? 'checked' : ''}> Ativar acoplamento</label>
-      ${o.attach ? `
+      <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkAttach" ${o.attach ? 'checked' : ''} ${hasChildren ? 'disabled' : ''}> Ativar acoplamento</label>
+      ${hasChildren ? '<div class="insp-note" style="color: var(--gold-400);">Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.</div>' : (o.attach ? `
         <label style="margin-bottom:6px; display:block;">Acoplar em
           <select id="selAttachType" style="width:100%;">
             <option value="vehicle" ${attachType === 'vehicle' ? 'selected' : ''}>Veículo (AttachObjectToVehicle - máx. 25)</option>
@@ -384,7 +385,7 @@ function objectInspector(o) {
                   const curCnt = o.attach.to === v.uid ? cnt + 1 : cnt;
                   return `<option value="${v.uid}" ${o.attach.to === v.uid ? 'selected' : ''} ${isFull ? 'disabled' : ''}>${esc(modelLabel(v.model))} (ID ${v.model}) [${curCnt}/${MAX_VEHICLE_ATTACHED_OBJECTS}]${isFull ? ' - CHEIO' : ''}</option>`;
                 }).join('')
-              : (app.project.objects || []).filter(x => x.uid !== o.uid).map(x => `<option value="${x.uid}" ${o.attach.to === x.uid ? 'selected' : ''}>${esc(modelLabel(x.model))} (ID ${x.model}) - ${x.uid.slice(0, 8)}</option>`).join('')
+              : (app.project.objects || []).filter(x => x.uid !== o.uid && (!x.attach || x.attach.to !== o.uid)).map(x => `<option value="${x.uid}" ${o.attach.to === x.uid ? 'selected' : ''}>${esc(modelLabel(x.model))} (ID ${x.model}) - ${x.uid.slice(0, 8)}</option>`).join('')
             }
           </select>
         </label>
@@ -404,7 +405,7 @@ function objectInspector(o) {
           <button type="button" class="btn danger small" data-attach-act="detach"><svg><use href="#i-trash"/></svg>Desacoplar</button>
         </div>
         <div class="insp-note" style="margin-top:6px;">Dica: você pode mover e girar o objeto diretamente no mapa com as setas para ajustar o acoplamento em tempo real.</div>
-      ` : '<div class="insp-note">Acopla este objeto em um veículo (AttachObjectToVehicle, até 25 por veículo) ou em outro objeto (AttachObjectToObject).</div>'}
+      ` : '<div class="insp-note">Acopla este objeto em um veículo (AttachObjectToVehicle, até 25 por veículo) ou em outro objeto (AttachObjectToObject).</div>')}
     </div>
 
     <div class="insp-section"><div class="insp-label">Onde aparece</div>
@@ -432,7 +433,7 @@ function vehicleInspector(v) {
   const c2Hex = carColorHex(v.color2);
   const comps = v.components || [];
   const attachedObjs = getVehicleAttachedObjects(v.uid);
-  const unattachedObjs = (app.project.objects || []).filter(o => !o.attach || o.attach.to !== v.uid);
+  const unattachedObjs = (app.project.objects || []).filter(o => (!o.attach || o.attach.to !== v.uid) && !(app.project.objects || []).some(c => c.attach && c.attach.to === o.uid));
 
   return `${titleBlock(v.model, `Veículo ${v.model} <span class="tag">${esc(def?.model || '')}</span>`)}
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar veículo</button>
@@ -977,11 +978,18 @@ function bindItem(item) {
   const chkAttach = $('#chkAttach');
   if (chkAttach) {
     chkAttach.onchange = () => {
+      const hasChildren = (project.objects || []).some(x => x.attach && x.attach.to === uid);
+      if (hasChildren && chkAttach.checked) {
+        toast('Este objeto possui outros objetos acoplados nele e não pode ser acoplado!', 'warn');
+        chkAttach.checked = false;
+        renderInspector();
+        return;
+      }
       project.updateItems('Alterar Attach', [uid], (o) => {
         if (chkAttach.checked) {
           app.editor.stopMoveObject(uid);
           o.move = null;
-          const otherObjs = (project.objects || []).filter(x => x.uid !== uid);
+          const otherObjs = (project.objects || []).filter(x => x.uid !== uid && (!x.attach || x.attach.to !== uid));
           const availVehs = (project.vehicles || []).filter(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
 
           let bestCand = null;
@@ -2612,7 +2620,8 @@ function gangZoneInspector(gz) {
         <span class="tag">GangZoneCreate</span>
       </div>
     </div>
-    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar GangZone</button>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 6px;"><svg><use href="#i-trash"/></svg>Apagar GangZone</button>
+    <button type="button" class="btn block" data-act="dup" style="margin-bottom: 10px;" title="Duplicar GangZone no espaço vazio mais próximo (Ctrl+C)"><svg><use href="#i-copy"/></svg>Duplicar GangZone</button>
 
     <div class="insp-section">
       <div class="insp-label">Identificador / Nome (Pawn)</div>
