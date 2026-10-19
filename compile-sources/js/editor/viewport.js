@@ -364,7 +364,8 @@ export class Viewport {
     this.sun.position.set(40, -60, 100);
     this.scene.add(this.sun);
     this.fly = new FlyCamera(this.camera, renderer.domElement);
-    this.fly.setPose(new THREE.Vector3(2510, -1720, 40), Math.PI * 0.6, -0.35);
+    // Vista inicial (projeto vazio sem câmera salva): Grove Street
+    this.fly.setPose(new THREE.Vector3(2516.859, -1699.420, 26.124), 2.319, -0.098);
     this.frameCallbacks = [];
     this.timer = new THREE.Timer();
     this.timer.connect(document);

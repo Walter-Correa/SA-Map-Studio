@@ -6,6 +6,11 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.5.5', date: '19/10/2026', items: [
+      'Nova vista inicial da câmera ao abrir um projeto vazio pela primeira vez.',
+    ],
+  },
+  {
     version: '3.5.4', date: '19/10/2026', items: [
       'Registros mais limpos: o monitor temporário de desempenho do redimensionamento foi retirado.',
     ],
