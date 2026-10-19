@@ -342,9 +342,6 @@ export function isTyping(e) {
   return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
 }
 
-// Tempo sem mudança de tamanho para considerar o redimensionamento concluído
-const RESIZE_SETTLE_MS = 150;
-
 export class Viewport {
   constructor(container) {
     this.container = container;
@@ -373,12 +370,13 @@ export class Viewport {
     this.timer.connect(document);
     this.fps = 0; this._fpsT = 0; this._fpsN = 0;
     this.renderRequested = true;
-    // Enquanto a janela está sendo redimensionada o 3D não é redesenhado (o último quadro só estica);
-    // quando o tamanho para de mudar, ajusta o canvas e desenha de novo uma vez
-    this._resizingUntil = 0;
+    let resizeRaf = 0;
     this._ro = new ResizeObserver(() => {
-      this._resizingUntil = performance.now() + RESIZE_SETTLE_MS;
-      this.resize();
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        this.resize();
+      });
     });
     this._ro.observe(container);
     this.resize(true);
@@ -401,8 +399,6 @@ export class Viewport {
       } else if (!isInteracting) {
         targetFps = 30; // Ocioso (sem mover a câmera): 30 FPS (animação de pickups perfeita com CPU baixíssimo)
       }
-
-      if (timestamp < this._resizingUntil) return;
 
       const minInterval = 1000 / targetFps;
       const elapsed = timestamp - lastRenderTime;
@@ -625,12 +621,12 @@ export class Viewport {
     if (this._lastW === w && this._lastH === h) return;
     this._lastW = w;
     this._lastH = h;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderRequested = true;
 
     if (this._resizeTimer) clearTimeout(this._resizeTimer);
     if (immediate) {
-      this.camera.aspect = w / h;
-      this.camera.updateProjectionMatrix();
-      this.renderRequested = true;
       this.renderer.setSize(w, h, false);
     } else {
       this._resizeTimer = setTimeout(() => {
@@ -644,7 +640,7 @@ export class Viewport {
             this.renderRequested = true;
           }
         }
-      }, RESIZE_SETTLE_MS);
+      }, 60);
     }
   }
 

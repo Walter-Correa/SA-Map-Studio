@@ -18,6 +18,9 @@ function isServerRelevantError(line) {
   // Status HTTP de erro 4xx / 5xx (ex: "-> 501", "-> 404", "-> 500")
   if (/->\s*[45]\d{2}\b/.test(trimmed)) return true;
 
+  // Registros de desempenho (travamentos medidos na página)
+  if (/\[DESEMPENHO\]/i.test(trimmed)) return true;
+
   // Tags explícitas de erro/aviso
   if (/\[(ERROR|ERRO|WARN|WARNING|AVISO|FAIL|FATAL)\]/i.test(trimmed)) return true;
 
@@ -256,7 +259,57 @@ class LoggerSystem {
 
 export const AppLogger = new LoggerSystem();
 
+// Monitor leve de desempenho: anota no registro quando a página fica parada (sem desenhar quadros)
+// e resume cada redimensionamento da janela, para achar a causa de travamentos na máquina do usuário.
+function setupPerfMonitor() {
+  const send = (message) => {
+    fetch('/api/log_error', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, level: 'DESEMPENHO' }) }).catch(() => {});
+  };
+  const size = () => `${innerWidth}x${innerHeight}`;
+  let resizing = null;   // { start, frames, maxGap, slow, longTasks, from }
+  let resizeTimer = 0;
+  let lastSolo = 0;
+
+  window.addEventListener('resize', () => {
+    if (!resizing) resizing = { start: performance.now(), frames: 0, maxGap: 0, slow: 0, longTasks: 0, longMs: 0, from: size() };
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const r = resizing; resizing = null;
+      if (!r) return;
+      const dur = performance.now() - r.start;
+      send(`Redimensionamento ${r.from} -> ${size()}: ${dur.toFixed(0)} ms, ${r.frames} quadros, maior pausa ${r.maxGap.toFixed(0)} ms, ${r.slow} pausas acima de 100 ms, ${r.longTasks} tarefas longas (${r.longMs.toFixed(0)} ms)`);
+    }, 400);
+  });
+
+  let last = performance.now();
+  const frame = (t) => {
+    const gap = t - last; last = t;
+    if (!document.hidden) {
+      if (resizing) {
+        resizing.frames++;
+        if (gap > resizing.maxGap) resizing.maxGap = gap;
+        if (gap > 100) resizing.slow++;
+      } else if (gap > 500 && t - lastSolo > 5000) {
+        lastSolo = t;
+        send(`Página parada por ${gap.toFixed(0)} ms (janela ${size()})`);
+      }
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange', () => { last = performance.now(); });
+
+  try {
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries()) {
+        if (resizing) { resizing.longTasks++; resizing.longMs += e.duration; }
+      }
+    }).observe({ type: 'longtask', buffered: false });
+  } catch (_) { /* navegador sem suporte a longtask */ }
+}
+
 export function setupLogsDialog() {
+  setupPerfMonitor();
   const btnLogs = $('#btnLogs');
   const dlgLogs = $('#dlgLogs');
   const viewer = $('#logsViewer');

@@ -6,8 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.5.3', date: '19/10/2026', items: [
+      'Mapa 3D volta a acompanhar a janela ao redimensionar, sem pausar o desenho.',
+      'Registro de Desempenho: cada redimensionamento da janela e cada parada da página ficam anotados nos Registros (duração, quadros, maior pausa e tarefas longas) para diagnosticar travamentos.',
+    ],
+  },
+  {
     version: '3.5.2', date: '19/10/2026', items: [
-      'Redimensionamento Fluido: enquanto a janela muda de tamanho o mapa 3D não é redesenhado a cada quadro; ao soltar, ele se ajusta ao novo tamanho de uma vez.',
       'Selecionar Todo o Projeto no Inspetor: o botão Projeto também leva a câmera até as setas de edição.',
       'Cache Sempre na Pasta de Dados: miniaturas, índice de texturas, radar e animações baixadas não são mais gravados dentro da pasta do código-fonte.',
     ],
