@@ -215,10 +215,8 @@ export function layoutTextDraw(td) {
 // Retângulo ocupado (unidades 640x448) para seleção e arrasto
 export function textDrawRect(td) {
   if (td.type === 'progress') {
-    const rects = progressBarParts(td).map(textDrawRect);
-    const x = Math.min(...rects.map(r => r.x)), y = Math.min(...rects.map(r => r.y));
-    const r2 = Math.max(...rects.map(r => r.x + r.w)), b2 = Math.max(...rects.map(r => r.y + r.h));
-    return { x, y, w: Math.max(4, r2 - x), h: Math.max(4, b2 - y) };
+    const r = progressBarParts(td)[0];
+    return { x: r.x, y: r.y, w: Math.max(4, r.w), h: Math.max(4, r.h) };
   }
   const lay = layoutTextDraw(td);
   const r = lay.box || lay.textRect;
@@ -228,48 +226,43 @@ export function textDrawRect(td) {
   return { x: left / UX, y: top / UY, w: Math.max(4, (right - left) / UX), h: Math.max(4, (bottom - top) / UY) };
 }
 
-// Barra de progresso (progress2.inc): as mesmas 3 TextDraws de caixa que RenderProgressBar e
-// SetPlayerProgressBarValue criam (fundo, preenchimento e barra), para cada direção.
+// Barra de progresso (progress3.inc): os mesmos 3 sprites LD_SPAC:white que a include cria,
+// em unidades 640x448: fundo, trilho dentro da borda e a parte cheia conforme valor e direção.
+export const PB_BORDER = 1.0;
 export function progressBarParts(bar) {
   const x = +bar.x || 0, y = +bar.y || 0;
-  const w = +bar.pbWidth || 0, h = +bar.pbHeight || 0;
-  const max = +bar.pbMax || 100;
+  const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
+  const max = +bar.pbMax || 0;
   const v = Math.max(0, Math.min(max, +bar.pbValue || 0));
-  const dir = bar.pbDir | 0;
   const c = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
   const alpha = c & 0xFF;
-  const backColor = alpha;
   const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor(alpha / 2))) >>> 0;
-  const part = (px, py, sizeX, letterY, boxColor, useBox = 1) => ({
-    tdv: 2, font: 1, text: '_', align: 1, x: px, y: py, letterSizeX: 1.0, letterSizeY: letterY,
-    textSizeX: sizeX, textSizeY: 0, useBox, boxColor, color: 0xFFFFFFFF, outline: 0, shadow: 0, proportional: 1,
-  });
-  const h10 = h / 10;
-  switch (dir) {
-    case 1: // esquerda
-      return [
-        part(x, y, x - w - 4.0, h10, backColor),
-        part(x - 1.6, y + 1.6, x - w - 2.5, h10 - 0.35, fillColor),
-        part(x - 1.6, y + 1.6, (x - 5.0) - ((((x + 2.5) - w) - x) / max) * -v, h10 - 0.35, c, v > 0 ? 1 : 0),
-      ];
-    case 2: // para cima
-      return [
-        part(x, y, x - w - 4.0, -(h10 * 1.02) - 0.55, backColor),
-        part(x - 1.2, y - 2.5, x - w - 2.8, -h10 * 1.02, fillColor),
-        part(x - 1.2, y - 2.5, x - w - 2.8, -((((h10 - 0.55) * 1.02) / max) * v + 0.55), c, v > 0 ? 1 : 0),
-      ];
-    case 3: // para baixo
-      return [
-        part(x, y, x - w - 4.0, h10, backColor),
-        part(x - 1.2, y + 2.5, x - w - 2.8, h10 - 0.55, fillColor),
-        part(x - 1.2, y + 2.5, x - w - 2.8, (h10 / max) * v - 0.55, c, v > 0 ? 1 : 0),
-      ];
-    default: // direita
-      return [
-        part(x, y, x + w - 1.0, h10, backColor),
-        part(x + 1.6, y + 1.6, x + w - 2.5, h10 - 0.35, fillColor),
-        part(x + 1.6, y + 1.6, (x - 1.0) + ((((x - 1.5) + w) - x) / max) * v, h10 - 0.35, c, v > 0 ? 1 : 0),
-      ];
+  const ix = x + PB_BORDER, iy = y + PB_BORDER;
+  const iw = Math.max(0, w - PB_BORDER * 2), ih = Math.max(0, h - PB_BORDER * 2);
+  const parts = [
+    { x, y, w, h, color: alpha },
+    { x: ix, y: iy, w: iw, h: ih, color: fillColor },
+  ];
+  const part = max > 0 ? Math.min(1, v / max) : 0;
+  if (part > 0 && iw > 0 && ih > 0) {
+    const m = { x: ix, y: iy, w: iw, h: ih, color: c };
+    switch (bar.pbDir | 0) {
+      case 1: m.x += iw * (1 - part); m.w = iw * part; break; // esquerda
+      case 2: m.y += ih * (1 - part); m.h = ih * part; break; // para cima
+      case 3: m.h = ih * part; break;                         // para baixo
+      default: m.w = iw * part;                               // direita
+    }
+    parts.push(m);
+  }
+  return parts;
+}
+
+// Desenha a barra na prévia (canvas na resolução de referência TD_SCREEN)
+export function drawProgressBar(ctx, bar) {
+  for (const r of progressBarParts(bar)) {
+    const c = rgba(r.color);
+    ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
+    ctx.fillRect(r.x * UX, r.y * UY, r.w * UX, r.h * UY);
   }
 }
 

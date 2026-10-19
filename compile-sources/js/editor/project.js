@@ -191,7 +191,7 @@ function normalizeSpriteName(text) {
   return text;
 }
 
-// Barra de progresso (progress2.inc): chamadas para criar, definir o valor e mostrar para o jogador
+// Barra de progresso (progress3.inc): chamadas para criar, definir o valor e mostrar para o jogador
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
 
 // Variável da barra no código: progress_0, progress_1... na ordem das barras do projeto

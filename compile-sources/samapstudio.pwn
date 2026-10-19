@@ -6,10 +6,7 @@
 #define SAMP_COMPAT
 #include <open.mp>
 #include <streamer>
-// progress2.inc passa 1 em vez de true para PlayerTextDrawUseBox (aviso 213 só nela)
-#pragma warning disable 213
-#include <progress2>
-#pragma warning enable 213
+#include <progress3>
 
 #define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
 #define SAMSP_MAX_OBJETOS    5000
@@ -115,7 +112,7 @@ enum E_SAMSP_MAPICON
 new gMapIcons[SAMSP_MAX_MAPICONS][E_SAMSP_MAPICON];
 new gTotalMapIcons;
 
-// Barras de progresso (progress2.inc): criadas para cada jogador ao nascer
+// Barras de progresso (progress3.inc): criadas para cada jogador ao nascer
 enum E_SAMSP_PBAR
 {
     Float:pb_x,
@@ -1265,7 +1262,7 @@ public OnPlayerDisconnect(playerid, reason)
     }
     gReturningFromFly[playerid] = false;
     gPlayerSpawned[playerid] = false;
-    gPlayerPBarCount[playerid] = 0; // a progress2.inc destrói as barras do jogador ao sair
+    gPlayerPBarCount[playerid] = 0; // a progress3.inc libera as barras do jogador ao sair
     return 1;
 }
 

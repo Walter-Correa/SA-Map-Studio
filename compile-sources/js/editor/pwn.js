@@ -161,6 +161,7 @@ export function cleanPwnHeader(headerText) {
         t.startsWith('//   OnPlayerConnect') ||
         t.startsWith('//   Requer o plugin streamer') ||
         t.startsWith('//   Requer a include progress2') ||
+        t.startsWith('//   Requer a include progress3') ||
         t.startsWith('//   Posições relativas') ||
         t.startsWith('//   Câmeras')) {
       continue;
@@ -829,7 +830,7 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progress2.inc: CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção),
+      // progress3.inc (e progress2.inc): CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção),
       // também com argumentos nomeados (.colour = ...) e expressões (o número inicial é usado)
       if (a.length >= 3) {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
@@ -1280,7 +1281,7 @@ export function exportPawn(project, options = {}) {
       }
     }
     if (td.type === 'progress') {
-      // Barra de progresso: precisa de #include <progress2>
+      // Barra de progresso: precisa de #include <progress3>
       textDrawLines.push(...progressBarPawn(td, progressBarVar(td, textDraws), (v) => formatCoord(v, null)));
       continue;
     }
@@ -1403,7 +1404,7 @@ export function exportPawn(project, options = {}) {
   lines.push(`//   OnGameModeInit():   Mapa_${id}_Carregar();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Mapa_${id}_Remover(playerid);`);
   if (opt.objectFn === 'CreateDynamicObject') lines.push('//   Requer o plugin streamer (#include <streamer>).');
-  if (textDraws.some(td => td.type === 'progress')) lines.push('//   Requer a include progress2 (#include <progress2>) por causa das barras de progresso.');
+  if (textDraws.some(td => td.type === 'progress')) lines.push('//   Requer a include progress3 (#include <progress3>) por causa das barras de progresso.');
   if (cams.usage.length) { lines.push('//   Câmeras (chame quando quiser, com o jogador já spawnado):'); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   Posições relativas: some (${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}) ou passe a origem.`);
   lines.push('// ================================================================');

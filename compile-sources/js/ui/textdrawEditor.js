@@ -2,7 +2,7 @@
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
 import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar } from '../editor/project.js';
-import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, progressBarParts } from '../editor/tdrender.js';
+import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
 const RIGHT_BOX_HINT = 'No jogo, a caixa alinhada à direita vai da borda esquerda da tela até o texto';
@@ -903,7 +903,7 @@ function renderTextDraw(td, isSelected) {
   if (td.type === 'progress') {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (const part of progressBarParts(td)) drawTextDraw(ctx, part);
+    drawProgressBar(ctx, td);
     ctx.restore();
     useLogicalUnits();
   } else if (td.font === 5) {

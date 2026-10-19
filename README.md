@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.9.3-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.10.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -68,7 +68,7 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - Fontes 0 a 5, cores de texto e caixa com transparência, alinhamento (esquerda, centro, direita), tamanho de letras e caixas, contorno (`outline`) e sombra (`shadow`).
 - **Pré-visualização 3D de modelos (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com ajuste de rotação (RX, RY, RZ) e zoom.
 - Exportação limpa de script Pawn pronto para compilação.
-- **Barras de progresso** (`progress2.inc`) nas quatro direções, com o mesmo desenho do jogo.
+- **Barras de progresso** (`progress3.inc`, incluída no servidor de teste) nas quatro direções, com o mesmo desenho do jogo.
 
 ### Materiais do SA-MP
 - O inspetor lista **todos os índices de material** do objeto (0 a 15) com a textura original de cada um.
@@ -254,6 +254,12 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.10.0 — 19/10/2026
+- Nova include `progress3.inc` (em `omp-server-source/pawno/include`): barras com sprites `LD_SPAC:white`, posição e tamanho
+  exatos em unidades 640x448 (iguais em qualquer resolução) e borda interna uniforme (`PB3_BORDER`, padrão 1.0). Mesmas
+  funções da `progress2`; corrige a barra escondida que reaparecia ao mudar o valor e trata a falta de TextDraws livres.
+- Editor de TextDraws, exportação e servidor de teste passam a usar a `progress3`.
 
 ### 3.9.3 — 19/10/2026
 - Textos em objetos (SetObjectMaterialText) iguais ao jogo: o `fontsize` é a altura da linha (como no `D3DXCreateFont` do

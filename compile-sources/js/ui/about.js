@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.10.0', date: '19/10/2026', items: [
+      'Nova include progress3.inc: as barras de progresso usam sprites com posição, largura e altura exatas, iguais em qualquer resolução, e borda interna da mesma espessura dos quatro lados. As funções são as mesmas da progress2, então o código antigo continua funcionando.',
+      'Correções em relação à progress2: mudar o valor não mostra mais uma barra escondida, a parte cheia some quando o valor é zero e nunca passa da borda, e a falta de TextDraws livres é tratada.',
+      'O editor de TextDraws desenha as barras exatamente como a progress3 monta no jogo, e o código exportado e o servidor de teste passam a usar a progress3.',
+    ],
+  },
+  {
     version: '3.9.3', date: '19/10/2026', items: [
       'Textos em objetos iguais ao jogo: o tamanho da letra segue a regra do SA-MP (o tamanho é a altura da linha, não da letra), com as medidas de cada letra tiradas do próprio Windows, como o jogo faz; textos alinhados à esquerda ou à direita ficam no topo do material, e o texto recebe a cor e a luz do objeto (nas placas do SA-MP fica acinzentado, como no jogo).',
       'Editar o texto de um objeto não apaga mais o que já estava escrito: abrir a aba Texto ou trocar de índice só carrega o texto, e nada é escrito até você alterar algo.',
