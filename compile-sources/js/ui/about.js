@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.7.0', date: '19/10/2026', items: [
+      'Retomar de Onde Parou: o projeto guarda os itens que estavam selecionados no último salvamento; ao abrir de novo, o editor seleciona esses itens, ativa o gizmo e leva a câmera até ele.',
+      'Sem itens do projeto selecionados (nada selecionado, objeto do mundo, item de projeto coexistente ou item apagado), o projeto abre focando no item mais próximo do centro.',
+    ],
+  },
+  {
     version: '3.6.2', date: '19/10/2026', items: [
       'Botão 3DTexts na barra superior.',
     ],

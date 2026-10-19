@@ -60,12 +60,23 @@ export function saveNow() {
   return Promise.all(list.map(p => saveProject(p)));
 }
 
+// Seleção que vale para retomar o projeto: só itens do próprio projeto. Objeto do mundo, item de
+// projeto coexistente ou nada selecionado (por exemplo depois de apagar) deixam o projeto sem seleção.
+function resumableSelection(project) {
+  const ed = app.editor;
+  if (!ed || ed.worldSelection?.length) return [];
+  const sel = ed.selection || [];
+  if (!sel.length || sel.some(u => !project.kindOf(u))) return [];
+  return [...sel];
+}
+
 async function doSave(project) {
   if (!project) return;
   if (app.project === project) setSaveState('Salvando', 'dirty');
   if (app.project === project) {
     const p = app.vp.camera.position;
     project.camera = { x: p.x, y: p.y, z: p.z, yaw: app.vp.fly.yaw, pitch: app.vp.fly.pitch };
+    project.lastSelection = resumableSelection(project);
   }
   try {
     const res = await fetch('/api/projects/' + encodeURIComponent(project.name), { method: 'POST', body: JSON.stringify(project.toJSON()) });
@@ -138,8 +149,13 @@ export function useProject(p, { keepCamera = false } = {}) {
   unsub = p.on((ch) => { scheduleSave(); app.emit('project-change', ch); });
   app.editor.setProject(p);
   $('#projectName').value = p.name;
+  const resume = (p.lastSelection || []).filter(u => p.kindOf(u));
   if (keepCamera && p.camera) app.vp.fly.setPose(new THREE.Vector3(p.camera.x, p.camera.y, p.camera.z), p.camera.yaw, p.camera.pitch);
-  else positionCameraOverProject(p);
+  else if (resume.length && resume.length === p.lastSelection.length) {
+    // Retoma de onde parou: seleciona os últimos itens, liga o gizmo e leva a câmera até ele
+    app.editor.select(resume);
+    app.editor.focusGizmo();
+  } else positionCameraOverProject(p);
   app.streamer.invalidate();
   currentName = p.name;
   store.set('lastProject', p.name);

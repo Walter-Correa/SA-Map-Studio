@@ -349,6 +349,7 @@ export class Project {
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
+    this.lastSelection = [];   // itens selecionados no último salvamento (para retomar de onde parou)
     this.cameras = emptyCameras();
     this.undoStack = [];
     this.redoStack = [];
@@ -360,6 +361,7 @@ export class Project {
     const p = new Project(data.name || 'Meu mapa');
     for (const k of KINDS) p[k] = (data[k] || []).map(MAKERS[k]);
     p.camera = data.camera || null;
+    p.lastSelection = Array.isArray(data.lastSelection) ? data.lastSelection.filter(u => typeof u === 'string') : [];
     p.cameras = normalizeCameras(data.cameras);
     p.pwnHeader = data.pwnHeader || '';
     p.rawPawn = data.rawPawn || '';
@@ -370,7 +372,7 @@ export class Project {
     return {
       app: 'SA Map Studio', format: 1, name: this.name, savedAt: new Date().toISOString(),
       pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '',
-      camera: this.camera, cameras: this.cameras,
+      camera: this.camera, lastSelection: this.lastSelection || [], cameras: this.cameras,
       objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,
       labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws,
       checkpoints: this.checkpoints, mapIcons: this.mapIcons, sounds: this.sounds
