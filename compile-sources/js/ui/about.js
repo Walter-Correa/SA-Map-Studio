@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.10.1', date: '19/10/2026', items: [
+      'Bordas das barras de progresso iguais nos quatro lados no jogo: uma unidade de TextDraw tem 3,00 px de largura e 2,41 px de altura em 1920x1080, então a progress3 usa borda vertical 1,25 vez a horizontal (3 px em todos os lados em 16:9).',
+      'A prévia do editor de TextDraws pinta as barras com a mesma regra de pixel do jogo, mostrando a espessura real de cada borda.',
+    ],
+  },
+  {
     version: '3.10.0', date: '19/10/2026', items: [
       'Nova include progress3.inc: as barras de progresso usam sprites com posição, largura e altura exatas, iguais em qualquer resolução, e borda interna da mesma espessura dos quatro lados. As funções são as mesmas da progress2, então o código antigo continua funcionando.',
       'Correções em relação à progress2: mudar o valor não mostra mais uma barra escondida, a parte cheia some quando o valor é zero e nunca passa da borda, e a falta de TextDraws livres é tratada.',

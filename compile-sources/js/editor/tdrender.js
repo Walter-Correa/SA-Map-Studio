@@ -228,7 +228,8 @@ export function textDrawRect(td) {
 
 // Barra de progresso (progress3.inc): os mesmos 3 sprites LD_SPAC:white que a include cria,
 // em unidades 640x448: fundo, trilho dentro da borda e a parte cheia conforme valor e direção.
-export const PB_BORDER = 1.0;
+// Borda: 1 unidade na horizontal e 1,25 na vertical (1 unidade tem 3,00 px x 2,41 px em 1920x1080)
+export const PB_BORDER_X = 1.0, PB_BORDER_Y = 1.25;
 export function progressBarParts(bar) {
   const x = +bar.x || 0, y = +bar.y || 0;
   const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
@@ -237,8 +238,8 @@ export function progressBarParts(bar) {
   const c = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
   const alpha = c & 0xFF;
   const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor(alpha / 2))) >>> 0;
-  const ix = x + PB_BORDER, iy = y + PB_BORDER;
-  const iw = Math.max(0, w - PB_BORDER * 2), ih = Math.max(0, h - PB_BORDER * 2);
+  const ix = x + PB_BORDER_X, iy = y + PB_BORDER_Y;
+  const iw = Math.max(0, w - PB_BORDER_X * 2), ih = Math.max(0, h - PB_BORDER_Y * 2);
   const parts = [
     { x, y, w, h, color: alpha },
     { x: ix, y: iy, w: iw, h: ih, color: fillColor },
@@ -257,12 +258,17 @@ export function progressBarParts(bar) {
   return parts;
 }
 
-// Desenha a barra na prévia (canvas na resolução de referência TD_SCREEN)
+// Desenha a barra na prévia (canvas na resolução de referência TD_SCREEN) com a regra de pixel do
+// Direct3D 9 usada pelo jogo: um pixel é pintado se o centro dele (coordenada inteira) cai no
+// retângulo, ou seja, de ceil(início) até ceil(fim) - 1. Assim as bordas têm os mesmos pixels do jogo.
 export function drawProgressBar(ctx, bar) {
   for (const r of progressBarParts(bar)) {
     const c = rgba(r.color);
+    const x0 = Math.ceil(r.x * UX), x1 = Math.ceil((r.x + r.w) * UX);
+    const y0 = Math.ceil(r.y * UY), y1 = Math.ceil((r.y + r.h) * UY);
+    if (x1 <= x0 || y1 <= y0) continue;
     ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
-    ctx.fillRect(r.x * UX, r.y * UY, r.w * UX, r.h * UY);
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
 }
 

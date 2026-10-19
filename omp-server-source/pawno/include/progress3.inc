@@ -4,7 +4,10 @@
 	Mesmas funções da progress2.inc, mas desenhadas com sprites "LD_SPAC:white":
 	- posição, largura e altura exatas em unidades de TextDraw (640x448), que escalam por igual
 	  em qualquer resolução (sem a margem fixa em pixels das caixas de texto da progress2);
-	- borda interna com a mesma espessura nos quatro lados (PB3_BORDER), sem números mágicos;
+	- borda interna com a mesma espessura nos quatro lados, sem números mágicos: uma unidade de
+	  TextDraw vale 640 partes da largura e 448 da altura da tela, então em 16:9 (1920x1080) ela
+	  tem 3,00 px na horizontal e só 2,41 px na vertical. Por isso a borda de cima e de baixo usa
+	  PB3_BORDER_Y = 1,25x PB3_BORDER_X, o que dá 3 px em todos os lados em 1920x1080;
 	- a parte cheia nunca passa da borda, some quando o valor é zero e mudar o valor não
 	  mostra uma barra que estava escondida.
 
@@ -30,9 +33,16 @@
 
 #include <a_samp>
 
-// Espessura da borda em unidades de TextDraw (pode ser definida antes do #include)
-#if !defined PB3_BORDER
-	#define PB3_BORDER (1.0)
+// Espessura da borda em unidades de TextDraw (podem ser definidas antes do #include)
+#if !defined PB3_BORDER_X
+	#if defined PB3_BORDER
+		#define PB3_BORDER_X (PB3_BORDER)
+	#else
+		#define PB3_BORDER_X (1.0)
+	#endif
+#endif
+#if !defined PB3_BORDER_Y
+	#define PB3_BORDER_Y (PB3_BORDER_X * 1.25)
 #endif
 
 #if !defined MAX_PLAYER_BARS
@@ -106,11 +116,11 @@ static stock PB3_Kill(playerid, &PlayerText:td)
 // Área de dentro da borda
 static stock PB3_Inner(playerid, barid, &Float:x, &Float:y, &Float:width, &Float:height)
 {
-	new Float:border = PB3_BORDER;
-	x = pb3_Data[playerid][barid][pb3_x] + border;
-	y = pb3_Data[playerid][barid][pb3_y] + border;
-	width = pb3_Data[playerid][barid][pb3_width] - border * 2.0;
-	height = pb3_Data[playerid][barid][pb3_height] - border * 2.0;
+	new Float:bx = PB3_BORDER_X, Float:by = PB3_BORDER_Y;
+	x = pb3_Data[playerid][barid][pb3_x] + bx;
+	y = pb3_Data[playerid][barid][pb3_y] + by;
+	width = pb3_Data[playerid][barid][pb3_width] - bx * 2.0;
+	height = pb3_Data[playerid][barid][pb3_height] - by * 2.0;
 	if (width < 0.0) width = 0.0;
 	if (height < 0.0) height = 0.0;
 }

@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.10.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.10.1-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,11 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.10.1 — 19/10/2026
+- `progress3.inc`: borda vertical `PB3_BORDER_Y` = 1,25 x `PB3_BORDER_X`, porque a unidade de TextDraw tem 3,00 x 2,41 px em
+  1920x1080; as bordas ficam com 3 px nos quatro lados em 16:9 (antes eram 3 nos lados e 2 ou 3 em cima e embaixo).
+- Prévia das barras com a regra de pixel do Direct3D 9 do jogo (de `ceil(início)` a `ceil(fim)`), igual ao que aparece no jogo.
 
 ### 3.10.0 — 19/10/2026
 - Nova include `progress3.inc` (em `omp-server-source/pawno/include`): barras com sprites `LD_SPAC:white`, posição e tamanho
