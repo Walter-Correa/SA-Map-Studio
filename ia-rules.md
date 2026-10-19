@@ -4,6 +4,7 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 
 ## 1. Compilação da Versão Final (Obrigatório)
 - **Sempre compile a versão final** executando `build-clean.bat` ao final de cada tarefa/ciclo de alterações.
+- **Versão do executável**: a versão gravada no `.exe` vem sempre da `VERSION` do `serve.py` (o `build.bat` roda `compile-sources/sync_version.py` antes do PyInstaller). Ao mudar a versão, altere só o `serve.py`, o `about.js` e o `readme.md`; nunca edite o `version_info.txt` à mão.
 - A distribuição limpa gerada em `compiled\SA Map Studio\` deve sempre refletir com exatidão todos os arquivos atualizados (código-fonte, assets, modelos e scripts).
 
 ## 2. Controle de Versão (Git)

@@ -92,6 +92,9 @@ if not exist "%STAGE%\test-server" mkdir "%STAGE%\test-server"
 
 set "ICONFILE=%SRC%icon.ico"
 set "VERFILE=%SRC%compile-sources\version_info.txt"
+rem A versao gravada no .exe sempre segue a VERSION do serve.py
+"%VPY%" "%SRC%compile-sources\sync_version.py"
+if errorlevel 1 goto erro
 
 rem ---------------- 1. Compila o Motor do Sistema (sa-map-studio.exe)
 echo Compilando o motor do sistema...
