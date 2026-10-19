@@ -60,6 +60,7 @@ export class FlyCamera {
 
     const kd = (e) => {
       if (!this.enabled || isTyping(e)) return;
+      if (document.querySelector('dialog[open]')) return;
       if (e.ctrlKey || e.metaKey) return;
       const k = e.code;
       if (MOVE_KEYS.has(k)) {

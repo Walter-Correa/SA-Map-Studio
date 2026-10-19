@@ -2,7 +2,7 @@
 // Modal com mapa do radar do GTA SA (-3000 a +3000), zoom, pan,
 import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
-import { toast } from './common.js';
+import { toast, arrowStep } from './common.js';
 
 export function parseAndNormalizeHexColor(input, currentAlpha = 0.56) {
   if (!input) return null;
@@ -220,6 +220,8 @@ function setupDialogEvents() {
       z.comment = e.target.value;
       appRef.project.modified = true;
       updateSidebarList();
+      redrawCanvas();
+      appRef.editor?.syncAll();
     };
     nameInput.onchange = (e) => {
       const z = getSelectedZone();
@@ -352,6 +354,20 @@ function setupDialogEvents() {
   }
 
   dialogEl.addEventListener('keydown', (e) => {
+    const arrow = !e.ctrlKey && !e.metaKey && arrowStep(e);
+    if (arrow) {
+      const z = getSelectedZone();
+      if (!z || (!arrow.dx && !arrow.dy)) return;
+      if (arrow.first) gzPushUndo();
+      const round = (v) => Math.round(v * 10) / 10;
+      z.minx = round(z.minx + arrow.dx); z.maxx = round(z.maxx + arrow.dx);
+      z.miny = round(z.miny - arrow.dy); z.maxy = round(z.maxy - arrow.dy);
+      appRef.project.modified = true;
+      appRef.editor?.syncAll();
+      updateSidebarFields();
+      redrawCanvas();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();

@@ -3,7 +3,7 @@
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
 import { makeTextDraw, textDrawNative } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth } from '../editor/tdrender.js';
-import { toast } from './common.js';
+import { toast, arrowStep } from './common.js';
 
 const RIGHT_BOX_HINT = 'No jogo, a caixa alinhada à direita vai da borda esquerda da tela até o texto';
 import { openSpritePicker } from './spritePicker.js';
@@ -277,6 +277,22 @@ function setupDialogEvents() {
   }
 
   dialogEl.addEventListener('keydown', (e) => {
+    const arrow = !e.ctrlKey && !e.metaKey && arrowStep(e);
+    if (arrow) {
+      const td = getSelectedTd();
+      if (!td || (!arrow.dx && !arrow.dy)) return;
+      if (arrow.first) tdPushUndo();
+      const round = (v) => Math.round(v * 10) / 10;
+      td.x = round(td.x + arrow.dx);
+      td.y = round(td.y + arrow.dy);
+      // Caixa à esquerda: TextSize X é a borda direita absoluta e acompanha o texto
+      if (td.useBox && td.font !== 4 && td.font !== 5 && getTdAlign(td) === 1) td.textSizeX = round(td.textSizeX + arrow.dx);
+      appRef.project.modified = true;
+      updateSidebarFields();
+      updateSidebarList();
+      redrawCanvas();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
@@ -348,8 +364,19 @@ function bindFieldInputs() {
   bind('#tdLetterY', 'letterSizeY', true);
   bind('#tdSizeX', 'textSizeX', true);
   bind('#tdSizeY', 'textSizeY', true);
-  bind('#tdOutline', 'outline', true);
-  bind('#tdShadow', 'shadow', true);
+  // Contorno e sombra: só ligado (1) ou desligado (0)
+  for (const [id, prop] of [['#tdOutline', 'outline'], ['#tdShadow', 'shadow']]) {
+    const el = dialogEl.querySelector(id);
+    if (!el) continue;
+    el.onchange = () => {
+      const td = getSelectedTd();
+      if (!td) return;
+      tdPushUndo();
+      td[prop] = el.checked ? 1 : 0;
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+  }
   bind('#tdPreviewModel', 'previewModel', true);
   bind('#tdPreviewRotX', 'previewRotX', true);
   bind('#tdPreviewRotY', 'previewRotY', true);
@@ -1065,8 +1092,8 @@ function updateSidebarFields() {
   if (lblY) lblY.textContent = special ? 'Altura' : (alignNow === 2 ? 'Largura da caixa' : 'Text Size Y');
   setVal('#tdFont', td.font);
   setVal('#tdAlign', getTdAlign(td));
-  setVal('#tdOutline', td.outline);
-  setVal('#tdShadow', td.shadow);
+  setChk('#tdOutline', td.outline > 0);
+  setChk('#tdShadow', td.shadow > 0);
   setChk('#tdUseBox', td.useBox);
   setChk('#tdProportional', td.proportional);
   setChk('#tdSelectable', td.selectable);
@@ -1118,7 +1145,7 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
     color: 0xFFFFFFFF,
     align: 2,
     alignment: 2,
-    shadow: 1,
+    shadow: 0,
     outline: 0,
     proportional: 1,
   });

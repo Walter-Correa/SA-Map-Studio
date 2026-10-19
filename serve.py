@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.5.5"
+VERSION = "3.6.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -1749,6 +1749,21 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/ping":
             State.last_ping = time.time()
             return self.send_json({"ok": True})
+        if path == "/api/example_project":
+            # Projeto de exemplo: entregue só na primeira abertura do editor
+            cfg = load_config()
+            if cfg.get("example_shown"):
+                return self.send_json({"ok": False})
+            for cand in (os.path.join(APP_DIR, "example-map.json"), os.path.join(COMPILE_SOURCES_DIR, "example-map.json")):
+                if os.path.isfile(cand):
+                    try:
+                        with open(cand, "r", encoding="utf-8") as f:
+                            project = json.load(f)
+                    except (OSError, ValueError):
+                        break
+                    update_config(example_shown=True)
+                    return self.send_json({"ok": True, "project": project})
+            return self.send_json({"ok": False})
         if path == "/api/config":
             cfg = load_config()
             inside_path = is_editor_inside_gta()

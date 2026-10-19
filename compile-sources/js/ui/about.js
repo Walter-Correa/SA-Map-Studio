@@ -6,6 +6,14 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.6.0', date: '19/10/2026', items: [
+      'Mapa de Exemplo: na primeira vez que o editor abre, ele carrega o projeto Example Map na câmera salva nele.',
+      'Ajuste Fino pelas Setas: nas janelas de MapIcons, TextDraws e GangZones as setas movem o item selecionado (1 unidade, 0,1 com Shift); enquanto essas janelas estão abertas, as setas não mexem no editor principal.',
+      'Contorno e Sombra das TextDraws viraram caixas de ligar e desligar (desligadas por padrão).',
+      'Nome da GangZone atualiza na lista e no mapa enquanto é digitado.',
+    ],
+  },
+  {
     version: '3.5.5', date: '19/10/2026', items: [
       'Nova vista inicial da câmera ao abrir um projeto vazio pela primeira vez.',
     ],

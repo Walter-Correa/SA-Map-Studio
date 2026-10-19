@@ -1,7 +1,7 @@
 // Editor visual 2D de MapIcons (semelhante ao de GangZones) + Janela de Lista Visual de MapIcons (IDs 0 a 63)
 import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl, getNextMapIconName } from '../world/mapicons.js';
 import { makeMapIcon } from '../editor/project.js';
-import { app, $, $$, esc, toast, copyText } from './common.js';
+import { app, $, $$, esc, toast, copyText, arrowStep } from './common.js';
 
 let dialogEl = null;
 let canvasEl = null;
@@ -292,6 +292,20 @@ function setupDialogEvents() {
   dialogEl.addEventListener('keydown', (e) => {
     e.stopPropagation();
     if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+    const arrow = !e.ctrlKey && !e.metaKey && arrowStep(e);
+    if (arrow) {
+      const m = getSelectedMapIcon();
+      if (!m || (!arrow.dx && !arrow.dy)) return;
+      if (arrow.first) miPushUndo();
+      const round = (v) => Math.round(v * 10000) / 10000;
+      m.x = round(m.x + arrow.dx);
+      m.y = round(m.y - arrow.dy);
+      app.project.modified = true;
+      app.editor?.syncAll();
+      updateSidebarFields();
+      redrawCanvas();
+      return;
+    }
     if (e.key === 'Delete' || e.key === 'Backspace') {
       const m = getSelectedMapIcon();
       if (!m) return;

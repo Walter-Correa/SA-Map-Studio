@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.5.5-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.6.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -208,6 +208,7 @@ para manter projetos e configurações).
 | `End` | Colocar no chão |
 | `F` ou duplo clique | Focar na seleção |
 | `Ctrl+D` | Duplicar no mesmo lugar |
+| Setas (`Shift` = 0,1) | Mover MapIcon, TextDraw ou GangZone nas janelas de edição |
 | `Ctrl+G` | Teleportar para uma coordenada |
 | `Ctrl+Z` / `Ctrl+Y` | Desfazer / refazer |
 | `Ctrl+S` | Salvar agora |
@@ -252,6 +253,13 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.6.0 — 19/10/2026
+- Na primeira abertura, o editor carrega o projeto **Example Map** na câmera salva nele.
+- Setas movem o item selecionado nas janelas de MapIcons, TextDraws e GangZones (1 unidade, 0,1 com Shift),
+  sem afetar o editor principal enquanto a janela está aberta.
+- Contorno e sombra das TextDraws são caixas de ligar/desligar (desligadas por padrão).
+- O nome da GangZone atualiza na hora, enquanto é digitado.
 
 ### 3.5.5 — 19/10/2026
 - Nova vista inicial da câmera ao abrir um projeto vazio pela primeira vez.

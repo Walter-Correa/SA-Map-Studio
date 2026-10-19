@@ -212,8 +212,8 @@ export function textDrawNative(td) {
     useBox: special ? 0 : (td.useBox ? 1 : 0),
     boxColor: td.boxColor ?? 0x00000080,
     backgroundColor: font === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0) : (td.backgroundColor ?? 0x000000FF),
-    outline: special ? 0 : (td.outline ?? 0),
-    shadow: special ? 0 : (td.shadow ?? 1),
+    outline: special ? 0 : (td.outline > 0 ? 1 : 0),
+    shadow: special ? 0 : (td.shadow > 0 ? 1 : 0),
     proportional: td.proportional ?? 1,
   };
 }
@@ -237,8 +237,8 @@ export function makeTextDraw(data) {
     color: data.color !== undefined ? (data.color | 0) : 0xFFFFFFFF,
     useBox: data.useBox ? 1 : 0,
     boxColor: data.boxColor !== undefined ? (data.boxColor | 0) : 0x00000080,
-    shadow: data.shadow !== undefined ? (data.shadow | 0) : 1,
-    outline: data.outline !== undefined ? (data.outline | 0) : 0,
+    shadow: (data.shadow | 0) > 0 ? 1 : 0,
+    outline: (data.outline | 0) > 0 ? 1 : 0,
     align: alignVal,
     alignment: alignVal,
     backgroundColor: data.backgroundColor !== undefined ? (data.backgroundColor | 0) : 0x000000FF,

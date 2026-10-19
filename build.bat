@@ -105,6 +105,7 @@ set "ARGS=%ARGS% --add-data "%SRC%compile-sources\css;css""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\js;js""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\fonts;fonts""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
+set "ARGS=%ARGS% --add-data "%SRC%compile-sources\example-map.json;.""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 

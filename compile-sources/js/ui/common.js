@@ -20,6 +20,24 @@ export const app = {
 };
 if (typeof window !== 'undefined') window.app = app;
 
+// Setas do teclado nas janelas de edição: 1 unidade por toque (0,1 com Shift), repetição limitada
+// para o ajuste fino não correr demais. Devolve { dx, dy, first } ou null quando a tecla não é seta.
+let lastArrowAt = 0;
+export function arrowStep(e) {
+  const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  const d = dirs[e.key];
+  if (!d) return null;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return null;
+  e.preventDefault();
+  e.stopPropagation();
+  const now = performance.now();
+  if (e.repeat && now - lastArrowAt < 80) return { dx: 0, dy: 0, first: false };
+  lastArrowAt = now;
+  const step = e.shiftKey ? 0.1 : 1;
+  return { dx: d[0] * step, dy: d[1] * step, first: !e.repeat };
+}
+
 export function toast(msg, kind = 'ok', ms = 2800) {
   const el = document.createElement('div');
   el.className = 'toast ' + kind;

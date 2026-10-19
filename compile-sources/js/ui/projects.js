@@ -129,7 +129,8 @@ export function positionCameraOverProject(p) {
 }
 
 // Coloca o projeto no editor (o anterior já deve ter sido salvo)
-export function useProject(p) {
+// keepCamera: usa a câmera salva no projeto em vez de focar no centro dos itens
+export function useProject(p, { keepCamera = false } = {}) {
   unsub?.();
   app.emit('project-closing');
   app.editor.cancelPlacing();
@@ -137,7 +138,8 @@ export function useProject(p) {
   unsub = p.on((ch) => { scheduleSave(); app.emit('project-change', ch); });
   app.editor.setProject(p);
   $('#projectName').value = p.name;
-  positionCameraOverProject(p);
+  if (keepCamera && p.camera) app.vp.fly.setPose(new THREE.Vector3(p.camera.x, p.camera.y, p.camera.z), p.camera.yaw, p.camera.pitch);
+  else positionCameraOverProject(p);
   app.streamer.invalidate();
   currentName = p.name;
   store.set('lastProject', p.name);
@@ -161,6 +163,16 @@ export async function openInitialProject() {
   if (last) { try { useProject(await fetchProject(last)); app.initialProjectLoaded = true; return; } catch { /* abre outro */ } }
   const list = await listProjects();
   for (const p of list.projects) { try { useProject(await fetchProject(p.name)); return; } catch { /* próximo */ } }
+  // Primeira abertura do editor: começa pelo mapa de exemplo, na câmera salva nele
+  try {
+    const ex = await (await fetch('/api/example_project')).json();
+    if (ex.ok && ex.project) {
+      useProject(Project.fromJSON(ex.project), { keepCamera: true });
+      saveNow();
+      app.initialProjectLoaded = true;
+      return;
+    }
+  } catch { /* sem exemplo: projeto vazio */ }
   useProject(new Project('Meu mapa'));
   saveNow();
   app.initialProjectLoaded = true;
