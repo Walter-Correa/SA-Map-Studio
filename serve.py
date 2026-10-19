@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.10.1"
+VERSION = "3.11.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:

@@ -6,7 +6,7 @@
 #define SAMP_COMPAT
 #include <open.mp>
 #include <streamer>
-#include <progress3>
+#include <progressbarpro>
 
 #define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
 #define SAMSP_MAX_OBJETOS    5000
@@ -112,17 +112,22 @@ enum E_SAMSP_MAPICON
 new gMapIcons[SAMSP_MAX_MAPICONS][E_SAMSP_MAPICON];
 new gTotalMapIcons;
 
-// Barras de progresso (progress3.inc): criadas para cada jogador ao nascer
+// Barras de progresso (SA Progress Bar Pro, progressbarpro.inc): criadas para cada jogador ao nascer
 enum E_SAMSP_PBAR
 {
-    Float:pb_x,
-    Float:pb_y,
-    Float:pb_width,
-    Float:pb_height,
-    pb_color,
-    Float:pb_max,
-    Float:pb_value,
-    pb_direction
+    Float:bar_x,
+    Float:bar_y,
+    Float:bar_width,
+    Float:bar_height,
+    bar_color,
+    Float:bar_max,
+    Float:bar_value,
+    bar_direction,
+    Float:bar_border,
+    bar_blink,
+    bar_blinkInterval,
+    bar_blinkDuration,
+    bar_blinkColor
 }
 new gPBars[SAMSP_MAX_PBARS][E_SAMSP_PBAR];
 new gTotalPBars;
@@ -804,14 +809,19 @@ stock SAMSP_CarregarMapa()
             case 'B':
             {
                 if (gTotalPBars >= SAMSP_MAX_PBARS) continue;
-                gPBars[gTotalPBars][pb_x] = SAMSP_Float(linha, 1);
-                gPBars[gTotalPBars][pb_y] = SAMSP_Float(linha, 2);
-                gPBars[gTotalPBars][pb_width] = SAMSP_Float(linha, 3);
-                gPBars[gTotalPBars][pb_height] = SAMSP_Float(linha, 4);
-                gPBars[gTotalPBars][pb_color] = SAMSP_HexOrInt(linha, 5);
-                gPBars[gTotalPBars][pb_max] = SAMSP_Float(linha, 6);
-                gPBars[gTotalPBars][pb_value] = SAMSP_Float(linha, 7);
-                gPBars[gTotalPBars][pb_direction] = SAMSP_Int(linha, 8);
+                gPBars[gTotalPBars][bar_x] = SAMSP_Float(linha, 1);
+                gPBars[gTotalPBars][bar_y] = SAMSP_Float(linha, 2);
+                gPBars[gTotalPBars][bar_width] = SAMSP_Float(linha, 3);
+                gPBars[gTotalPBars][bar_height] = SAMSP_Float(linha, 4);
+                gPBars[gTotalPBars][bar_color] = SAMSP_HexOrInt(linha, 5);
+                gPBars[gTotalPBars][bar_max] = SAMSP_Float(linha, 6);
+                gPBars[gTotalPBars][bar_value] = SAMSP_Float(linha, 7);
+                gPBars[gTotalPBars][bar_direction] = SAMSP_Int(linha, 8);
+                gPBars[gTotalPBars][bar_border] = SAMSP_Float(linha, 9);
+                gPBars[gTotalPBars][bar_blink] = SAMSP_Int(linha, 10);
+                gPBars[gTotalPBars][bar_blinkInterval] = SAMSP_Int(linha, 11);
+                gPBars[gTotalPBars][bar_blinkDuration] = SAMSP_Int(linha, 12);
+                gPBars[gTotalPBars][bar_blinkColor] = SAMSP_HexOrInt(linha, 13);
                 gTotalPBars++;
             }
             case 'D':
@@ -1262,7 +1272,7 @@ public OnPlayerDisconnect(playerid, reason)
     }
     gReturningFromFly[playerid] = false;
     gPlayerSpawned[playerid] = false;
-    gPlayerPBarCount[playerid] = 0; // a progress3.inc libera as barras do jogador ao sair
+    gPlayerPBarCount[playerid] = 0; // a progressbarpro.inc libera as barras do jogador ao sair
     return 1;
 }
 
@@ -1320,11 +1330,13 @@ stock SAMSP_ShowProgressBars(playerid)
     gPlayerPBarCount[playerid] = 0;
     for (new i = 0; i < gTotalPBars; i++)
     {
-        new bar = CreatePlayerProgressBar(playerid, gPBars[i][pb_x], gPBars[i][pb_y], gPBars[i][pb_width], gPBars[i][pb_height],
-            gPBars[i][pb_color], gPBars[i][pb_max], gPBars[i][pb_direction]);
+        new bar = CreatePlayerProgressBar(playerid, gPBars[i][bar_x], gPBars[i][bar_y], gPBars[i][bar_width], gPBars[i][bar_height],
+            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border]);
         if (bar == INVALID_PLAYER_BAR_ID) continue;
-        SetPlayerProgressBarValue(playerid, bar, gPBars[i][pb_value]);
+        SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);
+        if (gPBars[i][bar_blink])
+            BlinkPlayerProgressBar(playerid, bar, gPBars[i][bar_blinkInterval], gPBars[i][bar_blinkDuration], gPBars[i][bar_blinkColor]);
         gPlayerPBars[playerid][gPlayerPBarCount[playerid]++] = bar;
     }
     return 1;

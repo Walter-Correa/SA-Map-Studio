@@ -191,8 +191,15 @@ function normalizeSpriteName(text) {
   return text;
 }
 
-// Barra de progresso (progress3.inc): chamadas para criar, definir o valor e mostrar para o jogador
+// Barra de progresso (SA Progress Bar Pro, progressbarpro.inc): chamadas para criar, definir o valor e mostrar para o jogador
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
+
+// Limites da progressbarpro.inc (os mesmos PB_BORDER_MIN/MAX e PB_BLINK_MIN/MAX da include)
+export const PB_LIMITS = { borderMin: 0, borderMax: 4, borderDefault: 1, blinkMin: 50, blinkMax: 60000, blinkDefault: 250 };
+const clampNum = (v, min, max, def) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : def; };
+export const clampPbBorder = (v) => clampNum(v, PB_LIMITS.borderMin, PB_LIMITS.borderMax, PB_LIMITS.borderDefault);
+export const clampPbBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, PB_LIMITS.blinkDefault));
+export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0));
 
 // Variável da barra no código: progress_0, progress_1... na ordem das barras do projeto
 export function progressBarVar(td, all = []) {
@@ -208,12 +215,18 @@ export function textDrawVar(td, all = []) {
 
 export function progressBarPawn(td, varName, fmt) {
   const f = fmt || ((v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; });
-  const hex = '0x' + (Number(td.color ?? 0xFF1C1CFF) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-  return [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+  const hexOf = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  const hex = hexOf(td.color ?? 0xFF1C1CFF);
+  const lines = [
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(clampPbBorder(td.pbBorder))});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
+  if (td.pbBlink) {
+    const col = Number(td.pbBlinkColor || 0) >>> 0;
+    lines.push(`BlinkPlayerProgressBar(playerid, ${varName}, ${clampPbBlinkInterval(td.pbBlinkInterval)}, ${clampPbBlinkDuration(td.pbBlinkDuration)}${col ? ', ' + hexOf(col) : ''});`);
+  }
+  return lines;
 }
 
 // Parâmetros finais das funções TextDraw*, usados na exportação Pawn e no servidor de teste
@@ -285,6 +298,11 @@ export function makeTextDraw(data) {
       pbMax: data.pbMax !== undefined ? +data.pbMax : 100,
       pbValue: data.pbValue !== undefined ? +data.pbValue : 50,
       pbDir: data.pbDir !== undefined ? (data.pbDir | 0) : 0,
+      pbBorder: clampPbBorder(data.pbBorder ?? PB_LIMITS.borderDefault),
+      pbBlink: Boolean(data.pbBlink),
+      pbBlinkInterval: clampPbBlinkInterval(data.pbBlinkInterval ?? PB_LIMITS.blinkDefault),
+      pbBlinkDuration: clampPbBlinkDuration(data.pbBlinkDuration ?? 0),
+      pbBlinkColor: Number(data.pbBlinkColor || 0) >>> 0,
     } : {}),
   };
 }

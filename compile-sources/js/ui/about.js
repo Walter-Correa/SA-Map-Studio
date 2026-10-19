@@ -6,6 +6,14 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.11.0', date: '19/10/2026', items: [
+      'A include de barras agora se chama SA Progress Bar Pro (progressbarpro.inc).',
+      'Barras que piscam: BlinkPlayerProgressBar(playerid, barra, intervalo, duração, cor), com intervalo e duração em milissegundos; sem cor, a barra pisca na própria cor, apagando e acendendo. O editor de TextDraws mostra a piscada na prévia e exporta, importa e testa no servidor com ela.',
+      'Borda escolhida na criação da barra (último parâmetro de CreatePlayerProgressBar, de 0 a 4). O editor não aceita valores fora dos limites e a própria include usa o limite se o código pedir mais ou menos.',
+      'O ícone do editor volta a aparecer na barra de tarefas do Windows.',
+    ],
+  },
+  {
     version: '3.10.1', date: '19/10/2026', items: [
       'Bordas das barras de progresso iguais nos quatro lados no jogo: uma unidade de TextDraw tem 3,00 px de largura e 2,41 px de altura em 1920x1080, então a progress3 usa borda vertical 1,25 vez a horizontal (3 px em todos os lados em 16:9).',
       'A prévia do editor de TextDraws pinta as barras com a mesma regra de pixel do jogo, mostrando a espessura real de cada borda.',

@@ -226,24 +226,29 @@ export function textDrawRect(td) {
   return { x: left / UX, y: top / UY, w: Math.max(4, (right - left) / UX), h: Math.max(4, (bottom - top) / UY) };
 }
 
-// Barra de progresso (progress3.inc): os mesmos 3 sprites LD_SPAC:white que a include cria,
+// Barra de progresso (SA Progress Bar Pro, progressbarpro.inc): os mesmos 3 sprites LD_SPAC:white que a include cria,
 // em unidades 640x448: fundo, trilho dentro da borda e a parte cheia conforme valor e direção.
-// Borda: 1 unidade na horizontal e 1,25 na vertical (1 unidade tem 3,00 px x 2,41 px em 1920x1080)
-export const PB_BORDER_X = 1.0, PB_BORDER_Y = 1.25;
-export function progressBarParts(bar) {
+// Borda: pbBorder na horizontal e 1,25 vez isso na vertical (1 unidade tem 3,00 px x 2,41 px em 1920x1080),
+// limitada como na include (0 a 4). blinkOn: fase acesa da piscada (cor da piscada ou interior apagado).
+export const PB_BORDER_Y_RATIO = 1.25;
+export function progressBarParts(bar, blinkOn = false) {
   const x = +bar.x || 0, y = +bar.y || 0;
   const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
   const max = +bar.pbMax || 0;
   const v = Math.max(0, Math.min(max, +bar.pbValue || 0));
-  const c = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
-  const alpha = c & 0xFF;
-  const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor(alpha / 2))) >>> 0;
-  const ix = x + PB_BORDER_X, iy = y + PB_BORDER_Y;
-  const iw = Math.max(0, w - PB_BORDER_X * 2), ih = Math.max(0, h - PB_BORDER_Y * 2);
-  const parts = [
-    { x, y, w, h, color: alpha },
-    { x: ix, y: iy, w: iw, h: ih, color: fillColor },
-  ];
+  const base = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
+  const alpha = base & 0xFF;
+  const blinking = Boolean(bar.pbBlink) && blinkOn;
+  const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
+  const c = blinking && blinkColor ? blinkColor : base;
+  const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
+  const n = Number(bar.pbBorder ?? 1);
+  const bx = Number.isFinite(n) ? Math.max(0, Math.min(4, n)) : 1, by = bx * PB_BORDER_Y_RATIO;
+  const ix = x + bx, iy = y + by;
+  const iw = Math.max(0, w - bx * 2), ih = Math.max(0, h - by * 2);
+  const parts = [{ x, y, w, h, color: alpha }];
+  if (blinking && !blinkColor) return parts; // sem cor: o interior apaga
+  parts.push({ x: ix, y: iy, w: iw, h: ih, color: fillColor });
   const part = max > 0 ? Math.min(1, v / max) : 0;
   if (part > 0 && iw > 0 && ih > 0) {
     const m = { x: ix, y: iy, w: iw, h: ih, color: c };
@@ -261,8 +266,8 @@ export function progressBarParts(bar) {
 // Desenha a barra na prévia (canvas na resolução de referência TD_SCREEN) com a regra de pixel do
 // Direct3D 9 usada pelo jogo: um pixel é pintado se o centro dele (coordenada inteira) cai no
 // retângulo, ou seja, de ceil(início) até ceil(fim) - 1. Assim as bordas têm os mesmos pixels do jogo.
-export function drawProgressBar(ctx, bar) {
-  for (const r of progressBarParts(bar)) {
+export function drawProgressBar(ctx, bar, blinkOn = false) {
+  for (const r of progressBarParts(bar, blinkOn)) {
     const c = rgba(r.color);
     const x0 = Math.ceil(r.x * UX), x1 = Math.ceil((r.x + r.w) * UX);
     const y0 = Math.ceil(r.y * UY), y1 = Math.ceil((r.y + r.h) * UY);

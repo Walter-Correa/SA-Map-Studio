@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, clampPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -393,6 +393,69 @@ function bindFieldInputs() {
       redrawCanvas();
     };
   }
+
+  // Borda e piscada da barra: valores fora dos limites voltam para o limite (a include também confere)
+  const pbLimited = [
+    ['#tdPbBorder', 'pbBorder', clampPbBorder],
+    ['#tdPbBlinkInterval', 'pbBlinkInterval', clampPbBlinkInterval],
+    ['#tdPbBlinkDuration', 'pbBlinkDuration', clampPbBlinkDuration],
+  ];
+  for (const [id, prop, clamp] of pbLimited) {
+    const el = dialogEl.querySelector(id);
+    if (!el) continue;
+    el.onfocus = () => tdPushUndo();
+    const apply = (fix) => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      if (el.value === '' && !fix) return;
+      const v = clamp(el.value);
+      td[prop] = v;
+      if (fix || Number(el.value) !== v) el.value = v;
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+    el.oninput = () => apply(false);
+    el.onchange = () => apply(true);
+  }
+  const blinkBox = dialogEl.querySelector('#tdPbBlink');
+  const blinkOwn = dialogEl.querySelector('#tdPbBlinkOwn');
+  const blinkColor = dialogEl.querySelector('#tdPbBlinkColor');
+  const syncBlinkFields = (td) => {
+    const box = dialogEl.querySelector('#tdPbBlinkFields');
+    if (box) box.style.display = td?.pbBlink ? 'flex' : 'none';
+    if (blinkColor) blinkColor.disabled = !td || !td.pbBlinkColor;
+  };
+  const blinkColorValue = () => ((parseInt((blinkColor?.value || '#ffffff').slice(1), 16) << 8) | 0xFF) >>> 0;
+  if (blinkBox) blinkBox.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type !== 'progress') return;
+    tdPushUndo();
+    td.pbBlink = blinkBox.checked;
+    if (td.pbBlinkInterval === undefined) td.pbBlinkInterval = PB_LIMITS.blinkDefault;
+    syncBlinkFields(td);
+    appRef.project.modified = true;
+    restartBlinkPreview();
+  };
+  if (blinkOwn) blinkOwn.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type !== 'progress') return;
+    tdPushUndo();
+    td.pbBlinkColor = blinkOwn.checked ? 0 : blinkColorValue();
+    syncBlinkFields(td);
+    appRef.project.modified = true;
+    redrawCanvas();
+  };
+  if (blinkColor) {
+    blinkColor.onfocus = () => tdPushUndo();
+    blinkColor.oninput = () => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress' || blinkOwn?.checked) return;
+      td.pbBlinkColor = blinkColorValue();
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+  }
+  syncPbBlinkFields = syncBlinkFields;
 
   // Contorno e sombra: só ligado (1) ou desligado (0)
   for (const [id, prop] of [['#tdOutline', 'outline'], ['#tdShadow', 'shadow']]) {
@@ -796,6 +859,37 @@ function getSelectedTd() {
   return tds[selectedIdx] || null;
 }
 
+// ---------- Prévia da piscada (BlinkPlayerProgressBar) ----------
+// Igual à include: começa aceso e troca a cada intervalo; com duração, para no fim e a prévia
+// recomeça depois de 1 s para dar para ver de novo.
+let syncPbBlinkFields = null;
+let blinkStart = 0, blinkTimer = null, blinkLastKey = '';
+function blinkPhaseOf(td) {
+  if (!td?.pbBlink || !dialogEl?.open) return false;
+  const interval = clampPbBlinkInterval(td.pbBlinkInterval);
+  const duration = clampPbBlinkDuration(td.pbBlinkDuration);
+  let t = performance.now() - blinkStart;
+  if (duration > 0) {
+    t %= duration + 1000;
+    if (t >= duration) return false;
+  }
+  return Math.floor(t / interval) % 2 === 0;
+}
+function restartBlinkPreview() {
+  blinkStart = performance.now();
+  blinkLastKey = '';
+  if (!blinkTimer) {
+    blinkTimer = setInterval(() => {
+      if (!dialogEl?.open) { clearInterval(blinkTimer); blinkTimer = null; return; }
+      const bars = (appRef.project?.textDraws || []).filter(t => t.type === 'progress' && t.pbBlink);
+      if (!bars.length) return;
+      const key = bars.map(b => blinkPhaseOf(b) ? 1 : 0).join('');
+      if (key !== blinkLastKey) { blinkLastKey = key; redrawCanvas(); }
+    }, 25);
+  }
+  redrawCanvas();
+}
+
 export function openTextDrawEditor() {
   if (!dialogEl) return;
   loadGameBg();
@@ -817,7 +911,7 @@ export function openTextDrawEditor() {
 
   updateSidebarList();
   updateSidebarFields();
-  redrawCanvas();
+  restartBlinkPreview();
 }
 
 export function closeTextDrawEditor() {
@@ -903,7 +997,7 @@ function renderTextDraw(td, isSelected) {
   if (td.type === 'progress') {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    drawProgressBar(ctx, td);
+    drawProgressBar(ctx, td, blinkPhaseOf(td));
     ctx.restore();
     useLogicalUnits();
   } else if (td.font === 5) {
@@ -1167,6 +1261,15 @@ function updateSidebarFields() {
     setVal('#tdPbMax', td.pbMax);
     setVal('#tdPbValue', td.pbValue);
     setVal('#tdPbDir', td.pbDir);
+    setVal('#tdPbBorder', clampPbBorder(td.pbBorder));
+    setVal('#tdPbBlinkInterval', clampPbBlinkInterval(td.pbBlinkInterval));
+    setVal('#tdPbBlinkDuration', clampPbBlinkDuration(td.pbBlinkDuration));
+    const blinkBox = dialogEl.querySelector('#tdPbBlink');
+    if (blinkBox) blinkBox.checked = Boolean(td.pbBlink);
+    const own = dialogEl.querySelector('#tdPbBlinkOwn');
+    if (own) own.checked = !td.pbBlinkColor;
+    if (td.pbBlinkColor) setVal('#tdPbBlinkColor', '#' + ((Number(td.pbBlinkColor) >>> 8) & 0xFFFFFF).toString(16).padStart(6, '0'));
+    syncPbBlinkFields?.(td);
   }
 
   // Painel de Sprite (Font 4)

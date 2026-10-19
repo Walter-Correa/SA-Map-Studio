@@ -920,7 +920,7 @@
         <button type="button" class="btn small" id="tdBtnAddBox" style="justify-content: center;">+ Caixa</button>
         <button type="button" class="btn small" id="tdBtnAddModel" style="justify-content: center;">+ Modelo 3D</button>
         <button type="button" class="btn small" id="tdBtnAddSprite" style="justify-content: center;">+ Sprite</button>
-        <button type="button" class="btn small" id="tdBtnAddProgress" style="justify-content: center; grid-column: span 2;" title="Barra de progresso (progress3.inc)">+ Barra de Progresso</button>
+        <button type="button" class="btn small" id="tdBtnAddProgress" style="justify-content: center; grid-column: span 2;" title="Barra de progresso (SA Progress Bar Pro, progressbarpro.inc)">+ Barra de Progresso</button>
       </div>
 
       <div class="pop-title" style="margin: 4px 0 2px 0; flex-shrink: 0;">Elementos</div>
@@ -1008,6 +1008,18 @@
               <option value="3">Para baixo</option>
             </select>
           </label>
+          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Espessura da borda, de 0 a 4 (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela)">Borda (0 a 4)<input type="number" id="tdPbBorder" step="0.25" min="0" max="4"></label>
+          <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBlink"> Piscar (BlinkPlayerProgressBar)</label>
+          <div id="tdPbBlinkFields" style="display: none; flex-direction: column; gap: 6px;">
+            <div class="pair">
+              <label title="Tempo entre cada troca, de 50 a 60000 ms">Intervalo (ms)<input type="number" id="tdPbBlinkInterval" step="10" min="50" max="60000"></label>
+              <label title="Tempo total da piscada; 0 pisca até ser parada">Duração (ms, 0 = sem fim)<input type="number" id="tdPbBlinkDuration" step="100" min="0" max="86400000"></label>
+            </div>
+            <div class="pair" style="align-items: end;">
+              <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBlinkOwn" checked> Piscar na cor da barra</label>
+              <label>Cor da piscada<input type="color" id="tdPbBlinkColor" value="#ffffff"></label>
+            </div>
+          </div>
         </div>
 
         <div id="tdSpritePanel" style="display: none; background: rgba(0,200,100,0.08); border: 1px solid rgba(0,200,100,0.25); border-radius: 4px; padding: 6px; margin-top: 4px;">

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
-import { Project, normalizeCameras, textDrawNative } from '../editor/project.js';
+import { Project, normalizeCameras, textDrawNative, clampPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
 import { app, $, esc, plural, store, toast, copyText, postJSON } from './common.js';
@@ -312,7 +312,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
     for (const td of p.textDraws || []) {
       if (td.type === 'progress') {
         const f = (v) => (+v || 0).toFixed(4);
-        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}`);
+        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(clampPbBorder(td.pbBorder))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}`);
         continue;
       }
       const n = textDrawNative(td);

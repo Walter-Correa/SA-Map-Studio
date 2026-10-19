@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.10.1-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.11.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -68,7 +68,7 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - Fontes 0 a 5, cores de texto e caixa com transparência, alinhamento (esquerda, centro, direita), tamanho de letras e caixas, contorno (`outline`) e sombra (`shadow`).
 - **Pré-visualização 3D de modelos (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com ajuste de rotação (RX, RY, RZ) e zoom.
 - Exportação limpa de script Pawn pronto para compilação.
-- **Barras de progresso** (`progress3.inc`, incluída no servidor de teste) nas quatro direções, com o mesmo desenho do jogo.
+- **Barras de progresso** (SA Progress Bar Pro, `progressbarpro.inc`, incluída no servidor de teste) nas quatro direções, com o mesmo desenho do jogo.
 
 ### Materiais do SA-MP
 - O inspetor lista **todos os índices de material** do objeto (0 a 15) com a textura original de cada um.
@@ -254,6 +254,15 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.11.0 — 19/10/2026
+- A include de barras passa a se chamar **SA Progress Bar Pro** (`progressbarpro.inc`), com o enumerador `ProgressBar_Data`
+  e os campos `pb_valid`, `pb_x`...
+- `BlinkPlayerProgressBar(playerid, barra, intervalo = 250, duração = 0, cor = 0)`: pisca o interior da barra; intervalo de
+  50 a 60000 ms, duração 0 = até `StopPlayerProgressBarBlink`, sem cor pisca na cor da própria barra. Prévia no editor.
+- Borda no último parâmetro de `CreatePlayerProgressBar` (`PB_BORDER_MIN` 0 a `PB_BORDER_MAX` 4); o editor limita o campo
+  e a include usa o limite quando o valor passa dele. `SetPlayerProgressBarBorder` / `GetPlayerProgressBarBorder`.
+- Ícone do editor na barra de tarefas: gravado na janela, na classe e nas propriedades de relançamento.
 
 ### 3.10.1 — 19/10/2026
 - `progress3.inc`: borda vertical `PB3_BORDER_Y` = 1,25 x `PB3_BORDER_X`, porque a unidade de TextDraw tem 3,00 x 2,41 px em

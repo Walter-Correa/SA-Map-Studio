@@ -2,7 +2,7 @@
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS } from './project.js';
+import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, clampPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from './project.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -94,7 +94,7 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
+const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 
@@ -162,6 +162,7 @@ export function cleanPwnHeader(headerText) {
         t.startsWith('//   Requer o plugin streamer') ||
         t.startsWith('//   Requer a include progress2') ||
         t.startsWith('//   Requer a include progress3') ||
+        t.startsWith('//   Requer a include SA Progress Bar Pro') ||
         t.startsWith('//   Posições relativas') ||
         t.startsWith('//   Câmeras')) {
       continue;
@@ -830,7 +831,7 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progress3.inc (e progress2.inc): CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção),
+      // progressbarpro.inc (e progress2.inc): CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção, borda),
       // também com argumentos nomeados (.colour = ...) e expressões (o número inicial é usado)
       if (a.length >= 3) {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
@@ -850,6 +851,7 @@ export function parsePwn(source) {
           color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xFF1C1CFF,
           pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
           pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
+          pbBorder: clampPbBorder(num(arg(8, 'border'), PB_LIMITS.borderDefault)),
           comment: inlineComment, preComment, blankLinesBefore,
         };
         textDraws.push(td);
@@ -858,6 +860,17 @@ export function parsePwn(source) {
     } else if (fn === 'SetPlayerProgressBarValue') {
       const target = vars.get(varKey(a[1]));
       if (target && target.type === 'progress' && a[2] !== undefined) target.pbValue = num(a[2], 0);
+    } else if (fn === 'BlinkPlayerProgressBar') {
+      // BlinkPlayerProgressBar(playerid, barra, intervalo, duração, cor = 0)
+      const target = vars.get(varKey(a[1]));
+      if (target && target.type === 'progress') {
+        const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
+        const col = arg(4, 'colour', 'color');
+        target.pbBlink = true;
+        target.pbBlinkInterval = clampPbBlinkInterval(num(arg(2, 'interval'), PB_LIMITS.blinkDefault));
+        target.pbBlinkDuration = clampPbBlinkDuration(num(arg(3, 'duration'), 0));
+        target.pbBlinkColor = col !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(col).trim()) ? (parseColor(col) >>> 0) : 0;
+      }
     } else if (fn === 'TextDrawFont') {
       const target = vars.get(varKey(a[0])) || textDraws[textDraws.length - 1];
       if (target && a[1] !== undefined) target.font = int(a[1], 1);
@@ -1281,7 +1294,7 @@ export function exportPawn(project, options = {}) {
       }
     }
     if (td.type === 'progress') {
-      // Barra de progresso: precisa de #include <progress3>
+      // Barra de progresso: precisa de #include <progressbarpro>
       textDrawLines.push(...progressBarPawn(td, progressBarVar(td, textDraws), (v) => formatCoord(v, null)));
       continue;
     }
@@ -1404,7 +1417,7 @@ export function exportPawn(project, options = {}) {
   lines.push(`//   OnGameModeInit():   Mapa_${id}_Carregar();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Mapa_${id}_Remover(playerid);`);
   if (opt.objectFn === 'CreateDynamicObject') lines.push('//   Requer o plugin streamer (#include <streamer>).');
-  if (textDraws.some(td => td.type === 'progress')) lines.push('//   Requer a include progress3 (#include <progress3>) por causa das barras de progresso.');
+  if (textDraws.some(td => td.type === 'progress')) lines.push('//   Requer a include SA Progress Bar Pro (#include <progressbarpro>) por causa das barras de progresso.');
   if (cams.usage.length) { lines.push('//   Câmeras (chame quando quiser, com o jogador já spawnado):'); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   Posições relativas: some (${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}) ou passe a origem.`);
   lines.push('// ================================================================');
