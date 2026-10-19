@@ -6,6 +6,11 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.6.2', date: '19/10/2026', items: [
+      'Botão 3DTexts na barra superior.',
+    ],
+  },
+  {
     version: '3.6.1', date: '19/10/2026', items: [
       'Nova vista de câmera do mapa de exemplo (Example Map) na primeira abertura.',
     ],
