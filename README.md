@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.12.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.13.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,13 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.13.0 — 19/10/2026
+- SA Progress Bar Pro reescrita em inglês, com documentação de cada função e a lista completa no topo da include.
+- `SetPlayerProgressBarSize` / `GetPlayerProgressBarSize`; valores padrão em `BlinkPlayerProgressBar` (intervalo, duração e
+  cores), `SetPlayerProgressBarColour`, `SetPlayerProgressBarBorder`, `SetPlayerProgressBarBorderColour`,
+  `SetPlayerProgressBarMaxValue` e `SetPlayerProgressBarDirection`.
+- Troca de cor da barra e da borda sem recriar as TextDraws.
 
 ### 3.12.0 — 19/10/2026
 - SA Progress Bar Pro: borda de `PB_BORDER_MIN` 0,5 a `PB_BORDER_MAX` 5,0 (toda barra tem borda) e cor da borda no último

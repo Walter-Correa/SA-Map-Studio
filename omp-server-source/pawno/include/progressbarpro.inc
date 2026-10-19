@@ -1,34 +1,101 @@
 /*
-	SA Progress Bar Pro (progressbarpro.inc) - barras de progresso para jogadores (SA-MP 0.3.7 e open.mp)
+	SA Progress Bar Pro (progressbarpro.inc)
+	Player progress bars for SA-MP 0.3.7 and open.mp.
 
-	Mesmas funções da progress2.inc, mas desenhadas com sprites "LD_SPAC:white":
-	- posição, largura e altura exatas em unidades de TextDraw (640x448), que escalam por igual
-	  em qualquer resolução (sem a margem fixa em pixels das caixas de texto da progress2);
-	- borda interna com a mesma espessura nos quatro lados, sem números mágicos: uma unidade de
-	  TextDraw vale 640 partes da largura e 448 da altura da tela, então em 16:9 (1920x1080) ela
-	  tem 3,00 px na horizontal e só 2,41 px na vertical. Por isso a borda de cima e de baixo usa
-	  1,25 vez a dos lados (PB_BORDER_Y_RATIO), o que dá 3 px em todos os lados em 1920x1080;
-	- a parte cheia nunca passa da borda, some quando o valor é zero e mudar o valor não
-	  mostra uma barra que estava escondida;
-	- borda e cor da borda escolhidas na criação ou depois: a borda vai de PB_BORDER_MIN (0,5) a
-	  PB_BORDER_MAX (5,0), valores fora disso usam o limite, e ela nunca passa do que cabe na barra
-	  (sobra PB_MIN_INNER de interior). Toda barra tem borda;
-	- barras que piscam (BlinkPlayerProgressBar), com cor própria para o interior e para a borda.
+	Same API as progress2.inc, drawn with "LD_SPAC:white" sprites instead of text boxes:
+	- exact position, width and height in TextDraw units (640x448), scaled evenly at any
+	  resolution (no fixed pixel padding like the text boxes used by progress2);
+	- every bar has a border with the same on-screen thickness on all four sides. One TextDraw
+	  unit is 640 parts of the screen width and 448 parts of its height, so at 16:9 (1920x1080)
+	  it is 3.00 px wide but only 2.41 px tall. That is why the top and bottom border are
+	  PB_BORDER_Y_RATIO (1.25) times the side border: 3 px on every side at 1920x1080;
+	- the border goes from PB_BORDER_MIN (0.5) to PB_BORDER_MAX (5.0). Values outside that range
+	  are replaced by the limit, and the border never grows past what fits in the bar (at least
+	  PB_MIN_INNER of inner area is kept);
+	- the filled part never goes past the border, disappears when the value is zero, and changing
+	  the value never shows a hidden bar;
+	- bars can blink, with their own colour for the inner area and for the border.
 
-	Cada barra usa 3 PlayerTextDraws:
-	  fundo  (x, y, largura, altura)                       cor da borda (padrão: preto com o alfa da cor da barra)
-	  trilho (x + borda, y + borda, largura e altura - 2x borda)   cor da barra mais transparente
-	  cheio  (parte do trilho, conforme valor / máximo e a direção) cor da barra
+	Each bar uses 3 PlayerTextDraws, created in this order (so they are drawn in this order):
+	  back   (x, y, width, height)                                  border colour (default: black with the bar alpha)
+	  fill   (inside the border)                                    bar colour, more transparent
+	  main   (part of the fill, from value / max and the direction) bar colour
 
-	Exemplo:
-	  new vida = CreatePlayerProgressBar(playerid, 500.0, 120.0, 100.0, 8.0, 0xFF1C1CFF, 100.0, BAR_DIRECTION_RIGHT, 1.0, 0x000000FF);
-	  SetPlayerProgressBarValue(playerid, vida, 75.0);
-	  ShowPlayerProgressBar(playerid, vida);
-	  BlinkPlayerProgressBar(playerid, vida, 250, 3000);              // pisca na cor da barra por 3 s
-	  BlinkPlayerProgressBar(playerid, vida, 200, 0, 0xFFFFFFFF);     // pisca em branco até parar
-	  BlinkPlayerProgressBar(playerid, vida, 300, 0, 0, 0xFFFF00FF);  // pisca na cor da barra e a borda em amarelo
-	  SetPlayerProgressBarBorderColour(playerid, vida, 0xFFFFFFFF);
-	  StopPlayerProgressBarBlink(playerid, vida);
+	Example:
+	  new health = CreatePlayerProgressBar(playerid, 500.0, 120.0, 100.0, 8.0, 0xFF1C1CFF);
+	  SetPlayerProgressBarValue(playerid, health, 75.0);
+	  ShowPlayerProgressBar(playerid, health);
+	  BlinkPlayerProgressBar(playerid, health);                          // blinks in the bar colour until stopped
+	  BlinkPlayerProgressBar(playerid, health, 200, 3000, 0xFFFFFFFF);   // blinks white for 3 seconds
+	  BlinkPlayerProgressBar(playerid, health, 300, 0, 0, 0xFFFF00FF);   // bar colour, border blinks yellow
+	  StopPlayerProgressBarBlink(playerid, health);
+
+	-------------------------------------------------------------------------------- functions
+
+	Every function returns 0 (or INVALID_PLAYER_BAR_VALUE for Float getters) when the player or
+	the bar is not valid. Parameters with a default value can be left out.
+
+	Creation and life cycle
+	  CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0,
+	      colour = 0xFF1C1CFF, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT,
+	      Float:border = 1.0, bordercolour = 0)
+	      Creates a hidden bar and returns its id (INVALID_PLAYER_BAR_ID on failure).
+	      bordercolour 0 = black with the alpha of the bar colour.
+	  DestroyPlayerProgressBar(playerid, barid)
+	  DestroyAllPlayerProgressBars(playerid)
+	  IsValidPlayerProgressBar(playerid, barid)                    -> bool
+
+	Visibility
+	  ShowPlayerProgressBar(playerid, barid)
+	  HidePlayerProgressBar(playerid, barid)
+	  IsPlayerProgressBarVisible(playerid, barid)                  -> bool
+
+	Value
+	  SetPlayerProgressBarValue(playerid, barid, Float:value)       (clamped to 0..max)
+	  GetPlayerProgressBarValue(playerid, barid)                   -> Float
+	  SetPlayerProgressBarMaxValue(playerid, barid, Float:max = 100.0)
+	  GetPlayerProgressBarMaxValue(playerid, barid)                -> Float
+
+	Position and size
+	  SetPlayerProgressBarPos(playerid, barid, Float:x, Float:y)
+	  GetPlayerProgressBarPos(playerid, barid, &Float:x, &Float:y)
+	  SetPlayerProgressBarSize(playerid, barid, Float:width, Float:height)
+	  GetPlayerProgressBarSize(playerid, barid, &Float:width, &Float:height)
+	  SetPlayerProgressBarWidth(playerid, barid, Float:width)
+	  GetPlayerProgressBarWidth(playerid, barid)                   -> Float
+	  SetPlayerProgressBarHeight(playerid, barid, Float:height)
+	  GetPlayerProgressBarHeight(playerid, barid)                  -> Float
+	  SetPlayerProgressBarDirection(playerid, barid, direction = BAR_DIRECTION_RIGHT)
+	  GetPlayerProgressBarDirection(playerid, barid)
+
+	Colours and border
+	  SetPlayerProgressBarColour(playerid, barid, colour = 0xFF1C1CFF)
+	  GetPlayerProgressBarColour(playerid, barid)
+	  SetPlayerProgressBarBorder(playerid, barid, Float:border = 1.0)       (0.5 to 5.0)
+	  GetPlayerProgressBarBorder(playerid, barid)                  -> Float
+	  SetPlayerProgressBarBorderColour(playerid, barid, bordercolour = 0)   (0 = default black)
+	  GetPlayerProgressBarBorderColour(playerid, barid)
+
+	Blinking
+	  BlinkPlayerProgressBar(playerid, barid, interval = 250, duration = 0, colour = 0, bordercolour = 0)
+	      interval: milliseconds between each switch (PB_BLINK_MIN to PB_BLINK_MAX);
+	      duration: total time in milliseconds (0 = until StopPlayerProgressBarBlink);
+	      colour: inner colour while lit (0 = blink in the bar colour, switching it off and on);
+	      bordercolour: border colour while lit (0 = the border does not blink).
+	  StopPlayerProgressBarBlink(playerid, barid)
+	  IsPlayerProgressBarBlinking(playerid, barid)                 -> bool
+
+	Settings (define them before #include <progressbarpro>)
+	  MAX_PLAYER_BARS       bars per player (default: MAX_PLAYER_TEXT_DRAWS / 3)
+	  PB_DEFAULT_COLOUR     default bar colour (0xFF1C1CFF)
+	  PB_BORDER_DEFAULT     default border (1.0)
+	  PB_BORDER_MIN         smallest border (0.5)
+	  PB_BORDER_MAX         largest border (5.0)
+	  PB_BORDER_Y_RATIO     top/bottom border compared to the sides (1.25)
+	  PB_MIN_INNER          inner area always kept inside the border (1.0)
+	  PB_BLINK_DEFAULT      default blink interval in ms (250)
+	  PB_BLINK_MIN          shortest blink interval in ms (50)
+	  PB_BLINK_MAX          longest blink interval in ms (60000)
 */
 
 #if defined _progressbarpro_included
@@ -37,13 +104,16 @@
 #define _progressbarpro_included
 
 #if defined _progress2_included
-	#error Use somente uma include de barras: progress2 ou progressbarpro.
+	#error Use only one progress bar include: progress2 or progressbarpro.
 #endif
 
 #include <a_samp>
 
-// Borda em unidades de TextDraw: padrão e limites (podem ser definidos antes do #include).
-// A borda de cima e de baixo é PB_BORDER_Y_RATIO vezes a dos lados (1 unidade tem 3,00 x 2,41 px em 1920x1080).
+// ---------------------------------------------------------------------------- settings
+
+#if !defined PB_DEFAULT_COLOUR
+	#define PB_DEFAULT_COLOUR (0xFF1C1CFF)
+#endif
 #if !defined PB_BORDER_DEFAULT
 	#if defined PB_BORDER
 		#define PB_BORDER_DEFAULT (PB_BORDER)
@@ -60,19 +130,18 @@
 #if !defined PB_BORDER_Y_RATIO
 	#define PB_BORDER_Y_RATIO (1.25)
 #endif
-// A borda nunca ocupa a barra inteira: sobra pelo menos isto de interior na largura e na altura
 #if !defined PB_MIN_INNER
 	#define PB_MIN_INNER (1.0)
 #endif
-
-// Intervalo da piscada em milissegundos (cada troca entre aceso e apagado)
+#if !defined PB_BLINK_DEFAULT
+	#define PB_BLINK_DEFAULT (250)
+#endif
 #if !defined PB_BLINK_MIN
 	#define PB_BLINK_MIN (50)
 #endif
 #if !defined PB_BLINK_MAX
 	#define PB_BLINK_MAX (60000)
 #endif
-
 #if !defined MAX_PLAYER_BARS
 	#define MAX_PLAYER_BARS (_:MAX_PLAYER_TEXT_DRAWS / 3)
 #endif
@@ -86,7 +155,7 @@
 	#define PB_SPRITE_FONT 4
 #endif
 
-// open.mp prefere PlayerTextDrawColour; o SA-MP só tem PlayerTextDrawColor
+// open.mp prefers PlayerTextDrawColour; SA-MP only has PlayerTextDrawColor
 #if defined PlayerTextDrawColour
 	#define PB_TextDrawColour PlayerTextDrawColour
 #else
@@ -135,7 +204,7 @@ enum ProgressBar_Data
 
 static stock pb_Data[MAX_PLAYERS][MAX_PLAYER_BARS][ProgressBar_Data];
 
-// ---------------------------------------------------------------------------- interno
+// ---------------------------------------------------------------------------- internal
 
 static stock PlayerText:PB_Sprite(playerid, Float:x, Float:y, Float:width, Float:height, colour)
 {
@@ -157,8 +226,16 @@ static stock PB_Kill(playerid, &PlayerText:td)
 	}
 }
 
-// Borda que cabe na barra: a de cima e a de baixo (1,25 vez maior) e as dos lados deixam pelo
-// menos PB_MIN_INNER de interior; nunca fica abaixo de PB_BORDER_MIN (toda barra tem borda)
+static stock Float:PB_ClampBorder(Float:border)
+{
+	if (border != border) return PB_BORDER_DEFAULT; // NaN
+	if (border < PB_BORDER_MIN) return PB_BORDER_MIN;
+	if (border > PB_BORDER_MAX) return PB_BORDER_MAX;
+	return border;
+}
+
+// Border that fits in the bar: the top/bottom (PB_BORDER_Y_RATIO times thicker) and the sides keep
+// at least PB_MIN_INNER of inner area; it never goes below PB_BORDER_MIN (every bar has a border)
 static stock Float:PB_FitBorder(Float:border, Float:width, Float:height)
 {
 	new Float:limit = (width - PB_MIN_INNER) / 2.0;
@@ -168,7 +245,7 @@ static stock Float:PB_FitBorder(Float:border, Float:width, Float:height)
 	return (border > limit) ? limit : border;
 }
 
-// Área de dentro da borda
+// Area inside the border
 static stock PB_Inner(playerid, barid, &Float:x, &Float:y, &Float:width, &Float:height)
 {
 	new Float:bx = PB_FitBorder(pb_Data[playerid][barid][pb_border], pb_Data[playerid][barid][pb_width], pb_Data[playerid][barid][pb_height]);
@@ -181,7 +258,7 @@ static stock PB_Inner(playerid, barid, &Float:x, &Float:y, &Float:width, &Float:
 	if (height < 0.0) height = 0.0;
 }
 
-// Parte cheia: retorna false quando não há nada para desenhar
+// Filled part: returns false when there is nothing to draw
 static stock bool:PB_MainRect(playerid, barid, &Float:x, &Float:y, &Float:width, &Float:height)
 {
 	PB_Inner(playerid, barid, x, y, width, height);
@@ -212,15 +289,7 @@ static stock PB_FillColour(colour)
 	return (colour & 0xFFFFFF00) | (0x66 & ((colour & 0xFF) / 2));
 }
 
-static stock Float:PB_ClampBorder(Float:border)
-{
-	if (border != border) return PB_BORDER_DEFAULT; // NaN
-	if (border < PB_BORDER_MIN) return PB_BORDER_MIN;
-	if (border > PB_BORDER_MAX) return PB_BORDER_MAX;
-	return border;
-}
-
-// Piscada: na fase "acesa" usa a cor da piscada; sem cor, o interior da barra some
+// Inner colour: the blink colour while lit (if any), otherwise the bar colour
 static stock PB_CurrentColour(playerid, barid)
 {
 	if (pb_Data[playerid][barid][pb_blinking] && pb_Data[playerid][barid][pb_blinkPhase] && pb_Data[playerid][barid][pb_blinkColour] != 0)
@@ -228,7 +297,7 @@ static stock PB_CurrentColour(playerid, barid)
 	return pb_Data[playerid][barid][pb_colour];
 }
 
-// Cor da borda: a da piscada na fase acesa (se tiver), a escolhida ou preto com o alfa da barra
+// Border colour: the blink border colour while lit (if any), the chosen one, or black with the bar alpha
 static stock PB_BorderColour(playerid, barid)
 {
 	if (pb_Data[playerid][barid][pb_blinking] && pb_Data[playerid][barid][pb_blinkPhase] && pb_Data[playerid][barid][pb_blinkBorderColour] != 0)
@@ -237,6 +306,7 @@ static stock PB_BorderColour(playerid, barid)
 	return pb_Data[playerid][barid][pb_colour] & 0xFF;
 }
 
+// Blinking without an inner colour switches the inner area off while lit
 static stock bool:PB_InnerHidden(playerid, barid)
 {
 	return pb_Data[playerid][barid][pb_blinking] && pb_Data[playerid][barid][pb_blinkPhase] && pb_Data[playerid][barid][pb_blinkColour] == 0;
@@ -258,8 +328,8 @@ static stock PB_ShowInner(playerid, barid)
 	}
 }
 
-// Aplica a fase atual da piscada (cor do trilho e da parte cheia, ou interior escondido)
-static stock PB_ApplyBlink(playerid, barid)
+// Applies the current colours (and the current blink phase) without recreating the TextDraws
+static stock PB_ApplyColours(playerid, barid)
 {
 	if (pb_Data[playerid][barid][pb_back] != PB_NO_TD)
 	{
@@ -283,7 +353,7 @@ static stock PB_KillBlink(playerid, barid)
 	pb_Data[playerid][barid][pb_blinkPhase] = false;
 }
 
-// Recria só a parte cheia (a posição dela muda nas direções esquerda e para cima)
+// Recreates only the filled part (its position changes for the left and up directions)
 static stock PB_RenderMain(playerid, barid)
 {
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_main]);
@@ -294,6 +364,7 @@ static stock PB_RenderMain(playerid, barid)
 		PlayerTextDrawShow(playerid, pb_Data[playerid][barid][pb_main]);
 }
 
+// Recreates the whole bar (position, size or border changed)
 static stock bool:PB_Render(playerid, barid)
 {
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_back]);
@@ -314,19 +385,36 @@ static stock bool:PB_Render(playerid, barid)
 	return true;
 }
 
-// ---------------------------------------------------------------------------- funções
+// ---------------------------------------------------------------------------- creation and life cycle
 
+/*
+	IsValidPlayerProgressBar(playerid, barid)
+	Returns true if the bar exists for that player.
+*/
 stock bool:IsValidPlayerProgressBar(playerid, barid)
 {
 	return (0 <= playerid < MAX_PLAYERS) && (0 <= barid < MAX_PLAYER_BARS) && pb_Data[playerid][barid][pb_valid];
 }
 
-// border: espessura da borda (PB_BORDER_MIN a PB_BORDER_MAX; fora disso usa o limite).
-// Se for grossa demais para a largura ou a altura, é reduzida para caber.
-// bordercolour: cor da borda (0 = preto com o alfa da cor da barra).
-stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = 0xFF1C1CFF, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
+/*
+	CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0,
+	    colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT,
+	    Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
+	Creates a bar for the player (hidden until ShowPlayerProgressBar) with value 0.
+	  x, y          top-left corner in TextDraw units (640x448)
+	  width, height size of the whole bar, border included
+	  colour        bar colour (RRGGBBAA)
+	  max           value that fills the bar
+	  direction     BAR_DIRECTION_RIGHT, BAR_DIRECTION_LEFT, BAR_DIRECTION_UP or BAR_DIRECTION_DOWN
+	  border        side border (PB_BORDER_MIN to PB_BORDER_MAX; out of range uses the limit;
+	                reduced to fit when the bar is too small)
+	  bordercolour  border colour (0 = black with the alpha of the bar colour)
+	Returns the bar id, or INVALID_PLAYER_BAR_ID if the player is not connected, the player
+	already has MAX_PLAYER_BARS bars or there are no free PlayerTextDraws.
+*/
+stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
 {
-	if (!IsPlayerConnected(playerid) || !(0 <= playerid < MAX_PLAYERS)) return INVALID_PLAYER_BAR_ID;
+	if (!(0 <= playerid < MAX_PLAYERS) || !IsPlayerConnected(playerid)) return INVALID_PLAYER_BAR_ID;
 	new barid = INVALID_PLAYER_BAR_ID;
 	for (new i = 0; i < MAX_PLAYER_BARS; i++)
 	{
@@ -334,7 +422,7 @@ stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Fl
 	}
 	if (barid == INVALID_PLAYER_BAR_ID)
 	{
-		print("[SA Progress Bar Pro] Limite de barras do jogador atingido (MAX_PLAYER_BARS).");
+		print("[SA Progress Bar Pro] Player bar limit reached (MAX_PLAYER_BARS).");
 		return INVALID_PLAYER_BAR_ID;
 	}
 	pb_Data[playerid][barid][pb_valid] = true;
@@ -350,6 +438,7 @@ stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Fl
 	pb_Data[playerid][barid][pb_border] = PB_ClampBorder(border);
 	pb_Data[playerid][barid][pb_borderColour] = bordercolour;
 	pb_Data[playerid][barid][pb_blinkBorderColour] = 0;
+	pb_Data[playerid][barid][pb_blinkColour] = 0;
 	pb_Data[playerid][barid][pb_blinking] = false;
 	pb_Data[playerid][barid][pb_blinkPhase] = false;
 	pb_Data[playerid][barid][pb_blinkTimer] = 0;
@@ -358,13 +447,17 @@ stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Fl
 	pb_Data[playerid][barid][pb_main] = PB_NO_TD;
 	if (!PB_Render(playerid, barid))
 	{
-		print("[SA Progress Bar Pro] Sem PlayerTextDraws livres para criar a barra.");
+		print("[SA Progress Bar Pro] No free PlayerTextDraws to create the bar.");
 		DestroyPlayerProgressBar(playerid, barid);
 		return INVALID_PLAYER_BAR_ID;
 	}
 	return barid;
 }
 
+/*
+	DestroyPlayerProgressBar(playerid, barid)
+	Stops any blink and destroys the bar and its TextDraws.
+*/
 stock DestroyPlayerProgressBar(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
@@ -377,12 +470,23 @@ stock DestroyPlayerProgressBar(playerid, barid)
 	return 1;
 }
 
+/*
+	DestroyAllPlayerProgressBars(playerid)
+	Destroys every bar of the player.
+*/
 stock DestroyAllPlayerProgressBars(playerid)
 {
+	if (!(0 <= playerid < MAX_PLAYERS)) return 0;
 	for (new i = 0; i < MAX_PLAYER_BARS; i++) DestroyPlayerProgressBar(playerid, i);
 	return 1;
 }
 
+// ---------------------------------------------------------------------------- visibility
+
+/*
+	ShowPlayerProgressBar(playerid, barid)
+	Shows the bar to the player.
+*/
 stock ShowPlayerProgressBar(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
@@ -392,6 +496,10 @@ stock ShowPlayerProgressBar(playerid, barid)
 	return 1;
 }
 
+/*
+	HidePlayerProgressBar(playerid, barid)
+	Hides the bar (it keeps its value, colours and blinking state).
+*/
 stock HidePlayerProgressBar(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
@@ -402,17 +510,21 @@ stock HidePlayerProgressBar(playerid, barid)
 	return 1;
 }
 
+/*
+	IsPlayerProgressBarVisible(playerid, barid)
+	Returns true if the bar is shown.
+*/
 stock bool:IsPlayerProgressBarVisible(playerid, barid)
 {
 	return IsValidPlayerProgressBar(playerid, barid) && pb_Data[playerid][barid][pb_show];
 }
 
-stock Float:GetPlayerProgressBarValue(playerid, barid)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
-	return pb_Data[playerid][barid][pb_value];
-}
+// ---------------------------------------------------------------------------- value
 
+/*
+	SetPlayerProgressBarValue(playerid, barid, Float:value)
+	Sets the current value (clamped to 0..max). It never shows a hidden bar.
+*/
 stock SetPlayerProgressBarValue(playerid, barid, Float:value)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
@@ -423,68 +535,21 @@ stock SetPlayerProgressBarValue(playerid, barid, Float:value)
 	return 1;
 }
 
-stock GetPlayerProgressBarPos(playerid, barid, &Float:x, &Float:y)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	x = pb_Data[playerid][barid][pb_x];
-	y = pb_Data[playerid][barid][pb_y];
-	return 1;
-}
-
-stock SetPlayerProgressBarPos(playerid, barid, Float:x, Float:y)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	pb_Data[playerid][barid][pb_x] = x;
-	pb_Data[playerid][barid][pb_y] = y;
-	return _:PB_Render(playerid, barid);
-}
-
-stock Float:GetPlayerProgressBarWidth(playerid, barid)
+/*
+	GetPlayerProgressBarValue(playerid, barid)
+	Returns the current value.
+*/
+stock Float:GetPlayerProgressBarValue(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
-	return pb_Data[playerid][barid][pb_width];
+	return pb_Data[playerid][barid][pb_value];
 }
 
-stock SetPlayerProgressBarWidth(playerid, barid, Float:width)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	pb_Data[playerid][barid][pb_width] = width;
-	return _:PB_Render(playerid, barid);
-}
-
-stock Float:GetPlayerProgressBarHeight(playerid, barid)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
-	return pb_Data[playerid][barid][pb_height];
-}
-
-stock SetPlayerProgressBarHeight(playerid, barid, Float:height)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	pb_Data[playerid][barid][pb_height] = height;
-	return _:PB_Render(playerid, barid);
-}
-
-stock GetPlayerProgressBarColour(playerid, barid)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	return pb_Data[playerid][barid][pb_colour];
-}
-
-stock SetPlayerProgressBarColour(playerid, barid, colour)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	pb_Data[playerid][barid][pb_colour] = colour;
-	return _:PB_Render(playerid, barid);
-}
-
-stock Float:GetPlayerProgressBarMaxValue(playerid, barid)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
-	return pb_Data[playerid][barid][pb_max];
-}
-
-stock SetPlayerProgressBarMaxValue(playerid, barid, Float:max)
+/*
+	SetPlayerProgressBarMaxValue(playerid, barid, Float:max = 100.0)
+	Sets the value that fills the bar. The current value is clamped to it.
+*/
+stock SetPlayerProgressBarMaxValue(playerid, barid, Float:max = 100.0)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	pb_Data[playerid][barid][pb_max] = max;
@@ -493,13 +558,113 @@ stock SetPlayerProgressBarMaxValue(playerid, barid, Float:max)
 	return 1;
 }
 
-stock GetPlayerProgressBarDirection(playerid, barid)
+/*
+	GetPlayerProgressBarMaxValue(playerid, barid)
+	Returns the value that fills the bar.
+*/
+stock Float:GetPlayerProgressBarMaxValue(playerid, barid)
 {
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	return pb_Data[playerid][barid][pb_direction];
+	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
+	return pb_Data[playerid][barid][pb_max];
 }
 
-stock SetPlayerProgressBarDirection(playerid, barid, direction)
+// ---------------------------------------------------------------------------- position and size
+
+/*
+	SetPlayerProgressBarPos(playerid, barid, Float:x, Float:y)
+	Moves the bar (top-left corner, border included).
+*/
+stock SetPlayerProgressBarPos(playerid, barid, Float:x, Float:y)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_x] = x;
+	pb_Data[playerid][barid][pb_y] = y;
+	return _:PB_Render(playerid, barid);
+}
+
+/*
+	GetPlayerProgressBarPos(playerid, barid, &Float:x, &Float:y)
+	Stores the top-left corner of the bar in x and y.
+*/
+stock GetPlayerProgressBarPos(playerid, barid, &Float:x, &Float:y)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	x = pb_Data[playerid][barid][pb_x];
+	y = pb_Data[playerid][barid][pb_y];
+	return 1;
+}
+
+/*
+	SetPlayerProgressBarSize(playerid, barid, Float:width, Float:height)
+	Changes the width and the height at once (border included).
+*/
+stock SetPlayerProgressBarSize(playerid, barid, Float:width, Float:height)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_width] = width;
+	pb_Data[playerid][barid][pb_height] = height;
+	return _:PB_Render(playerid, barid);
+}
+
+/*
+	GetPlayerProgressBarSize(playerid, barid, &Float:width, &Float:height)
+	Stores the width and the height of the bar.
+*/
+stock GetPlayerProgressBarSize(playerid, barid, &Float:width, &Float:height)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	width = pb_Data[playerid][barid][pb_width];
+	height = pb_Data[playerid][barid][pb_height];
+	return 1;
+}
+
+/*
+	SetPlayerProgressBarWidth(playerid, barid, Float:width)
+	Changes only the width.
+*/
+stock SetPlayerProgressBarWidth(playerid, barid, Float:width)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_width] = width;
+	return _:PB_Render(playerid, barid);
+}
+
+/*
+	GetPlayerProgressBarWidth(playerid, barid)
+	Returns the width.
+*/
+stock Float:GetPlayerProgressBarWidth(playerid, barid)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
+	return pb_Data[playerid][barid][pb_width];
+}
+
+/*
+	SetPlayerProgressBarHeight(playerid, barid, Float:height)
+	Changes only the height.
+*/
+stock SetPlayerProgressBarHeight(playerid, barid, Float:height)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_height] = height;
+	return _:PB_Render(playerid, barid);
+}
+
+/*
+	GetPlayerProgressBarHeight(playerid, barid)
+	Returns the height.
+*/
+stock Float:GetPlayerProgressBarHeight(playerid, barid)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
+	return pb_Data[playerid][barid][pb_height];
+}
+
+/*
+	SetPlayerProgressBarDirection(playerid, barid, direction = BAR_DIRECTION_RIGHT)
+	Changes the side the bar fills towards (BAR_DIRECTION_RIGHT, LEFT, UP or DOWN).
+*/
+stock SetPlayerProgressBarDirection(playerid, barid, direction = BAR_DIRECTION_RIGHT)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	pb_Data[playerid][barid][pb_direction] = (BAR_DIRECTION_RIGHT <= direction <= BAR_DIRECTION_DOWN) ? direction : BAR_DIRECTION_RIGHT;
@@ -507,39 +672,96 @@ stock SetPlayerProgressBarDirection(playerid, barid, direction)
 	return 1;
 }
 
-stock Float:GetPlayerProgressBarBorder(playerid, barid)
+/*
+	GetPlayerProgressBarDirection(playerid, barid)
+	Returns the fill direction.
+*/
+stock GetPlayerProgressBarDirection(playerid, barid)
 {
-	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
-	return pb_Data[playerid][barid][pb_border];
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	return pb_Data[playerid][barid][pb_direction];
 }
 
-stock SetPlayerProgressBarBorder(playerid, barid, Float:border)
+// ---------------------------------------------------------------------------- colours and border
+
+/*
+	SetPlayerProgressBarColour(playerid, barid, colour = PB_DEFAULT_COLOUR)
+	Changes the bar colour (RRGGBBAA). The inner background follows it, more transparent.
+*/
+stock SetPlayerProgressBarColour(playerid, barid, colour = PB_DEFAULT_COLOUR)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_colour] = colour;
+	PB_ApplyColours(playerid, barid);
+	return 1;
+}
+
+/*
+	GetPlayerProgressBarColour(playerid, barid)
+	Returns the bar colour.
+*/
+stock GetPlayerProgressBarColour(playerid, barid)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	return pb_Data[playerid][barid][pb_colour];
+}
+
+/*
+	SetPlayerProgressBarBorder(playerid, barid, Float:border = PB_BORDER_DEFAULT)
+	Changes the side border (PB_BORDER_MIN to PB_BORDER_MAX; out of range uses the limit).
+	The top and bottom border are PB_BORDER_Y_RATIO times thicker.
+*/
+stock SetPlayerProgressBarBorder(playerid, barid, Float:border = PB_BORDER_DEFAULT)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	pb_Data[playerid][barid][pb_border] = PB_ClampBorder(border);
 	return _:PB_Render(playerid, barid);
 }
 
+/*
+	GetPlayerProgressBarBorder(playerid, barid)
+	Returns the border chosen for the bar (before fitting it to the bar size).
+*/
+stock Float:GetPlayerProgressBarBorder(playerid, barid)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return INVALID_PLAYER_BAR_VALUE;
+	return pb_Data[playerid][barid][pb_border];
+}
+
+/*
+	SetPlayerProgressBarBorderColour(playerid, barid, bordercolour = 0)
+	Changes the border colour (0 = black with the alpha of the bar colour).
+*/
+stock SetPlayerProgressBarBorderColour(playerid, barid, bordercolour = 0)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_borderColour] = bordercolour;
+	PB_ApplyColours(playerid, barid);
+	return 1;
+}
+
+/*
+	GetPlayerProgressBarBorderColour(playerid, barid)
+	Returns the border colour (0 = default black).
+*/
 stock GetPlayerProgressBarBorderColour(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	return pb_Data[playerid][barid][pb_borderColour];
 }
 
-// bordercolour: nova cor da borda (0 = preto com o alfa da cor da barra)
-stock SetPlayerProgressBarBorderColour(playerid, barid, bordercolour)
-{
-	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	pb_Data[playerid][barid][pb_borderColour] = bordercolour;
-	PB_ApplyBlink(playerid, barid);
-	return 1;
-}
+// ---------------------------------------------------------------------------- blinking
 
-// Faz a barra piscar. interval: milissegundos entre cada troca (PB_BLINK_MIN a PB_BLINK_MAX);
-// duration: tempo total em milissegundos (0 = até StopPlayerProgressBarBlink);
-// colour: cor do interior na piscada (0 = pisca na cor da própria barra, apagando e acendendo);
-// bordercolour: cor da borda na piscada (0 = a borda não pisca e fica com a cor original).
-stock BlinkPlayerProgressBar(playerid, barid, interval = 250, duration = 0, colour = 0, bordercolour = 0)
+/*
+	BlinkPlayerProgressBar(playerid, barid, interval = PB_BLINK_DEFAULT, duration = 0, colour = 0, bordercolour = 0)
+	Makes the bar blink. It starts lit and switches every interval.
+	  interval      milliseconds between each switch (PB_BLINK_MIN to PB_BLINK_MAX)
+	  duration      total time in milliseconds (0 = until StopPlayerProgressBarBlink)
+	  colour        inner colour while lit (0 = blink in the bar colour, switching it off and on)
+	  bordercolour  border colour while lit (0 = the border keeps its colour)
+	Calling it again replaces the previous blink.
+*/
+stock BlinkPlayerProgressBar(playerid, barid, interval = PB_BLINK_DEFAULT, duration = 0, colour = 0, bordercolour = 0)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	PB_KillBlink(playerid, barid);
@@ -553,19 +775,27 @@ stock BlinkPlayerProgressBar(playerid, barid, interval = 250, duration = 0, colo
 	pb_Data[playerid][barid][pb_blinkStart] = GetTickCount();
 	pb_Data[playerid][barid][pb_blinkDuration] = duration;
 	pb_Data[playerid][barid][pb_blinkTimer] = SetTimerEx("PB_BlinkTick", interval, true, "ii", playerid, barid);
-	PB_ApplyBlink(playerid, barid);
+	PB_ApplyColours(playerid, barid);
 	return 1;
 }
 
+/*
+	StopPlayerProgressBarBlink(playerid, barid)
+	Stops blinking and restores the normal colours.
+*/
 stock StopPlayerProgressBarBlink(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	if (!pb_Data[playerid][barid][pb_blinking]) return 1;
 	PB_KillBlink(playerid, barid);
-	PB_ApplyBlink(playerid, barid);
+	PB_ApplyColours(playerid, barid);
 	return 1;
 }
 
+/*
+	IsPlayerProgressBarBlinking(playerid, barid)
+	Returns true while the bar is blinking.
+*/
 stock bool:IsPlayerProgressBarBlinking(playerid, barid)
 {
 	return IsValidPlayerProgressBar(playerid, barid) && pb_Data[playerid][barid][pb_blinking];
@@ -582,13 +812,13 @@ public PB_BlinkTick(playerid, barid)
 		return 1;
 	}
 	pb_Data[playerid][barid][pb_blinkPhase] = !pb_Data[playerid][barid][pb_blinkPhase];
-	PB_ApplyBlink(playerid, barid);
+	PB_ApplyColours(playerid, barid);
 	return 1;
 }
 
-// ---------------------------------------------------------------------------- ganchos
+// ---------------------------------------------------------------------------- hooks
 
-// Ao sair, o jogo já apaga as PlayerTextDraws do jogador: aqui só os dados são liberados
+// The game already destroys the player's PlayerTextDraws on disconnect: only the data is freed here
 public OnPlayerDisconnect(playerid, reason)
 {
 	if (0 <= playerid < MAX_PLAYERS)

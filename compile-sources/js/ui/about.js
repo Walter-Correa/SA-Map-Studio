@@ -6,6 +6,14 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.13.0', date: '19/10/2026', items: [
+      'SA Progress Bar Pro toda em inglês e documentada: cada função tem a descrição dos parâmetros e o topo da include lista todas as funções e configurações.',
+      'Novas funções SetPlayerProgressBarSize e GetPlayerProgressBarSize (largura e altura juntas).',
+      'Parâmetros opcionais com valor padrão: a piscada, a cor, a cor da borda, a borda, o valor máximo e a direção podem ser omitidos para usar o padrão.',
+      'Trocar a cor da barra ou da borda não recria mais as TextDraws (sem piscar na tela).',
+    ],
+  },
+  {
     version: '3.12.0', date: '19/10/2026', items: [
       'Toda barra de progresso tem borda: de 0,5 a 5,0, com casas decimais, e a barra não fica menor do que a borda mínima precisa.',
       'Cor da borda das barras escolhida na criação (CreatePlayerProgressBar) ou depois (SetPlayerProgressBarBorderColour); sem cor, a borda fica preta.',
