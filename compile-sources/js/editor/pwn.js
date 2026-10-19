@@ -2,7 +2,7 @@
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, clampPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from './project.js';
+import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from './project.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -851,7 +851,7 @@ export function parsePwn(source) {
           color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xFF1C1CFF,
           pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
           pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
-          pbBorder: clampPbBorder(num(arg(8, 'border'), PB_LIMITS.borderDefault)),
+          pbBorder: fitPbBorder(num(arg(8, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 55.5), num(arg(4, 'height'), 3.2)),
           comment: inlineComment, preComment, blankLinesBefore,
         };
         textDraws.push(td);

@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, clampPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -389,6 +389,7 @@ function bindFieldInputs() {
       const v = Number(el.value);
       if (!Number.isFinite(v)) return;
       td[prop] = isInt ? (v | 0) : v;
+      if (prop === 'pbWidth' || prop === 'pbHeight') syncPbBorderLimit(td);
       appRef.project.modified = true;
       redrawCanvas();
     };
@@ -396,7 +397,7 @@ function bindFieldInputs() {
 
   // Borda e piscada da barra: valores fora dos limites voltam para o limite (a include também confere)
   const pbLimited = [
-    ['#tdPbBorder', 'pbBorder', clampPbBorder],
+    ['#tdPbBorder', 'pbBorder', (v) => { const td = getSelectedTd(); return fitPbBorder(v, td?.pbWidth, td?.pbHeight); }],
     ['#tdPbBlinkInterval', 'pbBlinkInterval', clampPbBlinkInterval],
     ['#tdPbBlinkDuration', 'pbBlinkDuration', clampPbBlinkDuration],
   ];
@@ -423,7 +424,8 @@ function bindFieldInputs() {
   const syncBlinkFields = (td) => {
     const box = dialogEl.querySelector('#tdPbBlinkFields');
     if (box) box.style.display = td?.pbBlink ? 'flex' : 'none';
-    if (blinkColor) blinkColor.disabled = !td || !td.pbBlinkColor;
+    const row = dialogEl.querySelector('#tdPbBlinkColorRow');
+    if (row) row.style.display = td?.pbBlinkColor ? 'flex' : 'none';
   };
   const blinkColorValue = () => ((parseInt((blinkColor?.value || '#ffffff').slice(1), 16) << 8) | 0xFF) >>> 0;
   if (blinkBox) blinkBox.onchange = () => {
@@ -863,6 +865,18 @@ function getSelectedTd() {
 // Igual à include: começa aceso e troca a cada intervalo; com duração, para no fim e a prévia
 // recomeça depois de 1 s para dar para ver de novo.
 let syncPbBlinkFields = null;
+
+// Limite do campo Borda conforme o tamanho da barra; uma borda que não cabe mais é reduzida
+function syncPbBorderLimit(td) {
+  if (!dialogEl || !td || td.type !== 'progress') return;
+  const max = maxPbBorder(td.pbWidth, td.pbHeight);
+  const fitted = fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight);
+  if (fitted !== td.pbBorder) td.pbBorder = fitted;
+  const el = dialogEl.querySelector('#tdPbBorder');
+  if (el) { el.max = String(max); if (document.activeElement !== el) el.value = fitted; }
+  const lbl = dialogEl.querySelector('#tdPbBorderLabel');
+  if (lbl) lbl.textContent = `Borda (0 a ${String(max).replace('.', ',')})`;
+}
 let blinkStart = 0, blinkTimer = null, blinkLastKey = '';
 function blinkPhaseOf(td) {
   if (!td?.pbBlink || !dialogEl?.open) return false;
@@ -1261,7 +1275,7 @@ function updateSidebarFields() {
     setVal('#tdPbMax', td.pbMax);
     setVal('#tdPbValue', td.pbValue);
     setVal('#tdPbDir', td.pbDir);
-    setVal('#tdPbBorder', clampPbBorder(td.pbBorder));
+    syncPbBorderLimit(td);
     setVal('#tdPbBlinkInterval', clampPbBlinkInterval(td.pbBlinkInterval));
     setVal('#tdPbBlinkDuration', clampPbBlinkDuration(td.pbBlinkDuration));
     const blinkBox = dialogEl.querySelector('#tdPbBlink');

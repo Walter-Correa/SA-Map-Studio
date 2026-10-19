@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.11.1', date: '19/10/2026', items: [
+      'Borda das barras de progresso nunca maior do que a barra: o limite acompanha a largura e a altura e sempre sobra 1 unidade de interior. Antes, uma borda grossa numa barra baixa cobria tudo de preto, no editor e no jogo.',
+      'Opção de cor da piscada reorganizada: a cor só aparece quando "Piscar na cor da barra" está desmarcado.',
+    ],
+  },
+  {
     version: '3.11.0', date: '19/10/2026', items: [
       'A include de barras agora se chama SA Progress Bar Pro (progressbarpro.inc).',
       'Barras que piscam: BlinkPlayerProgressBar(playerid, barra, intervalo, duração, cor), com intervalo e duração em milissegundos; sem cor, a barra pisca na própria cor, apagando e acendendo. O editor de TextDraws mostra a piscada na prévia e exporta, importa e testa no servidor com ela.',

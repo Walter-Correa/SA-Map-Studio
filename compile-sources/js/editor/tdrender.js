@@ -242,8 +242,10 @@ export function progressBarParts(bar, blinkOn = false) {
   const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
   const c = blinking && blinkColor ? blinkColor : base;
   const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
+  // Borda limitada como na include: de 0 a 4 e nunca maior do que cabe (sobra 1 unidade de interior)
   const n = Number(bar.pbBorder ?? 1);
-  const bx = Number.isFinite(n) ? Math.max(0, Math.min(4, n)) : 1, by = bx * PB_BORDER_Y_RATIO;
+  const fit = Math.max(0, Math.min((w - 1) / 2, (h - 1) / (2 * PB_BORDER_Y_RATIO)));
+  const bx = Math.min(Number.isFinite(n) ? Math.max(0, Math.min(4, n)) : 1, fit), by = bx * PB_BORDER_Y_RATIO;
   const ix = x + bx, iy = y + by;
   const iw = Math.max(0, w - bx * 2), ih = Math.max(0, h - by * 2);
   const parts = [{ x, y, w, h, color: alpha }];

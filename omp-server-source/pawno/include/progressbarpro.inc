@@ -11,7 +11,8 @@
 	- a parte cheia nunca passa da borda, some quando o valor é zero e mudar o valor não
 	  mostra uma barra que estava escondida;
 	- borda escolhida na criação (de PB_BORDER_MIN a PB_BORDER_MAX; valores fora disso usam o
-	  limite) e barras que piscam (BlinkPlayerProgressBar).
+	  limite, e a borda nunca passa do que cabe na barra, sobrando PB_MIN_INNER de interior);
+	- barras que piscam (BlinkPlayerProgressBar).
 
 	Cada barra usa 3 PlayerTextDraws:
 	  fundo  (x, y, largura, altura)                       preto com o alfa da cor da barra
@@ -55,6 +56,10 @@
 #endif
 #if !defined PB_BORDER_Y_RATIO
 	#define PB_BORDER_Y_RATIO (1.25)
+#endif
+// A borda nunca ocupa a barra inteira: sobra pelo menos isto de interior na largura e na altura
+#if !defined PB_MIN_INNER
+	#define PB_MIN_INNER (1.0)
 #endif
 
 // Intervalo da piscada em milissegundos (cada troca entre aceso e apagado)
@@ -147,10 +152,22 @@ static stock PB_Kill(playerid, &PlayerText:td)
 	}
 }
 
+// Borda que cabe na barra: a de cima e a de baixo (1,25 vez maior) e as dos lados deixam pelo
+// menos PB_MIN_INNER de interior; numa barra pequena demais a borda vira 0
+static stock Float:PB_FitBorder(Float:border, Float:width, Float:height)
+{
+	new Float:limit = (width - PB_MIN_INNER) / 2.0;
+	new Float:limitY = (height - PB_MIN_INNER) / (2.0 * PB_BORDER_Y_RATIO);
+	if (limitY < limit) limit = limitY;
+	if (limit < 0.0) limit = 0.0;
+	return (border > limit) ? limit : border;
+}
+
 // Área de dentro da borda
 static stock PB_Inner(playerid, barid, &Float:x, &Float:y, &Float:width, &Float:height)
 {
-	new Float:bx = pb_Data[playerid][barid][pb_border], Float:by = bx * PB_BORDER_Y_RATIO;
+	new Float:bx = PB_FitBorder(pb_Data[playerid][barid][pb_border], pb_Data[playerid][barid][pb_width], pb_Data[playerid][barid][pb_height]);
+	new Float:by = bx * PB_BORDER_Y_RATIO;
 	x = pb_Data[playerid][barid][pb_x] + bx;
 	y = pb_Data[playerid][barid][pb_y] + by;
 	width = pb_Data[playerid][barid][pb_width] - bx * 2.0;
@@ -286,7 +303,8 @@ stock bool:IsValidPlayerProgressBar(playerid, barid)
 	return (0 <= playerid < MAX_PLAYERS) && (0 <= barid < MAX_PLAYER_BARS) && pb_Data[playerid][barid][pb_valid];
 }
 
-// border: espessura da borda (PB_BORDER_MIN a PB_BORDER_MAX; fora disso usa o limite)
+// border: espessura da borda (PB_BORDER_MIN a PB_BORDER_MAX; fora disso usa o limite).
+// Se for grossa demais para a largura ou a altura, é reduzida para caber.
 stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = 0xFF1C1CFF, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, Float:border = PB_BORDER_DEFAULT)
 {
 	if (!IsPlayerConnected(playerid) || !(0 <= playerid < MAX_PLAYERS)) return INVALID_PLAYER_BAR_ID;
