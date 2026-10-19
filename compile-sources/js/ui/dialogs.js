@@ -312,7 +312,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
     for (const td of p.textDraws || []) {
       if (td.type === 'progress') {
         const f = (v) => (+v || 0).toFixed(4);
-        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}`);
+        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}`);
         continue;
       }
       const n = textDrawNative(td);

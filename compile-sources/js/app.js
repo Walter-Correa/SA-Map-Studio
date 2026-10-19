@@ -264,11 +264,7 @@ function setupToolbar(cfg) {
     $(s).addEventListener('input', applySnap);
   });
   const rawSpeed = store.get('transformSpeed', { move: 1.0, rotate: 1.0 });
-  const initSpeed = {
-    move: Math.max(1.0, +rawSpeed.move || 1.0),
-    rotate: Math.max(1.0, +rawSpeed.rotate || 1.0)
-  };
-  ed.setTransformSpeed(initSpeed);
+  ed.setTransformSpeed({ move: rawSpeed?.move ?? 1.0, rotate: rawSpeed?.rotate ?? 1.0 });
   $('#btnUndo').onclick = doUndo;
   $('#btnRedo').onclick = doRedo;
   if ($('#btnCheckpoints')) $('#btnCheckpoints').onclick = () => openCreateCheckpointPanel();

@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -383,11 +383,13 @@ function bindFieldInputs() {
     const el = dialogEl.querySelector(id);
     if (!el) continue;
     el.onfocus = () => tdPushUndo();
-    el.oninput = el.onchange = () => {
+    el.oninput = el.onchange = (ev) => {
       const td = getSelectedTd();
       if (!td || td.type !== 'progress') return;
-      const v = Number(el.value);
+      let v = Number(el.value);
       if (!Number.isFinite(v)) return;
+      const min = prop === 'pbWidth' ? PB_MIN_WIDTH : prop === 'pbHeight' ? PB_MIN_HEIGHT : null;
+      if (min !== null && v < min) { v = min; if (ev?.type === 'change') el.value = v; }
       td[prop] = isInt ? (v | 0) : v;
       if (prop === 'pbWidth' || prop === 'pbHeight') syncPbBorderLimit(td);
       appRef.project.modified = true;
@@ -411,7 +413,7 @@ function bindFieldInputs() {
       if (el.value === '' && !fix) return;
       const v = clamp(el.value);
       td[prop] = v;
-      if (fix || Number(el.value) !== v) el.value = v;
+      if (fix || Number(el.value) !== v) el.value = prop === 'pbBorder' ? decimalText(v) : v;
       appRef.project.modified = true;
       redrawCanvas();
     };
@@ -457,6 +459,33 @@ function bindFieldInputs() {
       redrawCanvas();
     };
   }
+  // Cor da borda (0 = preto com o alfa da barra) e cor da borda durante a piscada (0 = não pisca)
+  const colorPair = (checkId, rowId, inputId, prop, checkMeansDefault) => {
+    const check = dialogEl.querySelector(checkId), input = dialogEl.querySelector(inputId);
+    const value = () => ((parseInt((input?.value || '#000000').slice(1), 16) << 8) | 0xFF) >>> 0;
+    if (check) check.onchange = () => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      tdPushUndo();
+      const useDefault = checkMeansDefault ? check.checked : !check.checked;
+      td[prop] = useDefault ? 0 : value();
+      syncPbColorRows(td);
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+    if (input) {
+      input.onfocus = () => tdPushUndo();
+      input.oninput = () => {
+        const td = getSelectedTd();
+        if (!td || td.type !== 'progress' || !td[prop]) return;
+        td[prop] = value();
+        appRef.project.modified = true;
+        redrawCanvas();
+      };
+    }
+  };
+  colorPair('#tdPbBorderDefault', '#tdPbBorderColorRow', '#tdPbBorderColor', 'pbBorderColor', true);
+  colorPair('#tdPbBlinkBorder', '#tdPbBlinkBorderColorRow', '#tdPbBlinkBorderColor', 'pbBlinkBorderColor', false);
   syncPbBlinkFields = syncBlinkFields;
 
   // Contorno e sombra: só ligado (1) ou desligado (0)
@@ -777,8 +806,9 @@ function setupCanvasEvents() {
       if (td.type === 'progress') {
         // Barra: o arrasto muda largura e altura na mesma proporção do retângulo
         const rx = newW / Math.max(4, isDraggingTd.origW), ry = newH / Math.max(4, isDraggingTd.origH);
-        td.pbWidth = Number(Math.max(1, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
-        td.pbHeight = Number(Math.max(0.5, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(1));
+        td.pbWidth = Number(Math.max(PB_MIN_WIDTH, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
+        td.pbHeight = Number(Math.max(PB_MIN_HEIGHT, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(2));
+        syncPbBorderLimit(td);
       } else if (td.font === 4 || td.font === 5) {
         // Sprite (Font 4) e Prévia de modelo 3D (Font 5): textSizeX e textSizeY são largura e altura
         td.textSizeX = newW;
@@ -866,6 +896,20 @@ function getSelectedTd() {
 // recomeça depois de 1 s para dar para ver de novo.
 let syncPbBlinkFields = null;
 
+// Valor com ao menos uma casa decimal (1.0, 2.5, 0.75)
+function decimalText(v) {
+  const t = String(Math.round(Number(v) * 100) / 100);
+  return t.includes('.') ? t : t + '.0';
+}
+
+// Mostra o seletor de cor só quando a cor própria está ligada
+function syncPbColorRows(td) {
+  if (!dialogEl || !td) return;
+  const show = (id, on) => { const el = dialogEl.querySelector(id); if (el) el.style.display = on ? 'flex' : 'none'; };
+  show('#tdPbBorderColorRow', Boolean(td.pbBorderColor));
+  show('#tdPbBlinkBorderColorRow', Boolean(td.pbBlinkBorderColor));
+}
+
 // Limite do campo Borda conforme o tamanho da barra; uma borda que não cabe mais é reduzida
 function syncPbBorderLimit(td) {
   if (!dialogEl || !td || td.type !== 'progress') return;
@@ -873,9 +917,9 @@ function syncPbBorderLimit(td) {
   const fitted = fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight);
   if (fitted !== td.pbBorder) td.pbBorder = fitted;
   const el = dialogEl.querySelector('#tdPbBorder');
-  if (el) { el.max = String(max); if (document.activeElement !== el) el.value = fitted; }
+  if (el) { el.max = String(max); if (document.activeElement !== el) el.value = decimalText(fitted); }
   const lbl = dialogEl.querySelector('#tdPbBorderLabel');
-  if (lbl) lbl.textContent = `Borda (0 a ${String(max).replace('.', ',')})`;
+  if (lbl) lbl.textContent = `Borda (${decimalText(PB_LIMITS.borderMin).replace('.', ',')} a ${decimalText(max).replace('.', ',')})`;
 }
 let blinkStart = 0, blinkTimer = null, blinkLastKey = '';
 function blinkPhaseOf(td) {
@@ -1284,6 +1328,14 @@ function updateSidebarFields() {
     if (own) own.checked = !td.pbBlinkColor;
     if (td.pbBlinkColor) setVal('#tdPbBlinkColor', '#' + ((Number(td.pbBlinkColor) >>> 8) & 0xFFFFFF).toString(16).padStart(6, '0'));
     syncPbBlinkFields?.(td);
+    const hexColor = (v) => '#' + ((Number(v) >>> 8) & 0xFFFFFF).toString(16).padStart(6, '0');
+    const bd = dialogEl.querySelector('#tdPbBorderDefault');
+    if (bd) bd.checked = !td.pbBorderColor;
+    if (td.pbBorderColor) setVal('#tdPbBorderColor', hexColor(td.pbBorderColor));
+    const bb = dialogEl.querySelector('#tdPbBlinkBorder');
+    if (bb) bb.checked = Boolean(td.pbBlinkBorderColor);
+    if (td.pbBlinkBorderColor) setVal('#tdPbBlinkBorderColor', hexColor(td.pbBlinkBorderColor));
+    syncPbColorRows(td);
   }
 
   // Painel de Sprite (Font 4)

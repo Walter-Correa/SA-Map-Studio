@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { categoryOf } from '../world/gamedata.js';
 import { drawMaterialText } from '../world/models.js';
+import { TRANSFORM_SPEED, clampTransformSpeed } from '../editor/editor.js';
 import {
   MAX_MATERIAL_INDEX, MATERIAL_SIZES, SIZE_PIXELS, TEXT_ALIGN, FONTS, TEXT_DEFAULTS,
   isText, keepsTexture, isNoneTexture, normalizeMaterial, materialCall, cssColor, parseColor,
@@ -270,32 +271,17 @@ const actionGrid = () => `<div class="btn-grid">
       <button type="button" class="btn" data-act="focus"><svg><use href="#i-focus"/></svg>Focar</button>
     </div>`;
 
+// Velocidade com casas decimais (sempre ao menos uma: 1.0, 2.5, 0.125)
+const speedText = (v) => { const t = String(clampTransformSpeed(v)); return t.includes('.') ? t : t + '.0'; };
+
 function speedSection() {
   const sp = app.editor.transformSpeed || { move: 1.0, rotate: 1.0 };
-  const currentMove = Math.min(10.0, Math.max(1.0, +sp.move || 1.0));
-  const currentRotate = Math.min(10.0, Math.max(1.0, +sp.rotate || 1.0));
-
-  const options = [];
-  for (let i = 1; i <= 10; i++) {
-    const val = (i).toFixed(1);
-    const label = `${i},0`;
-    options.push({ val, label, num: i });
-  }
-
-  const renderSelect = (type, current) => {
-    return `<select data-speed="${type}" style="width:100%; box-sizing:border-box; height:30px; font-weight:600;">
-      ${options.map(o => {
-        const selected = Math.abs(current - o.num) < 0.05 ? 'selected' : '';
-        return `<option value="${o.val}" ${selected}>${o.label}</option>`;
-      }).join('')}
-    </select>`;
-  };
-
+  const input = (type, v) => `<input type="number" data-speed="${type}" min="${TRANSFORM_SPEED.min}" max="${TRANSFORM_SPEED.max}" step="0.001" value="${speedText(v)}" style="font-weight:600;">`;
   return `<div class="insp-section">
-    <div class="insp-label">Velocidade <span class="tag">1,0 a 10,0</span></div>
+    <div class="insp-label">Velocidade <span class="tag">0,001 a 10,0</span></div>
     <div class="pair">
-      <label>Movimento${renderSelect('move', currentMove)}</label>
-      <label>Rotação${renderSelect('rotate', currentRotate)}</label>
+      <label>Movimento${input('move', sp.move)}</label>
+      <label>Rotação${input('rotate', sp.rotate)}</label>
     </div>
   </div>`;
 }
@@ -740,14 +726,17 @@ function bindCommon() {
 }
 
 function bindSpeedControls() {
-  $$('#inspector [data-speed]').forEach(sel => {
-    sel.addEventListener('change', () => {
-      let v = parseFloat(sel.value);
-      if (!Number.isFinite(v)) return;
-      v = Math.min(10.0, Math.max(1.0, v));
-      app.editor.setTransformSpeed({ [sel.dataset.speed]: v });
+  $$('#inspector [data-speed]').forEach(inp => {
+    const apply = (fix) => {
+      const raw = parseFloat(String(inp.value).replace(',', '.'));
+      if (!Number.isFinite(raw) && !fix) return;
+      app.editor.setTransformSpeed({ [inp.dataset.speed]: raw });
       store.set('transformSpeed', app.editor.transformSpeed);
-    });
+      const v = app.editor.transformSpeed[inp.dataset.speed];
+      if (fix || raw !== v) inp.value = speedText(v);
+    };
+    inp.addEventListener('input', () => apply(false));
+    inp.addEventListener('change', () => apply(true));
   });
 }
 

@@ -6,6 +6,14 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.12.0', date: '19/10/2026', items: [
+      'Toda barra de progresso tem borda: de 0,5 a 5,0, com casas decimais, e a barra não fica menor do que a borda mínima precisa.',
+      'Cor da borda das barras escolhida na criação (CreatePlayerProgressBar) ou depois (SetPlayerProgressBarBorderColour); sem cor, a borda fica preta.',
+      'A piscada também pode trocar a cor da borda (último parâmetro de BlinkPlayerProgressBar); sem essa cor, a borda fica como está. A prévia do editor mostra as duas.',
+      'Velocidade de movimento e rotação dos objetos com casas decimais, de 0,001 a 10,0 (padrão 1,0), no lugar da lista fixa.',
+    ],
+  },
+  {
     version: '3.11.1', date: '19/10/2026', items: [
       'Borda das barras de progresso nunca maior do que a barra: o limite acompanha a largura e a altura e sempre sobra 1 unidade de interior. Antes, uma borda grossa numa barra baixa cobria tudo de preto, no editor e no jogo.',
       'Opção de cor da piscada reorganizada: a cor só aparece quando "Piscar na cor da barra" está desmarcado.',

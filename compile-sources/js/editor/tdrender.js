@@ -229,7 +229,8 @@ export function textDrawRect(td) {
 // Barra de progresso (SA Progress Bar Pro, progressbarpro.inc): os mesmos 3 sprites LD_SPAC:white que a include cria,
 // em unidades 640x448: fundo, trilho dentro da borda e a parte cheia conforme valor e direção.
 // Borda: pbBorder na horizontal e 1,25 vez isso na vertical (1 unidade tem 3,00 px x 2,41 px em 1920x1080),
-// limitada como na include (0 a 4). blinkOn: fase acesa da piscada (cor da piscada ou interior apagado).
+// limitada como na include (0,5 a 5). blinkOn: fase acesa da piscada (cor da piscada ou interior apagado;
+// a borda troca para pbBlinkBorderColor se houver).
 export const PB_BORDER_Y_RATIO = 1.25;
 export function progressBarParts(bar, blinkOn = false) {
   const x = +bar.x || 0, y = +bar.y || 0;
@@ -242,13 +243,16 @@ export function progressBarParts(bar, blinkOn = false) {
   const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
   const c = blinking && blinkColor ? blinkColor : base;
   const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
-  // Borda limitada como na include: de 0 a 4 e nunca maior do que cabe (sobra 1 unidade de interior)
+  // Borda limitada como na include: de 0,5 a 5, nunca maior do que cabe (sobra 1 unidade de interior)
+  // e nunca menor que a mínima
   const n = Number(bar.pbBorder ?? 1);
-  const fit = Math.max(0, Math.min((w - 1) / 2, (h - 1) / (2 * PB_BORDER_Y_RATIO)));
-  const bx = Math.min(Number.isFinite(n) ? Math.max(0, Math.min(4, n)) : 1, fit), by = bx * PB_BORDER_Y_RATIO;
+  const fit = Math.max(0.5, Math.min((w - 1) / 2, (h - 1) / (2 * PB_BORDER_Y_RATIO)));
+  const bx = Math.min(Number.isFinite(n) ? Math.max(0.5, Math.min(5, n)) : 1, fit), by = bx * PB_BORDER_Y_RATIO;
   const ix = x + bx, iy = y + by;
   const iw = Math.max(0, w - bx * 2), ih = Math.max(0, h - by * 2);
-  const parts = [{ x, y, w, h, color: alpha }];
+  const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
+  const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || alpha);
+  const parts = [{ x, y, w, h, color: borderColor }];
   if (blinking && !blinkColor) return parts; // sem cor: o interior apaga
   parts.push({ x: ix, y: iy, w: iw, h: ih, color: fillColor });
   const part = max > 0 ? Math.min(1, v / max) : 0;

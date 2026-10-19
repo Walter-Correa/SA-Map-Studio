@@ -993,8 +993,8 @@
           <div class="pop-title" style="margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-hi);">Barra de progresso</div>
           <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Nome<input type="text" id="tdPbName" spellcheck="false" placeholder="BarraFome"></label>
           <div class="pair">
-            <label>Largura<input type="number" id="tdPbWidth" step="0.5" min="1"></label>
-            <label>Altura<input type="number" id="tdPbHeight" step="0.1" min="0.5"></label>
+            <label>Largura<input type="number" id="tdPbWidth" step="0.1" min="2"></label>
+            <label>Altura<input type="number" id="tdPbHeight" step="0.1" min="2.25"></label>
           </div>
           <div class="pair">
             <label>Valor máximo<input type="number" id="tdPbMax" step="1" min="1"></label>
@@ -1008,7 +1008,9 @@
               <option value="3">Para baixo</option>
             </select>
           </label>
-          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra."><span id="tdPbBorderLabel">Borda (0 a 4)</span><input type="number" id="tdPbBorder" step="0.25" min="0" max="4"></label>
+          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra."><span id="tdPbBorderLabel">Borda (0,5 a 5,0)</span><input type="number" id="tdPbBorder" step="0.1" min="0.5" max="5"></label>
+          <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBorderDefault" checked> Borda na cor padrão (preta)</label>
+          <label id="tdPbBorderColorRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;">Cor da borda<input type="color" id="tdPbBorderColor" value="#000000"></label>
           <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBlink"> Piscar (BlinkPlayerProgressBar)</label>
           <div id="tdPbBlinkFields" style="display: none; flex-direction: column; gap: 6px;">
             <div class="pair">
@@ -1017,6 +1019,8 @@
             </div>
             <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBlinkOwn" checked> Piscar na cor da barra</label>
             <label id="tdPbBlinkColorRow" style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Cor da piscada<input type="color" id="tdPbBlinkColor" value="#ffffff"></label>
+            <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBlinkBorder"> Piscar a borda em outra cor</label>
+            <label id="tdPbBlinkBorderColorRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;">Cor da borda na piscada<input type="color" id="tdPbBlinkBorderColor" value="#ffffff"></label>
           </div>
         </div>
 

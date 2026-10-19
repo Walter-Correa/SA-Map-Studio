@@ -127,7 +127,9 @@ enum E_SAMSP_PBAR
     bar_blink,
     bar_blinkInterval,
     bar_blinkDuration,
-    bar_blinkColor
+    bar_blinkColor,
+    bar_borderColor,
+    bar_blinkBorderColor
 }
 new gPBars[SAMSP_MAX_PBARS][E_SAMSP_PBAR];
 new gTotalPBars;
@@ -822,6 +824,8 @@ stock SAMSP_CarregarMapa()
                 gPBars[gTotalPBars][bar_blinkInterval] = SAMSP_Int(linha, 11);
                 gPBars[gTotalPBars][bar_blinkDuration] = SAMSP_Int(linha, 12);
                 gPBars[gTotalPBars][bar_blinkColor] = SAMSP_HexOrInt(linha, 13);
+                gPBars[gTotalPBars][bar_borderColor] = SAMSP_HexOrInt(linha, 14);
+                gPBars[gTotalPBars][bar_blinkBorderColor] = SAMSP_HexOrInt(linha, 15);
                 gTotalPBars++;
             }
             case 'D':
@@ -1331,12 +1335,12 @@ stock SAMSP_ShowProgressBars(playerid)
     for (new i = 0; i < gTotalPBars; i++)
     {
         new bar = CreatePlayerProgressBar(playerid, gPBars[i][bar_x], gPBars[i][bar_y], gPBars[i][bar_width], gPBars[i][bar_height],
-            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border]);
+            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border], gPBars[i][bar_borderColor]);
         if (bar == INVALID_PLAYER_BAR_ID) continue;
         SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);
         if (gPBars[i][bar_blink])
-            BlinkPlayerProgressBar(playerid, bar, gPBars[i][bar_blinkInterval], gPBars[i][bar_blinkDuration], gPBars[i][bar_blinkColor]);
+            BlinkPlayerProgressBar(playerid, bar, gPBars[i][bar_blinkInterval], gPBars[i][bar_blinkDuration], gPBars[i][bar_blinkColor], gPBars[i][bar_blinkBorderColor]);
         gPlayerPBars[playerid][gPlayerPBarCount[playerid]++] = bar;
     }
     return 1;

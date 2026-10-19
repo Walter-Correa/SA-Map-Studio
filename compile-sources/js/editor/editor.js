@@ -27,6 +27,13 @@ export function quatOfItem(o, kind = 'objects') {
 const round = (v, d = 4) => Math.round(v * 10 ** d) / 10 ** d;
 const normDeg = (a) => { let v = ((a % 360) + 360) % 360; if (v > 359.99995) v = 0; return round(v, 4); };
 
+export const TRANSFORM_SPEED = { min: 0.001, max: 10.0, def: 1.0 };
+export function clampTransformSpeed(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return TRANSFORM_SPEED.def;
+  return Math.round(Math.min(TRANSFORM_SPEED.max, Math.max(TRANSFORM_SPEED.min, n)) * 1000) / 1000;
+}
+
 export class Editor extends EventTarget {
   constructor({ viewport, streamer, models, gamedata, project }) {
     super();
@@ -769,13 +776,14 @@ export class Editor extends EventTarget {
   }
   setSpace(space) { this.space = space; this.attachGizmo(); this.emit('mode'); }
   setSnap(s) { Object.assign(this.snap, s); this.applySnap(); this.emit('mode'); }
+  // Velocidade do gizmo: de 0,001 a 10,0 (padrão 1,0) para movimento e rotação
   setTransformSpeed(speeds) {
     if (speeds.move !== undefined) {
-      this.transformSpeed.move = Math.min(10.0, Math.max(1.0, +speeds.move || 1.0));
+      this.transformSpeed.move = clampTransformSpeed(speeds.move);
       if (this.tc) this.tc.translationSpeed = this.transformSpeed.move;
     }
     if (speeds.rotate !== undefined) {
-      this.transformSpeed.rotate = Math.min(10.0, Math.max(1.0, +speeds.rotate || 1.0));
+      this.transformSpeed.rotate = clampTransformSpeed(speeds.rotate);
       if (this.tc) this.tc.rotationSpeed = this.transformSpeed.rotate;
     }
   }

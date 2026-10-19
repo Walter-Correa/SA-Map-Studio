@@ -195,16 +195,19 @@ function normalizeSpriteName(text) {
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
 
 // Limites da progressbarpro.inc (os mesmos PB_BORDER_MIN/MAX e PB_BLINK_MIN/MAX da include)
-export const PB_LIMITS = { borderMin: 0, borderMax: 4, borderDefault: 1, borderYRatio: 1.25, minInner: 1, blinkMin: 50, blinkMax: 60000, blinkDefault: 250 };
+export const PB_LIMITS = { borderMin: 0.5, borderMax: 5, borderDefault: 1, borderYRatio: 1.25, minInner: 1, blinkMin: 50, blinkMax: 60000, blinkDefault: 250 };
 const clampNum = (v, min, max, def) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : def; };
 export const clampPbBorder = (v) => clampNum(v, PB_LIMITS.borderMin, PB_LIMITS.borderMax, PB_LIMITS.borderDefault);
 // Maior borda que cabe na barra (como PB_FitBorder da include): sobra PB_MIN_INNER de interior,
-// lembrando que a borda de cima e de baixo é 1,25 vez a dos lados
+// lembrando que a borda de cima e de baixo é 1,25 vez a dos lados. Toda barra tem pelo menos a mínima.
 export function maxPbBorder(width, height) {
   const w = Number(width) || 0, h = Number(height) || 0;
   const limit = Math.min(PB_LIMITS.borderMax, (w - PB_LIMITS.minInner) / 2, (h - PB_LIMITS.minInner) / (2 * PB_LIMITS.borderYRatio));
-  return Math.max(0, Math.floor(limit * 100) / 100);
+  return Math.max(PB_LIMITS.borderMin, Math.floor(limit * 100) / 100);
 }
+// Menor largura e altura em que a borda mínima ainda deixa interior
+export const PB_MIN_WIDTH = PB_LIMITS.borderMin * 2 + PB_LIMITS.minInner;
+export const PB_MIN_HEIGHT = PB_LIMITS.borderMin * 2 * PB_LIMITS.borderYRatio + PB_LIMITS.minInner;
 export const fitPbBorder = (v, width, height) => Math.min(clampPbBorder(v), maxPbBorder(width, height));
 export const clampPbBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, PB_LIMITS.blinkDefault));
 export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0));
@@ -225,14 +228,17 @@ export function progressBarPawn(td, varName, fmt) {
   const f = fmt || ((v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; });
   const hexOf = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const hex = hexOf(td.color ?? 0xFF1C1CFF);
+  const borderCol = Number(td.pbBorderColor || 0) >>> 0;
   const lines = [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${borderCol ? ', ' + hexOf(borderCol) : ''});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
   if (td.pbBlink) {
     const col = Number(td.pbBlinkColor || 0) >>> 0;
-    lines.push(`BlinkPlayerProgressBar(playerid, ${varName}, ${clampPbBlinkInterval(td.pbBlinkInterval)}, ${clampPbBlinkDuration(td.pbBlinkDuration)}${col ? ', ' + hexOf(col) : ''});`);
+    const bcol = Number(td.pbBlinkBorderColor || 0) >>> 0;
+    const extra = bcol ? `, ${col ? hexOf(col) : 0}, ${hexOf(bcol)}` : (col ? ', ' + hexOf(col) : '');
+    lines.push(`BlinkPlayerProgressBar(playerid, ${varName}, ${clampPbBlinkInterval(td.pbBlinkInterval)}, ${clampPbBlinkDuration(td.pbBlinkDuration)}${extra});`);
   }
   return lines;
 }
@@ -311,6 +317,8 @@ export function makeTextDraw(data) {
       pbBlinkInterval: clampPbBlinkInterval(data.pbBlinkInterval ?? PB_LIMITS.blinkDefault),
       pbBlinkDuration: clampPbBlinkDuration(data.pbBlinkDuration ?? 0),
       pbBlinkColor: Number(data.pbBlinkColor || 0) >>> 0,
+      pbBorderColor: Number(data.pbBorderColor || 0) >>> 0,
+      pbBlinkBorderColor: Number(data.pbBlinkBorderColor || 0) >>> 0,
     } : {}),
   };
 }

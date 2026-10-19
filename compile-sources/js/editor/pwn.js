@@ -97,6 +97,8 @@ const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
+// Cor escrita como número (0xRRGGBBAA ou decimal); qualquer outra coisa vale 0 (cor padrão)
+const colorArgOrZero = (v) => (v !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(v).trim()) ? (parseColor(v) >>> 0) : 0);
 
 // Argumentos nomeados do Pawn (.worldid = 0) viram um mapa à parte
 function splitNamed(args) {
@@ -831,7 +833,7 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progressbarpro.inc (e progress2.inc): CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção, borda),
+      // progressbarpro.inc (e progress2.inc): CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção, borda, cor da borda),
       // também com argumentos nomeados (.colour = ...) e expressões (o número inicial é usado)
       if (a.length >= 3) {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
@@ -852,6 +854,7 @@ export function parsePwn(source) {
           pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
           pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
           pbBorder: fitPbBorder(num(arg(8, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 55.5), num(arg(4, 'height'), 3.2)),
+          pbBorderColor: colorArgOrZero(arg(9, 'bordercolour', 'bordercolor')),
           comment: inlineComment, preComment, blankLinesBefore,
         };
         textDraws.push(td);
@@ -861,7 +864,7 @@ export function parsePwn(source) {
       const target = vars.get(varKey(a[1]));
       if (target && target.type === 'progress' && a[2] !== undefined) target.pbValue = num(a[2], 0);
     } else if (fn === 'BlinkPlayerProgressBar') {
-      // BlinkPlayerProgressBar(playerid, barra, intervalo, duração, cor = 0)
+      // BlinkPlayerProgressBar(playerid, barra, intervalo, duração, cor = 0, cor da borda = 0)
       const target = vars.get(varKey(a[1]));
       if (target && target.type === 'progress') {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
@@ -869,7 +872,8 @@ export function parsePwn(source) {
         target.pbBlink = true;
         target.pbBlinkInterval = clampPbBlinkInterval(num(arg(2, 'interval'), PB_LIMITS.blinkDefault));
         target.pbBlinkDuration = clampPbBlinkDuration(num(arg(3, 'duration'), 0));
-        target.pbBlinkColor = col !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(col).trim()) ? (parseColor(col) >>> 0) : 0;
+        target.pbBlinkColor = colorArgOrZero(col);
+        target.pbBlinkBorderColor = colorArgOrZero(arg(5, 'bordercolour', 'bordercolor'));
       }
     } else if (fn === 'TextDrawFont') {
       const target = vars.get(varKey(a[0])) || textDraws[textDraws.length - 1];
