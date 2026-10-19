@@ -37,8 +37,9 @@ export function prepDff(buf, ambient) {
     const out = {
       flags: g.flags, numVerts: g.numVerts,
       positions: g.positions, normals: g.normals, uvs: g.uvs, colors,
-      materials: g.materials, index, groups,
+      materials: g.materials, index, groups, skin: g.skin || null,
     };
+    if (out.skin) transfer.push(out.skin.indices.buffer, out.skin.weights.buffer, out.skin.inverse.buffer);
     for (const a of [out.positions, out.normals, out.uvs, out.colors, out.index]) if (a) transfer.push(a.buffer);
     return out;
   });

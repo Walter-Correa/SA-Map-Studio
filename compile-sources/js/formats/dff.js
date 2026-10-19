@@ -1,12 +1,12 @@
 // Leitor de DFF (RenderWare Clump) do GTA SA.
 // Extrai frames (hierarquia + nomes), geometrias (vértices, normais, UVs,
-// cores pré-iluminadas, triângulos por material) e atomics.
+// cores pré-iluminadas, triângulos por material) e atomics; nos pedestres, os ossos (HAnim) e o skin.
 import { BinaryReader } from './binary.js';
 
 const RW = {
   STRUCT: 0x01, STRING: 0x02, EXTENSION: 0x03, TEXTURE: 0x06, MATERIAL: 0x07,
   MATLIST: 0x08, FRAMELIST: 0x0e, GEOMETRY: 0x0f, CLUMP: 0x10, ATOMIC: 0x14,
-  GEOMLIST: 0x1a, BINMESH: 0x50e, FRAME_NAME: 0x253f2fe, NIGHT_COLORS: 0x253f2f9,
+  GEOMLIST: 0x1a, SKIN: 0x116, HANIM: 0x11e, BINMESH: 0x50e, FRAME_NAME: 0x253f2fe, NIGHT_COLORS: 0x253f2f9,
 };
 
 const GEO_TRISTRIP = 0x01, GEO_PRELIT = 0x08, GEO_NORMALS = 0x10,
@@ -48,6 +48,16 @@ function parseFrameList(r, end) {
       const frame = frames[idx++];
       eachChild(r2, stop, (eh, r3, estop) => {
         if (eh.type === RW.FRAME_NAME && frame) frame.name = readString(r3, estop - r3.pos);
+        else if (eh.type === RW.HANIM && frame) {
+          r3.u32();
+          frame.boneId = r3.i32();
+          const n = r3.u32();
+          if (n > 0 && n < 256) {
+            r3.u32(); r3.u32();
+            frame.hanim = [];
+            for (let i = 0; i < n; i++) { const id = r3.i32(); r3.i32(); r3.u32(); frame.hanim.push(id); }
+          }
+        }
       });
     }
   });
@@ -142,6 +152,19 @@ function parseGeometry(r, end) {
             meshes.push({ material: mat, indices: idx });
           }
           g.binMesh = { strip: bflags === 1, meshes };
+        } else if (eh.type === RW.SKIN && g.numVerts) {
+          // Ossos que movem cada vértice (até 4, com peso) e a matriz inversa da pose de cada osso
+          const numBones = r3.u8(), numUsed = r3.u8();
+          r3.u8(); r3.u8();
+          r3.skip(numUsed);
+          const indices = r3.slice(g.numVerts * 4).slice();
+          const weights = r3.f32array(g.numVerts * 4);
+          const inverse = new Float32Array(numBones * 16);
+          for (let i = 0; i < numBones; i++) {
+            if (eh.version < 0x34003) r3.skip(4);
+            inverse.set(r3.f32array(16), i * 16);
+          }
+          if (r3.pos <= estop) g.skin = { numBones, indices, weights, inverse };
         } else if (eh.type === RW.NIGHT_COLORS) {
           const has = r3.u32();
           if (has && g.numVerts && r3.pos + g.numVerts * 4 <= estop) g.nightColors = r3.slice(g.numVerts * 4).slice();

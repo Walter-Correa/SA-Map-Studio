@@ -246,6 +246,7 @@ export class ModelCache {
       const mesh = this.buildMesh(g, def, findTex, isVehicle || isCarMod);
       if (!mesh) continue;
       mesh.name = fName;
+      if (g.skin) { mesh.userData.skin = g.skin; group.userData.frames = dff.frames; }
       mesh.userData.frameName = fName;
       if (isVehicle && /wheel/.test(fName)) mesh.userData.isStockWheel = true;
       if (dff.frames[a.frame]) {

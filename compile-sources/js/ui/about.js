@@ -6,6 +6,11 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.18.2', date: '20/10/2026', items: [
+      'Prévia de modelo 3D de skins na pose parada do jogo (animação IDLE_stance do ped.ifp aplicada nos ossos do modelo), com braços para baixo, mesma altura e mesma iluminação forte da prévia do SA-MP.',
+    ],
+  },
+  {
     version: '3.18.1', date: '20/10/2026', items: [
       'Prévia de modelo 3D de skins com o mesmo tamanho e posição do jogo: colisão de pedestre do GTA (raio 1,0) e o pedestre na altura da pose do jogo.',
     ],
