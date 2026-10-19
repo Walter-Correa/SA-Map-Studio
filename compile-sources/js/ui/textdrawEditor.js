@@ -639,13 +639,21 @@ function bindFieldInputs() {
     };
   }
 
+  // Ordem de criação (camadas): botões abaixo da lista
+  for (const [id, where] of [['#tdOrderBack', 'back'], ['#tdOrderDown', -1], ['#tdOrderUp', 1], ['#tdOrderFront', 'front']]) {
+    const b = dialogEl.querySelector(id);
+    if (b) b.onclick = () => moveSelectedTd(where);
+  }
+
   const chkPlayer = dialogEl.querySelector('#tdIsPlayer');
   if (chkPlayer) {
     chkPlayer.onchange = () => {
       const td = getSelectedTd();
       if (!td) return;
       td.isPlayer = chkPlayer.checked;
+      normalizeTdOrder();
       updateSidebarList();
+      redrawCanvas();
     };
   }
 
@@ -923,6 +931,56 @@ function getTextDrawBounds(td) {
 function getSelectedTd() {
   const tds = appRef.project?.textDraws || [];
   return tds[selectedIdx] || null;
+}
+
+// ---------- Ordem das TextDraws (camadas) ----------
+// O SA-MP desenha na ordem dos IDs: o que é criado primeiro fica por baixo. As TextDraws de jogador
+// (e as barras, que são de jogador) vêm depois de todas as globais, então ficam sempre por cima delas.
+// A lista guarda essa ordem: globais primeiro, depois as de jogador, cada grupo na ordem de criação.
+let dragTdIdx = -1;
+const isPlayerLayer = (td) => Boolean(td?.isPlayer) || td?.type === 'progress';
+
+function normalizeTdOrder() {
+  const tds = appRef?.project?.textDraws;
+  if (!tds || tds.length < 2) return;
+  const ordered = [...tds.filter(t => !isPlayerLayer(t)), ...tds.filter(t => isPlayerLayer(t))];
+  if (ordered.every((t, i) => t === tds[i])) return;
+  const sel = tds[selectedIdx];
+  tds.splice(0, tds.length, ...ordered);
+  selectedIdx = sel ? tds.indexOf(sel) : selectedIdx;
+  appRef.project.modified = true;
+}
+
+// Move a TextDraw da posição "from" para antes da posição "to" (dentro do mesmo grupo)
+function moveTdTo(from, to) {
+  const tds = appRef?.project?.textDraws;
+  if (!tds || from < 0 || from >= tds.length) return;
+  const td = tds[from];
+  const groupIdx = tds.map((t, i) => (isPlayerLayer(t) === isPlayerLayer(td) ? i : -1)).filter(i => i >= 0);
+  const first = groupIdx[0], last = groupIdx[groupIdx.length - 1];
+  let target = Math.max(first, Math.min(last + 1, to));
+  if (target === from || target === from + 1) return;
+  tdPushUndo();
+  tds.splice(from, 1);
+  if (target > from) target--;
+  tds.splice(target, 0, td);
+  selectedIdx = target;
+  appRef.project.modified = true;
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+}
+
+function moveSelectedTd(where) {
+  const tds = appRef?.project?.textDraws;
+  const td = tds?.[selectedIdx];
+  if (!td) return;
+  const groupIdx = tds.map((t, i) => (isPlayerLayer(t) === isPlayerLayer(td) ? i : -1)).filter(i => i >= 0);
+  const first = groupIdx[0], last = groupIdx[groupIdx.length - 1];
+  if (where === 'back') moveTdTo(selectedIdx, first);
+  else if (where === 'front') moveTdTo(selectedIdx, last + 1);
+  else if (where < 0) moveTdTo(selectedIdx, Math.max(first, selectedIdx - 1));
+  else moveTdTo(selectedIdx, Math.min(last + 1, selectedIdx + 2));
 }
 
 // ---------- Prévia da piscada (BlinkPlayerProgressBar) ----------
@@ -1283,9 +1341,37 @@ function updateSidebarList() {
     return;
   }
 
+  normalizeTdOrder();
+  let lastGroup = null;
   tds.forEach((td, idx) => {
+    const group = isPlayerLayer(td);
+    if (group !== lastGroup) {
+      const head = document.createElement('div');
+      head.className = 'td-list-group';
+      head.textContent = group ? 'De jogador e barras (sempre por cima das globais)' : 'Globais';
+      listEl.appendChild(head);
+      lastGroup = group;
+    }
     const item = document.createElement('div');
     item.className = 'td-list-item' + (idx === selectedIdx ? ' selected' : '');
+    item.draggable = true;
+    item.ondragstart = (e) => { dragTdIdx = idx; e.dataTransfer.effectAllowed = 'move'; };
+    item.ondragend = () => { dragTdIdx = -1; listEl.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after')); };
+    item.ondragover = (e) => {
+      if (dragTdIdx < 0 || isPlayerLayer(tds[dragTdIdx]) !== group) return;
+      e.preventDefault();
+      const after = e.offsetY > item.offsetHeight / 2;
+      item.classList.toggle('drop-after', after);
+      item.classList.toggle('drop-before', !after);
+    };
+    item.ondragleave = () => item.classList.remove('drop-before', 'drop-after');
+    item.ondrop = (e) => {
+      e.preventDefault();
+      if (dragTdIdx < 0 || isPlayerLayer(tds[dragTdIdx]) !== group) return;
+      const after = e.offsetY > item.offsetHeight / 2;
+      moveTdTo(dragTdIdx, idx + (after ? 1 : 0));
+      dragTdIdx = -1;
+    };
     const col = toHexRgba(td.color ?? 0xFFFFFFFF);
     const label = td.type === 'progress' ? `${['Barra', 'Anel', 'Círculo'][td.pbStyle | 0] || 'Barra'}: ${td.name || 'sem nome'}` : stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
 
@@ -1293,7 +1379,7 @@ function updateSidebarList() {
       <div class="td-badge" style="background:${col.hex};"></div>
       <div class="td-info">
         <span class="td-title">${td.isPlayer && td.type !== 'progress' ? '[Player] ' : ''}${label}</span>
-        <span class="td-sub">Pos: ${td.x}, ${td.y} | Font: ${td.font}</span>
+        <span class="td-sub">Camada ${idx + 1} · Pos: ${td.x}, ${td.y}${td.type === 'progress' ? '' : ` | Font: ${td.font}`}</span>
       </div>
     `;
 

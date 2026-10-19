@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.15.0', date: '19/10/2026', items: [
+      'Ordem das TextDraws no editor: botões Fundo, Recuar, Avançar e Frente e arrastar na lista para decidir quem fica por cima. A prévia, a exportação e o servidor de teste seguem a ordem.',
+      'A lista separa as TextDraws globais das de jogador (e barras), que no jogo ficam sempre por cima das globais, e mostra a camada de cada uma.',
+    ],
+  },
+  {
     version: '3.14.0', date: '19/10/2026', items: [
       'Barras circulares na SA Progress Bar Pro, escolhidas no próprio CreatePlayerProgressBar (parâmetro style): anel de segmentos que acendem do topo, em sentido horário ou anti-horário (PB_STYLE_RING, com a quantidade de segmentos), e círculo que cresce do centro (PB_STYLE_CIRCLE).',
       'Editor de TextDraws: campo Modelo (Barra, Anel de segmentos, Círculo) e Segmentos, com prévia, aviso de quantas PlayerTextDraws o anel usa, exportação, importação e servidor de teste.',

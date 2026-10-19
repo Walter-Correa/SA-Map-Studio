@@ -1094,6 +1094,9 @@ legend.sub { margin-top: 8px; }
   background: rgba(0, 102, 255, 0.15);
   border-color: var(--accent);
 }
+.td-list-item.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.td-list-item.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.td-list-group { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-dim); padding: 4px 4px 2px; }
 .gz-badge, .td-badge {
   width: 14px;
   height: 14px;
