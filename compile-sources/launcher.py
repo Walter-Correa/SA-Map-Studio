@@ -17,6 +17,34 @@ import subprocess
 
 IS_WINDOWS = os.name == "nt"
 
+
+def dir_writable(path):
+    """Testa se dá para gravar na pasta (em Arquivos de Programas, sem administrador, não dá)."""
+    try:
+        os.makedirs(path, exist_ok=True)
+        probe = os.path.join(path, ".write-test-%d" % os.getpid())
+        with open(probe, "w") as f:
+            f.write("ok")
+        os.remove(probe)
+        return True
+    except OSError:
+        return False
+
+
+def relaunch_as_admin():
+    """Abre o próprio executável de novo pedindo administrador (UAC). True se o Windows aceitou."""
+    if not IS_WINDOWS:
+        return False
+    try:
+        import ctypes
+        if ctypes.windll.shell32.IsUserAnAdmin():
+            return False
+        params = subprocess.list2cmdline(sys.argv[1:])
+        r = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, params, os.path.dirname(sys.executable), 1)
+        return int(r) > 32
+    except Exception:
+        return False
+
 def get_base_paths():
     if getattr(sys, "frozen", False):
         exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -213,6 +241,12 @@ def main():
             pass
 
     exe_dir, res_dir, target_dir, target_exe = get_base_paths()
+
+    # O editor grava tudo na própria pasta. Numa pasta protegida (como a do GTA em Arquivos de
+    # Programas) ele se abre de novo pedindo administrador; em qualquer outra pasta, não pede nada.
+    if getattr(sys, "frozen", False) and not dir_writable(target_dir if os.path.isdir(target_dir) else exe_dir):
+        if relaunch_as_admin():
+            sys.exit(0)
 
     # 1. Se o sistema já estiver descompactado e pronto, inicia imediatamente
     if os.path.isfile(target_exe):

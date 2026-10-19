@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.15.0"
+VERSION = "3.15.1"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -59,6 +59,48 @@ else:
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
     BASE_DIR = os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio")
     APP_DIR = getattr(sys, "_MEIPASS", None) or ROOT_DIR
+
+
+def _dir_writable(path):
+    """Testa se dá para gravar na pasta (em Arquivos de Programas, sem administrador, não dá)."""
+    try:
+        os.makedirs(path, exist_ok=True)
+        probe = os.path.join(path, ".write-test-%d" % os.getpid())
+        with open(probe, "w") as f:
+            f.write("ok")
+        os.remove(probe)
+        return True
+    except OSError:
+        return False
+
+
+
+def _in_protected_folder(path):
+    """Pasta que só o administrador grava (Arquivos de Programas ou Windows). Não grava nada para testar,
+    para nunca mexer na pasta do GTA."""
+    full = os.path.normcase(os.path.abspath(path))
+    for var in ("ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "SystemRoot"):
+        base = os.environ.get(var)
+        if base and full.startswith(os.path.normcase(os.path.abspath(base)) + os.sep):
+            return True
+    return False
+
+# O editor grava tudo em sa-map-studio. Numa pasta protegida (como a do GTA em Arquivos de
+# Programas) ele se abre de novo pedindo administrador; em qualquer outra pasta, não pede nada.
+if getattr(sys, "frozen", False) and os.name == "nt" and not _dir_writable(BASE_DIR):
+    try:
+        import ctypes
+        import subprocess as _sp
+        if not ctypes.windll.shell32.IsUserAnAdmin():
+            _r = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, _sp.list2cmdline(sys.argv[1:]),
+                                                     os.path.dirname(sys.executable), 1)
+            if int(_r) > 32:
+                sys.exit(0)
+    except SystemExit:
+        raise
+    except Exception:
+        pass
+
 os.makedirs(BASE_DIR, exist_ok=True)
 PROJECTS_DIR = os.path.join(BASE_DIR, "projects")
 EXPORTS_DIR = os.path.join(BASE_DIR, "exported")
@@ -1164,11 +1206,39 @@ def start_test(body):
     client = samp_client()
     launched = False
     if body.get("launch", True) and client:
+        # O cliente SA-MP grava na pasta do GTA: numa pasta protegida (Arquivos de Programas) ele
+        # precisa de administrador. Se o editor não for administrador, o Windows abre o cliente
+        # com o próprio pedido (UAC), como acontecia quando o editor inteiro abria como administrador.
+        needs_admin = False
+        if IS_WINDOWS:
+            try:
+                import ctypes
+                needs_admin = not ctypes.windll.shell32.IsUserAnAdmin() and _in_protected_folder(client)
+            except Exception:
+                needs_admin = False
+        if needs_admin:
+            try:
+                import ctypes
+                r = ctypes.windll.shell32.ShellExecuteW(None, "runas", client, "127.0.0.1:%d" % TEST_PORT,
+                                                        os.path.dirname(client), 1)
+                launched = int(r) > 32
+            except Exception:
+                launched = False
+            return {"ok": True, "started": started, "launched": launched, "address": "127.0.0.1:%d" % TEST_PORT, "log": tail_log()}
         try:
             subprocess.Popen([client, "127.0.0.1:%d" % TEST_PORT], cwd=os.path.dirname(client))
             launched = True
-        except OSError:
+        except OSError as err:
+            # samp.exe que exige administrador (erro 740): o Windows abre com o próprio pedido (UAC)
             launched = False
+            if IS_WINDOWS and getattr(err, "winerror", None) == 740:
+                try:
+                    import ctypes
+                    r = ctypes.windll.shell32.ShellExecuteW(None, "open", client, "127.0.0.1:%d" % TEST_PORT,
+                                                            os.path.dirname(client), 1)
+                    launched = int(r) > 32
+                except Exception:
+                    launched = False
     return {"ok": True, "started": started, "launched": launched, "address": "127.0.0.1:%d" % TEST_PORT, "log": tail_log()}
 
 

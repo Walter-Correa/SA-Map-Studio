@@ -100,7 +100,6 @@ rem ---------------- 1. Compila o Motor do Sistema (sa-map-studio.exe)
 echo Compilando o motor do sistema...
 set "ARGS=--noconfirm --clean --onedir --windowed --noupx"
 set "ARGS=%ARGS% --name "sa-map-studio" --icon "%ICONFILE%""
-set "ARGS=%ARGS% --uac-admin"
 if exist "%VERFILE%" set "ARGS=%ARGS% --version-file "%VERFILE%""
 set "ARGS=%ARGS% --distpath "%SRC%build\engine" --workpath "%SRC%build\tmp_engine" --specpath "%SRC%build""
 set "ARGS=%ARGS% --add-data "%SRC%index.html;." --add-data "%SRC%favicon.svg;.""
@@ -266,7 +265,7 @@ if errorlevel 1 goto erro
 
 rem ---------------- 5. Compila o Launcher Auto-Extrator (SA Map Studio.exe)
 echo Gerando o executavel unico SA Map Studio.exe...
-set "LAUNCHER_ARGS=--noconfirm --clean --onefile --windowed --noupx --uac-admin"
+set "LAUNCHER_ARGS=--noconfirm --clean --onefile --windowed --noupx"
 set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
 if exist "%VERFILE%" set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --version-file "%VERFILE%""
 set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --distpath "%OUT%" --workpath "%SRC%build\tmp_launcher" --specpath "%SRC%build""

@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.15.1', date: '19/10/2026', items: [
+      'O editor só pede administrador (UAC) quando a pasta dele não pode ser gravada, como dentro da pasta do GTA em Arquivos de Programas; em outras pastas abre sem o aviso.',
+      'Teste em jogo continua funcionando: com o GTA numa pasta protegida, o cliente SA-MP é aberto como administrador (com o pedido do Windows) ao clicar em Testar.',
+    ],
+  },
+  {
     version: '3.15.0', date: '19/10/2026', items: [
       'Ordem das TextDraws no editor: botões Fundo, Recuar, Avançar e Frente e arrastar na lista para decidir quem fica por cima. A prévia, a exportação e o servidor de teste seguem a ordem.',
       'A lista separa as TextDraws globais das de jogador (e barras), que no jogo ficam sempre por cima das globais, e mostra a camada de cada uma.',

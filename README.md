@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.15.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.15.1-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -110,7 +110,7 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 | Item | Detalhe |
 |---|---|
 | Sistema | Windows 10 ou 11 de 64 bits. |
-| Permissão | Conta com acesso de administrador: o programa pede elevação (UAC) ao abrir. |
+| Permissão | Administrador só quando o editor fica numa pasta protegida (como a do GTA em Arquivos de Programas): aí ele pede elevação (UAC) ao abrir. Em outras pastas, abre sem pedir. |
 | Navegador interno | Microsoft Edge WebView2 Runtime (já vem no Windows 11 e no Windows 10 atualizado). Sem ele, o editor abre no navegador padrão. |
 | Placa de vídeo | Compatível com WebGL 2 e com driver atualizado. |
 | Memória | 4 GB de RAM ou mais (8 GB recomendados para mapas grandes). |
@@ -254,6 +254,11 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.15.1 — 19/10/2026
+- Administrador só quando preciso: o editor deixa de pedir elevação (UAC) sempre e só a pede quando a própria pasta não pode
+  ser gravada (por exemplo, dentro da pasta do GTA em Arquivos de Programas). Com o GTA numa pasta protegida, o cliente
+  SA-MP do teste abre como administrador (com o pedido do Windows) ao clicar em Testar.
 
 ### 3.15.0 — 19/10/2026
 - Editor de TextDraws: ordem de criação (camadas) com Fundo, Recuar, Avançar, Frente e arrastar na lista; prévia, exportação e
