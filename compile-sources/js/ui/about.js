@@ -6,6 +6,11 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.5.4', date: '19/10/2026', items: [
+      'Registros mais limpos: o monitor temporário de desempenho do redimensionamento foi retirado.',
+    ],
+  },
+  {
     version: '3.5.3', date: '19/10/2026', items: [
       'Mapa 3D volta a acompanhar a janela ao redimensionar, sem pausar o desenho.',
       'Registro de Desempenho: cada redimensionamento da janela e cada parada da página ficam anotados nos Registros (duração, quadros, maior pausa e tarefas longas) para diagnosticar travamentos.',
