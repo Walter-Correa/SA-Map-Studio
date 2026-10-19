@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.5.2', date: '19/10/2026', items: [
+      'Redimensionamento Fluido: enquanto a janela muda de tamanho o mapa 3D não é redesenhado a cada quadro; ao soltar, ele se ajusta ao novo tamanho de uma vez.',
+      'Selecionar Todo o Projeto no Inspetor: o botão Projeto também leva a câmera até as setas de edição.',
+      'Cache Sempre na Pasta de Dados: miniaturas, índice de texturas, radar e animações baixadas não são mais gravados dentro da pasta do código-fonte.',
+    ],
+  },
+  {
     version: '3.5.1', date: '19/10/2026', items: [
       'Barra Superior Adaptável: os rótulos dos botões aparecem sempre que cabem e somem um a um, só quando falta espaço, priorizando os mais usados.',
       'Redimensionamento sem Travamentos: as listas de objetos e texturas só são redesenhadas quando o trecho visível muda.',

@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.5.1"
+VERSION = "3.5.2"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -68,8 +68,8 @@ CACHE_DIR = os.path.join(DATA_DIR, "cache")
 COMPILE_SOURCES_DIR = os.path.join(ROOT_DIR, "compile-sources")
 COMPILE_CACHE_DIR = os.path.join(COMPILE_SOURCES_DIR, "cache")
 COMPILE_MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
-if not FROZEN and not os.path.isdir(CACHE_DIR) and os.path.isdir(COMPILE_CACHE_DIR):
-    CACHE_DIR = COMPILE_CACHE_DIR
+# CACHE_DIR é sempre a pasta de dados (gravação). No código-fonte, os arquivos que já vêm prontos em
+# compile-sources/cache são lidos de lá como alternativa, mas nada gerado em execução é gravado no repositório.
 THUMBS_DIR = os.path.join(CACHE_DIR, "thumbnails") if os.path.isdir(os.path.join(CACHE_DIR, "thumbnails")) or not os.path.isdir(os.path.join(CACHE_DIR, "miniaturas")) else os.path.join(CACHE_DIR, "miniaturas")
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.join(CACHE_DIR, "animations")) or not os.path.isdir(os.path.join(CACHE_DIR, "animacoes")) else os.path.join(CACHE_DIR, "animacoes")
 def resolve_webview_dir():
@@ -1140,14 +1140,13 @@ class AnimCacheManager:
 
     @classmethod
     def count_cached(cls):
-        if not os.path.isdir(ANIM_CACHE_DIR):
-            return 0
-        cnt = 0
-        for root, _, files in os.walk(ANIM_CACHE_DIR):
-            for file in files:
-                if file.lower().endswith(".webm"):
-                    cnt += 1
-        return cnt
+        names = set()
+        for base in (ANIM_CACHE_DIR, os.path.join(COMPILE_CACHE_DIR, "animations")):
+            for root, _, files in os.walk(base):
+                for file in files:
+                    if file.lower().endswith(".webm"):
+                        names.add((os.path.basename(root).lower(), file.lower()))
+        return len(names)
 
     @classmethod
     def fetch_video_bytes(cls, lib, name):
@@ -1182,6 +1181,9 @@ class AnimCacheManager:
         safe_n = re.sub(r'[^a-zA-Z0-9_\-]', '', name)
         if not safe_l or not safe_n:
             return None
+        packaged = os.path.join(COMPILE_CACHE_DIR, "animations", safe_l, f"{safe_n}.webm")
+        if os.path.isfile(packaged) and os.path.getsize(packaged) > 1000:
+            return packaged
         folder = os.path.join(ANIM_CACHE_DIR, safe_l)
         os.makedirs(folder, exist_ok=True)
         file_path = os.path.join(folder, f"{safe_n}.webm")

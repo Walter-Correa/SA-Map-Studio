@@ -55,10 +55,11 @@ export function fitTopbar() {
 }
 
 function setupTopbarFit() {
-  let raf = 0;
+  // Reajusta só quando a janela para de mudar de tamanho (medir a barra recalcula o layout da página)
+  let timer = 0;
   const schedule = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(() => { raf = 0; fitTopbar(); });
+    clearTimeout(timer);
+    timer = setTimeout(fitTopbar, 120);
   };
   window.addEventListener('resize', schedule);
   document.fonts?.ready?.then(schedule);

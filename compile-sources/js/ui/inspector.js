@@ -735,7 +735,7 @@ function bindCommon() {
     else if (a === 'del') ed.deleteSelection();
   });
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
-    if (b.dataset.scope === 'all') app.editor.selectAll(false);
+    if (b.dataset.scope === 'all') app.editor.selectAll(true);
   });
 }
 
@@ -834,7 +834,7 @@ function bindItem(item) {
   bindVecArrows(uid, project);
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
-    if (b.dataset.scope === 'all') app.editor.selectAll(false);
+    if (b.dataset.scope === 'all') app.editor.selectAll(true);
   });
 
   $$('#inspector [data-field]').forEach(inp => {
@@ -1217,7 +1217,7 @@ function bindVehicle(v) {
   }
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
-    if (b.dataset.scope === 'all') app.editor.selectAll(false);
+    if (b.dataset.scope === 'all') app.editor.selectAll(true);
   });
 
   $$('#inspector [data-field]').forEach(inp => {
@@ -1394,7 +1394,7 @@ function bindActor(a) {
   bindVecArrows(uid, project);
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
-    if (b.dataset.scope === 'all') app.editor.selectAll(false);
+    if (b.dataset.scope === 'all') app.editor.selectAll(true);
   });
 
   $$('#inspector [data-field]').forEach(inp => {
@@ -1573,7 +1573,7 @@ function bindMulti(items) {
   const isAll = items.length >= total && total > 0;
 
   $$('#inspector [data-scope]').forEach(b => b.onclick = () => {
-    if (b.dataset.scope === 'all') app.editor.selectAll(false);
+    if (b.dataset.scope === 'all') app.editor.selectAll(true);
     else if (items.length > 1) app.editor.select([items[0].uid]);
   });
 
