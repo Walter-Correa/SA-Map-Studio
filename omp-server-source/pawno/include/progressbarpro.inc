@@ -14,12 +14,77 @@
 	  PB_MIN_INNER of inner area is kept);
 	- the filled part never goes past the border, disappears when the value is zero, and changing
 	  the value never shows a hidden bar;
-	- bars can blink, with their own colour for the inner area and for the border.
+	- bars can blink, with their own colour for the inner area and for the border;
+	- three styles, chosen when the bar is created (or later with SetPlayerProgressBarStyle):
 
-	Each bar uses 3 PlayerTextDraws, created in this order (so they are drawn in this order):
+	PB_STYLE_BAR (default) - a straight bar, 3 PlayerTextDraws ("LD_SPAC:white"), drawn in this order:
 	  back   (x, y, width, height)                                  border colour (default: black with the bar alpha)
 	  fill   (inside the border)                                    bar colour, more transparent
 	  main   (part of the fill, from value / max and the direction) bar colour
+
+	PB_STYLE_RING - a ring of round segments that light up one by one, starting at the top.
+	  BAR_DIRECTION_RIGHT / DOWN go clockwise, BAR_DIRECTION_LEFT / UP counterclockwise.
+	  "segments" sets how many (PB_RING_MIN to PB_RING_MAX). Each segment uses 2 PlayerTextDraws
+	  ("LD_BEAT:chit"): a border dot and the segment itself, so a 24 segment ring uses 48.
+	  The ring fills the box (x, y, width, height); the border is the outline of each segment.
+
+	PB_STYLE_CIRCLE - a round gauge that grows from the centre, 3 PlayerTextDraws ("LD_BEAT:chit"):
+	  border circle, inner circle (bar colour, more transparent) and the filled circle, whose
+	  diameter follows value / max. The direction is not used.
+
+	For round styles: one TextDraw unit is 1.25 times taller than wide on a 16:9 screen, so a
+	round shape needs height = width * 1.25 (for example 40.0 x 50.0).
+
+	-------------------------------------------------------------------------------- round styles in detail
+
+	What happens when a PB_STYLE_RING bar is created
+	  1. The ring is fitted inside the box (x, y, width, height). The segment size is worked out
+	     from the ring size and the number of segments, so neighbouring segments never touch
+	     (each segment takes about 70% of the space between two segment centres).
+	  2. The segment centres are placed on the ellipse inside the box, starting at the top
+	     (12 o'clock) and going clockwise (BAR_DIRECTION_RIGHT / DOWN) or counterclockwise
+	     (BAR_DIRECTION_LEFT / UP).
+	  3. One "LD_BEAT:chit" sprite is created per segment for the border (the segment enlarged by
+	     the border on every side, in the border colour), then one per segment for the segment
+	     itself. All border dots are created first so no border covers a neighbouring segment.
+	  4. Segments up to floor(value / max * segments) use the bar colour; the others use the bar
+	     colour more transparent. Changing the value, the colours or blinking only recolours the
+	     existing TextDraws (PlayerTextDrawColour + PlayerTextDrawShow); changing the position,
+	     size, border, direction, style or number of segments destroys and recreates them.
+
+	What happens when a PB_STYLE_CIRCLE bar is created
+	  Three "LD_BEAT:chit" sprites are created, just like the straight bar: the border circle (the
+	  whole box), the inner circle (inside the border, bar colour more transparent) and the filled
+	  circle, centred, with a diameter of value / max of the inner circle. Changing the value
+	  recreates only the filled circle.
+
+	Resources used
+	  PlayerTextDraws per bar:
+	    PB_STYLE_BAR     3
+	    PB_STYLE_CIRCLE  3
+	    PB_STYLE_RING    2 x segments (24 segments = 48, 60 segments = 120)
+	  Every player has MAX_PLAYER_TEXT_DRAWS (256) PlayerTextDraws shared with the whole script,
+	  so a player fits 5 rings of 24 segments, or 2 rings of 60 segments, and nothing else.
+	  Server memory: the include keeps, per player, the data of MAX_PLAYER_BARS bars and two
+	  tables of PB_MAX_TDS cells (which ring owns each PlayerTextDraw). With MAX_PLAYERS 1000 this
+	  is about 10 MB of the script data; lower MAX_PLAYERS or MAX_PLAYER_BARS to use less.
+	  Network: creating a ring sends 2 x segments TextDraws to the player; every value change on a
+	  ring re-sends the colour of all its segments (on a straight bar or circle, only one TextDraw).
+	  Avoid updating rings many times per second; once per second or on real changes is fine.
+	  Timers: a blinking bar (any style) uses one repeating timer until the blink ends.
+
+	Limitations
+	  - TextDraws cannot be rotated or clipped, so the ring is made of separate segments and the
+	    circle grows from the centre: there is no smooth arc that fills around the circle.
+	  - "LD_BEAT:chit" is a circle drawn in only 2/3 of its sprite (PB_CHIT_SCALE = 1.5), so the
+	    sprites are larger than the shapes they show; their transparent edges overlap freely.
+	  - Round shapes only look round when height = width * 1.25 on 16:9 screens; on 4:3 screens
+	    the same values look slightly taller than wide. Tiny rings (few TextDraw units) turn
+	    their segments into 1 or 2 pixel dots.
+	  - The ring shows whole segments: with 24 segments, each segment is 1/24 of the value, and
+	    a value below that lights no segment.
+	  - SetPlayerProgressBarBorder on a ring changes the outline around each segment, not a line
+	    around the whole ring.
 
 	Example:
 	  new health = CreatePlayerProgressBar(playerid, 500.0, 120.0, 100.0, 8.0, 0xFF1C1CFF);
@@ -30,6 +95,11 @@
 	  BlinkPlayerProgressBar(playerid, health, 300, 0, 0, 0xFFFF00FF);   // bar colour, border blinks yellow
 	  StopPlayerProgressBarBlink(playerid, health);
 
+	  new ring = CreatePlayerProgressBar(playerid, 300.0, 200.0, 40.0, 50.0, 0x2E9E3AFF, 100.0,
+	      BAR_DIRECTION_RIGHT, 1.0, 0, PB_STYLE_RING, 20);               // ring with 20 segments
+	  new gauge = CreatePlayerProgressBar(playerid, 350.0, 200.0, 40.0, 50.0, 0x3A6EE0FF, 100.0,
+	      BAR_DIRECTION_RIGHT, 1.0, 0, PB_STYLE_CIRCLE);                 // growing circle
+
 	-------------------------------------------------------------------------------- functions
 
 	Every function returns 0 (or INVALID_PLAYER_BAR_VALUE for Float getters) when the player or
@@ -38,9 +108,10 @@
 	Creation and life cycle
 	  CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0,
 	      colour = 0xFF1C1CFF, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT,
-	      Float:border = 1.0, bordercolour = 0)
+	      Float:border = 1.0, bordercolour = 0, style = PB_STYLE_BAR, segments = 24)
 	      Creates a hidden bar and returns its id (INVALID_PLAYER_BAR_ID on failure).
 	      bordercolour 0 = black with the alpha of the bar colour.
+	      style: PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE; segments: only for PB_STYLE_RING.
 	  DestroyPlayerProgressBar(playerid, barid)
 	  DestroyAllPlayerProgressBars(playerid)
 	  IsValidPlayerProgressBar(playerid, barid)                    -> bool
@@ -67,6 +138,11 @@
 	  GetPlayerProgressBarHeight(playerid, barid)                  -> Float
 	  SetPlayerProgressBarDirection(playerid, barid, direction = BAR_DIRECTION_RIGHT)
 	  GetPlayerProgressBarDirection(playerid, barid)
+
+	Style
+	  SetPlayerProgressBarStyle(playerid, barid, style = PB_STYLE_BAR, segments = 24)
+	  GetPlayerProgressBarStyle(playerid, barid)
+	  GetPlayerProgressBarSegments(playerid, barid)
 
 	Colours and border
 	  SetPlayerProgressBarColour(playerid, barid, colour = 0xFF1C1CFF)
@@ -96,6 +172,9 @@
 	  PB_BLINK_DEFAULT      default blink interval in ms (250)
 	  PB_BLINK_MIN          shortest blink interval in ms (50)
 	  PB_BLINK_MAX          longest blink interval in ms (60000)
+	  PB_RING_SEGMENTS      default ring segments (24)
+	  PB_RING_MIN           fewest ring segments (4)
+	  PB_RING_MAX           most ring segments (60)
 */
 
 #if defined _progressbarpro_included
@@ -145,6 +224,20 @@
 #if !defined MAX_PLAYER_BARS
 	#define MAX_PLAYER_BARS (_:MAX_PLAYER_TEXT_DRAWS / 3)
 #endif
+#if !defined PB_RING_SEGMENTS
+	#define PB_RING_SEGMENTS (24)
+#endif
+#if !defined PB_RING_MIN
+	#define PB_RING_MIN (4)
+#endif
+#if !defined PB_RING_MAX
+	#define PB_RING_MAX (60)
+#endif
+
+// "LD_BEAT:chit" is a white circle that fills only 2/3 of the sprite: the sprite is drawn
+// 1.5 times larger than the circle it has to show
+#define PB_CHIT_SCALE (1.5)
+#define PB_MAX_TDS (_:MAX_PLAYER_TEXT_DRAWS)
 
 #define INVALID_PLAYER_BAR_VALUE (Float:0xFFFFFFFF)
 #define INVALID_PLAYER_BAR_ID (-1)
@@ -176,6 +269,13 @@ enum
 	BAR_DIRECTION_DOWN
 }
 
+enum
+{
+	PB_STYLE_BAR,
+	PB_STYLE_RING,
+	PB_STYLE_CIRCLE
+}
+
 enum ProgressBar_Data
 {
 	bool:pb_valid,
@@ -197,6 +297,8 @@ enum ProgressBar_Data
 	pb_blinkBorderColour,
 	pb_blinkStart,
 	pb_blinkDuration,
+	pb_style,
+	pb_segments,
 	PlayerText:pb_back,
 	PlayerText:pb_fill,
 	PlayerText:pb_main
@@ -204,11 +306,16 @@ enum ProgressBar_Data
 
 static stock pb_Data[MAX_PLAYERS][MAX_PLAYER_BARS][ProgressBar_Data];
 
+// Ring segments: which bar owns each PlayerTextDraw id (bar id + 1, 0 = none) and which part it is
+// (segment * 2 + 0 for the border dot, + 1 for the segment)
+static stock pb_TdOwner[MAX_PLAYERS][PB_MAX_TDS];
+static stock pb_TdPart[MAX_PLAYERS][PB_MAX_TDS];
+
 // ---------------------------------------------------------------------------- internal
 
-static stock PlayerText:PB_Sprite(playerid, Float:x, Float:y, Float:width, Float:height, colour)
+static stock PlayerText:PB_Sprite(playerid, Float:x, Float:y, Float:width, Float:height, colour, const sprite[] = "LD_SPAC:white")
 {
-	new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, "LD_SPAC:white");
+	new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, sprite);
 	if (td == PB_NO_TD) return td;
 	PlayerTextDrawFont(playerid, td, PB_SPRITE_FONT);
 	PlayerTextDrawTextSize(playerid, td, width, height);
@@ -223,6 +330,31 @@ static stock PB_Kill(playerid, &PlayerText:td)
 	{
 		PlayerTextDrawDestroy(playerid, td);
 		td = PB_NO_TD;
+	}
+}
+
+// Square sprite for PB_STYLE_BAR, round sprite (scaled around the centre) for PB_STYLE_CIRCLE
+static stock PlayerText:PB_ShapeSprite(playerid, barid, Float:x, Float:y, Float:width, Float:height, colour)
+{
+	if (pb_Data[playerid][barid][pb_style] != PB_STYLE_CIRCLE) return PB_Sprite(playerid, x, y, width, height, colour);
+	new Float:sw = width * PB_CHIT_SCALE, Float:sh = height * PB_CHIT_SCALE;
+	return PB_Sprite(playerid, x + (width - sw) / 2.0, y + (height - sh) / 2.0, sw, sh, colour, "LD_BEAT:chit");
+}
+
+static stock PB_ClampSegments(segments)
+{
+	if (segments < PB_RING_MIN) return PB_RING_MIN;
+	if (segments > PB_RING_MAX) return PB_RING_MAX;
+	return segments;
+}
+
+static stock PB_KillRing(playerid, barid)
+{
+	for (new t = 0; t < PB_MAX_TDS; t++)
+	{
+		if (pb_TdOwner[playerid][t] != barid + 1) continue;
+		PlayerTextDrawDestroy(playerid, PlayerText:t);
+		pb_TdOwner[playerid][t] = 0;
 	}
 }
 
@@ -266,6 +398,15 @@ static stock bool:PB_MainRect(playerid, barid, &Float:x, &Float:y, &Float:width,
 	new Float:part = (limit > 0.0) ? (pb_Data[playerid][barid][pb_value] / limit) : 0.0;
 	if (part > 1.0) part = 1.0;
 	if (part <= 0.0 || width <= 0.0 || height <= 0.0) return false;
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_CIRCLE)
+	{
+		// Circle: grows from the centre
+		x += width * (1.0 - part) / 2.0;
+		y += height * (1.0 - part) / 2.0;
+		width *= part;
+		height *= part;
+		return true;
+	}
 	switch (pb_Data[playerid][barid][pb_direction])
 	{
 		case BAR_DIRECTION_LEFT:
@@ -328,9 +469,49 @@ static stock PB_ShowInner(playerid, barid)
 	}
 }
 
+// Number of lit ring segments
+static stock PB_RingLit(playerid, barid)
+{
+	new Float:limit = pb_Data[playerid][barid][pb_max];
+	new Float:part = (limit > 0.0) ? (pb_Data[playerid][barid][pb_value] / limit) : 0.0;
+	if (part > 1.0) part = 1.0;
+	if (part <= 0.0) return 0;
+	return floatround(part * float(pb_Data[playerid][barid][pb_segments]) + 0.0001, floatround_floor);
+}
+
+static stock PB_ApplyRingColours(playerid, barid)
+{
+	new lit = PB_RingLit(playerid, barid);
+	new colour = PB_CurrentColour(playerid, barid), dim = PB_FillColour(colour);
+	new border = PB_BorderColour(playerid, barid);
+	new bool:hidden = PB_InnerHidden(playerid, barid), bool:shown = pb_Data[playerid][barid][pb_show];
+	for (new t = 0; t < PB_MAX_TDS; t++)
+	{
+		if (pb_TdOwner[playerid][t] != barid + 1) continue;
+		new PlayerText:td = PlayerText:t, part = pb_TdPart[playerid][t];
+		if (part % 2 == 0)
+		{
+			PB_TextDrawColour(playerid, td, border);
+			if (shown) PlayerTextDrawShow(playerid, td);
+		}
+		else
+		{
+			PB_TextDrawColour(playerid, td, (part / 2 < lit) ? colour : dim);
+			if (!shown) continue;
+			if (hidden) PlayerTextDrawHide(playerid, td);
+			else PlayerTextDrawShow(playerid, td);
+		}
+	}
+}
+
 // Applies the current colours (and the current blink phase) without recreating the TextDraws
 static stock PB_ApplyColours(playerid, barid)
 {
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_RING)
+	{
+		PB_ApplyRingColours(playerid, barid);
+		return;
+	}
 	if (pb_Data[playerid][barid][pb_back] != PB_NO_TD)
 	{
 		PB_TextDrawColour(playerid, pb_Data[playerid][barid][pb_back], PB_BorderColour(playerid, barid));
@@ -353,28 +534,79 @@ static stock PB_KillBlink(playerid, barid)
 	pb_Data[playerid][barid][pb_blinkPhase] = false;
 }
 
-// Recreates only the filled part (its position changes for the left and up directions)
+// Recreates only the filled part (its position changes for the left and up directions);
+// a ring only changes the colour of its segments
 static stock PB_RenderMain(playerid, barid)
 {
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_RING)
+	{
+		PB_ApplyRingColours(playerid, barid);
+		return;
+	}
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_main]);
 	new Float:x, Float:y, Float:width, Float:height;
 	if (!PB_MainRect(playerid, barid, x, y, width, height)) return;
-	pb_Data[playerid][barid][pb_main] = PB_Sprite(playerid, x, y, width, height, PB_CurrentColour(playerid, barid));
+	pb_Data[playerid][barid][pb_main] = PB_ShapeSprite(playerid, barid, x, y, width, height, PB_CurrentColour(playerid, barid));
 	if (pb_Data[playerid][barid][pb_show] && pb_Data[playerid][barid][pb_main] != PB_NO_TD && !PB_InnerHidden(playerid, barid))
 		PlayerTextDrawShow(playerid, pb_Data[playerid][barid][pb_main]);
 }
 
-// Recreates the whole bar (position, size or border changed)
+// Ring: all border dots first, then the segments (TextDraws are drawn in creation order).
+// The segment size follows the ring size and the number of segments so they never touch.
+static stock bool:PB_RenderRing(playerid, barid)
+{
+	PB_KillRing(playerid, barid);
+	new n = pb_Data[playerid][barid][pb_segments];
+	new Float:rx = pb_Data[playerid][barid][pb_width] / 2.0, Float:ry = pb_Data[playerid][barid][pb_height] / 2.0;
+	new Float:cx = pb_Data[playerid][barid][pb_x] + rx, Float:cy = pb_Data[playerid][barid][pb_y] + ry;
+	new Float:bx = pb_Data[playerid][barid][pb_border], Float:by = bx * PB_BORDER_Y_RATIO;
+	new Float:r = rx;
+	if (ry / PB_BORDER_Y_RATIO < r) r = ry / PB_BORDER_Y_RATIO;
+	new Float:dx = 1.4 * 3.14159265 * (r - bx) / (float(n) + 0.7 * 3.14159265);
+	if (dx < 0.5) dx = 0.5;
+	new Float:dy = dx * PB_BORDER_Y_RATIO;
+	new Float:px = rx - dx / 2.0 - bx, Float:py = ry - dy / 2.0 - by;
+	if (px < 0.0) px = 0.0;
+	if (py < 0.0) py = 0.0;
+	new Float:step = 360.0 / float(n);
+	new dir = pb_Data[playerid][barid][pb_direction];
+	if (dir == BAR_DIRECTION_LEFT || dir == BAR_DIRECTION_UP) step = -step;
+	for (new role = 0; role < 2; role++)
+	{
+		new Float:sw = (role == 0) ? (dx + bx * 2.0) : dx, Float:sh = (role == 0) ? (dy + by * 2.0) : dy;
+		sw *= PB_CHIT_SCALE;
+		sh *= PB_CHIT_SCALE;
+		for (new i = 0; i < n; i++)
+		{
+			new Float:angle = -90.0 + step * float(i);
+			new Float:ex = cx + px * floatcos(angle, degrees), Float:ey = cy + py * floatsin(angle, degrees);
+			new PlayerText:td = PB_Sprite(playerid, ex - sw / 2.0, ey - sh / 2.0, sw, sh, 0, "LD_BEAT:chit");
+			if (td == PB_NO_TD)
+			{
+				PB_KillRing(playerid, barid);
+				return false;
+			}
+			pb_TdOwner[playerid][_:td] = barid + 1;
+			pb_TdPart[playerid][_:td] = i * 2 + role;
+		}
+	}
+	PB_ApplyRingColours(playerid, barid);
+	return true;
+}
+
+// Recreates the whole bar (position, size, border or style changed)
 static stock bool:PB_Render(playerid, barid)
 {
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_back]);
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_fill]);
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_main]);
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_RING) return PB_RenderRing(playerid, barid);
+	PB_KillRing(playerid, barid);
 	new Float:x, Float:y, Float:width, Float:height;
-	pb_Data[playerid][barid][pb_back] = PB_Sprite(playerid, pb_Data[playerid][barid][pb_x], pb_Data[playerid][barid][pb_y],
+	pb_Data[playerid][barid][pb_back] = PB_ShapeSprite(playerid, barid, pb_Data[playerid][barid][pb_x], pb_Data[playerid][barid][pb_y],
 		pb_Data[playerid][barid][pb_width], pb_Data[playerid][barid][pb_height], PB_BorderColour(playerid, barid));
 	PB_Inner(playerid, barid, x, y, width, height);
-	pb_Data[playerid][barid][pb_fill] = PB_Sprite(playerid, x, y, width, height, PB_FillColour(PB_CurrentColour(playerid, barid)));
+	pb_Data[playerid][barid][pb_fill] = PB_ShapeSprite(playerid, barid, x, y, width, height, PB_FillColour(PB_CurrentColour(playerid, barid)));
 	if (pb_Data[playerid][barid][pb_back] == PB_NO_TD || pb_Data[playerid][barid][pb_fill] == PB_NO_TD) return false;
 	if (pb_Data[playerid][barid][pb_show])
 	{
@@ -399,7 +631,7 @@ stock bool:IsValidPlayerProgressBar(playerid, barid)
 /*
 	CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0,
 	    colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT,
-	    Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
+	    Float:border = PB_BORDER_DEFAULT, bordercolour = 0, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS)
 	Creates a bar for the player (hidden until ShowPlayerProgressBar) with value 0.
 	  x, y          top-left corner in TextDraw units (640x448)
 	  width, height size of the whole bar, border included
@@ -409,10 +641,12 @@ stock bool:IsValidPlayerProgressBar(playerid, barid)
 	  border        side border (PB_BORDER_MIN to PB_BORDER_MAX; out of range uses the limit;
 	                reduced to fit when the bar is too small)
 	  bordercolour  border colour (0 = black with the alpha of the bar colour)
+	  style         PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE
+	  segments      ring segments (PB_RING_MIN to PB_RING_MAX), used only by PB_STYLE_RING
 	Returns the bar id, or INVALID_PLAYER_BAR_ID if the player is not connected, the player
 	already has MAX_PLAYER_BARS bars or there are no free PlayerTextDraws.
 */
-stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
+stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS)
 {
 	if (!(0 <= playerid < MAX_PLAYERS) || !IsPlayerConnected(playerid)) return INVALID_PLAYER_BAR_ID;
 	new barid = INVALID_PLAYER_BAR_ID;
@@ -442,6 +676,8 @@ stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Fl
 	pb_Data[playerid][barid][pb_blinking] = false;
 	pb_Data[playerid][barid][pb_blinkPhase] = false;
 	pb_Data[playerid][barid][pb_blinkTimer] = 0;
+	pb_Data[playerid][barid][pb_style] = (PB_STYLE_BAR <= style <= PB_STYLE_CIRCLE) ? style : PB_STYLE_BAR;
+	pb_Data[playerid][barid][pb_segments] = PB_ClampSegments(segments);
 	pb_Data[playerid][barid][pb_back] = PB_NO_TD;
 	pb_Data[playerid][barid][pb_fill] = PB_NO_TD;
 	pb_Data[playerid][barid][pb_main] = PB_NO_TD;
@@ -465,6 +701,7 @@ stock DestroyPlayerProgressBar(playerid, barid)
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_back]);
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_fill]);
 	PB_Kill(playerid, pb_Data[playerid][barid][pb_main]);
+	PB_KillRing(playerid, barid);
 	pb_Data[playerid][barid][pb_valid] = false;
 	pb_Data[playerid][barid][pb_show] = false;
 	return 1;
@@ -491,6 +728,11 @@ stock ShowPlayerProgressBar(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	pb_Data[playerid][barid][pb_show] = true;
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_RING)
+	{
+		PB_ApplyRingColours(playerid, barid);
+		return 1;
+	}
 	PlayerTextDrawShow(playerid, pb_Data[playerid][barid][pb_back]);
 	PB_ShowInner(playerid, barid);
 	return 1;
@@ -504,6 +746,14 @@ stock HidePlayerProgressBar(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	pb_Data[playerid][barid][pb_show] = false;
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_RING)
+	{
+		for (new t = 0; t < PB_MAX_TDS; t++)
+		{
+			if (pb_TdOwner[playerid][t] == barid + 1) PlayerTextDrawHide(playerid, PlayerText:t);
+		}
+		return 1;
+	}
 	PlayerTextDrawHide(playerid, pb_Data[playerid][barid][pb_back]);
 	PlayerTextDrawHide(playerid, pb_Data[playerid][barid][pb_fill]);
 	if (pb_Data[playerid][barid][pb_main] != PB_NO_TD) PlayerTextDrawHide(playerid, pb_Data[playerid][barid][pb_main]);
@@ -668,6 +918,7 @@ stock SetPlayerProgressBarDirection(playerid, barid, direction = BAR_DIRECTION_R
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	pb_Data[playerid][barid][pb_direction] = (BAR_DIRECTION_RIGHT <= direction <= BAR_DIRECTION_DOWN) ? direction : BAR_DIRECTION_RIGHT;
+	if (pb_Data[playerid][barid][pb_style] == PB_STYLE_RING) return _:PB_Render(playerid, barid);
 	PB_RenderMain(playerid, barid);
 	return 1;
 }
@@ -680,6 +931,41 @@ stock GetPlayerProgressBarDirection(playerid, barid)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	return pb_Data[playerid][barid][pb_direction];
+}
+
+// ---------------------------------------------------------------------------- style
+
+/*
+	SetPlayerProgressBarStyle(playerid, barid, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS)
+	Changes the style (PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE) and the ring segments.
+	The bar keeps its value, colours, visibility and blinking.
+*/
+stock SetPlayerProgressBarStyle(playerid, barid, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	pb_Data[playerid][barid][pb_style] = (PB_STYLE_BAR <= style <= PB_STYLE_CIRCLE) ? style : PB_STYLE_BAR;
+	pb_Data[playerid][barid][pb_segments] = PB_ClampSegments(segments);
+	return _:PB_Render(playerid, barid);
+}
+
+/*
+	GetPlayerProgressBarStyle(playerid, barid)
+	Returns the style (PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE).
+*/
+stock GetPlayerProgressBarStyle(playerid, barid)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	return pb_Data[playerid][barid][pb_style];
+}
+
+/*
+	GetPlayerProgressBarSegments(playerid, barid)
+	Returns the number of ring segments.
+*/
+stock GetPlayerProgressBarSegments(playerid, barid)
+{
+	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	return pb_Data[playerid][barid][pb_segments];
 }
 
 // ---------------------------------------------------------------------------- colours and border
@@ -829,6 +1115,7 @@ public OnPlayerDisconnect(playerid, reason)
 			pb_Data[playerid][i][pb_valid] = false;
 			pb_Data[playerid][i][pb_show] = false;
 		}
+		for (new t = 0; t < PB_MAX_TDS; t++) pb_TdOwner[playerid][t] = 0;
 	}
 	#if defined pb_OnPlayerDisconnect
 		return pb_OnPlayerDisconnect(playerid, reason);

@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -488,6 +488,40 @@ function bindFieldInputs() {
   colorPair('#tdPbBlinkBorder', '#tdPbBlinkBorderColorRow', '#tdPbBlinkBorderColor', 'pbBlinkBorderColor', false);
   syncPbBlinkFields = syncBlinkFields;
 
+  // Modelo da barra: ao trocar de barra para um formato redondo, a caixa vira 40 x 50 (redonda na tela)
+  const styleSel = dialogEl.querySelector('#tdPbStyle');
+  if (styleSel) styleSel.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type !== 'progress') return;
+    tdPushUndo();
+    const before = td.pbStyle | 0;
+    td.pbStyle = clampPbStyle(styleSel.value);
+    if (before === 0 && td.pbStyle !== 0 && td.pbHeight < td.pbWidth * 0.6) { td.pbWidth = 40; td.pbHeight = 50; }
+    if (td.pbStyle === 0 && before !== 0 && td.pbHeight > td.pbWidth * 0.6) { td.pbWidth = 120; td.pbHeight = 12; }
+    if (!td.pbSegments) td.pbSegments = 24;
+    appRef.project.modified = true;
+    updateSidebarFields();
+    updateSidebarList();
+    redrawCanvas();
+  };
+  const segInp = dialogEl.querySelector('#tdPbSegments');
+  if (segInp) {
+    segInp.onfocus = () => tdPushUndo();
+    const applySeg = (fix) => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      if (segInp.value === '' && !fix) return;
+      const v = clampPbSegments(segInp.value);
+      td.pbSegments = v;
+      if (fix || Number(segInp.value) !== v) segInp.value = v;
+      syncPbStyleRows(td);
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+    segInp.oninput = () => applySeg(false);
+    segInp.onchange = () => applySeg(true);
+  }
+
   // Contorno e sombra: só ligado (1) ou desligado (0)
   for (const [id, prop] of [['#tdOutline', 'outline'], ['#tdShadow', 'shadow']]) {
     const el = dialogEl.querySelector(id);
@@ -902,6 +936,24 @@ function decimalText(v) {
   return t.includes('.') ? t : t + '.0';
 }
 
+// Campos que dependem do modelo: segmentos só no anel, direção não vale para o círculo, e um aviso
+// com as PlayerTextDraws que a barra usa no jogo
+function syncPbStyleRows(td) {
+  if (!dialogEl || !td) return;
+  const style = td.pbStyle | 0;
+  const show = (id, on, disp = 'flex') => { const el = dialogEl.querySelector(id); if (el) el.style.display = on ? disp : 'none'; };
+  show('#tdPbSegmentsRow', style === 1);
+  show('#tdPbDirRow', style !== 2);
+  const note = dialogEl.querySelector('#tdPbStyleNote');
+  if (note) {
+    const seg = clampPbSegments(td.pbSegments);
+    note.style.display = style ? 'block' : 'none';
+    note.textContent = style === 1
+      ? `O anel usa ${seg * 2} PlayerTextDraws (2 por segmento) de 256 por jogador. Para ficar redondo, a altura deve ser 1,25 vez a largura.`
+      : 'O círculo usa 3 PlayerTextDraws e cresce do centro. Para ficar redondo, a altura deve ser 1,25 vez a largura.';
+  }
+}
+
 // Mostra o seletor de cor só quando a cor própria está ligada
 function syncPbColorRows(td) {
   if (!dialogEl || !td) return;
@@ -1235,7 +1287,7 @@ function updateSidebarList() {
     const item = document.createElement('div');
     item.className = 'td-list-item' + (idx === selectedIdx ? ' selected' : '');
     const col = toHexRgba(td.color ?? 0xFFFFFFFF);
-    const label = td.type === 'progress' ? `Barra: ${td.name || 'sem nome'}` : stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
+    const label = td.type === 'progress' ? `${['Barra', 'Anel', 'Círculo'][td.pbStyle | 0] || 'Barra'}: ${td.name || 'sem nome'}` : stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
 
     item.innerHTML = `
       <div class="td-badge" style="background:${col.hex};"></div>
@@ -1336,6 +1388,9 @@ function updateSidebarFields() {
     if (bb) bb.checked = Boolean(td.pbBlinkBorderColor);
     if (td.pbBlinkBorderColor) setVal('#tdPbBlinkBorderColor', hexColor(td.pbBlinkBorderColor));
     syncPbColorRows(td);
+    setVal('#tdPbStyle', td.pbStyle | 0);
+    setVal('#tdPbSegments', clampPbSegments(td.pbSegments));
+    syncPbStyleRows(td);
   }
 
   // Painel de Sprite (Font 4)

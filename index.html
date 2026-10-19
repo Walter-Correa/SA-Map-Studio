@@ -993,6 +993,17 @@
           <div class="pop-title" style="margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-hi);">Barra de progresso</div>
           <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Nome<input type="text" id="tdPbName" spellcheck="false" placeholder="BarraFome"></label>
           <div class="pair">
+            <label title="Modelo da barra (style de CreatePlayerProgressBar)">Modelo
+              <select id="tdPbStyle">
+                <option value="0">Barra</option>
+                <option value="1">Anel de segmentos</option>
+                <option value="2">Círculo</option>
+              </select>
+            </label>
+            <label id="tdPbSegmentsRow" style="display: none;" title="Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)">Segmentos (4 a 60)<input type="number" id="tdPbSegments" step="1" min="4" max="60"></label>
+          </div>
+          <div id="tdPbStyleNote" class="insp-note" style="display: none; font-size: 11px; margin: 0;"></div>
+          <div class="pair">
             <label>Largura<input type="number" id="tdPbWidth" step="0.1" min="2"></label>
             <label>Altura<input type="number" id="tdPbHeight" step="0.1" min="2.25"></label>
           </div>
@@ -1000,7 +1011,7 @@
             <label>Valor máximo<input type="number" id="tdPbMax" step="1" min="1"></label>
             <label>Valor atual<input type="number" id="tdPbValue" step="1" min="0"></label>
           </div>
-          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Direção
+          <label id="tdPbDirRow" style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Direção
             <select id="tdPbDir">
               <option value="0">Direita</option>
               <option value="1">Esquerda</option>

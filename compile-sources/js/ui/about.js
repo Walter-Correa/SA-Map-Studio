@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.14.0', date: '19/10/2026', items: [
+      'Barras circulares na SA Progress Bar Pro, escolhidas no próprio CreatePlayerProgressBar (parâmetro style): anel de segmentos que acendem do topo, em sentido horário ou anti-horário (PB_STYLE_RING, com a quantidade de segmentos), e círculo que cresce do centro (PB_STYLE_CIRCLE).',
+      'Editor de TextDraws: campo Modelo (Barra, Anel de segmentos, Círculo) e Segmentos, com prévia, aviso de quantas PlayerTextDraws o anel usa, exportação, importação e servidor de teste.',
+      'A include documenta o que acontece na criação das barras circulares, os recursos usados e as limitações.',
+    ],
+  },
+  {
     version: '3.13.0', date: '19/10/2026', items: [
       'SA Progress Bar Pro toda em inglês e documentada: cada função tem a descrição dos parâmetros e o topo da include lista todas as funções e configurações.',
       'Novas funções SetPlayerProgressBarSize e GetPlayerProgressBarSize (largura e altura juntas).',

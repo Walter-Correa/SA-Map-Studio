@@ -215,8 +215,7 @@ export function layoutTextDraw(td) {
 // Retângulo ocupado (unidades 640x448) para seleção e arrasto
 export function textDrawRect(td) {
   if (td.type === 'progress') {
-    const r = progressBarParts(td)[0];
-    return { x: r.x, y: r.y, w: Math.max(4, r.w), h: Math.max(4, r.h) };
+    return { x: +td.x || 0, y: +td.y || 0, w: Math.max(4, +td.pbWidth || 0), h: Math.max(4, +td.pbHeight || 0) };
   }
   const lay = layoutTextDraw(td);
   const r = lay.box || lay.textRect;
@@ -232,7 +231,47 @@ export function textDrawRect(td) {
 // limitada como na include (0,5 a 5). blinkOn: fase acesa da piscada (cor da piscada ou interior apagado;
 // a borda troca para pbBlinkBorderColor se houver).
 export const PB_BORDER_Y_RATIO = 1.25;
+// Modelos da include: 0 barra, 1 anel de segmentos, 2 círculo que cresce do centro
+export const PB_STYLES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE'];
+
+// Anel (PB_STYLE_RING), igual a PB_RenderRing da include: pontos de borda e segmentos em volta do
+// centro da caixa, começando no topo; o tamanho do segmento vem do tamanho do anel e da quantidade
+function ringParts(bar, blinkOn) {
+  const x = +bar.x || 0, y = +bar.y || 0;
+  const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
+  const n = Math.max(4, Math.min(60, (bar.pbSegments | 0) || 24));
+  const max = +bar.pbMax || 0;
+  const v = Math.max(0, Math.min(max, +bar.pbValue || 0));
+  const base = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
+  const blinking = Boolean(bar.pbBlink) && blinkOn;
+  const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
+  const c = blinking && blinkColor ? blinkColor : base;
+  const dim = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
+  const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
+  const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || (base & 0xFF));
+  const nb = Number(bar.pbBorder ?? 1);
+  const bx = Number.isFinite(nb) ? Math.max(0.5, Math.min(5, nb)) : 1, by = bx * PB_BORDER_Y_RATIO;
+  const rx = w / 2, ry = h / 2, cx = x + rx, cy = y + ry;
+  const r = Math.min(rx, ry / PB_BORDER_Y_RATIO);
+  const dx = Math.max(0.5, 1.4 * Math.PI * (r - bx) / (n + 0.7 * Math.PI)), dy = dx * PB_BORDER_Y_RATIO;
+  const px = Math.max(0, rx - dx / 2 - bx), py = Math.max(0, ry - dy / 2 - by);
+  const dir = bar.pbDir | 0;
+  const step = (dir === 1 || dir === 2 ? -1 : 1) * 360 / n;
+  const part = max > 0 ? Math.min(1, v / max) : 0;
+  const lit = part > 0 ? Math.floor(part * n + 0.0001) : 0;
+  const hidden = blinking && !blinkColor;
+  const centers = Array.from({ length: n }, (_, i) => {
+    const a = (-90 + step * i) * Math.PI / 180;
+    return [cx + px * Math.cos(a), cy + py * Math.sin(a)];
+  });
+  const parts = centers.map(([ex, ey]) => ({ shape: 'circle', x: ex - dx / 2 - bx, y: ey - dy / 2 - by, w: dx + bx * 2, h: dy + by * 2, color: borderColor }));
+  if (!hidden) centers.forEach(([ex, ey], i) => parts.push({ shape: 'circle', x: ex - dx / 2, y: ey - dy / 2, w: dx, h: dy, color: i < lit ? c : dim }));
+  return parts;
+}
+
 export function progressBarParts(bar, blinkOn = false) {
+  if ((bar.pbStyle | 0) === 1) return ringParts(bar, blinkOn);
+  const shape = (bar.pbStyle | 0) === 2 ? 'circle' : 'rect';
   const x = +bar.x || 0, y = +bar.y || 0;
   const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
   const max = +bar.pbMax || 0;
@@ -252,12 +291,15 @@ export function progressBarParts(bar, blinkOn = false) {
   const iw = Math.max(0, w - bx * 2), ih = Math.max(0, h - by * 2);
   const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
   const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || alpha);
-  const parts = [{ x, y, w, h, color: borderColor }];
+  const parts = [{ shape, x, y, w, h, color: borderColor }];
   if (blinking && !blinkColor) return parts; // sem cor: o interior apaga
-  parts.push({ x: ix, y: iy, w: iw, h: ih, color: fillColor });
+  parts.push({ shape, x: ix, y: iy, w: iw, h: ih, color: fillColor });
   const part = max > 0 ? Math.min(1, v / max) : 0;
-  if (part > 0 && iw > 0 && ih > 0) {
-    const m = { x: ix, y: iy, w: iw, h: ih, color: c };
+  if (part > 0 && iw > 0 && ih > 0 && shape === 'circle') {
+    // Círculo: cresce a partir do centro
+    parts.push({ shape, x: ix + iw * (1 - part) / 2, y: iy + ih * (1 - part) / 2, w: iw * part, h: ih * part, color: c });
+  } else if (part > 0 && iw > 0 && ih > 0) {
+    const m = { shape, x: ix, y: iy, w: iw, h: ih, color: c };
     switch (bar.pbDir | 0) {
       case 1: m.x += iw * (1 - part); m.w = iw * part; break; // esquerda
       case 2: m.y += ih * (1 - part); m.h = ih * part; break; // para cima
@@ -275,6 +317,15 @@ export function progressBarParts(bar, blinkOn = false) {
 export function drawProgressBar(ctx, bar, blinkOn = false) {
   for (const r of progressBarParts(bar, blinkOn)) {
     const c = rgba(r.color);
+    if (r.shape === 'circle') {
+      // Formas redondas (sprite LD_BEAT:chit): elipse com o mesmo tamanho do círculo do sprite
+      if (r.w <= 0 || r.h <= 0) continue;
+      ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
+      ctx.beginPath();
+      ctx.ellipse((r.x + r.w / 2) * UX, (r.y + r.h / 2) * UY, r.w / 2 * UX, r.h / 2 * UY, 0, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
     const x0 = Math.ceil(r.x * UX), x1 = Math.ceil((r.x + r.w) * UX);
     const y0 = Math.ceil(r.y * UY), y1 = Math.ceil((r.y + r.h) * UY);
     if (x1 <= x0 || y1 <= y0) continue;

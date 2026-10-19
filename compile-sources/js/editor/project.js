@@ -211,6 +211,10 @@ export const PB_MIN_HEIGHT = PB_LIMITS.borderMin * 2 * PB_LIMITS.borderYRatio + 
 export const fitPbBorder = (v, width, height) => Math.min(clampPbBorder(v), maxPbBorder(width, height));
 export const clampPbBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, PB_LIMITS.blinkDefault));
 export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0));
+// Modelos da barra (o mesmo PB_STYLE_* da include) e segmentos do anel (PB_RING_MIN a PB_RING_MAX)
+export const PB_STYLE_NAMES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE'];
+export const clampPbStyle = (v) => { const n = Number(v) | 0; return n >= 0 && n <= 2 ? n : 0; };
+export const clampPbSegments = (v) => Math.round(clampNum(v, 4, 60, 24));
 
 // Variável da barra no código: progress_0, progress_1... na ordem das barras do projeto
 export function progressBarVar(td, all = []) {
@@ -229,8 +233,10 @@ export function progressBarPawn(td, varName, fmt) {
   const hexOf = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const hex = hexOf(td.color ?? 0xFF1C1CFF);
   const borderCol = Number(td.pbBorderColor || 0) >>> 0;
+  const style = clampPbStyle(td.pbStyle);
+  const styleArgs = style ? `, ${borderCol ? hexOf(borderCol) : 0}, ${PB_STYLE_NAMES[style]}${style === 1 ? ', ' + clampPbSegments(td.pbSegments) : ''}` : (borderCol ? ', ' + hexOf(borderCol) : '');
   const lines = [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${borderCol ? ', ' + hexOf(borderCol) : ''});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${styleArgs});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
@@ -318,6 +324,8 @@ export function makeTextDraw(data) {
       pbBlinkDuration: clampPbBlinkDuration(data.pbBlinkDuration ?? 0),
       pbBlinkColor: Number(data.pbBlinkColor || 0) >>> 0,
       pbBorderColor: Number(data.pbBorderColor || 0) >>> 0,
+      pbStyle: clampPbStyle(data.pbStyle ?? 0),
+      pbSegments: clampPbSegments(data.pbSegments ?? 24),
       pbBlinkBorderColor: Number(data.pbBlinkBorderColor || 0) >>> 0,
     } : {}),
   };
