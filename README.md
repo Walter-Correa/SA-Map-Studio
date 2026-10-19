@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.16.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.17.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,15 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.17.0 — 20/10/2026
+- SA Progress Bar Pro: `AutoFillPlayerProgressBar(playerid, barid, maxvalue)`, `StopAutoFillPlayerProgressBar` e
+  `IsPlayerProgressBarAutoFilling`; array de dados renomeado para `ProgressBar`.
+- Editor: Auto preencher salvo na barra (com "Preencher até" limitado ao máximo da barra), exportado e importado; prévia com o
+  mesmo tempo da include.
+- Importar: opção "Mesclar com o projeto atual".
+- Importador: zip (mapas de dentro), carros de IPL em texto, peds/pickups/markers/blips/radar areas do MTA e objetos em array.
+- Corrige objetos com extras criados duas vezes na exportação em array.
 
 ### 3.16.0 — 20/10/2026
 - Seletor de cor próprio para todos os campos de cor (o WebView2 não abre o seletor nativo).

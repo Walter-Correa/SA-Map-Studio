@@ -215,6 +215,23 @@ export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0
 export const PB_STYLE_NAMES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE'];
 export const clampPbStyle = (v) => { const n = Number(v) | 0; return n >= 0 && n <= 2 ? n : 0; };
 export const clampPbSegments = (v) => Math.round(clampNum(v, 4, 60, 24));
+// Auto preencher (AutoFillPlayerProgressBar): até onde enche, de 0 ao valor máximo da barra
+export const clampPbAutoFillMax = (v, max) => clampNum(v, 0, Math.max(0, Number(max) || 0), Math.max(0, Number(max) || 0));
+// Tempo do ciclo, igual a PB_AUTOFILL_RISE / HOLD_TOP / FALL / HOLD_BASE da include
+export const PB_AUTOFILL_TIMING = { rise: 1000, holdTop: 400, fall: 1000, holdBase: 300 };
+export function pbAutoFillValue(td, elapsed) {
+  const { rise, holdTop, fall, holdBase } = PB_AUTOFILL_TIMING;
+  const max = Number(td.pbMax) || 0;
+  const value = Math.max(0, Math.min(max, Number(td.pbValue) || 0));
+  const target = clampPbAutoFillMax(td.pbAutoFillMax ?? max, max);
+  const t = ((elapsed % (rise + holdTop + fall + holdBase)) + (rise + holdTop + fall + holdBase)) % (rise + holdTop + fall + holdBase);
+  let f;
+  if (t < rise) f = t / rise;
+  else if (t < rise + holdTop) f = 1;
+  else if (t < rise + holdTop + fall) f = 1 - (t - rise - holdTop) / fall;
+  else f = 0;
+  return value + (target - value) * f;
+}
 
 // Variável da barra no código: progress_0, progress_1... na ordem das barras do projeto
 export function progressBarVar(td, all = []) {
@@ -240,6 +257,7 @@ export function progressBarPawn(td, varName, fmt) {
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
+  if (td.pbAutoFill) lines.push(`AutoFillPlayerProgressBar(playerid, ${varName}, ${f(clampPbAutoFillMax(td.pbAutoFillMax ?? td.pbMax, td.pbMax))});`);
   if (td.pbBlink) {
     const col = Number(td.pbBlinkColor || 0) >>> 0;
     const bcol = Number(td.pbBlinkBorderColor || 0) >>> 0;
@@ -325,6 +343,8 @@ export function makeTextDraw(data) {
       pbBlinkColor: Number(data.pbBlinkColor || 0) >>> 0,
       pbBorderColor: Number(data.pbBorderColor || 0) >>> 0,
       pbStyle: clampPbStyle(data.pbStyle ?? 0),
+      pbAutoFill: Boolean(data.pbAutoFill),
+      pbAutoFillMax: clampPbAutoFillMax(data.pbAutoFillMax ?? (data.pbMax ?? 100), data.pbMax ?? 100),
       pbSegments: clampPbSegments(data.pbSegments ?? 24),
       pbBlinkBorderColor: Number(data.pbBlinkBorderColor || 0) >>> 0,
     } : {}),

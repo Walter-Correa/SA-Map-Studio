@@ -131,7 +131,9 @@ enum E_SAMSP_PBAR
     bar_borderColor,
     bar_blinkBorderColor,
     bar_style,
-    bar_segments
+    bar_segments,
+    bar_autoFill,
+    Float:bar_autoFillMax
 }
 new gPBars[SAMSP_MAX_PBARS][E_SAMSP_PBAR];
 new gTotalPBars;
@@ -830,6 +832,8 @@ stock SAMSP_CarregarMapa()
                 gPBars[gTotalPBars][bar_blinkBorderColor] = SAMSP_HexOrInt(linha, 15);
                 gPBars[gTotalPBars][bar_style] = SAMSP_Int(linha, 16);
                 gPBars[gTotalPBars][bar_segments] = SAMSP_Int(linha, 17);
+                gPBars[gTotalPBars][bar_autoFill] = SAMSP_Int(linha, 18);
+                gPBars[gTotalPBars][bar_autoFillMax] = SAMSP_Float(linha, 19);
                 gTotalPBars++;
             }
             case 'D':
@@ -1344,6 +1348,8 @@ stock SAMSP_ShowProgressBars(playerid)
         if (bar == INVALID_PLAYER_BAR_ID) continue;
         SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);
+        if (gPBars[i][bar_autoFill])
+            AutoFillPlayerProgressBar(playerid, bar, gPBars[i][bar_autoFillMax]);
         if (gPBars[i][bar_blink])
             BlinkPlayerProgressBar(playerid, bar, gPBars[i][bar_blinkInterval], gPBars[i][bar_blinkDuration], gPBars[i][bar_blinkColor], gPBars[i][bar_blinkBorderColor]);
         gPlayerPBars[playerid][gPlayerPBarCount[playerid]++] = bar;

@@ -42,6 +42,7 @@
     <symbol id="i-dropper" viewBox="0 0 24 24"><path d="M14 4l6 6M17 7l-9.5 9.5L5 19l2.5-2.5L17 7z"/><path d="M14 10l-4-4"/></symbol>
     <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></symbol>
     <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
     <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
     <symbol id="i-text3d" viewBox="0 0 24 24">
@@ -498,6 +499,7 @@
     <div class="import-summary" id="importSummary"></div>
     <footer class="dialog-foot">
       <label class="check inline"><input type="checkbox" id="importReplace"> Substituir o projeto atual</label>
+      <label class="check inline" title="Junta os itens importados ao projeto aberto, sem mudar o nome dele"><input type="checkbox" id="importMerge"> Mesclar com o projeto atual</label>
       <button type="button" class="btn primary" id="importGo" disabled>Importar</button>
     </footer>
   </form>
@@ -1017,7 +1019,10 @@
             <label>Valor máximo<input type="number" id="tdPbMax" step="1" min="1"></label>
             <label>Valor atual<input type="number" id="tdPbValue" step="1" min="0"></label>
           </div>
-          <button type="button" class="btn small" id="tdPbTestMove" title="Mostra na prévia a barra enchendo até o máximo e voltando ao valor atual (só no editor)">Testar movimento</button>
+          <div class="pair" style="align-items: end;">
+            <button type="button" class="btn small pb-autofill" id="tdPbAutoFill" title="AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado."><svg><use href="#i-play"/></svg><span>Auto preencher</span></button>
+            <label title="Até onde o auto preencher enche (no máximo, o valor máximo da barra)">Preencher até<input type="number" id="tdPbAutoFillMax" step="1" min="0"></label>
+          </div>
           <label id="tdPbDirRow" style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Direção
             <select id="tdPbDir">
               <option value="0">Direita</option>

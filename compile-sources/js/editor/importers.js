@@ -122,14 +122,37 @@ function fromSqlite(tables, out) {
 }
 
 // ---------------------------------------------------------------- MTA (.map)
+// Cor do MTA ("#RRGGBB", "#RRGGBBAA" ou "r,g,b,a") em RRGGBBAA
+function mtaColor(v, def = 0xFFFFFFFF) {
+  const s = String(v ?? '').trim();
+  let m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(s);
+  if (m) return ((parseInt(m[1], 16) << 8) | (m[2] ? parseInt(m[2], 16) : 255)) >>> 0;
+  m = s.split(',').map(t => parseInt(t, 10));
+  if (m.length >= 3 && m.slice(0, 3).every(Number.isFinite)) return (((m[0] & 255) << 24) | ((m[1] & 255) << 16) | ((m[2] & 255) << 8) | (Number.isFinite(m[3]) ? m[3] & 255 : 255)) >>> 0;
+  return def;
+}
+
 function fromMta(text, out) {
   const attrs = (s) => { const o = {}; for (const m of s.matchAll(/([\w:-]+)\s*=\s*"([^"]*)"/g)) o[m[1].toLowerCase()] = m[2]; return o; };
-  for (const m of text.matchAll(/<\s*(object|removeworldobject|vehicle)\b([^>]*)>/gi)) {
+  const PICKUP_MODELS = { health: 1240, armor: 1242, armour: 1242 };
+  for (const m of text.matchAll(/<\s*(object|removeworldobject|vehicle|ped|pickup|marker|blip|radararea)\b([^>]*)>/gi)) {
     const kind = m[1].toLowerCase(), a = attrs(m[2]);
     const p = { x: +a.posx || 0, y: +a.posy || 0, z: +a.posz || 0 };
-    if (kind === 'object') out.objects.push({ model: +a.model | 0, ...p, rx: +a.rotx || 0, ry: +a.roty || 0, rz: +a.rotz || 0, interior: a.interior ? (+a.interior || -1) : -1, world: a.dimension ? +a.dimension : -1, materials: [] });
+    const world = a.dimension !== undefined ? (+a.dimension | 0) : -1;
+    const interior = a.interior !== undefined ? (+a.interior | 0) : -1;
+    if (kind === 'object') out.objects.push({ model: +a.model | 0, ...p, rx: +a.rotx || 0, ry: +a.roty || 0, rz: +a.rotz || 0, interior: a.interior ? (+a.interior || -1) : -1, world, materials: [] });
     else if (kind === 'vehicle') out.vehicles.push({ model: +a.model | 0, ...p, rz: +a.rotz || 0, color1: -1, color2: -1, respawn: -1 });
-    else {
+    else if (kind === 'ped') out.actors.push({ skin: +a.model | 0, ...p, rz: +a.rotz || +a.rotation || 0, world, interior });
+    else if (kind === 'pickup') {
+      const t = String(a.type || '').toLowerCase();
+      out.pickups.push({ model: PICKUP_MODELS[t] || (+a.model | 0) || 1239, type: 2, ...p, world });
+    } else if (kind === 'marker') out.checkpoints.push({ ...p, size: +a.size || 2, world, interior });
+    else if (kind === 'blip') out.mapIcons.push({ ...p, markertype: +a.icon | 0, color: 0, style: 0, world, interior });
+    else if (kind === 'radararea') {
+      const w = +a.sizex || 0, h = +a.sizey || 0;
+      out.gangZones.push({ name: a.id || 'Zona', minx: Math.min(p.x, p.x + w), maxx: Math.max(p.x, p.x + w),
+        miny: Math.min(p.y, p.y + h), maxy: Math.max(p.y, p.y + h), color: mtaColor(a.color, 0x33AA3390) });
+    } else {
       out.removed.push({ model: +a.model | 0, ...p, radius: +a.radius || 0.25 });
       if (+a.lodmodel) out.removed.push({ model: +a.lodmodel | 0, ...p, radius: +a.radius || 0.25 });
     }
@@ -205,9 +228,10 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
     if (isBinaryIpl(buf)) { const r = parseIplBinary(buf); fromIplInst(r.inst, out); for (const c of r.cars) out.vehicles.push({ model: c.id, x: c.x, y: c.y, z: c.z, rz: c.angle * 180 / Math.PI, color1: -1, color2: -1, respawn: -1 }); }
     return finish(out);
   }
-  if (startsWith(u8, 'PK\x03\x04') || startsWith(u8, '7z') || startsWith(u8, 'Rar!')) {
+  if (startsWith(u8, 'PK\x03\x04')) return importZip(u8, { gd, readSqlite });
+  if (startsWith(u8, '7z') || startsWith(u8, 'Rar!')) {
     out.format = 'Arquivo compactado';
-    out.notes.push('Esse arquivo está compactado (zip, 7z ou rar). Extraia e importe o arquivo de dentro.');
+    out.notes.push('Arquivos 7z e rar não podem ser abertos aqui. Extraia e importe o arquivo de dentro, ou compacte em .zip.');
     return out;
   }
   const text = decodeBytes(u8);
@@ -223,7 +247,7 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
       if (count > 0) return finish(out);
     } catch { /* não é JSON */ }
   }
-  if (/<\s*(object|removeWorldObject)\b[^>]*\bmodel\s*=/i.test(text)) {
+  if (/<\s*(object|removeWorldObject|vehicle|ped|pickup|marker|blip|radararea)\b[^>]*\bpos[XYZ]\s*=/i.test(text) && /<\s*map\b|<\s*\/\s*(object|vehicle|ped)\b|\/>/i.test(text)) {
     out.format = 'Mapa do MTA';
     fromMta(text, out);
     return finish(out);
@@ -236,16 +260,71 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
     Object.assign(out, pwn, { format: 'Código Pawn', notes: [] });
     return finish(out);
   }
-  if (/^\s*inst\s*$/im.test(text)) {
+  if (/^\s*(inst|cars)\s*$/im.test(text)) {
     out.format = 'IPL';
     const r = parseIplText(text);
     fromIplInst(r.inst, out);
-    if (out.objects.length) return finish(out);
+    for (const c of r.cars) if (Number.isFinite(c.id) && c.id > 0) out.vehicles.push({ model: c.id, x: c.x, y: c.y, z: c.z, rz: c.angle || 0, color1: -1, color2: -1, respawn: -1 });
+    if (out.objects.length || out.vehicles.length) return finish(out);
   }
   out.format = 'Lista de objetos';
   fromLooseLines(text, out, gd);
   if (!out.objects.length) out.format = '';
   return finish(out, filename);
+}
+
+// ---------------------------------------------------------------- ZIP
+// Lê o diretório central do .zip, descompacta cada arquivo reconhecido (sem compressão ou deflate)
+// e junta os itens de todos eles num resultado só.
+const ZIP_EXT = /\.(pwn|p|inc|txt|ipl|map|json|db|sqlite)$/i;
+async function unzipEntries(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) return [];
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const files = [];
+  for (let k = 0; k < count && p + 46 <= u8.length && dv.getUint32(p, true) === 0x02014b50; k++) {
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + elen + clen;
+    if (name.endsWith('/') || !ZIP_EXT.test(name) || dv.getUint32(local, true) !== 0x04034b50) continue;
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const data = u8.subarray(start, start + csize);
+    try {
+      if (method === 0) files.push({ name, bytes: data.slice() });
+      else if (method === 8) {
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        files.push({ name, bytes: new Uint8Array(await new Response(stream).arrayBuffer()) });
+      }
+    } catch { /* arquivo corrompido: ignorado */ }
+  }
+  return files;
+}
+
+async function importZip(u8, opts) {
+  const out = empty();
+  out.format = 'Arquivo .zip';
+  const files = await unzipEntries(u8);
+  const used = [];
+  for (const f of files) {
+    const r = await importAny(f.bytes, { ...opts, filename: f.name });
+    const keys = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'sounds', 'textDraws'];
+    const n = keys.reduce((sum, k) => sum + (r[k]?.length || 0), 0) + (r.cameras?.shots?.length || 0) + (r.cameras?.paths?.length || 0);
+    if (!n) continue;
+    for (const k of keys) out[k].push(...(r[k] || []));
+    if (r.cameras) { out.cameras.shots.push(...(r.cameras.shots || [])); out.cameras.paths.push(...(r.cameras.paths || [])); }
+    if (!out.pwnHeader && r.pwnHeader) out.pwnHeader = r.pwnHeader;
+    if (!out.name && r.name) out.name = r.name;
+    out.notes.push(...(r.notes || []));
+    used.push(`${f.name} (${r.format || 'itens'})`);
+  }
+  if (used.length) out.notes.unshift('Do .zip: ' + used.join(', '));
+  else out.notes.push('Nenhum arquivo de mapa reconhecido dentro do .zip.');
+  return out;
 }
 
 function finish(out) {

@@ -132,12 +132,20 @@ export function setupImport() {
   });
   const open = () => { parsed = null; fileBytes = null; $('#importText').value = ''; $('#importFileName').textContent = ''; show(); if (!dlg.open) dlg.showModal(); };
   $('#btnImport').onclick = () => { open(); $('#importText').focus(); };
+  // Substituir e mesclar não valem juntos: marcar um desmarca o outro
+  const optReplace = $('#importReplace'), optMerge = $('#importMerge');
+  if (optReplace && optMerge) {
+    optReplace.addEventListener('change', () => { if (optReplace.checked) optMerge.checked = false; });
+    optMerge.addEventListener('change', () => { if (optMerge.checked) optReplace.checked = false; });
+  }
   $('#importGo').onclick = async () => {
     if (!parsed) return;
     const replace = $('#importReplace').checked;
+    const merge = !replace && $('#importMerge')?.checked;
     const projName = parsed.name || (fileName ? fileName.replace(/\.[^/.]+$/, '').trim() : '');
-    // Sem substituir: o projeto atual é salvo e fechado e a importação vira um projeto novo
-    if (!replace) {
+    // Nem substituir nem mesclar: o projeto atual é salvo e fechado e a importação vira um projeto novo.
+    // Mesclar: os itens entram no projeto aberto, que mantém o nome e o cabeçalho que já tinha.
+    if (!replace && !merge) {
       $('#importGo').disabled = true;
       try { await switchTo(new Project(await uniqueName(projName || 'Mapa importado'))); }
       finally { $('#importGo').disabled = false; }
@@ -183,6 +191,9 @@ export function setupImport() {
           app.vp?.fly?.setPose(new THREE.Vector3(c.x, c.y, c.z), c.yaw || 0, c.pitch || 0);
         }
       }
+    } else if (merge) {
+      if ((parsed.pwnHeader || parsed.preservedHeader) && !project.pwnHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
+      if (parsed.rawPawn && !project.rawPawn) project.rawPawn = parsed.rawPawn;
     } else {
       if (parsed.pwnHeader || parsed.preservedHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
       if (parsed.rawPawn) project.rawPawn = parsed.rawPawn;
@@ -312,7 +323,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
     for (const td of p.textDraws || []) {
       if (td.type === 'progress') {
         const f = (v) => (+v || 0).toFixed(4);
-        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}|${td.pbStyle | 0}|${td.pbSegments || 24}`);
+        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}|${td.pbStyle | 0}|${td.pbSegments || 24}|${td.pbAutoFill ? 1 : 0}|${f(td.pbAutoFillMax ?? td.pbMax)}`);
         continue;
       }
       const n = textDrawNative(td);

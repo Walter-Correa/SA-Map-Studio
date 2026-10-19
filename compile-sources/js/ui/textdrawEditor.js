@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbAutoFillMax, pbAutoFillValue } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -394,8 +394,14 @@ function bindFieldInputs() {
         v = min;
         el.value = v;
       }
+      const oldMax = Number(td.pbMax) || 0;
       td[prop] = isInt ? (v | 0) : v;
       if (prop === 'pbWidth' || prop === 'pbHeight') syncPbBorderLimit(td);
+      if (prop === 'pbMax') {
+        const cur = Number(td.pbAutoFillMax ?? oldMax);
+        td.pbAutoFillMax = (cur === oldMax || cur > td.pbMax) ? Math.max(0, Number(td.pbMax) || 0) : cur;
+        syncAutoFillControls(td);
+      }
       appRef.project.modified = true;
       redrawCanvas();
     };
@@ -495,15 +501,35 @@ function bindFieldInputs() {
   colorPair('#tdPbBlinkBorder', '#tdPbBlinkBorderColorRow', '#tdPbBlinkBorderColor', 'pbBlinkBorderColor', false);
   syncPbBlinkFields = syncBlinkFields;
 
-  const moveBtn = dialogEl.querySelector('#tdPbTestMove');
-  if (moveBtn) moveBtn.onclick = () => {
+  const autoBtn = dialogEl.querySelector('#tdPbAutoFill');
+  if (autoBtn) autoBtn.onclick = () => {
     const td = getSelectedTd();
     if (!td || td.type !== 'progress') return;
-    if (moveTest.has(td)) moveTest.delete(td); // desligar volta a mostrar o valor atual
-    else moveTest.set(td, performance.now());
-    syncMoveTestButton(td);
+    tdPushUndo();
+    td.pbAutoFill = !td.pbAutoFill; // desligar volta a mostrar o valor atual
+    td.pbAutoFillMax = clampPbAutoFillMax(td.pbAutoFillMax ?? td.pbMax, td.pbMax);
+    autoFillStart.set(td, performance.now());
+    appRef.project.modified = true;
+    syncAutoFillControls(td);
     restartBlinkPreview();
   };
+  const autoMax = dialogEl.querySelector('#tdPbAutoFillMax');
+  if (autoMax) {
+    autoMax.onfocus = () => tdPushUndo();
+    const applyAutoMax = (fix) => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      const typed = Number(String(autoMax.value).replace(',', '.'));
+      const v = clampPbAutoFillMax(autoMax.value, td.pbMax);
+      if (!fix && (autoMax.value === '' || !Number.isFinite(typed) || v !== typed)) return; // digitando: só valores válidos
+      td.pbAutoFillMax = v;
+      if (fix) autoMax.value = v;
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+    autoMax.oninput = () => applyAutoMax(false);
+    autoMax.onchange = () => applyAutoMax(true);
+  }
 
   // Modelo da barra: ao trocar de barra para um formato redondo, a caixa vira 40 x 50 (redonda na tela)
   const styleSel = dialogEl.querySelector('#tdPbStyle');
@@ -1005,24 +1031,27 @@ function moveSelectedTd(where) {
 // recomeça depois de 1 s para dar para ver de novo.
 let syncPbBlinkFields = null;
 
-// ---------- Testar movimento (só na prévia) ----------
-// A barra enche do valor atual até o máximo e volta ao valor atual, sem parar, até o teste ser
-// desligado; o valor salvo da barra não muda. Uma barra já no máximo esvazia até 0 e volta.
-const moveTest = new Map(); // barra -> início do teste
-const MOVE_TEST_MS = 2400;  // ida e volta
-function moveTestValue(td) {
-  const max = Number(td.pbMax) || 0, cur = Math.max(0, Math.min(max, Number(td.pbValue) || 0));
-  const phase = ((performance.now() - moveTest.get(td)) % MOVE_TEST_MS) / MOVE_TEST_MS;
-  const f = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
-  const target = cur >= max ? 0 : max;
-  return cur + (target - cur) * f;
+// ---------- Auto preencher (AutoFillPlayerProgressBar) ----------
+// Ligado, fica salvo na barra e vai para o código; a prévia anima com o mesmo tempo da include:
+// enche do valor atual até "Preencher até", segura, volta e segura. O valor salvo não muda.
+const autoFillStart = new Map(); // barra -> início da animação na prévia
+function autoFillPreviewValue(td) {
+  if (!autoFillStart.has(td)) autoFillStart.set(td, performance.now());
+  return pbAutoFillValue(td, performance.now() - autoFillStart.get(td));
 }
-function syncMoveTestButton(td) {
-  const btn = dialogEl?.querySelector('#tdPbTestMove');
-  if (!btn) return;
-  const on = Boolean(td && moveTest.has(td));
-  btn.textContent = on ? 'Parar teste de movimento' : 'Testar movimento';
-  btn.classList.toggle('primary', on);
+function syncAutoFillControls(td) {
+  const btn = dialogEl?.querySelector('#tdPbAutoFill');
+  if (btn) {
+    const on = Boolean(td?.pbAutoFill);
+    btn.classList.toggle('on', on);
+    btn.querySelector('span').textContent = on ? 'Auto preencher ligado' : 'Auto preencher';
+    btn.querySelector('use')?.setAttribute('href', on ? '#i-pause' : '#i-play');
+  }
+  const inp = dialogEl?.querySelector('#tdPbAutoFillMax');
+  if (inp && td && document.activeElement !== inp) {
+    inp.max = String(Number(td.pbMax) || 0);
+    inp.value = clampPbAutoFillMax(td.pbAutoFillMax ?? td.pbMax, td.pbMax);
+  }
 }
 
 // Valor com ao menos uma casa decimal (1.0, 2.5, 0.75)
@@ -1086,7 +1115,7 @@ function restartBlinkPreview() {
   if (!blinkTimer) {
     blinkTimer = setInterval(() => {
       if (!dialogEl?.open) { clearInterval(blinkTimer); blinkTimer = null; return; }
-      if (moveTest.size) { redrawCanvas(); return; }
+      if ((appRef.project?.textDraws || []).some(t => t.type === 'progress' && t.pbAutoFill)) { redrawCanvas(); return; }
       const bars = (appRef.project?.textDraws || []).filter(t => t.type === 'progress' && t.pbBlink);
       if (!bars.length) return;
       const key = bars.map(b => blinkPhaseOf(b) ? 1 : 0).join('');
@@ -1203,7 +1232,7 @@ function renderTextDraw(td, isSelected) {
   if (td.type === 'progress') {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    drawProgressBar(ctx, moveTest.has(td) ? { ...td, pbValue: moveTestValue(td) } : td, blinkPhaseOf(td));
+    drawProgressBar(ctx, td.pbAutoFill ? { ...td, pbValue: autoFillPreviewValue(td) } : td, blinkPhaseOf(td));
     ctx.restore();
     useLogicalUnits();
   } else if (td.font === 5) {
@@ -1515,7 +1544,7 @@ function updateSidebarFields() {
     setVal('#tdPbStyle', td.pbStyle | 0);
     setVal('#tdPbSegments', clampPbSegments(td.pbSegments));
     syncPbStyleRows(td);
-    syncMoveTestButton(td);
+    syncAutoFillControls(td);
   }
 
   // Painel de Sprite (Font 4)

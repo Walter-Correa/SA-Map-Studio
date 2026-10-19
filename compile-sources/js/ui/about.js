@@ -6,6 +6,15 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.17.0', date: '20/10/2026', items: [
+      'Auto preencher nas barras de progresso (AutoFillPlayerProgressBar e StopAutoFillPlayerProgressBar na SA Progress Bar Pro): enche do valor atual até o valor escolhido, segura no topo, volta e repete. Fica salvo no projeto, vai para o código exportado e a prévia mostra o mesmo movimento, chegando até o fim.',
+      'Importar: nova opção Mesclar com o projeto atual, que junta os itens ao projeto aberto sem mudar o nome dele.',
+      'O importador reconhece todos os itens que o editor exporta, inclusive em array, e passou a ler zip (os mapas de dentro), carros de IPL em texto e peds, pickups, markers, blips e radar areas de mapas do MTA.',
+      'Exportar em array não cria mais duas vezes os objetos com textura, movimento ou anexo.',
+      'Na include, o array de barras se chama ProgressBar.',
+    ],
+  },
+  {
     version: '3.16.0', date: '20/10/2026', items: [
       'Seletor de cor próprio em todos os campos de cor (a janela do editor não abria o seletor do Windows): quadrado de cor, matiz, código hexadecimal e cores prontas.',
       'Campos com mínimo e máximo aceitam digitação livre; o limite só é aplicado ao sair do campo (intervalo da piscada, segmentos, borda, largura e altura da barra, velocidade de movimento e rotação).',
