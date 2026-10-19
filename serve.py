@@ -2445,6 +2445,107 @@ def save_projects_then_close():
         pass
 
 
+APP_USER_MODEL_ID = "samapstudio.pro"
+
+
+def fix_taskbar_icon():
+    """Ícone da barra de tarefas. O editor usa um AppUserModelID próprio e, sem um atalho com esse
+    ID, a barra pode mostrar um ícone genérico guardado em cache. Grava o ícone do editor em todos os
+    lugares que a barra consulta: ícone da janela, ícone da classe e as propriedades de relançamento
+    da janela (System.AppUserModel.RelaunchIconResource, com o ID, o comando e o nome)."""
+    if not IS_WINDOWS:
+        return
+    try:
+        import ctypes
+        import uuid
+        from ctypes import wintypes
+        user32, shell32 = ctypes.windll.user32, ctypes.windll.shell32
+        user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        user32.SetClassLongPtrW.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_ssize_t]
+        user32.SetClassLongPtrW.restype = ctypes.c_size_t
+        user32.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+        user32.LoadImageW.restype = wintypes.HANDLE
+        shell32.ExtractIconExW.argtypes = [wintypes.LPCWSTR, ctypes.c_int, ctypes.POINTER(wintypes.HICON), ctypes.POINTER(wintypes.HICON), wintypes.UINT]
+        shell32.SHGetPropertyStoreForWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
+
+        # De onde vem o ícone: o próprio executável (versão compilada) ou o icon.ico (desenvolvimento)
+        frozen = getattr(sys, "frozen", False)
+        engine = os.path.abspath(sys.executable)
+        icon_file = engine if frozen else os.path.join(APP_DIR, "icon.ico")
+        if not os.path.isfile(icon_file):
+            return
+        launcher = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(engine))), "SA Map Studio.exe")
+        relaunch = launcher if frozen and os.path.isfile(launcher) else engine
+        if frozen:
+            big, small = wintypes.HICON(), wintypes.HICON()
+            shell32.ExtractIconExW(icon_file, 0, ctypes.byref(big), ctypes.byref(small), 1)
+            big, small = big.value, small.value
+        else:
+            big = user32.LoadImageW(None, icon_file, 1, 256, 256, 0x10)
+            small = user32.LoadImageW(None, icon_file, 1, 16, 16, 0x10)
+        icon_res = icon_file + ",0"
+
+        pid = os.getpid()
+        hwnds = []
+        enum_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+        def collect(hwnd, _):
+            owner = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+            if owner.value == pid and user32.IsWindowVisible(hwnd):
+                title = ctypes.create_unicode_buffer(256)
+                user32.GetWindowTextW(hwnd, title, 256)
+                if title.value.startswith("SA Map Studio"):
+                    hwnds.append(hwnd)
+            return True
+
+        user32.EnumWindows(enum_proc(collect), 0)
+
+        class GUID(ctypes.Structure):
+            _fields_ = [("data", ctypes.c_ubyte * 16)]
+
+        class PROPERTYKEY(ctypes.Structure):
+            _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+
+        class PROPVARIANT(ctypes.Structure):
+            _fields_ = [("vt", ctypes.c_ushort), ("r1", ctypes.c_ushort), ("r2", ctypes.c_ushort), ("r3", ctypes.c_ushort),
+                        ("pwsz", ctypes.c_wchar_p), ("pad", ctypes.c_void_p)]
+
+        def guid(text):
+            g = GUID()
+            ctypes.memmove(g.data, uuid.UUID(text).bytes_le, 16)
+            return g
+
+        iid_store = guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+        fmt = guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3")  # System.AppUserModel.*
+        values = [(5, APP_USER_MODEL_ID), (2, '"%s"' % relaunch), (4, "SA Map Studio"), (3, icon_res)]
+
+        for hwnd in hwnds:
+            if big:
+                user32.SendMessageW(hwnd, 0x80, 1, big)        # WM_SETICON, ICON_BIG
+                user32.SetClassLongPtrW(hwnd, -14, big)         # GCLP_HICON
+            if small:
+                user32.SendMessageW(hwnd, 0x80, 0, small)      # WM_SETICON, ICON_SMALL
+                user32.SetClassLongPtrW(hwnd, -34, small)       # GCLP_HICONSM
+            store = ctypes.c_void_p()
+            if shell32.SHGetPropertyStoreForWindow(hwnd, ctypes.byref(iid_store), ctypes.byref(store)) != 0 or not store.value:
+                continue
+            vtbl = ctypes.cast(ctypes.cast(store, ctypes.POINTER(ctypes.c_void_p))[0], ctypes.POINTER(ctypes.c_void_p))
+            set_value = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p, ctypes.POINTER(PROPERTYKEY), ctypes.POINTER(PROPVARIANT))(vtbl[6])
+            commit = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p)(vtbl[7])
+            release = ctypes.WINFUNCTYPE(ctypes.c_ulong, ctypes.c_void_p)(vtbl[2])
+            try:
+                for key_pid, text in values:
+                    key = PROPERTYKEY(fmt, key_pid)
+                    var = PROPVARIANT(31, 0, 0, 0, text, None)  # VT_LPWSTR
+                    set_value(store, ctypes.byref(key), ctypes.byref(var))
+                commit(store)
+            finally:
+                release(store)
+    except Exception as err:
+        print("Não foi possível ajustar o ícone da barra de tarefas: %s" % err)
+
+
 def open_window(url, httpd):
     """Abre o editor numa janela própria (pywebview/WebView2) já maximizada. Retorna False se não der."""
     try:
@@ -2474,6 +2575,7 @@ def open_window(url, httpd):
                                              maximized=True,
                                              background_color="#1c2228", text_select=True)
         State.window.events.closing += on_window_closing
+        State.window.events.shown += fix_taskbar_icon
         try:
             webview.start(private_mode=False, storage_path=WEBVIEW_DIR)
         except TypeError:  # versões antigas do pywebview
@@ -2490,7 +2592,7 @@ def main():
     if IS_WINDOWS:
         try:
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("samapstudio.pro")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
         except Exception:
             pass
     setup_logging()
