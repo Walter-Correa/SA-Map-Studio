@@ -2,7 +2,7 @@
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative, progressBarPawn, progressBarVar, PB_DIRECTIONS } from './project.js';
+import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS } from './project.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -842,7 +842,7 @@ export function parsePwn(source) {
         };
         const td = {
           tdv: 2, type: 'progress', isPlayer: true, text: 'Barra de progresso',
-          name: nameFromVar(variable),
+          name: String(inlineComment || '').replace(/^\/\/\s*/, '').trim() || (/^progress_?\d+$/i.test(nameFromVar(variable)) ? '' : nameFromVar(variable)),
           x: num(a[1]), y: num(a[2]),
           pbWidth: num(arg(3, 'width'), 55.5), pbHeight: num(arg(4, 'height'), 3.2),
           color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xFF1C1CFF,
@@ -1280,7 +1280,7 @@ export function exportPawn(project, options = {}) {
     }
     if (td.type === 'progress') {
       // Barra de progresso: precisa de #include <progress2>
-      textDrawLines.push(...progressBarPawn(td, progressBarVar(td, idx, textDraws), (v) => formatCoord(v, null)));
+      textDrawLines.push(...progressBarPawn(td, progressBarVar(td, textDraws), (v) => formatCoord(v, null)));
       continue;
     }
     const n = textDrawNative(td);
@@ -1288,7 +1288,7 @@ export function exportPawn(project, options = {}) {
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
-    const tdVar = `td_${idx}`;
+    const tdVar = textDrawVar(td, textDraws);
     textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${JSON.stringify(n.text)});${cmt}`);
     textDrawLines.push(`TextDrawFont(${tdVar}, ${n.font});`);
     textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(n.letterSizeX, null)}, ${formatCoord(n.letterSizeY, null)});`);

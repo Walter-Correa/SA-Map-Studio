@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.9.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.9.1-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,10 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.9.1 — 19/10/2026
+- TextDraws exportadas como `textdraw_0`, `textdraw_1`... e barras de progresso como `progress_0`, `progress_1`... com o nome dado no editor em `// comentário`
+  no fim da linha de criação (lido de volta na importação).
 
 ### 3.9.0 — 19/10/2026
 - Barras de progresso com nome (vira o nome da variável no código exportado).

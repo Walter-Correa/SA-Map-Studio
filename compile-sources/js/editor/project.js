@@ -194,20 +194,23 @@ function normalizeSpriteName(text) {
 // Barra de progresso (progress2.inc): chamadas para criar, definir o valor e mostrar para o jogador
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
 
-// Nome da variável da barra no código: o nome dado no editor (só letras, números e _), sem repetir
-export function progressBarVar(td, idx, all = []) {
-  const clean = (s) => String(s || '').replace(/[^A-Za-z0-9_@]/g, '_').replace(/^(\d)/, '_$1');
-  let name = clean(td.name);
-  if (!name || /^_+$/.test(name)) name = `bar_${idx}`;
-  const before = all.slice(0, idx).filter(t => t.type === 'progress' && clean(t.name) === name).length;
-  return before ? `${name}_${before + 1}` : name;
+// Variável da barra no código: progress_0, progress_1... na ordem das barras do projeto
+export function progressBarVar(td, all = []) {
+  const n = all.filter(t => t.type === 'progress').indexOf(td);
+  return `progress_${n < 0 ? 0 : n}`;
+}
+
+// Variável da TextDraw no código: textdraw_0, textdraw_1... na ordem das TextDraws (sem contar as barras)
+export function textDrawVar(td, all = []) {
+  const n = all.filter(t => t.type !== 'progress').indexOf(td);
+  return `textdraw_${n < 0 ? 0 : n}`;
 }
 
 export function progressBarPawn(td, varName, fmt) {
   const f = fmt || ((v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; });
   const hex = '0x' + (Number(td.color ?? 0xFF1C1CFF) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   return [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]});`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];

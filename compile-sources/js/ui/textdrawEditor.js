@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, progressBarParts } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -1243,11 +1243,12 @@ function createNewProgressBar() {
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
   const used = new Set(appRef.project.textDraws.filter(t => t.type === 'progress').map(t => t.name));
   let n = 1;
-  while (used.has(`Barra${n}`)) n++;
+  n = 0;
+  while (used.has(`progress_${n}`)) n++;
   const td = makeTextDraw({
     tdv: 2,
     type: 'progress',
-    name: `Barra${n}`,
+    name: `progress_${n}`,
     text: 'Barra de progresso',
     x: 260,
     y: 300,
@@ -1355,12 +1356,12 @@ function copyTextDrawsPawn() {
   const num = (v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; };
   tds.forEach((td, i) => {
     if (td.type === 'progress') {
-      lines.push(...progressBarPawn(td, progressBarVar(td, i, tds), num));
+      lines.push(...progressBarPawn(td, progressBarVar(td, tds), num));
       lines.push('');
       return;
     }
     const n = textDrawNative(td);
-    const v = `td_${i}`;
+    const v = textDrawVar(td, tds);
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
     lines.push(`new ${prefix}${v} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${num(td.x)}, ${num(td.y)}, ${JSON.stringify(n.text)});`);
     lines.push(`TextDrawFont(${v}, ${n.font});`);

@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.9.1', date: '19/10/2026', items: [
+      'TextDraws exportadas com as variáveis textdraw_0, textdraw_1 e barras de progresso com progress_0, progress_1 e assim por diante, com o nome dado no editor como comentário no fim da linha (lido de volta na importação).',
+      'Barras novas começam com o nome progress_N; a barra do mapa de exemplo se chama progress_0.',
+    ],
+  },
+  {
     version: '3.9.0', date: '19/10/2026', items: [
       'Nome nas Barras de Progresso: cada barra pode ter um nome, usado como nome da variável no código exportado.',
       'Importação de Barras de Progresso Mais Completa: reconhece argumentos nomeados (.colour, .width, .height, .max, .direction), cores decimais negativas, expressões e variáveis em arrays ou enums, usando o nome da variável como nome da barra.',
