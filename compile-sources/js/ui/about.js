@@ -6,6 +6,15 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.9.0', date: '19/10/2026', items: [
+      'Nome nas Barras de Progresso: cada barra pode ter um nome, usado como nome da variável no código exportado.',
+      'Importação de Barras de Progresso Mais Completa: reconhece argumentos nomeados (.colour, .width, .height, .max, .direction), cores decimais negativas, expressões e variáveis em arrays ou enums, usando o nome da variável como nome da barra.',
+      'Botões de tipos de TextDraw organizados em grade, todos visíveis dentro da janela.',
+      'Botão Concluir das janelas de TextDraws, GangZones e MapIcons com espaço até a borda.',
+      'Mapa de exemplo com uma barra de progresso.',
+    ],
+  },
+  {
     version: '3.8.0', date: '19/10/2026', items: [
       'Barra de Progresso (progress2.inc): novo tipo no editor de TextDraws com largura, altura, cor, valor máximo, valor atual e direção (direita, esquerda, para cima e para baixo), desenhada exatamente como a include monta no jogo.',
       'Exportação e importação de CreatePlayerProgressBar, SetPlayerProgressBarValue e ShowPlayerProgressBar.',

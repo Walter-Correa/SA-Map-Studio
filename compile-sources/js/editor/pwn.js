@@ -2,7 +2,7 @@
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative, progressBarPawn, PB_DIRECTIONS } from './project.js';
+import { textDrawNative, progressBarPawn, progressBarVar, PB_DIRECTIONS } from './project.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -828,17 +828,26 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progress2.inc: CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção)
+      // progress2.inc: CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção),
+      // também com argumentos nomeados (.colour = ...) e expressões (o número inicial é usado)
       if (a.length >= 3) {
-        const dirArg = String(a[7] ?? '0').trim();
+        const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
+        const dirArg = String(arg(7, 'direction') ?? '0').trim();
         const dirIdx = PB_DIRECTIONS.indexOf(dirArg.toUpperCase());
+        const colArg = arg(5, 'colour', 'color');
+        const nameFromVar = (v) => {
+          if (!v) return '';
+          const idx = [...v.matchAll(/\[\s*([A-Za-z_@][\w@]*)\s*\]/g)].map(m => m[1]).filter(s => !/^(playerid|i|j|id|pid)$/i.test(s));
+          return idx.length ? idx[idx.length - 1] : v.replace(/\[.*$/, '').trim();
+        };
         const td = {
           tdv: 2, type: 'progress', isPlayer: true, text: 'Barra de progresso',
+          name: nameFromVar(variable),
           x: num(a[1]), y: num(a[2]),
-          pbWidth: num(a[3], 55.5), pbHeight: num(a[4], 3.2),
-          color: a[5] !== undefined ? parseColor(a[5]) : 0xFF1C1CFF,
-          pbMax: num(a[6], 100), pbValue: 0,
-          pbDir: dirIdx >= 0 ? dirIdx : int(dirArg, 0),
+          pbWidth: num(arg(3, 'width'), 55.5), pbHeight: num(arg(4, 'height'), 3.2),
+          color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xFF1C1CFF,
+          pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
+          pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
           comment: inlineComment, preComment, blankLinesBefore,
         };
         textDraws.push(td);
@@ -1271,7 +1280,7 @@ export function exportPawn(project, options = {}) {
     }
     if (td.type === 'progress') {
       // Barra de progresso: precisa de #include <progress2>
-      textDrawLines.push(...progressBarPawn(td, `bar_${idx}`, (v) => formatCoord(v, null)));
+      textDrawLines.push(...progressBarPawn(td, progressBarVar(td, idx, textDraws), (v) => formatCoord(v, null)));
       continue;
     }
     const n = textDrawNative(td);

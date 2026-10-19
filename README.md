@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.8.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.9.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,12 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.9.0 — 19/10/2026
+- Barras de progresso com nome (vira o nome da variável no código exportado).
+- Importação de barras reconhece argumentos nomeados, cores decimais negativas, expressões e variáveis em arrays/enums.
+- Botões de tipos de TextDraw em grade e botão Concluir das janelas de edição afastado da borda.
+- Mapa de exemplo com uma barra de progresso.
 
 ### 3.8.0 — 19/10/2026
 - Novo tipo **Barra de progresso** no editor de TextDraws (`progress2.inc`): largura, altura, cor, máximo, valor e

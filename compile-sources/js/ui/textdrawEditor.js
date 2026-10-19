@@ -1,7 +1,7 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative, progressBarPawn } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, progressBarParts } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
@@ -368,6 +368,17 @@ function bindFieldInputs() {
   bind('#tdSizeX', 'textSizeX', true);
   bind('#tdSizeY', 'textSizeY', true);
   // Barra de progresso
+  const pbName = dialogEl.querySelector('#tdPbName');
+  if (pbName) {
+    pbName.onfocus = () => tdPushUndo();
+    pbName.oninput = () => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      td.name = pbName.value;
+      appRef.project.modified = true;
+      updateSidebarList();
+    };
+  }
   for (const [id, prop, isInt] of [['#tdPbWidth', 'pbWidth'], ['#tdPbHeight', 'pbHeight'], ['#tdPbMax', 'pbMax'], ['#tdPbValue', 'pbValue'], ['#tdPbDir', 'pbDir', true]]) {
     const el = dialogEl.querySelector(id);
     if (!el) continue;
@@ -1072,12 +1083,12 @@ function updateSidebarList() {
     const item = document.createElement('div');
     item.className = 'td-list-item' + (idx === selectedIdx ? ' selected' : '');
     const col = toHexRgba(td.color ?? 0xFFFFFFFF);
-    const label = stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
+    const label = td.type === 'progress' ? `Barra: ${td.name || 'sem nome'}` : stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
 
     item.innerHTML = `
       <div class="td-badge" style="background:${col.hex};"></div>
       <div class="td-info">
-        <span class="td-title">${td.isPlayer ? '[Player] ' : ''}${label}</span>
+        <span class="td-title">${td.isPlayer && td.type !== 'progress' ? '[Player] ' : ''}${label}</span>
         <span class="td-sub">Pos: ${td.x}, ${td.y} | Font: ${td.font}</span>
       </div>
     `;
@@ -1150,6 +1161,7 @@ function updateSidebarFields() {
   const pbPanel = dialogEl.querySelector('#tdProgressPanel');
   if (pbPanel) pbPanel.style.display = isBar ? 'flex' : 'none';
   if (isBar) {
+    setVal('#tdPbName', td.name);
     setVal('#tdPbWidth', td.pbWidth);
     setVal('#tdPbHeight', td.pbHeight);
     setVal('#tdPbMax', td.pbMax);
@@ -1229,9 +1241,13 @@ function createNewBox() {
 function createNewProgressBar() {
   tdPushUndo();
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
+  const used = new Set(appRef.project.textDraws.filter(t => t.type === 'progress').map(t => t.name));
+  let n = 1;
+  while (used.has(`Barra${n}`)) n++;
   const td = makeTextDraw({
     tdv: 2,
     type: 'progress',
+    name: `Barra${n}`,
     text: 'Barra de progresso',
     x: 260,
     y: 300,
@@ -1339,7 +1355,7 @@ function copyTextDrawsPawn() {
   const num = (v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; };
   tds.forEach((td, i) => {
     if (td.type === 'progress') {
-      lines.push(...progressBarPawn(td, `bar_${i}`, num));
+      lines.push(...progressBarPawn(td, progressBarVar(td, i, tds), num));
       lines.push('');
       return;
     }
