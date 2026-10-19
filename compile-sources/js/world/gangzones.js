@@ -47,50 +47,69 @@ export function hexAndAlphaToGzColor(hexStr, alpha = 0.5) {
 
 // Gera o nome sequencial na duplicação: Zona 1 > Zona 1_2 > Zona 1_3
 // ---------------------------------------------------------------------------
-// Espaço livre para uma GangZone nova (duplicar ou adicionar). Ordem de busca:
-//  1. encostada (magnetizada) num lado livre da original: direita, esquerda, cima, baixo;
-//  2. a posição livre mais próxima, alinhada às bordas das outras zonas e do mapa;
-//  3. o mesmo com a zona reduzida aos poucos, até caber.
+// Espaço livre para uma GangZone nova (duplicar ou adicionar).
+// O mapa vira uma grade com as bordas de todas as zonas; partindo da célula livre mais próxima
+// da original (ou do ponto pedido), cresce o maior retângulo livre que a contém. A zona nova fica
+// nesse espaço, com o tamanho da original reduzido ao do espaço quando ele é menor, e o mais perto
+// possível da original (encostada nela quando o espaço é vizinho). Espaços com menos de 1/4 da
+// largura ou da altura da original (frestas) são ignorados.
 // Zonas podem se encostar, mas não se sobrepor. Retorna { minx, miny, maxx, maxy, scaled } ou null.
 // ---------------------------------------------------------------------------
 const GZ_WORLD_MIN = -3000, GZ_WORLD_MAX = 3000, GZ_MIN_SIZE = 10;
 
 export function findFreeGangZoneSpot(zones, { width, height, near, origin = null, excludeUid = null }) {
   const others = (zones || []).filter(z => z && z.uid !== excludeUid).map(z => ({
-    minx: Math.min(z.minx, z.maxx), maxx: Math.max(z.minx, z.maxx),
-    miny: Math.min(z.miny, z.maxy), maxy: Math.max(z.miny, z.maxy),
-  }));
-  const free = (r) => r.minx >= GZ_WORLD_MIN && r.maxx <= GZ_WORLD_MAX && r.miny >= GZ_WORLD_MIN && r.maxy <= GZ_WORLD_MAX &&
-    !others.some(o => r.minx < o.maxx && r.maxx > o.minx && r.miny < o.maxy && r.maxy > o.miny);
-  const rect = (x, y, w, h) => ({ minx: x, miny: y, maxx: x + w, maxy: y + h });
-
-  // 1. Lados livres da original, encostados nela
-  if (origin) {
-    const w = width, h = height;
-    for (const r of [
-      rect(origin.maxx, origin.miny, w, h), rect(origin.minx - w, origin.miny, w, h),
-      rect(origin.minx, origin.maxy, w, h), rect(origin.minx, origin.miny - h, w, h),
-    ]) if (free(r)) return { ...r, scaled: false };
-  }
-
-  // 2 e 3. Posição livre mais próxima, alinhada às bordas existentes; reduzindo se precisar
+    minx: Math.max(GZ_WORLD_MIN, Math.min(z.minx, z.maxx)), maxx: Math.min(GZ_WORLD_MAX, Math.max(z.minx, z.maxx)),
+    miny: Math.max(GZ_WORLD_MIN, Math.min(z.miny, z.maxy)), maxy: Math.min(GZ_WORLD_MAX, Math.max(z.miny, z.maxy)),
+  })).filter(z => z.maxx > z.minx && z.maxy > z.miny);
+  const w = Math.max(GZ_MIN_SIZE, width), h = Math.max(GZ_MIN_SIZE, height);
   const cx = near?.x ?? 0, cy = near?.y ?? 0;
-  for (const scale of [1, 0.75, 0.5, 0.35, 0.25, 0.15, 0.1, 0.05]) {
-    const w = Math.max(GZ_MIN_SIZE, width * scale), h = Math.max(GZ_MIN_SIZE, height * scale);
-    let xs = [GZ_WORLD_MIN, GZ_WORLD_MAX - w, cx - w / 2];
-    let ys = [GZ_WORLD_MIN, GZ_WORLD_MAX - h, cy - h / 2];
-    for (const o of others) { xs.push(o.maxx, o.minx - w); ys.push(o.maxy, o.miny - h); }
-    // Limita o trabalho com muitas zonas: fica com as linhas mais próximas do ponto desejado
-    const keep = (arr, c) => [...new Set(arr.map(v => Math.round(v)))].sort((a, b) => Math.abs(a - c) - Math.abs(b - c)).slice(0, 80);
-    xs = keep(xs, cx - w / 2);
-    ys = keep(ys, cy - h / 2);
-    let best = null, bestD = Infinity;
-    for (const x of xs) for (const y of ys) {
-      const r = rect(x, y, w, h);
-      const d = (x + w / 2 - cx) ** 2 + (y + h / 2 - cy) ** 2;
-      if (d < bestD && free(r)) { best = r; bestD = d; }
-    }
-    if (best) return { ...best, scaled: scale < 1 };
+  const ref = origin || { minx: cx - w / 2, maxx: cx + w / 2, miny: cy - h / 2, maxy: cy + h / 2 };
+  // Espaço mínimo aceito: evita jogar a cópia numa fresta entre duas zonas
+  const minW = Math.max(GZ_MIN_SIZE, w * 0.25), minH = Math.max(GZ_MIN_SIZE, h * 0.25);
+
+  // Grade com as bordas de todas as zonas e do mapa
+  const xs = [...new Set([GZ_WORLD_MIN, GZ_WORLD_MAX, ...others.flatMap(o => [o.minx, o.maxx])])].sort((a, b) => a - b);
+  const ys = [...new Set([GZ_WORLD_MIN, GZ_WORLD_MAX, ...others.flatMap(o => [o.miny, o.maxy])])].sort((a, b) => a - b);
+  const nx = xs.length - 1, ny = ys.length - 1;
+  const free = new Uint8Array(nx * ny);
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    const mx = (xs[i] + xs[i + 1]) / 2, my = (ys[j] + ys[j + 1]) / 2;
+    free[i * ny + j] = others.some(o => mx > o.minx && mx < o.maxx && my > o.miny && my < o.maxy) ? 0 : 1;
+  }
+  const colFree = (i, j0, j1) => { for (let j = j0; j <= j1; j++) if (!free[i * ny + j]) return false; return true; };
+  const rowFree = (j, i0, i1) => { for (let i = i0; i <= i1; i++) if (!free[i * ny + j]) return false; return true; };
+  const gap = (a0, a1, b0, b1) => Math.max(0, a0 - b1, b0 - a1);
+
+  // Células livres da mais próxima para a mais distante da original
+  const cells = [];
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    if (!free[i * ny + j]) continue;
+    const dx = gap(xs[i], xs[i + 1], ref.minx, ref.maxx), dy = gap(ys[j], ys[j + 1], ref.miny, ref.maxy);
+    cells.push({ i, j, d: Math.hypot(dx, dy), c: Math.hypot((xs[i] + xs[i + 1]) / 2 - (ref.minx + ref.maxx) / 2, (ys[j] + ys[j + 1]) / 2 - (ref.miny + ref.maxy) / 2) });
+  }
+  cells.sort((a, b) => a.d - b.d || a.c - b.c);
+
+  const tried = new Set();
+  for (const cell of cells) {
+    // Maior retângulo livre que contém a célula: primeiro na horizontal, depois na vertical
+    let i0 = cell.i, i1 = cell.i, j0 = cell.j, j1 = cell.j;
+    while (i0 > 0 && free[(i0 - 1) * ny + cell.j] && xs[i1 + 1] - xs[i0 - 1] <= w * 4) i0--;
+    while (i1 < nx - 1 && free[(i1 + 1) * ny + cell.j] && xs[i1 + 2] - xs[i0] <= w * 4) i1++;
+    while (j0 > 0 && rowFree(j0 - 1, i0, i1) && ys[j1 + 1] - ys[j0 - 1] <= h * 4) j0--;
+    while (j1 < ny - 1 && rowFree(j1 + 1, i0, i1) && ys[j1 + 2] - ys[j0] <= h * 4) j1++;
+    const key = `${i0},${i1},${j0},${j1}`;
+    if (tried.has(key)) continue;
+    tried.add(key);
+    const space = { minx: xs[i0], maxx: xs[i1 + 1], miny: ys[j0], maxy: ys[j1 + 1] };
+    const sw = space.maxx - space.minx, sh = space.maxy - space.miny;
+    if (sw < minW || sh < minH) continue;
+    // Tamanho da original, reduzido ao do espaço; posição o mais perto possível da original
+    const fw = Math.min(w, sw), fh = Math.min(h, sh);
+    const clampTo = (v, a, b) => Math.max(a, Math.min(b, v));
+    const x = clampTo((ref.minx + ref.maxx) / 2 - fw / 2, space.minx, space.maxx - fw);
+    const y = clampTo((ref.miny + ref.maxy) / 2 - fh / 2, space.miny, space.maxy - fh);
+    return { minx: x, miny: y, maxx: x + fw, maxy: y + fh, scaled: fw < w || fh < h };
   }
   return null;
 }

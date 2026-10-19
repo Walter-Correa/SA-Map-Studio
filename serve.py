@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.17.0"
+VERSION = "3.18.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -705,6 +705,105 @@ def gdi_font_metrics(face, size, bold):
                 out = {"ok": False}
         _GDI_FONTS[key] = out
         return out
+
+
+_COL_INDEX = {"key": None, "spheres": {}}
+_COL_LOCK = threading.Lock()
+
+
+def _col_spheres_from(buf, out):
+    """Lê as esferas de colisão (centro e raio) de um arquivo .col (COLL, COL2, COL3, COL4)."""
+    pos = 0
+    while pos + 48 <= len(buf):
+        tag = buf[pos:pos + 4]
+        if tag not in (b"COLL", b"COL2", b"COL3", b"COL4"):
+            nxt = min([i for i in (buf.find(t, pos + 1) for t in (b"COLL", b"COL2", b"COL3", b"COL4")) if i > 0] or [-1])
+            if nxt < 0:
+                break
+            pos = nxt
+            continue
+        size = struct.unpack_from("<I", buf, pos + 4)[0]
+        name = buf[pos + 8:pos + 30].split(b"\0")[0].decode("latin-1").lower()
+        if tag == b"COLL":
+            r, cx, cy, cz = struct.unpack_from("<4f", buf, pos + 32)
+        else:
+            cx, cy, cz, r = struct.unpack_from("<4f", buf, pos + 56)
+        if name and name not in out:
+            out[name] = [round(cx, 4), round(cy, 4), round(cz, 4), round(r, 4)]
+        pos += 8 + max(size, 24)
+
+
+def _img_entries(path):
+    entries = {}
+    with open(path, "rb") as f:
+        if f.read(4) != b"VER2":
+            return entries
+        count = struct.unpack("<I", f.read(4))[0]
+        for _ in range(count):
+            off, s1, s2, name = struct.unpack("<IHH24s", f.read(32))
+            entries[name.split(b"\0")[0].decode("latin-1").lower()] = (off * 2048, (s1 or s2) * 2048)
+    return entries
+
+
+def col_sphere(model_name):
+    """Esfera de colisão de um modelo (o que o SA-MP usa para enquadrar a prévia de modelo 3D):
+    procura nos .col dos IMG do GTA e do SA-MP e em models/coll; veículos têm a colisão dentro do DFF."""
+    gta = State.gta_path
+    if not gta:
+        return None
+    name = str(model_name or "").lower()
+    imgs = ["models/gta3.img", "models/gta_int.img", "SAMP/SAMPCOL.img", "SAMP/SAMP.img"]
+    with _COL_LOCK:
+        key = gta
+        if _COL_INDEX["key"] != key:
+            spheres = {}
+            for img in imgs[:3]:
+                full = resolve_ci(gta, img)
+                if not full or not os.path.isfile(full):
+                    continue
+                try:
+                    with open(full, "rb") as f:
+                        for ename, (off, size) in _img_entries(full).items():
+                            if ename.endswith(".col") and size:
+                                f.seek(off)
+                                _col_spheres_from(f.read(size), spheres)
+                except OSError:
+                    pass
+            for loose in ("models/coll/peds.col", "models/coll/vehicles.col", "models/coll/weapons.col"):
+                full = resolve_ci(gta, loose)
+                if full and os.path.isfile(full):
+                    try:
+                        with open(full, "rb") as f:
+                            _col_spheres_from(f.read(), spheres)
+                    except OSError:
+                        pass
+            _COL_INDEX["key"] = key
+            _COL_INDEX["spheres"] = spheres
+        found = _COL_INDEX["spheres"].get(name)
+        if found:
+            return found
+    # Veículos: a colisão fica dentro do próprio DFF
+    for img in imgs[:2] + imgs[3:]:
+        full = resolve_ci(gta, img)
+        if not full or not os.path.isfile(full):
+            continue
+        try:
+            entry = _img_entries(full).get(name + ".dff")
+            if not entry:
+                continue
+            with open(full, "rb") as f:
+                f.seek(entry[0])
+                buf = f.read(entry[1])
+            out = {}
+            for tag in (b"COL3", b"COL2", b"COL4", b"COLL"):
+                i = buf.find(tag)
+                if i >= 0:
+                    _col_spheres_from(buf[i:], out)
+                    if out:
+                        return next(iter(out.values()))
+        except OSError:
+            pass
+    return None
 
 
 def thumb_file(kind, key):
@@ -1883,6 +1982,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/ping":
             State.last_ping = time.time()
             return self.send_json({"ok": True})
+        if path == "/api/colsphere":
+            qs = parse_qs(url.query)
+            return self.send_json({"ok": True, "sphere": col_sphere(qs.get("model", [""])[0])})
         if path == "/api/gdifont":
             qs = parse_qs(url.query)
             try:

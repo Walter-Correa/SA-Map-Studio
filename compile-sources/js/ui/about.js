@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.18.0', date: '20/10/2026', items: [
+      'Prévia de modelo 3D das TextDraws desenhada com o modelo de verdade e a mesma câmera do SA-MP: imagem 256 x 256 esticada para a caixa, enquadramento pela esfera de colisão do modelo, mesmo zoom e mesma ordem de rotação. Tamanho, zoom e rotação no editor ficam como no jogo.',
+      'Modelo 0 (skin do CJ) aparece na prévia de modelo 3D.',
+      'GangZones: a cópia e a zona nova vão para o espaço vazio mais próximo, mesmo que ele seja menor, e a zona se reduz para caber nele.',
+    ],
+  },
+  {
     version: '3.17.0', date: '20/10/2026', items: [
       'Auto preencher nas barras de progresso (AutoFillPlayerProgressBar e StopAutoFillPlayerProgressBar na SA Progress Bar Pro): enche do valor atual até o valor escolhido, segura no topo, volta e repete. Fica salvo no projeto, vai para o código exportado e a prévia mostra o mesmo movimento, chegando até o fim.',
       'Importar: nova opção Mesclar com o projeto atual, que junta os itens ao projeto aberto sem mudar o nome dele.',

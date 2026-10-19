@@ -4,6 +4,7 @@
 import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbAutoFillMax, pbAutoFillValue } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
+import { modelPreviewImage } from '../editor/modelPreview.js';
 
 const RIGHT_BOX_HINT = 'No jogo, a caixa alinhada à direita vai da borda esquerda da tela até o texto';
 import { openSpritePicker } from './spritePicker.js';
@@ -1351,33 +1352,21 @@ function renderModelPreview(td, bounds, isSelected = false) {
     ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
   }
 
-  const modelId = td.previewModel || 411;
-  const thumb = getOrLoadModelThumbnail(modelId);
-  const zoom = Math.max(0.2, Math.min(5.0, Number(td.previewZoom) || 1.0));
-  const invZoom = 1.0 / zoom; // No GTA SA, zoom menor aproxima o modelo e zoom maior afasta
+  const modelId = td.previewModel ?? 411;
+  // Fundo: o SA-MP limpa a imagem da prévia com a cor de fundo (BackgroundColor) da TextDraw
+  const bg = toHexRgba(td.backgroundColor ?? 0x00000000);
+  if (bg.a > 0) { ctx.fillStyle = bg.css; ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h); }
+  // Modelo 3D de verdade, desenhado como no jogo (256 x 256 esticado para a caixa)
+  const img = modelPreviewImage(appRef, td, () => { if (dialogEl?.open) redrawCanvas(); });
 
-  if (thumb && thumb.loaded && thumb.img.width > 0) {
-    ctx.save();
-    // Clipa dentro da caixa do TextDraw
-    ctx.beginPath();
-    ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
-    ctx.clip();
-
-    const cx = bounds.x + bounds.w / 2;
-    const cy = bounds.y + bounds.h / 2;
-    ctx.translate(cx, cy);
-
-    // Calcula dimensão da imagem mantendo proporção
-    const imgAspect = thumb.img.width / thumb.img.height;
-    let drawW = bounds.w * 0.92 * invZoom;
-    let drawH = drawW / imgAspect;
-    if (drawH > bounds.h * 0.92 * invZoom) {
-      drawH = bounds.h * 0.92 * invZoom;
-      drawW = drawH * imgAspect;
-    }
-
-    ctx.drawImage(thumb.cleanCanvas || thumb.img, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
+  if (img) {
+    ctx.drawImage(img, bounds.x, bounds.y, bounds.w, bounds.h);
+  } else if (img === null) {
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(101,181,255,0.8)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Carregando modelo', bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   } else {
     // Se ainda está carregando ou não tem miniatura, exibe texto indicativo
     ctx.font = 'bold 11px Inter, sans-serif';
@@ -1557,7 +1546,7 @@ function updateSidebarFields() {
   const modelPanel = dialogEl.querySelector('#tdModelPreviewPanel');
   if (modelPanel) {
     modelPanel.style.display = td.font === 5 ? 'block' : 'none';
-    setVal('#tdPreviewModel', td.previewModel || 411);
+    setVal('#tdPreviewModel', td.previewModel ?? 411);
     setVal('#tdPreviewRotX', td.previewRotX !== undefined ? td.previewRotX : -16.0);
     setVal('#tdPreviewRotY', td.previewRotY !== undefined ? td.previewRotY : 0.0);
     setVal('#tdPreviewRotZ', td.previewRotZ !== undefined ? td.previewRotZ : -55.0);
