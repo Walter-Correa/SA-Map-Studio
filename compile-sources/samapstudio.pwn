@@ -6,6 +6,10 @@
 #define SAMP_COMPAT
 #include <open.mp>
 #include <streamer>
+// progress2.inc passa 1 em vez de true para PlayerTextDrawUseBox (aviso 213 só nela)
+#pragma warning disable 213
+#include <progress2>
+#pragma warning enable 213
 
 #define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
 #define SAMSP_MAX_OBJETOS    5000
@@ -18,6 +22,7 @@
 #define SAMSP_MAX_TEXTDRAWS   256
 #define SAMSP_MAX_CHECKPOINTS 256
 #define SAMSP_MAX_MAPICONS    200
+#define SAMSP_MAX_PBARS       32
 #define SAMSP_MAX_SOUNDS      256
 #define SAMSP_COR_INFO       0xF0A630FF
 #define SAMSP_COR_OK         0x57B77AFF
@@ -109,6 +114,23 @@ enum E_SAMSP_MAPICON
 }
 new gMapIcons[SAMSP_MAX_MAPICONS][E_SAMSP_MAPICON];
 new gTotalMapIcons;
+
+// Barras de progresso (progress2.inc): criadas para cada jogador ao nascer
+enum E_SAMSP_PBAR
+{
+    Float:pb_x,
+    Float:pb_y,
+    Float:pb_width,
+    Float:pb_height,
+    pb_color,
+    Float:pb_max,
+    Float:pb_value,
+    pb_direction
+}
+new gPBars[SAMSP_MAX_PBARS][E_SAMSP_PBAR];
+new gTotalPBars;
+new gPlayerPBars[MAX_PLAYERS][SAMSP_MAX_PBARS];
+new gPlayerPBarCount[MAX_PLAYERS];
 
 enum E_SAMSP_SOUND
 {
@@ -782,6 +804,19 @@ stock SAMSP_CarregarMapa()
                     gTotalGangZones++;
                 }
             }
+            case 'B':
+            {
+                if (gTotalPBars >= SAMSP_MAX_PBARS) continue;
+                gPBars[gTotalPBars][pb_x] = SAMSP_Float(linha, 1);
+                gPBars[gTotalPBars][pb_y] = SAMSP_Float(linha, 2);
+                gPBars[gTotalPBars][pb_width] = SAMSP_Float(linha, 3);
+                gPBars[gTotalPBars][pb_height] = SAMSP_Float(linha, 4);
+                gPBars[gTotalPBars][pb_color] = SAMSP_HexOrInt(linha, 5);
+                gPBars[gTotalPBars][pb_max] = SAMSP_Float(linha, 6);
+                gPBars[gTotalPBars][pb_value] = SAMSP_Float(linha, 7);
+                gPBars[gTotalPBars][pb_direction] = SAMSP_Int(linha, 8);
+                gTotalPBars++;
+            }
             case 'D':
             {
                 if (gTotalTextDraws >= SAMSP_MAX_TEXTDRAWS) continue;
@@ -907,8 +942,8 @@ stock SAMSP_CarregarMapa()
         gSpawn[3] = 0.0;
     }
 
-    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d checkpoints, %d mapicons, %d sons, %d textdraws (Streamer: %s)",
-        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalCheckpoints, gTotalMapIcons, gTotalSounds, gTotalTextDraws, gUseStreamer ? "ATIVO" : "DESATIVADO");
+    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d checkpoints, %d mapicons, %d sons, %d textdraws, %d barras de progresso (Streamer: %s)",
+        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalCheckpoints, gTotalMapIcons, gTotalSounds, gTotalTextDraws, gTotalPBars, gUseStreamer ? "ATIVO" : "DESATIVADO");
     printf("[SA Map Studio] Clima: %d, Horário: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
@@ -1230,6 +1265,7 @@ public OnPlayerDisconnect(playerid, reason)
     }
     gReturningFromFly[playerid] = false;
     gPlayerSpawned[playerid] = false;
+    gPlayerPBarCount[playerid] = 0; // a progress2.inc destrói as barras do jogador ao sair
     return 1;
 }
 
@@ -1277,6 +1313,26 @@ stock SAMSP_IrParaSpawn(playerid)
     if (gJetpack) SetPlayerSpecialAction(playerid, SPECIAL_ACTION_USEJETPACK);
 }
 
+// Recria as barras de progresso do mapa para o jogador (igual a CreatePlayerProgressBar no código exportado)
+stock SAMSP_ShowProgressBars(playerid)
+{
+    for (new i = 0; i < gPlayerPBarCount[playerid]; i++)
+    {
+        DestroyPlayerProgressBar(playerid, gPlayerPBars[playerid][i]);
+    }
+    gPlayerPBarCount[playerid] = 0;
+    for (new i = 0; i < gTotalPBars; i++)
+    {
+        new bar = CreatePlayerProgressBar(playerid, gPBars[i][pb_x], gPBars[i][pb_y], gPBars[i][pb_width], gPBars[i][pb_height],
+            gPBars[i][pb_color], gPBars[i][pb_max], gPBars[i][pb_direction]);
+        if (bar == INVALID_PLAYER_BAR_ID) continue;
+        SetPlayerProgressBarValue(playerid, bar, gPBars[i][pb_value]);
+        ShowPlayerProgressBar(playerid, bar);
+        gPlayerPBars[playerid][gPlayerPBarCount[playerid]++] = bar;
+    }
+    return 1;
+}
+
 forward SAMSP_ShowAllTextDraws(playerid);
 public SAMSP_ShowAllTextDraws(playerid)
 {
@@ -1313,6 +1369,7 @@ public OnPlayerSpawn(playerid)
     SAMSP_ShowPlayerCheckpoints(playerid);
     SAMSP_PlayMapSounds(playerid);
     SAMSP_ShowAllTextDraws(playerid);
+    SAMSP_ShowProgressBars(playerid);
     SAMSP_ApplyAllVehicleTuning();
     SetTimer("SAMSP_DelayedVehicleTuning", 300, false);
     SetTimer("SAMSP_DelayedVehicleTuning", 800, false);

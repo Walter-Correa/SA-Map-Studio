@@ -1,8 +1,8 @@
 // Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
 // Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
 // arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
-import { makeTextDraw, textDrawNative } from '../editor/project.js';
-import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth } from '../editor/tdrender.js';
+import { makeTextDraw, textDrawNative, progressBarPawn } from '../editor/project.js';
+import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, progressBarParts } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 
 const RIGHT_BOX_HINT = 'No jogo, a caixa alinhada à direita vai da borda esquerda da tela até o texto';
@@ -233,6 +233,9 @@ function setupDialogEvents() {
     };
   }
 
+  const addProgressBtn = dialogEl.querySelector('#tdBtnAddProgress');
+  if (addProgressBtn) addProgressBtn.onclick = () => createNewProgressBar();
+
   const copyPwnBtn = dialogEl.querySelector('#tdBtnCopyPwn');
   if (copyPwnBtn) {
     copyPwnBtn.onclick = () => {
@@ -364,6 +367,22 @@ function bindFieldInputs() {
   bind('#tdLetterY', 'letterSizeY', true);
   bind('#tdSizeX', 'textSizeX', true);
   bind('#tdSizeY', 'textSizeY', true);
+  // Barra de progresso
+  for (const [id, prop, isInt] of [['#tdPbWidth', 'pbWidth'], ['#tdPbHeight', 'pbHeight'], ['#tdPbMax', 'pbMax'], ['#tdPbValue', 'pbValue'], ['#tdPbDir', 'pbDir', true]]) {
+    const el = dialogEl.querySelector(id);
+    if (!el) continue;
+    el.onfocus = () => tdPushUndo();
+    el.oninput = el.onchange = () => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      const v = Number(el.value);
+      if (!Number.isFinite(v)) return;
+      td[prop] = isInt ? (v | 0) : v;
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+  }
+
   // Contorno e sombra: só ligado (1) ou desligado (0)
   for (const [id, prop] of [['#tdOutline', 'outline'], ['#tdShadow', 'shadow']]) {
     const el = dialogEl.querySelector(id);
@@ -612,6 +631,8 @@ function setupCanvasEvents() {
           origSizeY: curTd.textSizeY,
           origLetterX: curTd.letterSizeX,
           origLetterY: curTd.letterSizeY,
+          origPbW: curTd.pbWidth,
+          origPbH: curTd.pbHeight,
         };
         return;
       }
@@ -677,7 +698,12 @@ function setupCanvasEvents() {
       const newW = Math.max(10, Math.round(isDraggingTd.origW + dx));
       const newH = Math.max(10, Math.round(isDraggingTd.origH + dy));
 
-      if (td.font === 4 || td.font === 5) {
+      if (td.type === 'progress') {
+        // Barra: o arrasto muda largura e altura na mesma proporção do retângulo
+        const rx = newW / Math.max(4, isDraggingTd.origW), ry = newH / Math.max(4, isDraggingTd.origH);
+        td.pbWidth = Number(Math.max(1, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
+        td.pbHeight = Number(Math.max(0.5, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(1));
+      } else if (td.font === 4 || td.font === 5) {
         // Sprite (Font 4) e Prévia de modelo 3D (Font 5): textSizeX e textSizeY são largura e altura
         td.textSizeX = newW;
         td.textSizeY = newH;
@@ -745,6 +771,7 @@ function isBoxOnly(td) {
 
 // Retângulo ocupado em unidades 640x448
 function getTextDrawBounds(td) {
+  if (td.type === 'progress') return textDrawRect(td);
   if (td.font === 4 || td.font === 5) {
     const w = td.textSizeX > 0 ? td.textSizeX : 80;
     const h = td.textSizeY > 0 ? td.textSizeY : 80;
@@ -862,7 +889,13 @@ function drawGrid() {
 function renderTextDraw(td, isSelected) {
   const bounds = getTextDrawBounds(td);
 
-  if (td.font === 5) {
+  if (td.type === 'progress') {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const part of progressBarParts(td)) drawTextDraw(ctx, part);
+    ctx.restore();
+    useLogicalUnits();
+  } else if (td.font === 5) {
     if (td.useBox) {
       ctx.fillStyle = toHexRgba(td.boxColor ?? 0x00000080).css;
       ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -1111,6 +1144,19 @@ function updateSidebarFields() {
   const bgCol = toHexRgba(td.backgroundColor ?? 0x000000FF);
   setVal('#tdBgColor', bgCol.hex);
 
+  // Barra de progresso: só posição, cor e os campos da barra
+  const isBar = td.type === 'progress';
+  dialogEl.querySelectorAll('#tdDetailsPanel .td-std').forEach(el => { el.style.display = isBar ? 'none' : ''; });
+  const pbPanel = dialogEl.querySelector('#tdProgressPanel');
+  if (pbPanel) pbPanel.style.display = isBar ? 'flex' : 'none';
+  if (isBar) {
+    setVal('#tdPbWidth', td.pbWidth);
+    setVal('#tdPbHeight', td.pbHeight);
+    setVal('#tdPbMax', td.pbMax);
+    setVal('#tdPbValue', td.pbValue);
+    setVal('#tdPbDir', td.pbDir);
+  }
+
   // Painel de Sprite (Font 4)
   const spritePanel = dialogEl.querySelector('#tdSpritePanel');
   if (spritePanel) {
@@ -1171,6 +1217,30 @@ function createNewBox() {
     textSizeX: 440,
     textSizeY: 0,
     boxColor: 0x00000080,
+  });
+  appRef.project.textDraws.push(td);
+  appRef.project.modified = true;
+  selectedIdx = appRef.project.textDraws.length - 1;
+  updateSidebarFields();
+  updateSidebarList();
+  redrawCanvas();
+}
+
+function createNewProgressBar() {
+  tdPushUndo();
+  if (!appRef.project.textDraws) appRef.project.textDraws = [];
+  const td = makeTextDraw({
+    tdv: 2,
+    type: 'progress',
+    text: 'Barra de progresso',
+    x: 260,
+    y: 300,
+    pbWidth: 120,
+    pbHeight: 12,
+    pbMax: 100,
+    pbValue: 60,
+    pbDir: 0,
+    color: 0xFF1C1CFF | 0,
   });
   appRef.project.textDraws.push(td);
   appRef.project.modified = true;
@@ -1268,6 +1338,11 @@ function copyTextDrawsPawn() {
   const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const num = (v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; };
   tds.forEach((td, i) => {
+    if (td.type === 'progress') {
+      lines.push(...progressBarPawn(td, `bar_${i}`, num));
+      lines.push('');
+      return;
+    }
     const n = textDrawNative(td);
     const v = `td_${i}`;
     const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';

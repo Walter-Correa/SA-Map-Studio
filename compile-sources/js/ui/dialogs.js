@@ -303,6 +303,11 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       miIdx++;
     }
     for (const td of p.textDraws || []) {
+      if (td.type === 'progress') {
+        const f = (v) => (+v || 0).toFixed(4);
+        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}`);
+        continue;
+      }
       const n = textDrawNative(td);
       const hasRot = Boolean(td.previewRotX || td.previewRotY || td.previewRotZ);
       const rotX = (n.font === 5 && !hasRot) ? -16.0 : (td.previewRotX || 0);

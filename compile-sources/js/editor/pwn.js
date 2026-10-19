@@ -2,7 +2,7 @@
 // Compatível com o que o Map Construction, o Texture Studio e editores parecidos exportam.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative } from './project.js';
+import { textDrawNative, progressBarPawn, PB_DIRECTIONS } from './project.js';
 
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
@@ -94,7 +94,7 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
+const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 
@@ -827,6 +827,26 @@ export function parsePwn(source) {
         textDraws.push(td);
         if (variable) vars.set(variable, td);
       }
+    } else if (fn === 'CreatePlayerProgressBar') {
+      // progress2.inc: CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção)
+      if (a.length >= 3) {
+        const dirArg = String(a[7] ?? '0').trim();
+        const dirIdx = PB_DIRECTIONS.indexOf(dirArg.toUpperCase());
+        const td = {
+          tdv: 2, type: 'progress', isPlayer: true, text: 'Barra de progresso',
+          x: num(a[1]), y: num(a[2]),
+          pbWidth: num(a[3], 55.5), pbHeight: num(a[4], 3.2),
+          color: a[5] !== undefined ? parseColor(a[5]) : 0xFF1C1CFF,
+          pbMax: num(a[6], 100), pbValue: 0,
+          pbDir: dirIdx >= 0 ? dirIdx : int(dirArg, 0),
+          comment: inlineComment, preComment, blankLinesBefore,
+        };
+        textDraws.push(td);
+        if (variable) vars.set(variable, td);
+      }
+    } else if (fn === 'SetPlayerProgressBarValue') {
+      const target = vars.get(varKey(a[1]));
+      if (target && target.type === 'progress' && a[2] !== undefined) target.pbValue = num(a[2], 0);
     } else if (fn === 'TextDrawFont') {
       const target = vars.get(varKey(a[0])) || textDraws[textDraws.length - 1];
       if (target && a[1] !== undefined) target.font = int(a[1], 1);
@@ -1248,6 +1268,11 @@ export function exportPawn(project, options = {}) {
         const t = pl.trim();
         if (t && !isStudioSectionComment(t)) textDrawLines.push(t.startsWith('//') || t.startsWith('/*') ? t : `// ${t}`);
       }
+    }
+    if (td.type === 'progress') {
+      // Barra de progresso: precisa de #include <progress2>
+      textDrawLines.push(...progressBarPawn(td, `bar_${idx}`, (v) => formatCoord(v, null)));
+      continue;
     }
     const n = textDrawNative(td);
     const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');

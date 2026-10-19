@@ -214,10 +214,63 @@ export function layoutTextDraw(td) {
 
 // Retângulo ocupado (unidades 640x448) para seleção e arrasto
 export function textDrawRect(td) {
+  if (td.type === 'progress') {
+    const rects = progressBarParts(td).map(textDrawRect);
+    const x = Math.min(...rects.map(r => r.x)), y = Math.min(...rects.map(r => r.y));
+    const r2 = Math.max(...rects.map(r => r.x + r.w)), b2 = Math.max(...rects.map(r => r.y + r.h));
+    return { x, y, w: Math.max(4, r2 - x), h: Math.max(4, b2 - y) };
+  }
   const lay = layoutTextDraw(td);
   const r = lay.box || lay.textRect;
-  const x = r.left / UX, y = r.top / UY;
-  return { x, y, w: Math.max(4, (r.right - r.left) / UX), h: Math.max(4, (r.bottom - r.top) / UY) };
+  // Caixas invertidas (TextSize antes do x ou altura negativa) também valem, como no jogo
+  const left = Math.min(r.left, r.right), right = Math.max(r.left, r.right);
+  const top = Math.min(r.top, r.bottom), bottom = Math.max(r.top, r.bottom);
+  return { x: left / UX, y: top / UY, w: Math.max(4, (right - left) / UX), h: Math.max(4, (bottom - top) / UY) };
+}
+
+// Barra de progresso (progress2.inc): as mesmas 3 TextDraws de caixa que RenderProgressBar e
+// SetPlayerProgressBarValue criam (fundo, preenchimento e barra), para cada direção.
+export function progressBarParts(bar) {
+  const x = +bar.x || 0, y = +bar.y || 0;
+  const w = +bar.pbWidth || 0, h = +bar.pbHeight || 0;
+  const max = +bar.pbMax || 100;
+  const v = Math.max(0, Math.min(max, +bar.pbValue || 0));
+  const dir = bar.pbDir | 0;
+  const c = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
+  const alpha = c & 0xFF;
+  const backColor = alpha;
+  const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor(alpha / 2))) >>> 0;
+  const part = (px, py, sizeX, letterY, boxColor, useBox = 1) => ({
+    tdv: 2, font: 1, text: '_', align: 1, x: px, y: py, letterSizeX: 1.0, letterSizeY: letterY,
+    textSizeX: sizeX, textSizeY: 0, useBox, boxColor, color: 0xFFFFFFFF, outline: 0, shadow: 0, proportional: 1,
+  });
+  const h10 = h / 10;
+  switch (dir) {
+    case 1: // esquerda
+      return [
+        part(x, y, x - w - 4.0, h10, backColor),
+        part(x - 1.6, y + 1.6, x - w - 2.5, h10 - 0.35, fillColor),
+        part(x - 1.6, y + 1.6, (x - 5.0) - ((((x + 2.5) - w) - x) / max) * -v, h10 - 0.35, c, v > 0 ? 1 : 0),
+      ];
+    case 2: // para cima
+      return [
+        part(x, y, x - w - 4.0, -(h10 * 1.02) - 0.55, backColor),
+        part(x - 1.2, y - 2.5, x - w - 2.8, -h10 * 1.02, fillColor),
+        part(x - 1.2, y - 2.5, x - w - 2.8, -((((h10 - 0.55) * 1.02) / max) * v + 0.55), c, v > 0 ? 1 : 0),
+      ];
+    case 3: // para baixo
+      return [
+        part(x, y, x - w - 4.0, h10, backColor),
+        part(x - 1.2, y + 2.5, x - w - 2.8, h10 - 0.55, fillColor),
+        part(x - 1.2, y + 2.5, x - w - 2.8, (h10 / max) * v - 0.55, c, v > 0 ? 1 : 0),
+      ];
+    default: // direita
+      return [
+        part(x, y, x + w - 1.0, h10, backColor),
+        part(x + 1.6, y + 1.6, x + w - 2.5, h10 - 0.35, fillColor),
+        part(x + 1.6, y + 1.6, (x - 1.0) + ((((x - 1.5) + w) - x) / max) * v, h10 - 0.35, c, v > 0 ? 1 : 0),
+      ];
+  }
 }
 
 // Largura do texto em unidades 640 (para criar a caixa automaticamente)

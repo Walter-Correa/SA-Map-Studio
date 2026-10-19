@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.7.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.8.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -68,6 +68,7 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - Fontes 0 a 5, cores de texto e caixa com transparência, alinhamento (esquerda, centro, direita), tamanho de letras e caixas, contorno (`outline`) e sombra (`shadow`).
 - **Pré-visualização 3D de modelos (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com ajuste de rotação (RX, RY, RZ) e zoom.
 - Exportação limpa de script Pawn pronto para compilação.
+- **Barras de progresso** (`progress2.inc`) nas quatro direções, com o mesmo desenho do jogo.
 
 ### Materiais do SA-MP
 - O inspetor lista **todos os índices de material** do objeto (0 a 15) com a textura original de cada um.
@@ -253,6 +254,12 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.8.0 — 19/10/2026
+- Novo tipo **Barra de progresso** no editor de TextDraws (`progress2.inc`): largura, altura, cor, máximo, valor e
+  direção, desenhada como a include monta no jogo; exporta e importa `CreatePlayerProgressBar`,
+  `SetPlayerProgressBarValue` e `ShowPlayerProgressBar`.
+- Gamemode de teste compilado com a `progress2.inc`.
 
 ### 3.7.0 — 19/10/2026
 - Retomar de onde parou: o projeto guarda a seleção do último salvamento e, ao abrir, seleciona os itens,

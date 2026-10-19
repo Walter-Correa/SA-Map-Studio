@@ -191,6 +191,19 @@ function normalizeSpriteName(text) {
   return text;
 }
 
+// Barra de progresso (progress2.inc): chamadas para criar, definir o valor e mostrar para o jogador
+export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
+
+export function progressBarPawn(td, varName, fmt) {
+  const f = fmt || ((v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; });
+  const hex = '0x' + (Number(td.color ?? 0xFF1C1CFF) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  return [
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]});`,
+    `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
+    `ShowPlayerProgressBar(playerid, ${varName});`,
+  ];
+}
+
 // Parâmetros finais das funções TextDraw*, usados na exportação Pawn e no servidor de teste
 export function textDrawNative(td) {
   const font = td.font ?? 1;
@@ -252,6 +265,14 @@ export function makeTextDraw(data) {
     previewColor1: data.previewColor1 !== undefined ? (data.previewColor1 | 0) : 1,
     previewColor2: data.previewColor2 !== undefined ? (data.previewColor2 | 0) : 1,
     comment: data.comment ? String(data.comment) : '',
+    ...(data.type === 'progress' ? {
+      type: 'progress', isPlayer: true,
+      pbWidth: data.pbWidth !== undefined ? +data.pbWidth : 55.5,
+      pbHeight: data.pbHeight !== undefined ? +data.pbHeight : 3.2,
+      pbMax: data.pbMax !== undefined ? +data.pbMax : 100,
+      pbValue: data.pbValue !== undefined ? +data.pbValue : 50,
+      pbDir: data.pbDir !== undefined ? (data.pbDir | 0) : 0,
+    } : {}),
   };
 }
 
