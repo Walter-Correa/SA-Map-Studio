@@ -3,9 +3,9 @@ import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
-import { normalizeCameras, textDrawNative } from '../editor/project.js';
+import { Project, normalizeCameras, textDrawNative } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
-import { positionCameraOverProject } from './projects.js';
+import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
 import { app, $, esc, plural, store, toast, copyText, postJSON } from './common.js';
 
 // =====================================================================  exportar
@@ -132,8 +132,16 @@ export function setupImport() {
   });
   const open = () => { parsed = null; fileBytes = null; $('#importText').value = ''; $('#importFileName').textContent = ''; show(); if (!dlg.open) dlg.showModal(); };
   $('#btnImport').onclick = () => { open(); $('#importText').focus(); };
-  $('#importGo').onclick = () => {
+  $('#importGo').onclick = async () => {
     if (!parsed) return;
+    const replace = $('#importReplace').checked;
+    const projName = parsed.name || (fileName ? fileName.replace(/\.[^/.]+$/, '').trim() : '');
+    // Sem substituir: o projeto atual é salvo e fechado e a importação vira um projeto novo
+    if (!replace) {
+      $('#importGo').disabled = true;
+      try { await switchTo(new Project(await uniqueName(projName || 'Mapa importado'))); }
+      finally { $('#importGo').disabled = false; }
+    }
     const project = app.project, ed = app.editor;
     const keepUid = (u) => (typeof u === 'string' && u.includes('_p_') && !project.find(u)) ? u : undefined;
     const items = [
@@ -148,7 +156,7 @@ export function setupImport() {
       ...(parsed.mapIcons || []).map(mi => ({ ...mi, kind: 'mapIcons', uid: undefined })),
       ...(parsed.textDraws || []).map(t => ({ ...t, kind: 'textDraws', uid: undefined })),
     ];
-    if ($('#importReplace').checked) {
+    if (replace) {
       const all = [
         ...project.objects,
         ...project.vehicles,
@@ -164,7 +172,6 @@ export function setupImport() {
       if (all.length) project.deleteItems('Limpar projeto', all);
       if (parsed.pwnHeader || parsed.preservedHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
       if (parsed.rawPawn) project.rawPawn = parsed.rawPawn;
-      const projName = parsed.name || (fileName ? fileName.replace(/\.[^/.]+$/, '').trim() : '');
       if (projName) {
         project.name = projName;
         const nameInp = document.getElementById('projectName');
@@ -177,13 +184,13 @@ export function setupImport() {
         }
       }
     } else {
-      if ((parsed.pwnHeader || parsed.preservedHeader) && !project.pwnHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
-      if (parsed.rawPawn && !project.rawPawn) project.rawPawn = parsed.rawPawn;
+      if (parsed.pwnHeader || parsed.preservedHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
+      if (parsed.rawPawn) project.rawPawn = parsed.rawPawn;
     }
     if (items.length) project.addItems(`Importar ${items.length} itens`, items);
     if (parsed.cameras) {
       const c = normalizeCameras(parsed.cameras);
-      if ($('#importReplace').checked) project.cameras = normalizeCameras(null);
+      if (replace) project.cameras = normalizeCameras(null);
       project.cameras.shots.push(...c.shots);
       project.cameras.paths.push(...c.paths);
       if (c.shots.length + c.paths.length) project.touch('cameras');

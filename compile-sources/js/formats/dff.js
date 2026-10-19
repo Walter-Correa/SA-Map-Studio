@@ -181,25 +181,30 @@ export function parseDff(buffer) {
 }
 
 // Converte uma geometria em listas de índices por material.
+// O jogo desenha pelo BinMesh; muitos modelos do SA-MP têm o material de todos os triângulos
+// zerado e só o BinMesh traz a divisão certa, então ele tem prioridade sobre a lista de triângulos.
 export function geometryGroups(g) {
   const nMat = Math.max(1, g.materials.length);
   const lists = Array.from({ length: nMat }, () => []);
-  if (g.triangles && g.triangles.length) {
-    const t = g.triangles;
-    for (let i = 0; i < t.length; i += 4) {
-      const m = t[i + 3] < nMat ? t[i + 3] : 0;
-      lists[m].push(t[i], t[i + 1], t[i + 2]);
-    }
-  } else if (g.binMesh) {
+  const nv = g.numVerts || (g.positions ? g.positions.length / 3 : 0);
+  const binOk = g.binMesh && g.binMesh.meshes.some(m => m.indices.length)
+    && g.binMesh.meshes.every(m => m.indices.every(i => i < nv));
+  if (binOk) {
     for (const mesh of g.binMesh.meshes) {
       const m = mesh.material < nMat ? mesh.material : 0;
       const idx = mesh.indices;
-      if (!g.binMesh.strip) { for (let i = 0; i < idx.length; i++) lists[m].push(idx[i]); continue; }
+      if (!g.binMesh.strip) { for (let i = 0; i + 2 < idx.length; i += 3) lists[m].push(idx[i], idx[i + 1], idx[i + 2]); continue; }
       for (let i = 2; i < idx.length; i++) {
         const a = idx[i - 2], b = idx[i - 1], c = idx[i];
         if (a === b || b === c || a === c) continue;
         if (i % 2 === 0) lists[m].push(a, b, c); else lists[m].push(b, a, c);
       }
+    }
+  } else if (g.triangles && g.triangles.length) {
+    const t = g.triangles;
+    for (let i = 0; i < t.length; i += 4) {
+      const m = t[i + 3] < nMat ? t[i + 3] : 0;
+      lists[m].push(t[i], t[i + 1], t[i + 2]);
     }
   }
   return lists;

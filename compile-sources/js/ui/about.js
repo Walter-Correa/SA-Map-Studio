@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.9.2', date: '19/10/2026', items: [
+      'Texturas dos objetos do SA-MP corrigidas: cerca de 450 modelos (portões, placas, tubos, rampas, casas e outros) apareciam com uma só textura cinza; agora cada parte usa a textura certa, e as miniaturas foram refeitas.',
+      'Importar sem marcar "Substituir o projeto atual" cria um projeto novo com o nome do arquivo, em vez de misturar os itens no projeto aberto.',
+      'O campo de nome das Barras de Progresso agora se chama apenas Nome.',
+    ],
+  },
+  {
     version: '3.9.1', date: '19/10/2026', items: [
       'TextDraws exportadas com as variáveis textdraw_0, textdraw_1 e barras de progresso com progress_0, progress_1 e assim por diante, com o nome dado no editor como comentário no fim da linha (lido de volta na importação).',
       'Barras novas começam com o nome progress_N; a barra do mapa de exemplo se chama progress_0.',
