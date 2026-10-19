@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.9.2"
+VERSION = "3.9.3"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -599,6 +599,70 @@ def browse_folder(initial="", title="Escolha uma pasta"):
 def safe_name(name):
     name = re.sub(r"[^\w\-. ()]+", "_", name, flags=re.UNICODE).strip(" .")
     return name[:80] or "sem_nome"
+
+
+_GDI_FONTS = {}
+_GDI_LOCK = threading.Lock()
+
+
+def gdi_font_metrics(face, size, bold):
+    """Métricas da fonte do jeito que o cliente do SA-MP cria a do SetObjectMaterialText
+    (D3DXCreateFont com altura = fontsize, peso 400/700, DEFAULT_CHARSET): altura da linha,
+    ascendente, tamanho da letra e a largura de cada caractere (cp1252), já com o hinting do Windows."""
+    face = str(face or "Arial")[:64]
+    size = max(1, min(255, int(size)))
+    key = (face.lower(), size, bool(bold))
+    with _GDI_LOCK:
+        if key in _GDI_FONTS:
+            return _GDI_FONTS[key]
+        out = {"ok": False}
+        if os.name == "nt":
+            try:
+                import ctypes
+                from ctypes import wintypes
+                gdi = ctypes.windll.gdi32
+
+                class TEXTMETRICW(ctypes.Structure):
+                    _fields_ = [(n, ctypes.c_long) for n in ("height", "ascent", "descent", "intl", "extl", "avew", "maxw", "weight", "overhang", "dax", "day")] + [("rest", ctypes.c_byte * 8)]
+
+                gdi.CreateCompatibleDC.restype = wintypes.HDC
+                gdi.CreateCompatibleDC.argtypes = [wintypes.HDC]
+                gdi.CreateFontW.restype = wintypes.HFONT
+                gdi.CreateFontW.argtypes = [ctypes.c_int] * 5 + [wintypes.DWORD] * 8 + [wintypes.LPCWSTR]
+                gdi.SelectObject.restype = wintypes.HGDIOBJ
+                gdi.SelectObject.argtypes = [wintypes.HDC, wintypes.HGDIOBJ]
+                gdi.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+                gdi.DeleteDC.argtypes = [wintypes.HDC]
+                gdi.GetTextMetricsW.argtypes = [wintypes.HDC, ctypes.c_void_p]
+                gdi.GetTextFaceW.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_wchar_p]
+                gdi.GetCharWidth32W.argtypes = [wintypes.HDC, wintypes.UINT, wintypes.UINT, ctypes.c_void_p]
+                hdc = gdi.CreateCompatibleDC(None)
+                font = gdi.CreateFontW(size, 0, 0, 0, 700 if bold else 400, 0, 0, 0, 1, 0, 0, 0, 0, face)
+                old = gdi.SelectObject(hdc, font)
+                try:
+                    tm = TEXTMETRICW()
+                    gdi.GetTextMetricsW(hdc, ctypes.byref(tm))
+                    name = ctypes.create_unicode_buffer(64)
+                    gdi.GetTextFaceW(hdc, 64, name)
+                    widths = {}
+                    w = ctypes.c_int()
+                    for code in range(0x20, 0x100):
+                        try:
+                            ch = bytes([code]).decode("cp1252")
+                        except UnicodeDecodeError:
+                            continue
+                        if gdi.GetCharWidth32W(hdc, ord(ch), ord(ch), ctypes.byref(w)):
+                            widths[ch] = w.value
+                    out = {"ok": True, "face": name.value or face, "height": tm.height, "ascent": tm.ascent,
+                           "ppem": tm.height - tm.intl, "widths": widths}
+                finally:
+                    gdi.SelectObject(hdc, old)
+                    gdi.DeleteObject(font)
+                    gdi.DeleteDC(hdc)
+            except Exception:
+                out = {"ok": False}
+        _GDI_FONTS[key] = out
+        return out
 
 
 def thumb_file(kind, key):
@@ -1749,6 +1813,14 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/ping":
             State.last_ping = time.time()
             return self.send_json({"ok": True})
+        if path == "/api/gdifont":
+            qs = parse_qs(url.query)
+            try:
+                size = int(qs.get("size", ["24"])[0])
+            except ValueError:
+                size = 24
+            res = gdi_font_metrics(qs.get("face", ["Arial"])[0], size, qs.get("bold", ["1"])[0] not in ("0", ""))
+            return self.send_json(res)
         if path == "/api/example_project":
             # Projeto de exemplo: entregue só na primeira abertura do editor
             cfg = load_config()

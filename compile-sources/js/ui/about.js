@@ -6,6 +6,13 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.9.3', date: '19/10/2026', items: [
+      'Textos em objetos iguais ao jogo: o tamanho da letra segue a regra do SA-MP (o tamanho é a altura da linha, não da letra), com as medidas de cada letra tiradas do próprio Windows, como o jogo faz; textos alinhados à esquerda ou à direita ficam no topo do material, e o texto recebe a cor e a luz do objeto (nas placas do SA-MP fica acinzentado, como no jogo).',
+      'Editar o texto de um objeto não apaga mais o que já estava escrito: abrir a aba Texto ou trocar de índice só carrega o texto, e nada é escrito até você alterar algo.',
+      'O código exportado avisa no cabeçalho quando o projeto tem barras de progresso e precisa da include progress2.',
+    ],
+  },
+  {
     version: '3.9.2', date: '19/10/2026', items: [
       'Texturas dos objetos do SA-MP corrigidas: cerca de 450 modelos (portões, placas, tubos, rampas, casas e outros) apareciam com uma só textura cinza; agora cada parte usa a textura certa, e as miniaturas foram refeitas.',
       'Importar sem marcar "Substituir o projeto atual" cria um projeto novo com o nome do arquivo, em vez de misturar os itens no projeto aberto.',

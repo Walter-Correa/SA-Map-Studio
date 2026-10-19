@@ -1823,7 +1823,7 @@ function textureEditor(cur, label, idx, info) {
 }
 
 function textEditor(cur, label) {
-  const t = cur && isText(cur) ? cur : textDraft;
+  const t = cur && isText(cur) ? normalizeMaterial(cur) : textDraft;
   const sizes = MATERIAL_SIZES.map(([v, s]) => `<option value="${v}" ${v === t.size ? 'selected' : ''}>${s} (${v})</option>`).join('');
   const fonts = [...new Set([...FONTS, t.font])].map(f => `<option ${f === t.font ? 'selected' : ''}>${esc(f)}</option>`).join('');
   return `<div class="mat-body">
@@ -1889,9 +1889,6 @@ function bindMaterials(objs) {
   $$('#inspector [data-mattab]').forEach(b => b.onclick = () => {
     matTab = b.dataset.mattab;
     store.set('matTab', matTab);
-    if (matTab === 'text') {
-      applyTextLive(uids, idx, textDraft);
-    }
     renderInspector();
   });
   $('#inspector [data-goto-tex]')?.addEventListener('click', (e) => { e.preventDefault(); app.emit('show-tab', 'textures'); });
@@ -1955,7 +1952,7 @@ function drawPreview() {
   const t = normalizeMaterial({ kind: 'text', index: 0, ...readText() });
   const [w, h] = SIZE_PIXELS[t.size] || [256, 128];
   c.width = w; c.height = h;
-  drawMaterialText(c.getContext('2d'), t, w, h);
+  drawMaterialText(c.getContext('2d'), t, w, h, () => { if (c.isConnected) drawPreview(); });
 }
 
 function applyTextLive(uids, idx, draft) {
@@ -1976,13 +1973,11 @@ function applyTextNow(uids, idx) {
   if (keepFocus) document.getElementById(keepFocus)?.focus();
 }
 
+// Abrir o editor (ou trocar de aba ou de índice) nunca escreve no objeto: o texto que já existe é
+// carregado como está, e só uma alteração do usuário ou o botão aplicam o rascunho
 function bindTextEditor(uids, o, idx) {
   const cur = matOf(o, idx[0]);
-  if (cur && isText(cur)) {
-    textDraft = { ...textDraft, ...cur };
-  } else {
-    applyTextLive(uids, idx, textDraft);
-  }
+  if (cur && isText(cur)) textDraft = { ...textDraft, ...normalizeMaterial(cur) };
   let timer = null;
   const changed = () => {
     textDraft = { ...textDraft, ...readText() };

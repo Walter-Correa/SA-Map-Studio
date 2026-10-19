@@ -450,15 +450,15 @@ export class ModelCache {
     const m = orig.clone();
     m.userData = { override: true };
     if (isText(ov)) {
+      // O jogo só troca a textura: a cor do material e a luz do modelo continuam valendo
+      // (nas placas do SA-MP a cor do material é 127,127,127 e o texto fica acinzentado)
       m.map = materialTextTexture(ov);
-      m.vertexColors = false;
       const bc = parseColor(ov.backColor);
       const isOpaque = ((bc >>> 24) & 255) === 255;
       m.transparent = !isOpaque;
       m.depthWrite = isOpaque;
       m.alphaTest = isOpaque ? 0 : 0.01;
       m.side = THREE.DoubleSide;
-      m.color.setRGB(1, 1, 1);
     } else if (isNoneTexture(ov)) {
       m.visible = false;
       m.transparent = true;
@@ -522,24 +522,72 @@ export class ModelCache {
 // ---------------------------------------------------------------------------
 // SetObjectMaterialText: desenha o texto numa textura do tamanho escolhido
 // (OBJECT_MATERIAL_SIZE_*), com fundo, negrito, alinhamento e cores {RRGGBB}.
+// Igual ao cliente do SA-MP: a fonte é criada com D3DXCreateFont(altura = fontsize), que é a
+// altura da linha (ascendente + descendente) e não o tamanho da letra. Centro usa
+// DT_CENTER | DT_VCENTER; esquerda e direita ficam no topo da textura. As medidas (altura,
+// ascendente e largura de cada letra) vêm do próprio Windows, com o mesmo arredondamento do jogo.
 // ---------------------------------------------------------------------------
-export function drawMaterialText(ctx, t, w, h) {
+const gdiFonts = new Map();   // fonte -> medidas | false (sem medidas) | Promise (pedindo)
+const gdiWaiters = new Map(); // fonte -> funções chamadas quando as medidas chegam
+function gdiFont(font, size, bold, onReady) {
+  const key = `${String(font).toLowerCase()}|${size}|${bold ? 1 : 0}`;
+  const cur = gdiFonts.get(key);
+  if (cur !== undefined && !(cur instanceof Promise)) return cur;
+  if (onReady) {
+    if (!gdiWaiters.has(key)) gdiWaiters.set(key, new Set());
+    gdiWaiters.get(key).add(onReady);
+  }
+  if (!cur) {
+    const q = `/api/gdifont?face=${encodeURIComponent(font)}&size=${size}&bold=${bold ? 1 : 0}`;
+    gdiFonts.set(key, fetch(q).then(r => r.json()).catch(() => null).then(d => {
+      gdiFonts.set(key, d && d.ok ? d : false);
+      const cbs = gdiWaiters.get(key);
+      gdiWaiters.delete(key);
+      if (cbs) for (const cb of cbs) { try { cb(); } catch { /* textura já descartada */ } }
+    }));
+  }
+  return null;
+}
+
+// Sem as medidas do Windows: aproxima pela altura da linha que o navegador informa
+const cellMetrics = new Map();
+function browserCell(ctx, font, bold, size) {
+  const key = (bold ? 'b|' : 'n|') + font;
+  let m = cellMetrics.get(key);
+  if (!m) {
+    ctx.font = `${bold ? 'bold ' : ''}100px "${font}", Arial, sans-serif`;
+    const r = ctx.measureText('Hg');
+    const asc = r.fontBoundingBoxAscent, desc = r.fontBoundingBoxDescent;
+    m = asc > 0 && desc >= 0 ? { em: 100 / (asc + desc), asc: asc / (asc + desc) } : { em: 1 / 1.15, asc: 0.8 };
+    cellMetrics.set(key, m);
+  }
+  return { face: font, height: size, ascent: m.asc * size, ppem: m.em * size, widths: null };
+}
+
+// onReady: chamada se as medidas exatas ainda não tinham chegado (para redesenhar)
+export function drawMaterialText(ctx, t, w, h, onReady) {
   ctx.clearRect(0, 0, w, h);
   if (parseColor(t.backColor)) { ctx.fillStyle = cssColor(t.backColor); ctx.fillRect(0, 0, w, h); }
   const fontColor = parseColor(t.fontColor) ? cssColor(t.fontColor) : 'rgba(0,0,0,0)';
-  ctx.font = `${t.bold ? 'bold ' : ''}${t.fontSize}px "${t.font}", Arial, sans-serif`;
-  ctx.textBaseline = 'middle';
+  const size = Math.max(1, Math.min(255, t.fontSize | 0));
+  const fm = gdiFont(t.font, size, t.bold, onReady) || browserCell(ctx, t.font, t.bold, size);
+  ctx.font = `${t.bold ? 'bold ' : ''}${fm.ppem}px "${fm.face}", "${t.font}", Arial, sans-serif`;
+  ctx.textBaseline = 'alphabetic';
+  const adv = (ch) => fm.widths?.[ch] ?? ctx.measureText(ch).width;
   const lines = String(t.text).split('\n');
-  const lh = t.fontSize * 1.15;
+  const top = t.align === 1 ? Math.floor((h - lines.length * fm.height) / 2) : 0;
   lines.forEach((line, li) => {
     const segs = colorSegments(line, fontColor);
-    const width = segs.reduce((s, sg) => s + ctx.measureText(sg.text).width, 0);
-    let x = t.align === 1 ? (w - width) / 2 : t.align === 2 ? w - width : 0;
-    const y = h / 2 + (li - (lines.length - 1) / 2) * lh;
+    let width = 0;
+    for (const sg of segs) for (const ch of sg.text) width += adv(ch);
+    let x = t.align === 1 ? Math.floor((w - width) / 2) : t.align === 2 ? w - width : 0;
+    const y = top + li * fm.height + fm.ascent;
     for (const sg of segs) {
       ctx.fillStyle = sg.color;
-      ctx.fillText(sg.text, x, y);
-      x += ctx.measureText(sg.text).width;
+      for (const ch of sg.text) {
+        if (ch !== ' ') ctx.fillText(ch, x, y);
+        x += adv(ch);
+      }
     }
   });
 }
@@ -549,7 +597,8 @@ export function materialTextTexture(ov) {
   const [w, h] = SIZE_PIXELS[t.size] || [256, 128];
   const canvas = document.createElement('canvas');
   canvas.width = w; canvas.height = h;
-  drawMaterialText(canvas.getContext('2d'), t, w, h);
+  const ctx = canvas.getContext('2d');
+  drawMaterialText(ctx, t, w, h, () => { drawMaterialText(ctx, t, w, h); tex.needsUpdate = true; });
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.flipY = false;

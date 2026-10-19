@@ -160,6 +160,7 @@ export function cleanPwnHeader(headerText) {
         t.startsWith('//   OnGameModeInit') ||
         t.startsWith('//   OnPlayerConnect') ||
         t.startsWith('//   Requer o plugin streamer') ||
+        t.startsWith('//   Requer a include progress2') ||
         t.startsWith('//   Posições relativas') ||
         t.startsWith('//   Câmeras')) {
       continue;
@@ -1402,6 +1403,7 @@ export function exportPawn(project, options = {}) {
   lines.push(`//   OnGameModeInit():   Mapa_${id}_Carregar();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Mapa_${id}_Remover(playerid);`);
   if (opt.objectFn === 'CreateDynamicObject') lines.push('//   Requer o plugin streamer (#include <streamer>).');
+  if (textDraws.some(td => td.type === 'progress')) lines.push('//   Requer a include progress2 (#include <progress2>) por causa das barras de progresso.');
   if (cams.usage.length) { lines.push('//   Câmeras (chame quando quiser, com o jogador já spawnado):'); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   Posições relativas: some (${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}) ou passe a origem.`);
   lines.push('// ================================================================');
