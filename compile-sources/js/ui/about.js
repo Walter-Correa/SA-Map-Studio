@@ -6,6 +6,11 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.18.1', date: '20/10/2026', items: [
+      'Prévia de modelo 3D de skins com o mesmo tamanho e posição do jogo: colisão de pedestre do GTA (raio 1,0) e o pedestre na altura da pose do jogo.',
+    ],
+  },
+  {
     version: '3.18.0', date: '20/10/2026', items: [
       'Prévia de modelo 3D das TextDraws desenhada com o modelo de verdade e a mesma câmera do SA-MP: imagem 256 x 256 esticada para a caixa, enquadramento pela esfera de colisão do modelo, mesmo zoom e mesma ordem de rotação. Tamanho, zoom e rotação no editor ficam como no jogo.',
       'Modelo 0 (skin do CJ) aparece na prévia de modelo 3D.',

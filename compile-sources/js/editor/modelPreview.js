@@ -10,7 +10,10 @@ import * as THREE from 'three';
 
 const SIZE = 256;
 const SWAP_MODELS = new Set([1373, 3118, 3552, 3553]);
-const PED_SPHERE = [0, 0, 0, 1.25]; // colisão fixa de pedestre do GTA (CTempColModels)
+const PED_SPHERE = [0, 0, 0, 1.0]; // colisão fixa de pedestre do GTA (gta_sa.exe 0x5baf16: raio 1,0, centro 0)
+
+// No jogo o pedestre fica na pose parada (animação), mais alto que a malha sem animação
+const PED_LIFT = 0.19;
 
 let renderer = null, target = null, scene = null, camera = null, pixels = null;
 const spheres = new Map();  // modelo -> Promise<[cx, cy, cz, r] | null>
@@ -58,6 +61,8 @@ async function render(app, td, entry) {
   if (app.gd.models.get(id)?.type === 'cars') {
     try { app.editor?.applyVehicleVisuals?.(obj, { model: id, color1: td.previewColor1, color2: td.previewColor2 }); } catch { /* sem cores */ }
   }
+  const def = app.gd.models.get(id);
+  if (def?.type === 'peds' || def?.type === 'skins' || (id >= 0 && id <= 311 && !def?.type)) obj.position.z += PED_LIFT;
   let sph = await colSphere(app, id);
   if (!sph) {
     // Sem colisão: usa a esfera da malha
@@ -94,6 +99,8 @@ async function render(app, td, entry) {
 }
 
 // Imagem 256 x 256 da prévia (ou null enquanto renderiza); onReady é chamada quando ficar pronta
+export function clearModelPreviews() { images.clear(); }
+
 export function modelPreviewImage(app, td, onReady) {
   const key = [td.previewModel ?? 0, td.previewRotX, td.previewRotY, td.previewRotZ, td.previewZoom, td.previewColor1, td.previewColor2].join('|');
   let entry = images.get(key);
