@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.15.1"
+VERSION = "3.16.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -1167,12 +1167,12 @@ def start_test(body):
             plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
             with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
                 f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 8\nport %d\n"
-                        "hostname SA Map Studio - teste\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
+                        "hostname SA Map Studio - Testing server\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
                         "%s"
                         "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
                         "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage Portugues\n" % (rcon, TEST_PORT, plugins_line))
             cfg = {
-                "name": "SA Map Studio - teste", "max_players": 8, "announce": False, "enable_query": True,
+                "name": "SA Map Studio - Testing server", "max_players": 8, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT, "bind": "127.0.0.1"},
                 "pawn": {"main_scripts": ["samapstudio"], "side_scripts": [], "legacy_plugins": ["streamer"] if load_streamer else []},
                 "rcon": {"enable": False, "password": rcon},

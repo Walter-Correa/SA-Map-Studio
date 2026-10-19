@@ -27,6 +27,7 @@ import { initGangZoneDialog, openGangZoneDialog } from './ui/gangzoneDialog.js';
 import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
 import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
+import { installColorPicker } from './ui/colorPicker.js';
 
 let water = null;
 let hintDismissed = false;
@@ -194,6 +195,7 @@ async function start(cfg) {
   app.texlib.setHave(have.tex);
 
   window.app = app;
+  installColorPicker();
 
   setupProjects();
   setupToolbar(cfg);

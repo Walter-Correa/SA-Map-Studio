@@ -727,13 +727,13 @@ function bindCommon() {
 
 function bindSpeedControls() {
   $$('#inspector [data-speed]').forEach(inp => {
+    // Digitando: só usa o valor se ele já estiver dentro do limite; ao sair do campo aplica o limite
     const apply = (fix) => {
       const raw = parseFloat(String(inp.value).replace(',', '.'));
-      if (!Number.isFinite(raw) && !fix) return;
+      if (!fix && (!Number.isFinite(raw) || clampTransformSpeed(raw) !== raw)) return;
       app.editor.setTransformSpeed({ [inp.dataset.speed]: raw });
       store.set('transformSpeed', app.editor.transformSpeed);
-      const v = app.editor.transformSpeed[inp.dataset.speed];
-      if (fix || raw !== v) inp.value = speedText(v);
+      if (fix) inp.value = speedText(app.editor.transformSpeed[inp.dataset.speed]);
     };
     inp.addEventListener('input', () => apply(false));
     inp.addEventListener('change', () => apply(true));

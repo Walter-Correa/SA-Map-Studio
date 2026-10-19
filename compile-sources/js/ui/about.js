@@ -6,6 +6,16 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.16.0', date: '20/10/2026', items: [
+      'Seletor de cor próprio em todos os campos de cor (a janela do editor não abria o seletor do Windows): quadrado de cor, matiz, código hexadecimal e cores prontas.',
+      'Campos com mínimo e máximo aceitam digitação livre; o limite só é aplicado ao sair do campo (intervalo da piscada, segmentos, borda, largura e altura da barra, velocidade de movimento e rotação).',
+      'Duplicar TextDraw ou barra coloca a cópia logo abaixo da original (ou acima, se não couber), na mesma coluna.',
+      'GangZones: a cópia encosta num lado livre da original; sem lado livre, vai para o espaço livre mais próximo, reduzida se precisar. Adicionar zona segue a mesma regra, e sem espaço no mapa aparece um aviso.',
+      'Barras de progresso: opção Testar movimento, que mostra a barra enchendo e voltando ao valor atual na prévia.',
+      'Servidor de teste se chama SA Map Studio - Testing server. A include progress2 foi removida do servidor de teste.',
+    ],
+  },
+  {
     version: '3.15.1', date: '19/10/2026', items: [
       'O editor só pede administrador (UAC) quando a pasta dele não pode ser gravada, como dentro da pasta do GTA em Arquivos de Programas; em outras pastas abre sem o aviso.',
       'Teste em jogo continua funcionando: com o GTA numa pasta protegida, o cliente SA-MP é aberto como administrador (com o pedido do Windows) ao clicar em Testar.',

@@ -178,7 +178,7 @@ new bool:gHasMapCenter = false;
 
 main()
 {
-    print("SA Map Studio - teste de mapa");
+    print("SA Map Studio - Testing server");
 }
 
 // Copia o campo número "campo" (separado por |) da linha para "destino"

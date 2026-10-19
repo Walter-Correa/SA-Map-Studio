@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.15.1-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.16.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,15 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.16.0 — 20/10/2026
+- Seletor de cor próprio para todos os campos de cor (o WebView2 não abre o seletor nativo).
+- Campos com limites aceitam digitação livre e só aplicam o limite ao sair do campo.
+- Cópia de TextDraw/barra logo abaixo (ou acima) da original, na mesma coluna.
+- GangZones: cópia encostada num lado livre da original ou no espaço livre mais próximo, reduzida se precisar; adicionar segue a
+  mesma regra; sem espaço no mapa, aviso e nada é criado.
+- Barras de progresso: Testar movimento na prévia.
+- Servidor de teste renomeado para "SA Map Studio - Testing server"; `progress2.inc` removida.
 
 ### 3.15.1 — 19/10/2026
 - Administrador só quando preciso: o editor deixa de pedir elevação (UAC) sempre e só a pede quando a própria pasta não pode

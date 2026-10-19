@@ -389,7 +389,11 @@ function bindFieldInputs() {
       let v = Number(el.value);
       if (!Number.isFinite(v)) return;
       const min = prop === 'pbWidth' ? PB_MIN_WIDTH : prop === 'pbHeight' ? PB_MIN_HEIGHT : null;
-      if (min !== null && v < min) { v = min; if (ev?.type === 'change') el.value = v; }
+      if (min !== null && v < min) {
+        if (ev?.type !== 'change') return; // digitando: espera terminar antes de aplicar o mínimo
+        v = min;
+        el.value = v;
+      }
       td[prop] = isInt ? (v | 0) : v;
       if (prop === 'pbWidth' || prop === 'pbHeight') syncPbBorderLimit(td);
       appRef.project.modified = true;
@@ -407,13 +411,16 @@ function bindFieldInputs() {
     const el = dialogEl.querySelector(id);
     if (!el) continue;
     el.onfocus = () => tdPushUndo();
+    // Digitando: só usa o valor se ele já estiver dentro do limite, sem mexer no campo.
+    // Ao sair do campo (ou Enter): aplica o limite e mostra o valor final.
     const apply = (fix) => {
       const td = getSelectedTd();
       if (!td || td.type !== 'progress') return;
-      if (el.value === '' && !fix) return;
+      const typed = Number(String(el.value).replace(',', '.'));
       const v = clamp(el.value);
+      if (!fix && (el.value === '' || !Number.isFinite(typed) || v !== typed)) return;
       td[prop] = v;
-      if (fix || Number(el.value) !== v) el.value = prop === 'pbBorder' ? decimalText(v) : v;
+      if (fix) el.value = prop === 'pbBorder' ? decimalText(v) : v;
       appRef.project.modified = true;
       redrawCanvas();
     };
@@ -488,6 +495,16 @@ function bindFieldInputs() {
   colorPair('#tdPbBlinkBorder', '#tdPbBlinkBorderColorRow', '#tdPbBlinkBorderColor', 'pbBlinkBorderColor', false);
   syncPbBlinkFields = syncBlinkFields;
 
+  const moveBtn = dialogEl.querySelector('#tdPbTestMove');
+  if (moveBtn) moveBtn.onclick = () => {
+    const td = getSelectedTd();
+    if (!td || td.type !== 'progress') return;
+    if (moveTest.has(td)) moveTest.delete(td); // desligar volta a mostrar o valor atual
+    else moveTest.set(td, performance.now());
+    syncMoveTestButton(td);
+    restartBlinkPreview();
+  };
+
   // Modelo da barra: ao trocar de barra para um formato redondo, a caixa vira 40 x 50 (redonda na tela)
   const styleSel = dialogEl.querySelector('#tdPbStyle');
   if (styleSel) styleSel.onchange = () => {
@@ -510,10 +527,10 @@ function bindFieldInputs() {
     const applySeg = (fix) => {
       const td = getSelectedTd();
       if (!td || td.type !== 'progress') return;
-      if (segInp.value === '' && !fix) return;
       const v = clampPbSegments(segInp.value);
+      if (!fix && (segInp.value === '' || Number(segInp.value) !== v)) return; // digitando: só valores já válidos
       td.pbSegments = v;
-      if (fix || Number(segInp.value) !== v) segInp.value = v;
+      if (fix) segInp.value = v;
       syncPbStyleRows(td);
       appRef.project.modified = true;
       redrawCanvas();
@@ -988,6 +1005,26 @@ function moveSelectedTd(where) {
 // recomeça depois de 1 s para dar para ver de novo.
 let syncPbBlinkFields = null;
 
+// ---------- Testar movimento (só na prévia) ----------
+// A barra enche do valor atual até o máximo e volta ao valor atual, sem parar, até o teste ser
+// desligado; o valor salvo da barra não muda. Uma barra já no máximo esvazia até 0 e volta.
+const moveTest = new Map(); // barra -> início do teste
+const MOVE_TEST_MS = 2400;  // ida e volta
+function moveTestValue(td) {
+  const max = Number(td.pbMax) || 0, cur = Math.max(0, Math.min(max, Number(td.pbValue) || 0));
+  const phase = ((performance.now() - moveTest.get(td)) % MOVE_TEST_MS) / MOVE_TEST_MS;
+  const f = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+  const target = cur >= max ? 0 : max;
+  return cur + (target - cur) * f;
+}
+function syncMoveTestButton(td) {
+  const btn = dialogEl?.querySelector('#tdPbTestMove');
+  if (!btn) return;
+  const on = Boolean(td && moveTest.has(td));
+  btn.textContent = on ? 'Parar teste de movimento' : 'Testar movimento';
+  btn.classList.toggle('primary', on);
+}
+
 // Valor com ao menos uma casa decimal (1.0, 2.5, 0.75)
 function decimalText(v) {
   const t = String(Math.round(Number(v) * 100) / 100);
@@ -1049,6 +1086,7 @@ function restartBlinkPreview() {
   if (!blinkTimer) {
     blinkTimer = setInterval(() => {
       if (!dialogEl?.open) { clearInterval(blinkTimer); blinkTimer = null; return; }
+      if (moveTest.size) { redrawCanvas(); return; }
       const bars = (appRef.project?.textDraws || []).filter(t => t.type === 'progress' && t.pbBlink);
       if (!bars.length) return;
       const key = bars.map(b => blinkPhaseOf(b) ? 1 : 0).join('');
@@ -1165,7 +1203,7 @@ function renderTextDraw(td, isSelected) {
   if (td.type === 'progress') {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    drawProgressBar(ctx, td, blinkPhaseOf(td));
+    drawProgressBar(ctx, moveTest.has(td) ? { ...td, pbValue: moveTestValue(td) } : td, blinkPhaseOf(td));
     ctx.restore();
     useLogicalUnits();
   } else if (td.font === 5) {
@@ -1477,6 +1515,7 @@ function updateSidebarFields() {
     setVal('#tdPbStyle', td.pbStyle | 0);
     setVal('#tdPbSegments', clampPbSegments(td.pbSegments));
     syncPbStyleRows(td);
+    syncMoveTestButton(td);
   }
 
   // Painel de Sprite (Font 4)
@@ -1645,7 +1684,13 @@ function duplicateSelectedTextDraw() {
   const td = getSelectedTd();
   if (!td) return;
   tdPushUndo();
-  const copy = makeTextDraw({ ...td, uid: null, x: td.x + 10, y: td.y + 10 });
+  // A cópia fica fora da original, encostada na borda de baixo (ou de cima, se não couber na tela)
+  // e na mesma coluna (mesmo X), como no jogo a TextDraw ocupa o retângulo de textDrawRect
+  const r = textDrawRect(td), gap = 2;
+  let dy = r.h + gap;
+  if (r.y + r.h + gap + r.h > TD_HEIGHT && r.y - gap - r.h >= 0) dy = -(r.h + gap);
+  const round = (v) => Math.round(v * 100) / 100;
+  const copy = makeTextDraw({ ...td, uid: null, x: td.x, y: round(td.y + dy) });
   appRef.project.textDraws.push(copy);
   appRef.project.modified = true;
   selectedIdx = appRef.project.textDraws.length - 1;

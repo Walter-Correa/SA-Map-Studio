@@ -2,9 +2,9 @@
 	SA Progress Bar Pro (progressbarpro.inc)
 	Player progress bars for SA-MP 0.3.7 and open.mp.
 
-	Same API as progress2.inc, drawn with "LD_SPAC:white" sprites instead of text boxes:
+	Bars drawn with sprites ("LD_SPAC:white" and "LD_BEAT:chit"):
 	- exact position, width and height in TextDraw units (640x448), scaled evenly at any
-	  resolution (no fixed pixel padding like the text boxes used by progress2);
+	  resolution (no fixed pixel padding);
 	- every bar has a border with the same on-screen thickness on all four sides. One TextDraw
 	  unit is 640 parts of the screen width and 448 parts of its height, so at 16:9 (1920x1080)
 	  it is 3.00 px wide but only 2.41 px tall. That is why the top and bottom border are
@@ -181,10 +181,6 @@
 	#endinput
 #endif
 #define _progressbarpro_included
-
-#if defined _progress2_included
-	#error Use only one progress bar include: progress2 or progressbarpro.
-#endif
 
 #include <a_samp>
 

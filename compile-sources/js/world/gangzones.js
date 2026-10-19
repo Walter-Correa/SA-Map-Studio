@@ -46,6 +46,55 @@ export function hexAndAlphaToGzColor(hexStr, alpha = 0.5) {
 }
 
 // Gera o nome sequencial na duplicação: Zona 1 > Zona 1_2 > Zona 1_3
+// ---------------------------------------------------------------------------
+// Espaço livre para uma GangZone nova (duplicar ou adicionar). Ordem de busca:
+//  1. encostada (magnetizada) num lado livre da original: direita, esquerda, cima, baixo;
+//  2. a posição livre mais próxima, alinhada às bordas das outras zonas e do mapa;
+//  3. o mesmo com a zona reduzida aos poucos, até caber.
+// Zonas podem se encostar, mas não se sobrepor. Retorna { minx, miny, maxx, maxy, scaled } ou null.
+// ---------------------------------------------------------------------------
+const GZ_WORLD_MIN = -3000, GZ_WORLD_MAX = 3000, GZ_MIN_SIZE = 10;
+
+export function findFreeGangZoneSpot(zones, { width, height, near, origin = null, excludeUid = null }) {
+  const others = (zones || []).filter(z => z && z.uid !== excludeUid).map(z => ({
+    minx: Math.min(z.minx, z.maxx), maxx: Math.max(z.minx, z.maxx),
+    miny: Math.min(z.miny, z.maxy), maxy: Math.max(z.miny, z.maxy),
+  }));
+  const free = (r) => r.minx >= GZ_WORLD_MIN && r.maxx <= GZ_WORLD_MAX && r.miny >= GZ_WORLD_MIN && r.maxy <= GZ_WORLD_MAX &&
+    !others.some(o => r.minx < o.maxx && r.maxx > o.minx && r.miny < o.maxy && r.maxy > o.miny);
+  const rect = (x, y, w, h) => ({ minx: x, miny: y, maxx: x + w, maxy: y + h });
+
+  // 1. Lados livres da original, encostados nela
+  if (origin) {
+    const w = width, h = height;
+    for (const r of [
+      rect(origin.maxx, origin.miny, w, h), rect(origin.minx - w, origin.miny, w, h),
+      rect(origin.minx, origin.maxy, w, h), rect(origin.minx, origin.miny - h, w, h),
+    ]) if (free(r)) return { ...r, scaled: false };
+  }
+
+  // 2 e 3. Posição livre mais próxima, alinhada às bordas existentes; reduzindo se precisar
+  const cx = near?.x ?? 0, cy = near?.y ?? 0;
+  for (const scale of [1, 0.75, 0.5, 0.35, 0.25, 0.15, 0.1, 0.05]) {
+    const w = Math.max(GZ_MIN_SIZE, width * scale), h = Math.max(GZ_MIN_SIZE, height * scale);
+    let xs = [GZ_WORLD_MIN, GZ_WORLD_MAX - w, cx - w / 2];
+    let ys = [GZ_WORLD_MIN, GZ_WORLD_MAX - h, cy - h / 2];
+    for (const o of others) { xs.push(o.maxx, o.minx - w); ys.push(o.maxy, o.miny - h); }
+    // Limita o trabalho com muitas zonas: fica com as linhas mais próximas do ponto desejado
+    const keep = (arr, c) => [...new Set(arr.map(v => Math.round(v)))].sort((a, b) => Math.abs(a - c) - Math.abs(b - c)).slice(0, 80);
+    xs = keep(xs, cx - w / 2);
+    ys = keep(ys, cy - h / 2);
+    let best = null, bestD = Infinity;
+    for (const x of xs) for (const y of ys) {
+      const r = rect(x, y, w, h);
+      const d = (x + w / 2 - cx) ** 2 + (y + h / 2 - cy) ** 2;
+      if (d < bestD && free(r)) { best = r; bestD = d; }
+    }
+    if (best) return { ...best, scaled: scale < 1 };
+  }
+  return null;
+}
+
 export function getNextGangZoneName(origName, existingZones = []) {
   const baseRaw = (origName || 'Zona 1').trim();
   const m = baseRaw.match(/^(.*?)_(\d+)$/);

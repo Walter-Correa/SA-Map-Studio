@@ -1,8 +1,8 @@
 // Editor e gerenciador visual de GangZones (GangZoneCreate)
 // Modal com mapa do radar do GTA SA (-3000 a +3000), zoom, pan,
-import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName } from '../world/gangzones.js';
+import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName, findFreeGangZoneSpot } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
-import { toast, arrowStep } from './common.js';
+import { toast, arrowStep, showAlert } from './common.js';
 
 export function parseAndNormalizeHexColor(input, currentAlpha = 0.56) {
   if (!input) return null;
@@ -1087,16 +1087,32 @@ function updateSidebarFields() {
   }
 }
 
+const NO_SPACE_MSG = 'Não há mais espaço livre no mapa para novas GangZones. Reduza ou apague alguma zona para abrir espaço.';
+
+// Centro da visão atual do radar, em coordenadas do mundo
+function viewCenterWorld() {
+  const imgW = (radarImg?.width || 1536) * view.zoom;
+  const imgH = (radarImg?.height || 1536) * view.zoom;
+  if (!imgW || !imgH) return { x: 0, y: 0 };
+  const normX = ((canvasEl?.width || 800) / 2 - view.panX) / imgW;
+  const normY = ((canvasEl?.height || 600) / 2 - view.panY) / imgH;
+  return { x: WORLD_MIN + normX * WORLD_SIZE, y: WORLD_MAX - normY * WORLD_SIZE };
+}
+
 function createNewZoneAtCenter() {
-  gzPushUndo();
   if (!appRef.project.gangZones) appRef.project.gangZones = [];
+  // Zona nova (300 x 300) no espaço livre mais próximo do centro da visão; reduzida se precisar
+  const spot = findFreeGangZoneSpot(appRef.project.gangZones, { width: 300, height: 300, near: viewCenterWorld() });
+  if (!spot) { showAlert(NO_SPACE_MSG, { title: 'Sem espaço para GangZones' }); return; }
+  gzPushUndo();
   const count = appRef.project.gangZones.length + 1;
   const newZ = makeGangZone({
     name: `Zona ${count}`,
     comment: `Zona ${count}`,
-    minx: -150, miny: -150, maxx: 150, maxy: 150,
+    minx: Math.round(spot.minx), miny: Math.round(spot.miny), maxx: Math.round(spot.maxx), maxy: Math.round(spot.maxy),
     color: 0x33AA3390,
   });
+  if (spot.scaled) toast('A zona foi reduzida para caber no espaço livre mais próximo', 'info');
   appRef.project.gangZones.push(newZ);
   appRef.project.modified = true;
   selectedUid = newZ.uid;
@@ -1144,51 +1160,22 @@ function focusSelectedZone() {
 function duplicateSelectedZone() {
   const z = getSelectedZone();
   if (!z) return;
-  gzPushUndo();
   const allZones = appRef.project?.gangZones || [];
-  const w = Math.abs(z.maxx - z.minx) || 100;
-  const h = Math.abs(z.maxy - z.miny) || 100;
-
-  // Busca o espaço vazio mais próximo do item original
-  let bestOffset = { x: w + 20, y: 0 };
-  const candidates = [
-    { x: w + 20, y: 0 },
-    { x: -(w + 20), y: 0 },
-    { x: 0, y: -(h + 20) },
-    { x: 0, y: h + 20 },
-    { x: w + 20, y: -(h + 20) },
-    { x: -(w + 20), y: -(h + 20) },
-    { x: w + 20, y: h + 20 },
-    { x: -(w + 20), y: h + 20 },
-    { x: (w + 20) * 2, y: 0 },
-    { x: 0, y: -(h + 20) * 2 },
-  ];
-
-  for (const cand of candidates) {
-    const testMinX = z.minx + cand.x;
-    const testMaxX = z.maxx + cand.x;
-    const testMinY = z.miny + cand.y;
-    const testMaxY = z.maxy + cand.y;
-
-    const collides = allZones.some(other => {
-      if (other.uid === z.uid) return false;
-      return !(testMaxX < other.minx || testMinX > other.maxx || testMaxY < other.miny || testMinY > other.maxy);
-    });
-
-    if (!collides) {
-      bestOffset = cand;
-      break;
-    }
-  }
-
+  const origin = { minx: Math.min(z.minx, z.maxx), maxx: Math.max(z.minx, z.maxx), miny: Math.min(z.miny, z.maxy), maxy: Math.max(z.miny, z.maxy) };
+  const w = (origin.maxx - origin.minx) || 100;
+  const h = (origin.maxy - origin.miny) || 100;
+  // Encostada num lado livre da original; sem lado livre, o espaço livre mais próximo (reduzida se precisar)
+  const spot = findFreeGangZoneSpot(allZones, { width: w, height: h, origin, near: { x: (origin.minx + origin.maxx) / 2, y: (origin.miny + origin.maxy) / 2 } });
+  if (!spot) { showAlert(NO_SPACE_MSG, { title: 'Sem espaço para GangZones' }); return; }
+  gzPushUndo();
   const dupName = getNextGangZoneName(z.name || z.comment, allZones);
   const newZ = makeGangZone({
     name: dupName,
     comment: dupName,
-    minx: Math.round(z.minx + bestOffset.x),
-    miny: Math.round(z.miny + bestOffset.y),
-    maxx: Math.round(z.maxx + bestOffset.x),
-    maxy: Math.round(z.maxy + bestOffset.y),
+    minx: Math.round(spot.minx),
+    miny: Math.round(spot.miny),
+    maxx: Math.round(spot.maxx),
+    maxy: Math.round(spot.maxy),
     color: z.color ?? 0x33AA3390,
   });
 
@@ -1197,7 +1184,7 @@ function duplicateSelectedZone() {
   appRef.project.modified = true;
   selectedUid = newZ.uid;
   appRef.editor?.syncAll();
-  toast('GangZone duplicada no espaço livre mais próximo!', 'ok');
+  toast(spot.scaled ? 'GangZone duplicada e reduzida para caber no espaço livre mais próximo' : 'GangZone duplicada encostada no espaço livre mais próximo', 'ok');
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
