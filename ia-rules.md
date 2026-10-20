@@ -9,14 +9,15 @@ This file defines ongoing guidelines and rules that must be strictly followed in
 
 ## 2. Version Control (Git)
 - **Always commit and push at the end of each task**.
-- Commit messages must be clear, objective and in Portuguese, following a single pattern:
-  - Title starting with a present-tense verb in the 3rd person singular (`Adiciona`, `Corrige`, `Remove`, `Atualiza`, `Ajusta`), with correct accents.
-  - No English prefixes (`feat:`, `fix:`, `docs:`) and no period at the end of the title.
+- Commit messages must be clear, objective and always in English, following a single pattern:
+  - Title starting with a present-tense verb in the 3rd person singular (`Adds`, `Fixes`, `Removes`, `Updates`, `Adjusts`).
+  - No prefixes (`feat:`, `fix:`, `docs:`) and no period at the end of the title.
+  - No AI identification lines (such as `Co-Authored-By`) in the message.
   - Several changes in the same commit: list them in the title separated by commas or detail them in the message body.
 
 ## 3. Naming, Interface and Content Standards
 - **Project name and naming**: The official project name is `SA Map Studio`, producing the executable `SA Map Studio.exe` and the distribution folder `compiled\SA Map Studio\`. Every internal data and system folder and file of the project must be named strictly in English and in lowercase (no Portuguese and no uppercase letters), such as `data`, `test-server`, `system`, `projects`, `exported`, `compile-sources`, `models`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `ia-rules.md`. Exceptions: JavaScript modules (`.js`) may use camelCase uppercase letters (e.g. `animPicker.js`, `textdrawEditor.js`), and third-party files or files with official game names (fonts, libraries in `vendor/`, GTA animation libraries) keep their original names.
-- **Documentation in English**: `readme.md` and `ia-rules.md` are always written in English. Commit messages stay in Portuguese (section 2).
+- **Documentation in English**: `readme.md` and `ia-rules.md` are always written in English, and so are commit messages (section 2).
 - **Short, objective names**: Titles, buttons, labels, placeholders, status messages and warnings shown inside the compiled editor must not overflow their space or show an ellipsis ("..."). The rule only applies to texts shown in the compiled program; documentation (`readme.md`, `ia-rules.md`), code comments and console/log messages may use an ellipsis.
 - **Sources and citations**: Never cite external sources inside the compiled editor (interface, help texts, what's new). The rule does not apply to the repository documentation (`readme.md`), where credits and licenses may be cited.
 - **Initial window**: The editor must open maximized by default.
