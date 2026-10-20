@@ -754,7 +754,7 @@ export class Editor extends EventTarget {
     this.tc.showX = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showY = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showZ = true;
-    this.tc.enabled = true;
+    this.tc.enabled = !this.directDragging; // durante o clicar e arrastar o manipulador fica parado
     this.gizmo.visible = true;
     this.applySnap();
   }
@@ -1209,11 +1209,14 @@ export class Editor extends EventTarget {
       if (e.button === 0) {
         down = { x: e.clientX, y: e.clientY, t: performance.now() };
         // Clicar e arrastar um item move na hora: se ele ainda não está selecionado, é selecionado ao começar
-        // a arrastar (Shift/Ctrl somam à seleção). Não vale nas setas do manipulador (gizmo).
-        if (!this.tc.axis && !this.tc.dragging && !this.placing && this.mode === 'translate') {
+        // a arrastar (Shift/Ctrl somam à seleção). Clicar num item tem prioridade sobre o manipulador (gizmo):
+        // ele para de reagir ao mouse até o botão ser solto, para os dois não agirem juntos.
+        if (!this.tc.dragging && !this.placing && this.mode === 'translate') {
           const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());
           const hitUid = hit?.object?.userData?.uid;
-          if (hitUid && !this.isProjectReadonly(this.findProjectOf(hitUid))) {
+          // GangZones cobrem o chão por baixo de tudo: sobre elas, a seta do manipulador continua valendo
+          const zoneUnderGizmo = this.tc.axis && hit?.object?.userData?.kind === 'gangZones';
+          if (hitUid && !zoneUnderGizmo && !this.isProjectReadonly(this.findProjectOf(hitUid))) {
             directDrag = {
               startX: e.clientX,
               startY: e.clientY,
@@ -1222,6 +1225,7 @@ export class Editor extends EventTarget {
               active: false
             };
             if (!directDrag.select && !this.prepareDirectDrag(directDrag)) directDrag = null;
+            if (directDrag) { this.directDragging = true; this.tc.enabled = false; this.tc.axis = null; }
           }
         }
       }
@@ -1285,7 +1289,17 @@ export class Editor extends EventTarget {
       }
     });
 
+    // O manipulador volta a reagir quando o botão é solto (mesmo fora da janela do mapa)
+    const releaseGizmo = () => {
+      if (!this.directDragging) return;
+      this.directDragging = false;
+      this.tc.enabled = true;
+    };
+    window.addEventListener('pointerup', releaseGizmo);
+    window.addEventListener('pointercancel', () => { directDrag = null; releaseGizmo(); });
+
     dom.addEventListener('pointerup', (e) => {
+      releaseGizmo();
       if (directDrag) {
         const wasActive = directDrag.active;
         const dragInfo = directDrag;

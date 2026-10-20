@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.21.0-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.21.1-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,11 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.21.1 — 20/10/2026
+- Clicar e arrastar um item tem prioridade sobre o manipulador, que fica parado até o botão ser solto
+  (sobre GangZones a seta do manipulador continua valendo).
+- Área de detecção das setas do manipulador reduzida pela metade.
 
 ### 3.21.0 — 20/10/2026
 - Clicar e arrastar move o item na hora, selecionando-o ao começar a arrastar.

@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.21.1', date: '20/10/2026', items: [
+      'Clicar e arrastar um item tem prioridade sobre o manipulador (gizmo): ele para de reagir ao mouse até o botão ser solto. Sobre GangZones, a seta do manipulador continua valendo.',
+      'Área que pega as setas do manipulador reduzida pela metade.',
+    ],
+  },
+  {
     version: '3.21.0', date: '20/10/2026', items: [
       'Clicar e arrastar um item move na hora, sem precisar selecionar antes (Shift/Ctrl somam à seleção).',
       'Importar abre sempre com Substituir e Mesclar desmarcados.',
