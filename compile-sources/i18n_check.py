@@ -452,6 +452,32 @@ def launcher_problems(langs):
     return out
 
 
+def test_message_problems():
+    """Mensagens do servidor de teste: TEST_MESSAGES (dialogs.js) e gMsg (samapstudio.pwn) têm de ter os mesmos textos na mesma ordem."""
+    with open(os.path.join(HERE, "js", "ui", "dialogs.js"), "r", encoding="utf-8") as f:
+        js = f.read()
+    with open(os.path.join(HERE, "samapstudio.pwn"), "r", encoding="cp1252") as f:
+        pwn = f.read()
+    block = re.search(r"const TEST_MESSAGES = \[(.*?)\r?\n\];", js, re.S)
+    table = re.search(r"new gMsg\[SAMSP_MAX_MSGS\]\[\d+\]\s*=\s*\{(.*?)\r?\n\};", pwn, re.S)
+    if not block or not table:
+        return ["não achei TEST_MESSAGES no dialogs.js ou gMsg no samapstudio.pwn"]
+    js_texts = [m.replace("\\'", "'").replace("\\\\", "\\")
+                for m in re.findall(r"'((?:[^'\\\n]|\\.)*)'", block.group(1))]
+    pwn_texts = [m.replace('\\"', '"').replace("\\\\", "\\")
+                 for m in re.findall(r'"((?:[^"\\\n]|\\.)*)"', table.group(1))]
+    out = []
+    size = re.search(r"#define\s+SAMSP_MAX_MSGS\s+(\d+)", pwn)
+    if size and int(size.group(1)) != len(pwn_texts):
+        out.append("SAMSP_MAX_MSGS é %s, mas gMsg tem %d textos" % (size.group(1), len(pwn_texts)))
+    if len(js_texts) != len(pwn_texts):
+        out.append("TEST_MESSAGES tem %d textos e gMsg tem %d" % (len(js_texts), len(pwn_texts)))
+    for i, (a, b) in enumerate(zip(js_texts, pwn_texts)):
+        if a != b:
+            out.append("mensagem %d diferente: dialogs.js %r / samapstudio.pwn %r" % (i, a[:40], b[:40]))
+    return out
+
+
 def check():
     same = same_keys()
     keys = {k: v for k, v in keys_from_source().items() if k not in same}
@@ -480,6 +506,9 @@ def check():
         problems += bool(missing or bad or orphan)
     for msg in launcher_problems(langs):
         print("  launcher.py: " + msg)
+        problems += 1
+    for msg in test_message_problems():
+        print("  servidor de teste: " + msg)
         problems += 1
     return problems
 
@@ -516,7 +545,7 @@ def main():
                 save_lang(lang["code"], {k: v for k, v in data.items() if k not in gone})
         print("%d chaves órfãs%s" % (total, " apagadas" if "--prune" in sys.argv else ""))
         return
-    check()
+    sys.exit(1 if check() else 0)
 
 
 if __name__ == "__main__":

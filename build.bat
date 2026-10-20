@@ -95,8 +95,9 @@ set "VERFILE=%SRC%compile-sources\version_info.txt"
 rem The version stored in the .exe always follows VERSION in serve.py
 "%VPY%" "%SRC%compile-sources\sync_version.py"
 if errorlevel 1 goto erro
-rem Checks that every interface text has a translation in every language (only warns, does not stop)
+rem Checks that every interface text has a translation in every language; a failure stops the build
 "%VPY%" -X utf8 "%SRC%compile-sources\i18n_check.py"
+if errorlevel 1 goto erro
 
 rem ---------------- 1. Compiles the System Engine (sa-map-studio.exe)
 echo Compilando o motor do sistema...
