@@ -1,5 +1,4 @@
-// Catálogo completo de Sound IDs (PlayerPlaySound) e nó 3D para sons no mapa.
-import * as THREE from 'three';
+// Catálogo completo de Sound IDs (PlayerPlaySound): só para a prévia e a cópia do código no catálogo de sons.
 
 export const SOUND_CATEGORIES = [
   'Todos',
@@ -15740,66 +15739,4 @@ export const SOUND_CATALOG = SOUND_IDS;
 
 export function getSoundInfo(id) {
   return SOUND_IDS.find(s => s.id === (id | 0)) || { id: id | 0, name: `SOUND_${id}`, desc: `Som ID ${id}`, cat: 'Efeitos e Interface' };
-}
-
-export function createSoundNode(snd) {
-  const group = new THREE.Group();
-  group.name = `sound_${snd.soundid}`;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-  ctx.beginPath();
-  ctx.arc(32, 32, 28, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#38bdf8';
-  ctx.stroke();
-
-  // Desenha ícone de alto-falante
-  ctx.fillStyle = '#38bdf8';
-  ctx.beginPath();
-  ctx.moveTo(18, 26);
-  ctx.lineTo(26, 26);
-  ctx.lineTo(35, 18);
-  ctx.lineTo(35, 46);
-  ctx.lineTo(26, 38);
-  ctx.lineTo(18, 38);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.arc(36, 32, 7, -Math.PI / 3, Math.PI / 3);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(36, 32, 12, -Math.PI / 3, Math.PI / 3);
-  ctx.stroke();
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sprite.scale.set(2.4, 2.4, 1);
-  sprite.position.set(0, 0, 1.8);
-  sprite.renderOrder = 10;
-  group.add(sprite);
-
-  // Esfera azul translúcida na base
-  const sphGeo = new THREE.SphereGeometry(0.65, 16, 12);
-  sphGeo.translate(0, 0, 0.65);
-  const sphMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4, wireframe: true });
-  group.add(new THREE.Mesh(sphGeo, sphMat));
-
-  const pickGeo = new THREE.CylinderGeometry(1.0, 1.0, 2.6, 12);
-  pickGeo.rotateX(Math.PI / 2);
-  pickGeo.translate(0, 0, 1.3);
-  const pickMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false });
-  group.add(new THREE.Mesh(pickGeo, pickMat));
-
-  group.userData.isSound = true;
-  group.userData.kind = 'sounds';
-  return group;
 }

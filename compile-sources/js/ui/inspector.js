@@ -19,9 +19,7 @@ import { PREDEFINED_PICKUPS, PICKUP_TYPES, getPickupLabel } from '../world/picku
 import { DEFAULT_GANGZONE_COLORS, gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor } from '../world/gangzones.js';
 import { RACE_CHECKPOINT_TYPES } from '../world/checkpoints.js';
 import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl } from '../world/mapicons.js';
-import { SOUND_CATALOG, getSoundInfo } from '../world/sounds.js';
 import { openMapIconPickerModal } from './mapiconDialog.js';
-import { openSoundDialog, playSoundPreview, stopSoundPreview } from './soundDialog.js';
 import { makeCheckpoint } from '../editor/project.js';
 
 const round = (v, d = 4) => Math.round((+v || 0) * 10 ** d) / 10 ** d;
@@ -203,9 +201,6 @@ export function renderInspector() {
   } else if (kind === 'mapIcons') {
     el.innerHTML = mapIconInspector(item);
     bindMapIcon(item);
-  } else if (kind === 'sounds') {
-    el.innerHTML = soundInspector(item);
-    bindSound(item);
   } else {
     el.innerHTML = objectInspector(item);
     bindItem(item);
@@ -3214,114 +3209,4 @@ function updateMapIconCode(mi) {
   codeEl.textContent = `SetPlayerMapIcon(playerid, ${iconIdx}, ${mi.x.toFixed(4)}, ${mi.y.toFixed(4)}, ${mi.z.toFixed(4)}, ${mi.type ?? 0}, ${colHex}, ${mi.style ?? 0});`;
 }
 
-// ===========================================================================
-// PlayerPlaySound (Som no Mapa)
-// ===========================================================================
-function soundInspector(snd) {
-  const info = getSoundInfo(snd.soundid);
-  return `
-    <div class="insp-title">
-      <div style="width:48px; height:48px; background:rgba(245,158,11,0.2); border:2px solid #f59e0b; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#f59e0b; font-size:18px; font-weight:bold;">♪</div>
-      <div>
-        <div class="insp-name">Som #${snd.soundid}</div>
-        <div class="insp-sub"><span class="tag">${esc(info.category)}</span> · ${esc(info.desc || info.name)}</div>
-      </div>
-    </div>
-    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar som</button>
-    ${scopeSection()}
-    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [snd.x, snd.y, snd.z], 0.1)}</div>
-    ${speedSection()}
-    ${actionGrid()}
-
-    <div class="insp-section">
-      <div class="insp-label">Som (PlayerPlaySound)</div>
-      <div class="mini-actions" style="margin-bottom:8px;">
-        <button type="button" class="btn primary small" id="btnPlayInspSound"><svg><use href="#i-play"/></svg>Ouvir Prévia</button>
-        <button type="button" class="btn small" id="btnStopInspSound"><svg><use href="#i-stop"/></svg>Parar</button>
-        <button type="button" class="btn small" id="btnPickSoundCat"><svg><use href="#i-search"/></svg>Trocar Som</button>
-      </div>
-      <label>Sound ID
-        <input type="number" step="1" data-field="soundid" value="${snd.soundid}" style="width:100%;">
-      </label>
-    </div>
-
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
-      <input type="text" data-field-str="comment" placeholder="// Ex: Som de garagem" value="${esc(snd.comment || '')}" style="width:100%;">
-    </div>
-
-    <div class="insp-section">
-      <details class="pawn-preview" open><summary>Código Pawn deste Som</summary>
-        <pre class="code small" id="sndCode"></pre>
-        <button type="button" class="btn small" id="btnSndCopy"><svg><use href="#i-copy"/></svg>Copiar Pawn</button>
-      </details>
-    </div>
-  `;
-}
-
-function bindSound(snd) {
-  bindCommon();
-  bindSpeedControls();
-  bindStringFields(snd.uid);
-  const uid = snd.uid, project = app.editor.findProjectOf(uid) || app.project;
-  bindVecArrows(uid, project);
-
-  const btnPlay = $('#btnPlayInspSound');
-  if (btnPlay) btnPlay.onclick = () => playSoundPreview(snd.soundid);
-  const btnStop = $('#btnStopInspSound');
-  if (btnStop) btnStop.onclick = () => stopSoundPreview();
-  const btnPick = $('#btnPickSoundCat');
-  if (btnPick) {
-    btnPick.onclick = () => {
-      openSoundDialog({
-        currentSoundId: snd.soundid,
-        onSelect: (newSoundId) => {
-          project.updateItems('Alterar Sound ID', [uid], (o) => { o.soundid = newSoundId; });
-          app.editor.syncAll();
-          renderInspector();
-        }
-      });
-    };
-  }
-
-  $$('#inspector [data-field]').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const field = inp.dataset.field;
-      let val = parseFloat(inp.value);
-      if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
-      if (field === 'soundid') val = Math.trunc(val);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
-      app.editor.syncAll();
-      renderInspector();
-    });
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
-  });
-
-  $$('#inspector [data-scrub]').forEach(sp => {
-    const field = sp.dataset.scrub;
-    let before = null;
-    sp.addEventListener('pointerdown', () => { before = [project.snapshot(uid)]; }, { capture: true });
-    const speed = app.editor.transformSpeed?.move || 1.0;
-    bindScrub(sp, {
-      step: 0.05 * speed,
-      get: () => project.find(uid)?.[field] || 0,
-      set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
-      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
-    });
-  });
-
-  updateSoundCode(snd);
-  const copyBtn = $('#btnSndCopy');
-  if (copyBtn) {
-    copyBtn.onclick = () => {
-      const code = $('#sndCode')?.textContent;
-      if (code) { copyText(code); toast('Código Pawn de PlayerPlaySound copiado!'); }
-    };
-  }
-}
-
-function updateSoundCode(snd) {
-  const codeEl = $('#sndCode');
-  if (!codeEl || !snd) return;
-  codeEl.textContent = `PlayerPlaySound(playerid, ${snd.soundid}, ${snd.x.toFixed(4)}, ${snd.y.toFixed(4)}, ${snd.z.toFixed(4)});`;
-}
 

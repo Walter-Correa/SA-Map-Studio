@@ -94,7 +94,7 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|PlayerPlaySound|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
+const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 // Cor escrita como número (0xRRGGBBAA ou decimal); qualquer outra coisa vale 0 (cor padrão)
@@ -240,12 +240,12 @@ function splitHeaderAndFirstItem(between) {
   };
 }
 
-// Lê o texto e devolve {objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, sounds, textDraws, cameras, spawn, preservedHeader, rawPawn}
+// Lê o texto e devolve {objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, textDraws, cameras, spawn, preservedHeader, rawPawn}
 export function parsePwn(source) {
   const masked = maskComments(source);
   const objects = [], vehicles = [], actors = [], removed = [];
   const labels = [], pickups = [], gangZones = [], textDraws = [];
-  const checkpoints = [], mapIcons = [], sounds = [];
+  const checkpoints = [], mapIcons = [];
   const shots = [], paths = [];
   let spawn = null, interior = null;
   const vars = new Map();
@@ -812,9 +812,6 @@ export function parsePwn(source) {
         mapIcons.push(mi);
         if (variable) vars.set(variable, mi);
       }
-    } else if (fn === 'PlayerPlaySound') {
-      // Sons são apenas para preview e cópia rápida de código no editor;
-      // não são importados como elementos do projeto.
     } else if (fn === 'TextDrawCreate' || fn === 'CreatePlayerTextDraw') {
       const o = fn === 'CreatePlayerTextDraw' ? 1 : 0;
       if (a.length >= 3 + o) {
@@ -957,7 +954,7 @@ export function parsePwn(source) {
       if (a.length >= 1) interior = int(a[0]);
     }
   }
-  return { objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, sounds, textDraws, cameras: { shots, paths }, spawn, preservedHeader, rawPawn: source };
+  return { objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, textDraws, cameras: { shots, paths }, spawn, preservedHeader, rawPawn: source };
 }
 
 // =====================================================================  exportar Pawn
@@ -1068,7 +1065,6 @@ export function projectCenter(project) {
     ...(project.pickups || []),
     ...(project.checkpoints || []),
     ...(project.mapIcons || []),
-    ...(project.sounds || []),
   ];
   if (!all.length) return { x: 0, y: 0, z: 0 };
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;

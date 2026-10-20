@@ -10,12 +10,11 @@ import { createPickupFallbackMesh } from '../world/pickups.js';
 import { createGangZoneNode, getNextGangZoneName } from '../world/gangzones.js';
 import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
 import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
-import { createSoundNode } from '../world/sounds.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
 export function eulerFromItem(o, kind) {
-  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons' || kind === 'sounds')
+  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons')
     ? new THREE.Euler(0, 0, (o.rz || 0) * D2R, 'ZXY')
     : new THREE.Euler((o.rx || 0) * D2R, (o.ry || 0) * D2R, (o.rz || 0) * D2R, 'ZXY');
 }
@@ -142,7 +141,7 @@ export class Editor extends EventTarget {
     rc.camera = this.vp.camera;
     const hits = rc.intersectObjects(this.pickTargets(), true).filter(h => {
       if (h.object.userData?.noPick) return false;
-      if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup || h.object.userData?.isCheckpoint || h.object.userData?.isMapIcon || h.object.userData?.isSound) return false;
+      if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup || h.object.userData?.isCheckpoint || h.object.userData?.isMapIcon) return false;
       return true;
     });
     return hits.length ? hits[0].point.z : null;
@@ -234,7 +233,7 @@ export class Editor extends EventTarget {
     const alive = new Set();
     for (const p of projects) {
       if (p.checkpoints) updateRaceCheckpointsChain(p.checkpoints);
-      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'sounds']) {
+      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons']) {
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
           let node = this.nodes.get(o.uid);
@@ -248,7 +247,6 @@ export class Editor extends EventTarget {
           else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
           else if (kind === 'checkpoints') sig = JSON.stringify([o.isRace, o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
           else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
-          else if (kind === 'sounds') sig = JSON.stringify([o.soundid]);
 
           if (!node || node.userData.model !== modelId || node.userData.matSig !== sig) {
             if (node) this.root.remove(node);
@@ -297,11 +295,6 @@ export class Editor extends EventTarget {
     }
     if (kind === 'mapIcons') {
       const node = createMapIconNode(o);
-      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
-      return node;
-    }
-    if (kind === 'sounds') {
-      const node = createSoundNode(o);
       node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
       return node;
     }
@@ -797,7 +790,6 @@ export class Editor extends EventTarget {
       ...(this.project.pickups || []),
       ...(this.project.checkpoints || []),
       ...(this.project.mapIcons || []),
-      ...(this.project.sounds || []),
     ].map(o => o.uid);
     if (all.length) {
       this.mode = 'translate';
@@ -872,7 +864,7 @@ export class Editor extends EventTarget {
         if (item) {
           item.x = round(node.position.x); item.y = round(node.position.y); item.z = round(node.position.z);
           const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons' || kind === 'sounds') item.rz = normDeg(e.z * R2D);
+          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons') item.rz = normDeg(e.z * R2D);
           else { item.rx = normDeg(e.x * R2D); item.ry = normDeg(e.y * R2D); item.rz = normDeg(e.z * R2D); }
         }
       }
@@ -993,7 +985,7 @@ export class Editor extends EventTarget {
 
       s.item.x = round(node.position.x); s.item.y = round(node.position.y); s.item.z = round(node.position.z);
       const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-      if (s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'sounds') s.item.rz = normDeg(e.z * R2D);
+      if (s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons') s.item.rz = normDeg(e.z * R2D);
       else { s.item.rx = normDeg(e.x * R2D); s.item.ry = normDeg(e.y * R2D); s.item.rz = normDeg(e.z * R2D); }
     }
     this.attachGizmo();
@@ -1216,37 +1208,20 @@ export class Editor extends EventTarget {
       }
       if (e.button === 0) {
         down = { x: e.clientX, y: e.clientY, t: performance.now() };
-        // Se já houver itens selecionados e não estiver usando as setas do manipulador (gizmo)
-        if (!this.tc.axis && !this.tc.dragging && !this.placing && this.selection.length > 0 && this.mode === 'translate') {
+        // Clicar e arrastar um item move na hora: se ele ainda não está selecionado, é selecionado ao começar
+        // a arrastar (Shift/Ctrl somam à seleção). Não vale nas setas do manipulador (gizmo).
+        if (!this.tc.axis && !this.tc.dragging && !this.placing && this.mode === 'translate') {
           const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());
           const hitUid = hit?.object?.userData?.uid;
-          if (hitUid && this.selection.includes(hitUid)) {
-            const selItems = this.selectedItems();
-            const firstNode = this.nodes.get(this.selection[0]);
-            const startZ = firstNode ? firstNode.position.z : (selItems[0]?.item?.z || 0);
-            const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -startZ);
-            const ray = new THREE.Raycaster();
-            ray.setFromCamera(this.vp.ndc(e), this.vp.camera);
-            const planeHit = new THREE.Vector3();
-            if (ray.ray.intersectPlane(plane, planeHit)) {
-              directDrag = {
-                startX: e.clientX,
-                startY: e.clientY,
-                plane,
-                startPlaneHit: planeHit.clone(),
-                itemStarts: selItems.map(s => ({
-                  uid: s.uid,
-                  x: s.item.x,
-                  y: s.item.y,
-                  z: s.item.z
-                })),
-                beforeStates: selItems.map(s => {
-                  const p = this.findProjectOf(s.uid);
-                  return p ? { proj: p, snap: p.snapshot(s.uid) } : null;
-                }).filter(Boolean),
-                active: false
-              };
-            }
+          if (hitUid && !this.isProjectReadonly(this.findProjectOf(hitUid))) {
+            directDrag = {
+              startX: e.clientX,
+              startY: e.clientY,
+              ndc: this.vp.ndc(e),
+              select: this.selection.includes(hitUid) ? null : { uid: hitUid, add: e.shiftKey || e.ctrlKey },
+              active: false
+            };
+            if (!directDrag.select && !this.prepareDirectDrag(directDrag)) directDrag = null;
           }
         }
       }
@@ -1264,6 +1239,11 @@ export class Editor extends EventTarget {
       if (this.placing) this.updateGhost(e);
       if (directDrag) {
         const dist = Math.hypot(e.clientX - directDrag.startX, e.clientY - directDrag.startY);
+        if (dist > 4 && directDrag.select) {
+          this.select([directDrag.select.uid], directDrag.select.add);
+          directDrag.select = null;
+          if (!this.prepareDirectDrag(directDrag)) { directDrag = null; return; }
+        }
         if (dist > 4) {
           directDrag.active = true;
           dom.style.cursor = 'move';
@@ -1345,6 +1325,27 @@ export class Editor extends EventTarget {
       if (this.placing) return;
       if (this.selection.length) this.focusSelection();
     });
+  }
+
+  // Dados do arrastar direto (no plano horizontal da altura do primeiro item selecionado). False se não der.
+  prepareDirectDrag(drag) {
+    const selItems = this.selectedItems();
+    if (!selItems.length) return false;
+    const firstNode = this.nodes.get(this.selection[0]);
+    const startZ = firstNode ? firstNode.position.z : (selItems[0]?.item?.z || 0);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -startZ);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(drag.ndc, this.vp.camera);
+    const planeHit = new THREE.Vector3();
+    if (!ray.ray.intersectPlane(plane, planeHit)) return false;
+    drag.plane = plane;
+    drag.startPlaneHit = planeHit.clone();
+    drag.itemStarts = selItems.map(s => ({ uid: s.uid, x: s.item.x, y: s.item.y, z: s.item.z }));
+    drag.beforeStates = selItems.map(s => {
+      const p = this.findProjectOf(s.uid);
+      return p ? { proj: p, snap: p.snapshot(s.uid) } : null;
+    }).filter(Boolean);
+    return true;
   }
 
   pickTargets() { return [this.root, ...this.streamer.pickables()]; }
@@ -1648,7 +1649,7 @@ export class Editor extends EventTarget {
       let finalOffset = bottomOffset;
       if (s.kind === 'actors' || s.kind === 'pickups' || s.kind === 'labels') {
         finalOffset = 0.98;
-      } else if (s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'sounds') {
+      } else if (s.kind === 'checkpoints' || s.kind === 'mapIcons') {
         finalOffset = 0;
       }
       const origin = new THREE.Vector3(s.item.x, s.item.y, Math.max(s.item.z + 1.0, box.max.z + 0.1));
@@ -1656,7 +1657,7 @@ export class Editor extends EventTarget {
       rc.camera = this.vp.camera;
       const hits = rc.intersectObjects(this.pickTargets(), true).filter(h => {
         if (h.object.userData.noPick) return false;
-        if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup || h.object.userData?.isCheckpoint || h.object.userData?.isMapIcon || h.object.userData?.isSound) return false;
+        if (h.object.isSprite || h.object.userData?.isLabel || h.object.userData?.isPickup || h.object.userData?.isCheckpoint || h.object.userData?.isMapIcon) return false;
         if (isDescendant(h.object, node)) return false;
         const hitUid = h.object.userData.uid;
         if (hitUid && selectedUids.has(hitUid)) return false;

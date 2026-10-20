@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.20.0"
+VERSION = "3.21.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -2760,6 +2760,31 @@ def open_window(url, httpd):
     return True
 
 
+def _version_tuple(v):
+    return tuple(int("".join(c for c in p if c.isdigit()) or 0) for p in str(v or "0").split("."))
+
+
+def version_compatible():
+    """A pasta guarda a versão mais nova que já a usou (config.json). Uma versão mais antiga não abre
+    nela, para não estragar projetos e configurações gravados pela nova. Senão, grava esta versão."""
+    stored = load_config().get("app_version") or ""
+    if stored and _version_tuple(stored) > _version_tuple(VERSION):
+        text = ("Esta pasta já foi usada pela versão %s do SA Map Studio, que é mais nova que esta (%s).\n\n"
+                "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos "
+                "e configurações. Use a versão %s ou mais nova." % (stored, VERSION, stored))
+        print(text)
+        if IS_WINDOWS and "--no-browser" not in sys.argv:
+            try:
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(None, text, "SA Map Studio - Versão incompatível", 0x10 | 0x40000)
+            except Exception:
+                pass
+        return False
+    if stored != VERSION:
+        update_config(app_version=VERSION)
+    return True
+
+
 EDITOR_MUTEX = "Local\\SAMapStudio.Editor"
 _EDITOR_MUTEX_HANDLE = None
 
@@ -2805,6 +2830,8 @@ def main():
     setup_logging()
     migrate_old_layout()
     os.makedirs(DATA_DIR, exist_ok=True)
+    if not version_compatible():
+        return
 
     ap = argparse.ArgumentParser(description="SA Map Studio - servidor local")
     ap.add_argument("--gta", help="pasta do GTA San Andreas")

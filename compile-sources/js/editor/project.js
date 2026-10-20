@@ -445,21 +445,7 @@ export function makeMapIcon(data) {
   };
 }
 
-export function makeSound(data) {
-  return {
-    uid: data.uid || newUid(),
-    kind: 'sounds',
-    soundid: data.soundid !== undefined ? (data.soundid | 0) : 1058,
-    x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
-    comment: data.comment ? String(data.comment) : '',
-    preComment: data.preComment ? String(data.preComment) : '',
-    blankLinesBefore: +data.blankLinesBefore || 0,
-    projectId: data.projectId || '',
-    raw: data.raw ? { ...data.raw } : null,
-  };
-}
-
-const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws', 'checkpoints', 'mapIcons', 'sounds'];
+const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws', 'checkpoints', 'mapIcons'];
 const MAKERS = {
   objects: makeObject,
   vehicles: makeVehicle,
@@ -471,7 +457,6 @@ const MAKERS = {
   textDraws: makeTextDraw,
   checkpoints: makeCheckpoint,
   mapIcons: makeMapIcon,
-  sounds: makeSound,
 };
 
 export class Project {
@@ -487,7 +472,6 @@ export class Project {
     this.textDraws = [];
     this.checkpoints = [];
     this.mapIcons = [];
-    this.sounds = [];
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
@@ -518,7 +502,7 @@ export class Project {
       camera: this.camera, lastSelection: this.lastSelection || [], cameras: this.cameras,
       objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,
       labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws,
-      checkpoints: this.checkpoints, mapIcons: this.mapIcons, sounds: this.sounds
+      checkpoints: this.checkpoints, mapIcons: this.mapIcons
     };
   }
 

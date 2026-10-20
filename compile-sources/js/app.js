@@ -860,7 +860,6 @@ function setupOutline() {
         else if (kind === 'pickups') { nameStr = `Pickup #${o.model}`; idVal = `Tipo ${o.type || 1}`; }
         else if (kind === 'checkpoints') { nameStr = o.cpKind === 'race' ? `Race CP (Tipo ${o.type ?? 0})` : 'Checkpoint'; idVal = `R ${o.size ?? 4}`; }
         else if (kind === 'mapIcons') { nameStr = `MapIcon #${o.type ?? 0}`; idVal = `Estilo ${o.style ?? 0}`; }
-        else if (kind === 'sounds') { nameStr = `Som #${o.soundid}`; idVal = `${o.x.toFixed(0)},${o.y.toFixed(0)}`; }
         else if (kind === 'gangZones') { nameStr = o.name || 'GangZone'; idVal = `${o.minx},${o.miny}`; }
         else if (kind === 'textDraws') { nameStr = o.text || 'TextDraw'; idVal = `Font ${o.font ?? 1}`; }
         const cmtStr = o.comment ? `<span class="ol-comment" style="color:var(--text-dim); font-size:11px; margin-left:4px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(o.comment)}">// ${esc(o.comment)}</span>` : '';
@@ -964,9 +963,9 @@ function setupOutline() {
       const total = (app.project.objects?.length || 0) + (app.project.vehicles?.length || 0) + (app.project.actors?.length || 0) +
         (app.project.labels?.length || 0) + (app.project.pickups?.length || 0) + (app.project.gangZones?.length || 0) +
         (app.project.textDraws?.length || 0) + (app.project.checkpoints?.length || 0) + (app.project.mapIcons?.length || 0) +
-        (app.project.sounds?.length || 0) + (app.project.removed?.length || 0);
+        (app.project.removed?.length || 0);
       if (!total) { toast('O projeto já está vazio', 'warn'); return; }
-      if (!await showConfirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, checkpoints, mapicons, sons e remoções.`, { danger: true, confirmText: 'Apagar tudo' })) return;
+      if (!await showConfirm(`Tem certeza que deseja apagar todos os ${total} elementos do projeto "${app.project.name}"?\nEsta ação limpará todos os objetos, veículos, actors, textos 3D, checkpoints, mapicons e remoções.`, { danger: true, confirmText: 'Apagar tudo' })) return;
       const before = app.project.snapshotAll();
       app.editor.clearSelection();
       app.project.clearAll();

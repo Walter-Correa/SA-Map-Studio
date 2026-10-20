@@ -14,7 +14,7 @@ import { normalizeMaterial, formatColor, parseColor, MAX_MATERIAL_INDEX } from '
 import { parseIplText } from '../formats/text.js';
 import { isBinaryIpl, parseIplBinary } from '../formats/iplbin.js';
 
-const empty = () => ({ format: '', name: '', objects: [], vehicles: [], actors: [], removed: [], labels: [], pickups: [], gangZones: [], checkpoints: [], mapIcons: [], sounds: [], textDraws: [], cameras: { shots: [], paths: [] }, camera: null, pwnHeader: '', rawPawn: '', spawn: null, notes: [] });
+const empty = () => ({ format: '', name: '', objects: [], vehicles: [], actors: [], removed: [], labels: [], pickups: [], gangZones: [], checkpoints: [], mapIcons: [], textDraws: [], cameras: { shots: [], paths: [] }, camera: null, pwnHeader: '', rawPawn: '', spawn: null, notes: [] });
 
 // Texto: UTF-8 quando válido, senão Windows-1252 (o padrão do Pawn no Windows)
 export function decodeBytes(bytes) {
@@ -179,7 +179,6 @@ function fromJson(data, out) {
   out.gangZones = list(data.gangZones || data.GangZones);
   out.checkpoints = list(data.checkpoints || data.Checkpoints);
   out.mapIcons = list(data.mapIcons || data.MapIcons);
-  out.sounds = list(data.sounds || data.Sounds);
   out.textDraws = list(data.textDraws || data.TextDraws);
 }
 
@@ -242,7 +241,7 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
       out.format = 'JSON';
       const count = out.objects.length + out.vehicles.length + out.actors.length + out.removed.length +
                     out.labels.length + out.pickups.length + out.gangZones.length + out.textDraws.length +
-                    out.checkpoints.length + out.mapIcons.length + out.sounds.length +
+                    out.checkpoints.length + out.mapIcons.length +
                     (out.cameras?.shots?.length || 0) + (out.cameras?.paths?.length || 0);
       if (count > 0) return finish(out);
     } catch { /* não é JSON */ }
@@ -255,7 +254,7 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
   const pwn = parsePwn(text);
   if (pwn.objects.length + pwn.vehicles.length + (pwn.actors?.length || 0) + pwn.removed.length +
       (pwn.labels?.length || 0) + (pwn.pickups?.length || 0) + (pwn.gangZones?.length || 0) +
-      (pwn.checkpoints?.length || 0) + (pwn.mapIcons?.length || 0) + (pwn.sounds?.length || 0) +
+      (pwn.checkpoints?.length || 0) + (pwn.mapIcons?.length || 0) +
       (pwn.textDraws?.length || 0) + pwn.cameras.shots.length + pwn.cameras.paths.length) {
     Object.assign(out, pwn, { format: 'Código Pawn', notes: [] });
     return finish(out);
@@ -312,7 +311,7 @@ async function importZip(u8, opts) {
   const used = [];
   for (const f of files) {
     const r = await importAny(f.bytes, { ...opts, filename: f.name });
-    const keys = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'sounds', 'textDraws'];
+    const keys = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws'];
     const n = keys.reduce((sum, k) => sum + (r[k]?.length || 0), 0) + (r.cameras?.shots?.length || 0) + (r.cameras?.paths?.length || 0);
     if (!n) continue;
     for (const k of keys) out[k].push(...(r[k] || []));

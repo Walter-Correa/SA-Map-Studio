@@ -6,6 +6,15 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.21.0', date: '20/10/2026', items: [
+      'Clicar e arrastar um item move na hora, sem precisar selecionar antes (Shift/Ctrl somam à seleção).',
+      'Importar abre sempre com Substituir e Mesclar desmarcados.',
+      'Sons (PlayerPlaySound) saem do projeto: não são salvos, importados, carregados nem mostrados no mapa. O catálogo de sons continua só para ouvir a prévia e copiar o código.',
+      'Versão antiga não abre numa pasta usada por uma versão mais nova: aviso de versão incompatível no executável e no editor.',
+      'Janelas do instalador com título "Instalação" e "Atualização".',
+    ],
+  },
+  {
     version: '3.20.0', date: '20/10/2026', items: [
       'Atualização pelo .exe novo: a pasta instalada fica exatamente igual à versão nova (arquivos novos entram, os que mudaram são trocados e os que não existem mais são apagados), mantendo projetos, exportados, configurações e o que mais o usuário criou.',
       'Atualização segura: o pacote é conferido antes da troca, e se der erro ou faltar energia no meio a pasta volta à versão anterior na próxima abertura.',

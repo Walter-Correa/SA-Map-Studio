@@ -20,7 +20,6 @@
 #define SAMSP_MAX_CHECKPOINTS 256
 #define SAMSP_MAX_MAPICONS    200
 #define SAMSP_MAX_PBARS       32
-#define SAMSP_MAX_SOUNDS      256
 #define SAMSP_COR_INFO       0xF0A630FF
 #define SAMSP_COR_OK         0x57B77AFF
 
@@ -144,15 +143,6 @@ new gTotalPBars;
 new gPlayerPBars[MAX_PLAYERS][SAMSP_MAX_PBARS];
 new gPlayerPBarCount[MAX_PLAYERS];
 
-enum E_SAMSP_SOUND
-{
-    snd_id,
-    Float:snd_x,
-    Float:snd_y,
-    Float:snd_z
-}
-new gSounds[SAMSP_MAX_SOUNDS][E_SAMSP_SOUND];
-new gTotalSounds;
 
 enum E_SAMSP_ACTOR_ANIM
 {
@@ -426,20 +416,6 @@ stock SAMSP_CarregarMapa()
             }
             case 'S':
             {
-                if (tipo[1] == 'N' && tipo[2] == 'D')
-                {
-                    if (gTotalSounds >= SAMSP_MAX_SOUNDS) continue;
-                    gSounds[gTotalSounds][snd_id] = SAMSP_Int(linha, 1);
-                    gSounds[gTotalSounds][snd_x] = SAMSP_Float(linha, 2);
-                    gSounds[gTotalSounds][snd_y] = SAMSP_Float(linha, 3);
-                    gSounds[gTotalSounds][snd_z] = SAMSP_Float(linha, 4);
-                    sumX += gSounds[gTotalSounds][snd_x];
-                    sumY += gSounds[gTotalSounds][snd_y];
-                    sumZ += gSounds[gTotalSounds][snd_z];
-                    countCoords++;
-                    gTotalSounds++;
-                    continue;
-                }
                 gSpawn[0] = SAMSP_Float(linha, 1);
                 gSpawn[1] = SAMSP_Float(linha, 2);
                 gSpawn[2] = SAMSP_Float(linha, 3);
@@ -965,8 +941,8 @@ stock SAMSP_CarregarMapa()
         gSpawn[3] = 0.0;
     }
 
-    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d checkpoints, %d mapicons, %d sons, %d textdraws, %d barras de progresso (Streamer: %s)",
-        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalCheckpoints, gTotalMapIcons, gTotalSounds, gTotalTextDraws, gTotalPBars, gUseStreamer ? "ATIVO" : "DESATIVADO");
+    printf("[SA Map Studio] %d objetos, %d prédios removidos, %d veículos, %d actors, %d labels, %d pickups, %d gangzones, %d checkpoints, %d mapicons, %d textdraws, %d barras de progresso (Streamer: %s)",
+        gTotalObjetos, gTotalRemovidos, gTotalVeiculos, gTotalActors, gTotalLabels, gTotalPickups, gTotalGangZones, gTotalCheckpoints, gTotalMapIcons, gTotalTextDraws, gTotalPBars, gUseStreamer ? "ATIVO" : "DESATIVADO");
     printf("[SA Map Studio] Clima: %d, Horário: %02d:%02d, Centro do mapa: %.2f, %.2f, %.2f", gClima, gHora, gMinuto, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
     return 1;
 }
@@ -1202,14 +1178,6 @@ stock SAMSP_ShowPlayerCheckpoints(playerid)
     }
 }
 
-stock SAMSP_PlayMapSounds(playerid)
-{
-    for (new i = 0; i < gTotalSounds; i++)
-    {
-        PlayerPlaySound(playerid, gSounds[i][snd_id], gSounds[i][snd_x], gSounds[i][snd_y], gSounds[i][snd_z]);
-    }
-}
-
 public OnPlayerEnterCheckpoint(playerid)
 {
     if (gTotalCheckpoints <= 0) return 1;
@@ -1405,7 +1373,6 @@ public OnPlayerSpawn(playerid)
     }
     SAMSP_ShowMapIcons(playerid);
     SAMSP_ShowPlayerCheckpoints(playerid);
-    SAMSP_PlayMapSounds(playerid);
     SAMSP_ShowHud(playerid);
     SAMSP_ApplyAllVehicleTuning();
     SetTimer("SAMSP_DelayedVehicleTuning", 300, false);
@@ -1775,15 +1742,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SendClientMessage(playerid, SAMSP_COR_OK, msg);
             return 1;
         }
-        if (gTotalSounds > 0)
-        {
-            SAMSP_PlayMapSounds(playerid);
-            SendClientMessage(playerid, SAMSP_COR_OK, "Sons do mapa reproduzidos.");
-        }
-        else
-        {
-            SendClientMessage(playerid, SAMSP_COR_INFO, "Use /som [soundid] para testar um som (ex: /som 1052).");
-        }
+        SendClientMessage(playerid, SAMSP_COR_INFO, "Use /som [soundid] para testar um som (ex: /som 1052).");
         return 1;
     }
 

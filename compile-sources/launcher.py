@@ -439,7 +439,7 @@ def run_with_progress(subtitle, exe_dir, work):
         return
 
     root = tk.Tk()
-    root.title(WINDOW_TITLE + " - instalação")
+    root.title(WINDOW_TITLE + " - Instalação")
     root.configure(bg="#1c2228")
     root.resizable(False, False)
     root.protocol("WM_DELETE_WINDOW", lambda: None)  # não fecha no meio
@@ -547,7 +547,7 @@ def wait_until_closed(target_dir, version):
         text = ("Para atualizar o SA Map Studio para a versão %s, feche o editor que está aberto "
                 "e o servidor de testes, se estiver rodando. Salve o seu projeto antes de fechar.\n\n"
                 "Abertos agora: %s\n\nDepois de fechar, clique em Tentar novamente." % (version, ", ".join(open_now)))
-        if not _dialog("retry", WINDOW_TITLE + " - atualização", text):
+        if not _dialog("retry", WINDOW_TITLE + " - Atualização", text):
             return False
 
 
@@ -610,12 +610,15 @@ def main():
     need = (not installed or not old_manifest or not new_manifest.get("build")
             or old_manifest.get("build") != new_manifest.get("build"))
 
-    if need and installed and old_manifest and version_tuple(new_manifest.get("version")) < version_tuple(old_manifest.get("version")):
-        need = bool(_dialog("yesno", WINDOW_TITLE,
-                            "Este executável é a versão %s, mais antiga que a instalada (%s).\n\n"
-                            "Instalar a versão mais antiga? Os seus projetos são mantidos.\n"
-                            "Escolha Não para abrir a versão instalada."
-                            % (new_manifest.get("version"), old_manifest.get("version"))))
+    # Versão antiga numa pasta de versão mais nova: não abre nem instala (projetos e configurações
+    # gravados pela versão nova podem não funcionar na antiga)
+    if installed and old_manifest and version_tuple(new_manifest.get("version")) < version_tuple(old_manifest.get("version")):
+        _dialog("error", WINDOW_TITLE + " - Versão incompatível",
+                "Este executável é a versão %s do SA Map Studio, mas esta pasta já está com a versão %s, "
+                "que é mais nova.\n\nUma versão antiga não abre numa pasta de versão mais nova, para não "
+                "estragar os seus projetos e configurações. Use o executável da versão %s ou mais nova."
+                % (new_manifest.get("version"), old_manifest.get("version"), old_manifest.get("version")))
+        sys.exit(1)
 
     if not need:
         if editor_running(target_dir):

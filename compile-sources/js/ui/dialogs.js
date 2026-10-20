@@ -130,7 +130,12 @@ export function setupImport() {
     e.preventDefault();
     open(); takeFile(e.dataTransfer.files[0]);
   });
-  const open = () => { parsed = null; fileBytes = null; $('#importText').value = ''; $('#importFileName').textContent = ''; show(); if (!dlg.open) dlg.showModal(); };
+  const open = () => {
+    parsed = null; fileBytes = null; $('#importText').value = ''; $('#importFileName').textContent = '';
+    // Substituir e mesclar começam sempre desmarcados: a escolha vale só para aquela importação
+    for (const id of ['#importReplace', '#importMerge']) { const c = $(id); if (c) c.checked = false; }
+    show(); if (!dlg.open) dlg.showModal();
+  };
   $('#btnImport').onclick = () => { open(); $('#importText').focus(); };
   // Substituir e mesclar não valem juntos: marcar um desmarca o outro
   const optReplace = $('#importReplace'), optMerge = $('#importMerge');
@@ -153,7 +158,7 @@ export function setupImport() {
     const project = app.project, ed = app.editor;
     // Cópia profunda: o que foi lido continua intacto (dá para importar de novo) e nada é compartilhado
     const clone = (o) => JSON.parse(JSON.stringify(o));
-    const KIND_LISTS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws', 'sounds'];
+    const KIND_LISTS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws'];
     const items = prepareImportItems(KIND_LISTS.flatMap(k => (parsed[k] || []).map(o => ({ ...clone(o), kind: k }))));
     const removeUids = replace ? KIND_LISTS.flatMap(k => (project[k] || []).map(o => o.uid)) : [];
     const header = parsed.pwnHeader || parsed.preservedHeader || '';
