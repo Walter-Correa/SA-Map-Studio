@@ -58,6 +58,8 @@ new gFlySavedInterior[MAX_PLAYERS];
 new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
 new bool:gPlayerSpawned[MAX_PLAYERS];
+// TextDraws e barras já mostradas ao jogador: mostrar de novo recria tudo no cliente e faz piscar
+new bool:gHudShown[MAX_PLAYERS];
 
 new gObjetos[SAMSP_MAX_OBJETOS];
 new gTotalObjetos;
@@ -1266,10 +1268,7 @@ public OnPlayerConnect(playerid)
     }
     gPlayerNormalCPIdx[playerid] = 0;
     gPlayerRaceCPIdx[playerid] = 0;
-    for (new i = 0; i < gTotalTextDraws; i++)
-    {
-        TextDrawShowForPlayer(playerid, gTextDraws[i]);
-    }
+    gHudShown[playerid] = false;
     SAMSP_ShowMapIcons(playerid);
     SAMSP_PreloadAllAnims(playerid);
     return 1;
@@ -1284,6 +1283,7 @@ public OnPlayerDisconnect(playerid, reason)
     }
     gReturningFromFly[playerid] = false;
     gPlayerSpawned[playerid] = false;
+    gHudShown[playerid] = false;
     gPlayerPBarCount[playerid] = 0; // a progressbarpro.inc libera as barras do jogador ao sair
     return 1;
 }
@@ -1357,15 +1357,17 @@ stock SAMSP_ShowProgressBars(playerid)
     return 1;
 }
 
-forward SAMSP_ShowAllTextDraws(playerid);
-public SAMSP_ShowAllTextDraws(playerid)
+// TextDraws do mapa e barras de progresso: mostradas uma vez só por conexão, no primeiro spawn.
+// Elas continuam na tela ao morrer, renascer e usar o /fly; mostrar de novo faria sprites e prévias piscarem.
+stock SAMSP_ShowHud(playerid)
 {
-    if (!IsPlayerConnected(playerid)) return 0;
+    if (gHudShown[playerid]) return 0;
+    gHudShown[playerid] = true;
     for (new i = 0; i < gTotalTextDraws; i++)
     {
-        TextDrawHideForPlayer(playerid, gTextDraws[i]);
         TextDrawShowForPlayer(playerid, gTextDraws[i]);
     }
+    SAMSP_ShowProgressBars(playerid);
     return 1;
 }
 
@@ -1392,14 +1394,11 @@ public OnPlayerSpawn(playerid)
     SAMSP_ShowMapIcons(playerid);
     SAMSP_ShowPlayerCheckpoints(playerid);
     SAMSP_PlayMapSounds(playerid);
-    SAMSP_ShowAllTextDraws(playerid);
-    SAMSP_ShowProgressBars(playerid);
+    SAMSP_ShowHud(playerid);
     SAMSP_ApplyAllVehicleTuning();
     SetTimer("SAMSP_DelayedVehicleTuning", 300, false);
     SetTimer("SAMSP_DelayedVehicleTuning", 800, false);
     SetTimer("SAMSP_DelayedVehicleTuning", 2000, false);
-    SetTimerEx("SAMSP_ShowAllTextDraws", 400, false, "i", playerid);
-    SetTimerEx("SAMSP_ShowAllTextDraws", 1200, false, "i", playerid);
     SAMSP_PreloadAllAnims(playerid);
     SetTimerEx("SAMSP_SyncActorAnims", 500, false, "i", playerid);
     SetTimerEx("SAMSP_SyncActorAnims", 1500, false, "i", playerid);
@@ -1543,7 +1542,6 @@ public SAMSP_RestaurarPosVoo(playerid)
     SetCameraBehindPlayer(playerid);
     gReturningFromFly[playerid] = false;
     SetTimerEx("SAMSP_SyncActorAnims", 500, false, "i", playerid);
-    SetTimerEx("SAMSP_ShowAllTextDraws", 300, false, "i", playerid);
     SendClientMessage(playerid, SAMSP_COR_INFO, "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.");
     return 1;
 }

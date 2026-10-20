@@ -65,12 +65,16 @@
 	    PB_STYLE_RING    2 x segments (24 segments = 48, 60 segments = 120)
 	  Every player has MAX_PLAYER_TEXT_DRAWS (256) PlayerTextDraws shared with the whole script,
 	  so a player fits 5 rings of 24 segments, or 2 rings of 60 segments, and nothing else.
-	  Server memory: the include keeps, per player, the data of MAX_PLAYER_BARS bars and two
-	  tables of PB_MAX_TDS cells (which ring owns each PlayerTextDraw). With MAX_PLAYERS 1000 this
-	  is about 10 MB of the script data; lower MAX_PLAYERS or MAX_PLAYER_BARS to use less.
-	  Network: creating a ring sends 2 x segments TextDraws to the player; every value change on a
-	  ring re-sends the colour of all its segments (on a straight bar or circle, only one TextDraw).
-	  Avoid updating rings many times per second; once per second or on real changes is fine.
+	  Server memory: the include keeps, per player, the data of MAX_PLAYER_BARS bars and three
+	  tables of PB_MAX_TDS cells (which ring owns each PlayerTextDraw, its part and state, and its
+	  current colour). With MAX_PLAYERS 1000 this is about 11 MB of the script data; lower
+	  MAX_PLAYERS or MAX_PLAYER_BARS to use less.
+	  Network: creating a ring sends 2 x segments TextDraws to the player. After that, only the
+	  segments whose colour or visibility really changes are sent again: a value change sends the
+	  segments that light up or go off, a blink sends the inner segments (and the border dots when
+	  a blink border colour is used). A straight bar or circle sends one TextDraw per change.
+	  Every TextDraw sent is acknowledged by the client, and open.mp warns ("ackslimit") when a
+	  player goes over its limit, so avoid many bars changing many times per second.
 	  Timers: a blinking bar (any style) uses one repeating timer until the blink ends.
 
 	Limitations
@@ -340,10 +344,16 @@ enum ProgressBar_Data
 
 static stock ProgressBar[MAX_PLAYERS][MAX_PLAYER_BARS][ProgressBar_Data];
 
-// Ring segments: which bar owns each PlayerTextDraw id (bar id + 1, 0 = none) and which part it is
-// (segment * 2 + 0 for the border dot, + 1 for the segment)
+// Ring segments: which bar owns each PlayerTextDraw id (bar id + 1, 0 = none), which part it is
+// (segment * 2 + 0 for the border dot, + 1 for the segment, plus the state flags below) and the
+// colour last sent, so only the segments that really change are sent to the player again
 static stock pb_TdOwner[MAX_PLAYERS][PB_MAX_TDS];
 static stock pb_TdPart[MAX_PLAYERS][PB_MAX_TDS];
+static stock pb_TdColour[MAX_PLAYERS][PB_MAX_TDS];
+
+#define PB_TD_PART  (0xFFFF)
+#define PB_TD_KNOWN (0x20000000) // colour already sent
+#define PB_TD_SHOWN (0x40000000) // shown to the player
 
 // ---------------------------------------------------------------------------- internal
 
@@ -539,19 +549,19 @@ static stock PB_ApplyRingColours(playerid, barid)
 	for (new t = 0; t < PB_MAX_TDS; t++)
 	{
 		if (pb_TdOwner[playerid][t] != barid + 1) continue;
-		new PlayerText:td = PlayerText:t, part = pb_TdPart[playerid][t];
-		if (part % 2 == 0)
+		new PlayerText:td = PlayerText:t, flags = pb_TdPart[playerid][t], part = flags & PB_TD_PART;
+		new want = (part % 2 == 0) ? border : ((part / 2 < lit) ? colour : dim);
+		new bool:visible = shown && (part % 2 == 0 || !hidden);
+		new bool:changed = !(flags & PB_TD_KNOWN) || pb_TdColour[playerid][t] != want;
+		if (changed)
 		{
-			PB_TextDrawColour(playerid, td, border);
-			if (shown) PlayerTextDrawShow(playerid, td);
+			PB_TextDrawColour(playerid, td, want);
+			pb_TdColour[playerid][t] = want;
 		}
-		else
-		{
-			PB_TextDrawColour(playerid, td, (part / 2 < lit) ? colour : dim);
-			if (!shown) continue;
-			if (hidden) PlayerTextDrawHide(playerid, td);
-			else PlayerTextDrawShow(playerid, td);
-		}
+		// A shown TextDraw only takes a new colour when shown again
+		if (visible && (changed || !(flags & PB_TD_SHOWN))) PlayerTextDrawShow(playerid, td);
+		else if (!visible && (flags & PB_TD_SHOWN)) PlayerTextDrawHide(playerid, td);
+		pb_TdPart[playerid][t] = part | PB_TD_KNOWN | (visible ? PB_TD_SHOWN : 0);
 	}
 }
 
@@ -815,7 +825,9 @@ stock HidePlayerProgressBar(playerid, barid)
 	{
 		for (new t = 0; t < PB_MAX_TDS; t++)
 		{
-			if (pb_TdOwner[playerid][t] == barid + 1) PlayerTextDrawHide(playerid, PlayerText:t);
+			if (pb_TdOwner[playerid][t] != barid + 1) continue;
+			PlayerTextDrawHide(playerid, PlayerText:t);
+			pb_TdPart[playerid][t] &= ~PB_TD_SHOWN;
 		}
 		return 1;
 	}

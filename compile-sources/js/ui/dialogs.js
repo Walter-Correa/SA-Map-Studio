@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
-import { Project, normalizeCameras, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
+import { Project, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
 import { app, $, esc, plural, store, toast, copyText, postJSON } from './common.js';
@@ -151,35 +151,26 @@ export function setupImport() {
       finally { $('#importGo').disabled = false; }
     }
     const project = app.project, ed = app.editor;
-    const keepUid = (u) => (typeof u === 'string' && u.includes('_p_') && !project.find(u)) ? u : undefined;
-    const items = [
-      ...(parsed.objects || []).map(o => ({ ...o, kind: 'objects', uid: keepUid(o.uid) })),
-      ...(parsed.vehicles || []).map(v => ({ ...v, kind: 'vehicles', uid: keepUid(v.uid) })),
-      ...(parsed.actors || []).map(a => ({ ...a, kind: 'actors', uid: undefined })),
-      ...(parsed.removed || []).map(r => ({ ...r, kind: 'removed', uid: undefined })),
-      ...(parsed.labels || []).map(l => ({ ...l, kind: 'labels', uid: undefined })),
-      ...(parsed.pickups || []).map(pk => ({ ...pk, kind: 'pickups', uid: undefined })),
-      ...(parsed.gangZones || []).map(g => ({ ...g, kind: 'gangZones', uid: undefined })),
-      ...(parsed.checkpoints || []).map(cp => ({ ...cp, kind: 'checkpoints', uid: undefined })),
-      ...(parsed.mapIcons || []).map(mi => ({ ...mi, kind: 'mapIcons', uid: undefined })),
-      ...(parsed.textDraws || []).map(t => ({ ...t, kind: 'textDraws', uid: undefined })),
-    ];
+    // Cópia profunda: o que foi lido continua intacto (dá para importar de novo) e nada é compartilhado
+    const clone = (o) => JSON.parse(JSON.stringify(o));
+    const KIND_LISTS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws', 'sounds'];
+    const items = prepareImportItems(KIND_LISTS.flatMap(k => (parsed[k] || []).map(o => ({ ...clone(o), kind: k }))));
+    const removeUids = replace ? KIND_LISTS.flatMap(k => (project[k] || []).map(o => o.uid)) : [];
+    const header = parsed.pwnHeader || parsed.preservedHeader || '';
+    const cams = parsed.cameras ? normalizeCameras(parsed.cameras) : null;
+    // Um passo só no desfazer/refazer: itens, cabeçalho, código original e câmeras
+    project.importItems(`Importar ${items.length} itens`, removeUids, items, (p) => {
+      if (merge) {
+        if (header && !p.pwnHeader) p.pwnHeader = header;
+        if (parsed.rawPawn && !p.rawPawn) p.rawPawn = parsed.rawPawn;
+      } else {
+        if (header) p.pwnHeader = header;
+        if (parsed.rawPawn) p.rawPawn = parsed.rawPawn;
+      }
+      if (replace) p.cameras = normalizeCameras(null);
+      if (cams) { p.cameras.shots.push(...cams.shots); p.cameras.paths.push(...cams.paths); }
+    });
     if (replace) {
-      const all = [
-        ...project.objects,
-        ...project.vehicles,
-        ...(project.actors || []),
-        ...project.removed,
-        ...(project.labels || []),
-        ...(project.pickups || []),
-        ...(project.gangZones || []),
-        ...(project.checkpoints || []),
-        ...(project.mapIcons || []),
-        ...(project.textDraws || []),
-      ].map(o => o.uid);
-      if (all.length) project.deleteItems('Limpar projeto', all);
-      if (parsed.pwnHeader || parsed.preservedHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
-      if (parsed.rawPawn) project.rawPawn = parsed.rawPawn;
       if (projName) {
         project.name = projName;
         const nameInp = document.getElementById('projectName');
@@ -191,22 +182,8 @@ export function setupImport() {
           app.vp?.fly?.setPose(new THREE.Vector3(c.x, c.y, c.z), c.yaw || 0, c.pitch || 0);
         }
       }
-    } else if (merge) {
-      if ((parsed.pwnHeader || parsed.preservedHeader) && !project.pwnHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
-      if (parsed.rawPawn && !project.rawPawn) project.rawPawn = parsed.rawPawn;
-    } else {
-      if (parsed.pwnHeader || parsed.preservedHeader) project.pwnHeader = parsed.pwnHeader || parsed.preservedHeader;
-      if (parsed.rawPawn) project.rawPawn = parsed.rawPawn;
     }
-    if (items.length) project.addItems(`Importar ${items.length} itens`, items);
-    if (parsed.cameras) {
-      const c = normalizeCameras(parsed.cameras);
-      if (replace) project.cameras = normalizeCameras(null);
-      project.cameras.shots.push(...c.shots);
-      project.cameras.paths.push(...c.paths);
-      if (c.shots.length + c.paths.length) project.touch('cameras');
-      app.emit('project', project);
-    }
+    if (cams || replace) { project.touch('cameras'); app.emit('project', project); }
     dlg.close();
     toast(plural(items.length, 'item importado', 'itens importados') + ` (${parsed.format})`);
     const placed = [
@@ -225,9 +202,6 @@ export function setupImport() {
       const first = placed[0];
       if (first.interior > 0 && Math.abs(first.z) > 500) app.emit('view-interiors', true);
     }
-    // Toda vez que uma importação é feita o histórico de desfazer/refazer é limpo
-    project.clearHistory?.();
-    ed.clearUndoState?.();
     window.__updateUndoButtons?.();
   };
 }

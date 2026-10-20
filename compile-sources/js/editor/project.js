@@ -7,6 +7,52 @@ let uidCounter = 1;
 let _globalOpSeq = 0;
 const newUid = () => 'o' + (Date.now().toString(36)) + (uidCounter++).toString(36);
 
+// Acoplamentos de projetos antigos que apontam para um pai que não existe mais (uid trocado numa importação
+// anterior): o pai é reencontrado pela posição, já que o objeto acoplado fica gravado onde o deslocamento
+// a partir do pai o coloca. Só troca quando todos os acoplados daquele pai batem com o mesmo item.
+export function repairAttachments(objects, vehicles) {
+  const known = new Set([...objects, ...vehicles].map(o => o.uid).filter(Boolean));
+  const groups = new Map();
+  for (const o of objects) {
+    const to = o.attach?.to;
+    if (!to || known.has(to)) continue;
+    const key = (o.attach.type === 'vehicle' ? 'v:' : 'o:') + to;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(o);
+  }
+  let fixed = 0;
+  for (const [key, kids] of groups) {
+    const cands = key.startsWith('v:') ? vehicles : objects.filter(o => !kids.includes(o));
+    const fits = (p, c) => {
+      const a = (+p.rz || 0) * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
+      const ox = +c.attach.ox || 0, oy = +c.attach.oy || 0, oz = +c.attach.oz || 0;
+      return Math.abs(p.x + ox * cos - oy * sin - c.x) < 0.05 && Math.abs(p.y + ox * sin + oy * cos - c.y) < 0.05 && Math.abs(p.z + oz - c.z) < 0.05;
+    };
+    const parent = cands.find(p => !(+p.rx) && !(+p.ry) && kids.every(c => fits(p, c)));
+    if (!parent) continue;
+    if (!parent.uid) parent.uid = newUid();
+    for (const c of kids) c.attach.to = parent.uid;
+    fixed += kids.length;
+  }
+  return fixed;
+}
+
+// Itens que entram no projeto (importar, mesclar): cada um ganha um uid novo e os acoplamentos passam a
+// apontar para a cópia do pai que veio junto, então mesclar o mesmo projeto não junta tudo num pai só.
+export function prepareImportItems(items) {
+  repairAttachments(items.filter(i => i.kind === 'objects'), items.filter(i => i.kind === 'vehicles'));
+  const map = new Map();
+  for (const it of items) {
+    const fresh = newUid();
+    if (it.uid) map.set(it.uid, fresh);
+    it.uid = fresh;
+  }
+  for (const it of items) {
+    if (it.attach?.to && map.has(it.attach.to)) it.attach = { ...it.attach, to: map.get(it.attach.to) };
+  }
+  return items;
+}
+
 export function makeObject(data) {
   return {
     uid: data.uid || newUid(),
@@ -456,6 +502,7 @@ export class Project {
   static fromJSON(data) {
     const p = new Project(data.name || 'Meu mapa');
     for (const k of KINDS) p[k] = (data[k] || []).map(MAKERS[k]);
+    repairAttachments(p.objects, p.vehicles);
     p.camera = data.camera || null;
     p.lastSelection = Array.isArray(data.lastSelection) ? data.lastSelection.filter(u => typeof u === 'string') : [];
     p.cameras = normalizeCameras(data.cameras);
@@ -536,10 +583,49 @@ export class Project {
     this.emit({ type: 'transact', label, uids: after.map(s => s.uid) });
   }
 
+  // Importação num passo só do desfazer: tira os itens (substituir), põe os novos e troca cabeçalho,
+  // código original e câmeras do projeto
+  importItems(label, removeUids, items, meta = null) {
+    const fields = () => JSON.parse(JSON.stringify({ pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '', cameras: this.cameras }));
+    const metaBefore = fields();
+    const uids = [];
+    this.transact(label, removeUids, () => {
+      if (removeUids.length) { const rm = new Set(removeUids); for (const k of KINDS) this[k] = this[k].filter(o => !rm.has(o.uid)); }
+      for (const it of items) {
+        const k = MAKERS[it.kind] ? it.kind : 'objects';
+        const obj = MAKERS[k](it);
+        this[k].push(obj);
+        uids.push(obj.uid);
+      }
+      meta?.(this);
+      return uids;
+    });
+    const metaAfter = fields();
+    const op = this.undoStack[this.undoStack.length - 1];
+    if (JSON.stringify(metaBefore) !== JSON.stringify(metaAfter)) {
+      if (op?.label === label && op.after.some(s => uids.includes(s.uid))) op.meta = { before: metaBefore, after: metaAfter };
+      else {
+        this.undoStack.push({ label, before: [], after: [], meta: { before: metaBefore, after: metaAfter }, _seq: ++_globalOpSeq });
+        this.redoStack.length = 0;
+      }
+    }
+    if (this.checkpoints?.length) updateRaceCheckpointsChain(this.checkpoints);
+    return uids;
+  }
+
+  applyMeta(m) {
+    if (!m) return;
+    this.pwnHeader = m.pwnHeader;
+    this.rawPawn = m.rawPawn;
+    this.cameras = normalizeCameras(m.cameras);
+    this.emit({ type: 'cameras', uids: [] });
+  }
+
   undo() {
     const op = this.undoStack.pop();
     if (!op) return null;
     this.applyStates(op.before);
+    this.applyMeta(op.meta?.before);
     if (this.checkpoints && this.checkpoints.length) {
       updateRaceCheckpointsChain(this.checkpoints);
     }
@@ -553,6 +639,7 @@ export class Project {
     const op = this.redoStack.pop();
     if (!op) return null;
     this.applyStates(op.after);
+    this.applyMeta(op.meta?.after);
     if (this.checkpoints && this.checkpoints.length) {
       updateRaceCheckpointsChain(this.checkpoints);
     }
@@ -660,13 +747,12 @@ export class Project {
     for (const k of KINDS) {
       for (const it of (otherProject[k] || [])) {
         const copy = JSON.parse(JSON.stringify(it));
-        copy.uid = newUid();
         copy.kind = k;
         copy.projectId = this.name;
         itemsToAdd.push(copy);
       }
     }
-    return this.addItems(`Mesclar projeto "${otherProject.name}"`, itemsToAdd);
+    return this.importItems(`Mesclar projeto "${otherProject.name}"`, [], prepareImportItems(itemsToAdd));
   }
 }
 

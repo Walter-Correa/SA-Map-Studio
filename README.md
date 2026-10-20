@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.18.2-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.19.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -254,6 +254,15 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 ---
 
 ## Histórico de versões
+
+### 3.19.0 — 20/10/2026
+- Importação mantém os acoplamentos: cada item ganha um uid novo e os acoplados passam a apontar para a cópia
+  do pai que veio junto (substituir, mesclar o mesmo projeto ou importar como projeto novo).
+- Acoplamentos de projetos já salvos com o pai perdido são recuperados pela posição ao abrir ou importar.
+- Importar, substituir e mesclar entram no desfazer/refazer num passo só (itens, cabeçalho, código e câmeras).
+- Servidor de testes: TextDraws e barras mostradas uma vez por conexão, sem as piscadas no spawn.
+- SA Progress Bar Pro: anéis só reenviam os segmentos que mudam de cor ou visibilidade (fim do aviso ackslimit).
+- Mapa de exemplo com as TextDraws e barras novas.
 
 ### 3.18.2 — 20/10/2026
 - Prévia de modelo 3D de skins na pose parada do jogo: o leitor de DFF passa a ler os ossos (HAnim) e o skin,

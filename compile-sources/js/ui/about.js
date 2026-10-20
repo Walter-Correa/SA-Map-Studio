@@ -6,6 +6,16 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.19.0', date: '20/10/2026', items: [
+      'Importação mantém os acoplamentos: cada objeto acoplado continua preso ao seu veículo ou objeto pai, ao substituir, mesclar (inclusive o mesmo projeto) ou importar como projeto novo.',
+      'Acoplamentos perdidos por importações antigas são recuperados ao abrir ou importar o projeto (o pai é reencontrado pela posição).',
+      'Importar, substituir e mesclar entram no desfazer/refazer, num passo só.',
+      'Servidor de testes: TextDraws e barras aparecem uma vez só no spawn, sem piscar.',
+      'SA Progress Bar Pro: barras circulares em anel só enviam os segmentos que mudam, sem estourar o limite de pacotes (ackslimit) do open.mp.',
+      'Mapa de exemplo com as TextDraws e barras novas.',
+    ],
+  },
+  {
     version: '3.18.2', date: '20/10/2026', items: [
       'Prévia de modelo 3D de skins na pose parada do jogo (animação IDLE_stance do ped.ifp aplicada nos ossos do modelo), com braços para baixo, mesma altura e mesma iluminação forte da prévia do SA-MP.',
     ],
