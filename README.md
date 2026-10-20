@@ -187,7 +187,7 @@ Other options: `--port 8777`, `--no-browser` and `--navegador` (opens in the bro
 
 Both create a separate Python environment (`compile-sources\.venv-build`), install the latest PyInstaller and
 pywebview, record the build date and time (shown in *What's new* inside the program), check that every interface text is
-translated into every language (warning only) and assemble the `test-server` folder with the gamemode and your
+translated into every language (a missing translation stops the build) and assemble the `test-server` folder with the gamemode and your
 open.mp / SA-MP server.
 
 ```powershell
@@ -318,7 +318,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 - `python compile-sources/i18n_check.py` checks every language: missing texts, translations whose `{0}`/`%d` parts,
   plural forms or edge spaces differ from the key, orphan keys the code no longer uses, and `TEXTS`/`WINDOWS_LANGS` in
-  `launcher.py` against `languages.json`. `build.bat` runs it and only warns. `--missing en` lists the texts missing in
+  `launcher.py` against `languages.json`, and the test server messages (`TEST_MESSAGES` in `dialogs.js` against `gMsg` in
+  `samapstudio.pwn`). Any of these makes it exit with an error, and `build.bat` stops. It also prints quality warnings that do
+  not stop the build (empty or untranslated texts, wrong script, Portuguese accents, different final punctuation) and, for an
+  orphan key that looks like a changed text, the `i18n_tool.py rename` command to run. `--missing en` lists the texts missing in
   English, `--orphans` lists the orphan keys and `--prune` deletes them from every file.
 - `python compile-sources/i18n_tool.py export [folder] [--lang ru uk] [--size 200]` writes what is missing (default
   folder `testing/i18n/`): `keys.json` (id → Portuguese key) and batches `<code>-01.txt` with one `id<TAB>English text`
