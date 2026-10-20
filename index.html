@@ -123,7 +123,6 @@
         <button class="btn seg-btn" data-mode="rotate" title="Girar (R)"><svg><use href="#i-rotate"/></svg><span class="lbl-seg">Girar</span></button>
         <button class="btn seg-btn" data-mode="texture" title="Textura: clique numa face para escolher o pedaço (T)"><svg><use href="#i-brush"/></svg><span class="lbl-seg">Textura</span></button>
       </div>
-      <span class="divider"></span>
       <button id="btnSpace" class="btn ghost" title="Sistema de coordenadas: Mundo (eixos globais X/Y/Z) ou Objeto (eixos locais da rotação do objeto) [Tecla L]"><svg><use href="#i-globe"/></svg><span class="lbl-keep">Mundo</span></button>
       <div class="pop-anchor">
         <button id="btnSnap" class="btn ghost" aria-pressed="false" title="Encaixe em grade"><svg><use href="#i-magnet"/></svg><span class="lbl">Encaixe</span></button>
@@ -137,7 +136,6 @@
           <label class="field-row">Distância do ímã (m) <input type="number" id="snapMagDist" step="0.05" min="0.01" max="5.0" value="0.1"></label>
         </div>
       </div>
-      <span class="divider"></span>
       <button id="btnUndo" class="btn icon" title="Desfazer (Ctrl+Z)" aria-label="Desfazer"><svg><use href="#i-undo"/></svg></button>
       <button id="btnRedo" class="btn icon" title="Refazer (Ctrl+Y)" aria-label="Refazer"><svg><use href="#i-redo"/></svg></button>
     </div>
@@ -182,18 +180,15 @@
           <label class="check"><input type="checkbox" id="autoCollapseSidebars"> Recolher menus laterais ao mover a câmera</label>
         </div>
       </div>
-      <span class="divider"></span>
       <button id="btnCheckpoints" class="btn ghost" title="Criar Checkpoint ou Race Checkpoint (Tipos 0 a 4)"><svg><use href="#i-flag"/></svg><span class="lbl2">Checkpoints</span></button>
       <button id="btnMapIcons" class="btn ghost" title="Criar e editar MapIcons no mapa (IDs 0 a 63)"><svg><use href="#i-pin"/></svg><span class="lbl2">MapIcons</span></button>
       <button id="btnGangZones" class="btn ghost" title="Criar e editar GangZones no mapa do radar"><svg><use href="#i-map"/></svg><span class="lbl2">GangZones</span></button>
       <button id="btnTextDraws" class="btn ghost" title="Editor visual de TextDraws (640x448)"><svg><use href="#i-text"/></svg><span class="lbl2">TextDraws</span></button>
       <button id="btn3DText" class="btn ghost" title="Criar Texto 3D no mapa"><svg><use href="#i-text3d"/></svg><span class="lbl2">3DTexts</span></button>
       <button id="btnSounds" class="btn ghost" title="Catálogo de sons (PlayerPlaySound) com prévia de áudio"><svg><use href="#i-sound"/></svg><span class="lbl2">Sons</span></button>
-      <span class="divider"></span>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
       <button id="btnExport" class="btn" title="Exportar mapa (Pawn, CreateObject, etc.)"><svg><use href="#i-out"/></svg><span class="lbl-export">Exportar</span></button>
       <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar</span></button>
-      <span class="divider"></span>
       <div class="pop-anchor">
         <button id="btnLanguage" class="btn ghost" title="Idioma do editor"><svg><use href="#i-lang"/></svg><span class="lbl2">Idioma</span></button>
         <div class="popover lang-pop" id="popLanguage" hidden>

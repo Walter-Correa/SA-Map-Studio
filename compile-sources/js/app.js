@@ -65,9 +65,11 @@ function setupTopbarFit() {
   };
   window.addEventListener('resize', schedule);
   document.fonts?.ready?.then(schedule);
-  // The World/Object button changes its text: readjusts when the label changes
-  const space = $('#btnSpace');
-  if (space) new MutationObserver(schedule).observe(space, { childList: true, subtree: true, characterData: true });
+  // Any label in the bar changes its text (World/Object, language switch): readjusts so the button spacing is kept
+  // (not the whole bar: the save state text changes often and would make the labels flicker)
+  const observer = new MutationObserver(schedule);
+  document.querySelectorAll('.topbar .tools, .topbar .actions').forEach(el => observer.observe(el, { childList: true, subtree: true, characterData: true }));
+  onLanguageChange(schedule);
   schedule();
 }
 
