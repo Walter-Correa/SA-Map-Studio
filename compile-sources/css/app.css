@@ -90,6 +90,12 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
   height: 14px;
 }
 .topbar .brand-mark { width: 34px; height: 34px; }
+/* Every top bar button except Test (and the Move/Rotate/Texture group) shares the Export look: filled and bordered, so it reads as a button */
+.topbar .btn.ghost, .topbar .btn.icon { background: var(--asphalt-600); border-color: var(--line); color: var(--paper); }
+.topbar .btn.ghost:hover, .topbar .btn.icon:hover { background: var(--asphalt-500); }
+.topbar .btn.ghost[aria-pressed="true"] { color: var(--sodium); background: rgba(240, 166, 48, .1); border-color: rgba(240, 166, 48, .45); }
+.topbar .divider { flex-shrink: 0; }
+.topbar.tight .divider { margin: 0; }
 .topbar .seg-btn {
   height: 26px;
   padding: 0 5px;
