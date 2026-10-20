@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.19.0"
+VERSION = "3.20.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -2760,6 +2760,38 @@ def open_window(url, httpd):
     return True
 
 
+EDITOR_MUTEX = "Local\\SAMapStudio.Editor"
+_EDITOR_MUTEX_HANDLE = None
+
+
+def single_instance():
+    """Um editor por vez: o mutex fica com este processo até ele fechar (o launcher também o consulta
+    antes de atualizar). Se já houver um aberto, a janela dele vem para a frente. False nesse caso."""
+    global _EDITOR_MUTEX_HANDLE
+    if not IS_WINDOWS:
+        return True
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32
+        k.CreateMutexW.restype = ctypes.c_void_p
+        h = k.CreateMutexW(None, False, EDITOR_MUTEX)
+        if h and k.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+            k.CloseHandle(ctypes.c_void_p(h))
+            u = ctypes.windll.user32
+            hwnd = u.FindWindowW(None, "SA Map Studio")
+            if hwnd:
+                if u.IsIconic(hwnd):
+                    u.ShowWindow(hwnd, 9)
+                u.SetForegroundWindow(hwnd)
+            else:
+                u.MessageBoxW(None, "O SA Map Studio já está aberto.", "SA Map Studio", 0x40 | 0x40000)
+            return False
+        _EDITOR_MUTEX_HANDLE = h
+    except Exception:
+        pass
+    return True
+
+
 def main():
     if IS_WINDOWS:
         try:
@@ -2767,6 +2799,9 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
         except Exception:
             pass
+    # Só a janela do editor conta como instância (o modo --no-browser é o servidor sozinho, para testes)
+    if "--no-browser" not in sys.argv and not single_instance():
+        return
     setup_logging()
     migrate_old_layout()
     os.makedirs(DATA_DIR, exist_ok=True)

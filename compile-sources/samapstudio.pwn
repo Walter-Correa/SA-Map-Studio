@@ -58,6 +58,8 @@ new gFlySavedInterior[MAX_PLAYERS];
 new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
 new bool:gPlayerSpawned[MAX_PLAYERS];
+// Spawn já pedido e ainda não feito: a escolha de personagem é chamada várias vezes e não pode spawnar de novo
+new bool:gSpawnRequested[MAX_PLAYERS];
 // TextDraws e barras já mostradas ao jogador: mostrar de novo recria tudo no cliente e faz piscar
 new bool:gHudShown[MAX_PLAYERS];
 
@@ -1245,6 +1247,7 @@ public OnPlayerEnterRaceCheckpoint(playerid)
 public OnPlayerConnect(playerid)
 {
     gPlayerSpawned[playerid] = false;
+    gSpawnRequested[playerid] = false;
     gNoClip[playerid][noclip_cameramode] = CAMERA_MODE_NONE;
     gNoClip[playerid][noclip_flyobject] = INVALID_OBJECT_ID;
     gNoClip[playerid][noclip_lrold] = 0;
@@ -1283,29 +1286,37 @@ public OnPlayerDisconnect(playerid, reason)
     }
     gReturningFromFly[playerid] = false;
     gPlayerSpawned[playerid] = false;
+    gSpawnRequested[playerid] = false;
     gHudShown[playerid] = false;
     gPlayerPBarCount[playerid] = 0; // a progressbarpro.inc libera as barras do jogador ao sair
     return 1;
 }
 
-// Pula a escolha de personagem: no open.mp e SA-MP, chama SetSpawnInfo e SpawnPlayer diretamente
+// Pula a escolha de personagem com um único spawn. O open.mp e o SA-MP chamam esta função várias
+// vezes (ao conectar e a cada troca de personagem), e o SpawnPlayer aqui só vale depois que a
+// escolha aparece; por isso o spawn é pedido uma vez, logo depois, e só se repete se não acontecer.
 public OnPlayerRequestClass(playerid, classid)
 {
     SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
-    SpawnPlayer(playerid);
-    SetTimerEx("SAMSP_Spawnar", 150, false, "i", playerid);
+    if (gPlayerSpawned[playerid] || gSpawnRequested[playerid]) return 1;
+    gSpawnRequested[playerid] = true;
+    SetTimerEx("SAMSP_Spawnar", 150, false, "ii", playerid, 0);
     return 1;
 }
 
-forward SAMSP_Spawnar(playerid);
-public SAMSP_Spawnar(playerid)
+forward SAMSP_Spawnar(playerid, tentativa);
+public SAMSP_Spawnar(playerid, tentativa)
 {
-    if (!IsPlayerConnected(playerid)) return 0;
-    if (!gPlayerSpawned[playerid])
+    if (!IsPlayerConnected(playerid) || gPlayerSpawned[playerid]) return 0;
+    if (tentativa == 0)
     {
-        SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
         SpawnPlayer(playerid);
+        // Só confere de novo bem depois: o OnPlayerSpawn chega com atraso e um segundo pedido spawnaria duas vezes
+        SetTimerEx("SAMSP_Spawnar", 2000, false, "ii", playerid, 1);
+        return 1;
     }
+    SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
+    SpawnPlayer(playerid);
     return 1;
 }
 
@@ -1374,6 +1385,7 @@ stock SAMSP_ShowHud(playerid)
 public OnPlayerSpawn(playerid)
 {
     gPlayerSpawned[playerid] = true;
+    gSpawnRequested[playerid] = false;
     if (gReturningFromFly[playerid])
     {
         SAMSP_RestaurarPosVoo(playerid);
