@@ -82,6 +82,7 @@ export class Editor extends EventTarget {
     viewport.scene.add(this.pivot);
     tc.addEventListener('dragging-changed', (e) => {
       viewport.fly.enabled = !e.value;
+      this.setGizmoButtonPassive(e.value);
       if (e.value) this.beginDrag(); else this.endDrag();
     });
     tc.addEventListener('objectChange', () => this.onGizmoChange());
@@ -104,6 +105,8 @@ export class Editor extends EventTarget {
     const doToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
+      // Arrastando (o item ou as setas) o botão não vale, nem logo depois de soltar sobre ele
+      if (this.directDragging || this.tc.dragging || performance.now() - (this.dragEndedAt || 0) < 300) return;
       this.setMode(this.mode === 'translate' ? 'rotate' : 'translate');
     };
     toggleBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
@@ -119,6 +122,12 @@ export class Editor extends EventTarget {
   }
 
   get renderer() { return this.vp.renderer; }
+
+  // Durante um arrastar o botão Mover/Girar do manipulador fica transparente ao mouse
+  setGizmoButtonPassive(on) {
+    if (this.gizmoToggleBtn) this.gizmoToggleBtn.style.pointerEvents = on ? 'none' : '';
+    if (!on) this.dragEndedAt = performance.now();
+  }
 
   pointInFront(dist = 12) {
     const dir = new THREE.Vector3();
@@ -1209,14 +1218,12 @@ export class Editor extends EventTarget {
       if (e.button === 0) {
         down = { x: e.clientX, y: e.clientY, t: performance.now() };
         // Clicar e arrastar um item move na hora: se ele ainda não está selecionado, é selecionado ao começar
-        // a arrastar (Shift/Ctrl somam à seleção). Clicar num item tem prioridade sobre o manipulador (gizmo):
-        // ele para de reagir ao mouse até o botão ser solto, para os dois não agirem juntos.
-        if (!this.tc.dragging && !this.placing && this.mode === 'translate') {
+        // a arrastar (Shift/Ctrl somam à seleção). A área do manipulador (gizmo) tem prioridade: o arrastar
+        // direto só vale clicando no item fora dela. Durante o arrastar direto o manipulador fica parado.
+        if (!this.tc.dragging && !this.placing && this.mode === 'translate' && !this.gizmoUnderPointer(e)) {
           const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());
           const hitUid = hit?.object?.userData?.uid;
-          // GangZones cobrem o chão por baixo de tudo: sobre elas, a seta do manipulador continua valendo
-          const zoneUnderGizmo = this.tc.axis && hit?.object?.userData?.kind === 'gangZones';
-          if (hitUid && !zoneUnderGizmo && !this.isProjectReadonly(this.findProjectOf(hitUid))) {
+          if (hitUid && !this.isProjectReadonly(this.findProjectOf(hitUid))) {
             directDrag = {
               startX: e.clientX,
               startY: e.clientY,
@@ -1225,7 +1232,7 @@ export class Editor extends EventTarget {
               active: false
             };
             if (!directDrag.select && !this.prepareDirectDrag(directDrag)) directDrag = null;
-            if (directDrag) { this.directDragging = true; this.tc.enabled = false; this.tc.axis = null; }
+            if (directDrag) { this.directDragging = true; this.tc.enabled = false; this.tc.axis = null; this.setGizmoButtonPassive(true); }
           }
         }
       }
@@ -1294,6 +1301,7 @@ export class Editor extends EventTarget {
       if (!this.directDragging) return;
       this.directDragging = false;
       this.tc.enabled = true;
+      this.setGizmoButtonPassive(false);
     };
     window.addEventListener('pointerup', releaseGizmo);
     window.addEventListener('pointercancel', () => { directDrag = null; releaseGizmo(); });
@@ -1363,6 +1371,19 @@ export class Editor extends EventTarget {
   }
 
   pickTargets() { return [this.root, ...this.streamer.pickables()]; }
+
+  // O mouse está sobre uma parte do manipulador (setas, planos ou centro) que pode ser usada?
+  gizmoUnderPointer(e) {
+    if (!this.tc.object || !this.gizmo.visible || !this.tc.enabled) return false;
+    if (this.tc.axis) return true;
+    const picker = this.tc._gizmo?.picker?.[this.tc.mode];
+    if (!picker) return false;
+    this.gizmo.updateMatrixWorld(true);
+    const rc = new THREE.Raycaster();
+    rc.setFromCamera(this.vp.ndc(e), this.vp.camera);
+    // O grupo das áreas de pegar é invisível de propósito; só as partes escondidas (eixo travado) não valem
+    return rc.intersectObject(picker, true).some(h => h.object.visible);
+  }
 
   pick(e) {
     const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());

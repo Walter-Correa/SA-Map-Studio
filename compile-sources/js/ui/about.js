@@ -6,6 +6,12 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.21.2', date: '20/10/2026', items: [
+      'A área do manipulador (gizmo) volta a ter prioridade: clicar nas setas usa o manipulador; o clicar e arrastar direto vale só clicando no item fora dela.',
+      'O botão Mover/Girar do manipulador não é acionado enquanto um item ou as setas estão sendo arrastados.',
+    ],
+  },
+  {
     version: '3.21.1', date: '20/10/2026', items: [
       'Clicar e arrastar um item tem prioridade sobre o manipulador (gizmo): ele para de reagir ao mouse até o botão ser solto. Sobre GangZones, a seta do manipulador continua valendo.',
       'Área que pega as setas do manipulador reduzida pela metade.',
