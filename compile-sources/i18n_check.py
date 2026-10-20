@@ -11,7 +11,7 @@ Uma tradução pode ser texto ou um objeto de formas de plural {"one": ..., "few
 o número, padrão {0}). Cada forma precisa das mesmas partes variáveis da chave.
 
 Uso:
-  python i18n_check.py              confere os idiomas e o launcher (o build chama assim e só avisa)
+  python i18n_check.py              confere os idiomas e o launcher (o build chama assim e para se achar problema; os avisos de qualidade não bloqueiam)
   python i18n_check.py --dump F     grava em F a lista de chaves achadas no código (JSON)
   python i18n_check.py --missing L  mostra as chaves que faltam no idioma L (ex.: en)
   python i18n_check.py --orphans    mostra as chaves dos arquivos de idioma que o código não usa mais
@@ -478,6 +478,51 @@ def test_message_problems():
     return out
 
 
+def quality_warnings(lang, data):
+    """Avisos de qualidade de um idioma (não bloqueiam o build): {tipo: [chaves]}."""
+    same = same_keys()
+    cyr = re.compile("[Ѐ-ӿ]")
+    letters = re.compile(r"[A-Za-zÀ-ÿЀ-ӿ]")
+    ender = re.compile(r"(\.\.\.|…|[:?!.;])$")
+    latin_only = lang["code"] in ("en", "de", "hu", "id")
+    out = {}
+    for key, value in data.items():
+        if key.startswith("_"):
+            continue
+        texts = [value[f] for f in PLURAL_FORMS if f in value] if is_forms(value) else [value]
+        if not all(isinstance(t, str) for t in texts):
+            continue
+        if any(not t.strip() for t in texts):
+            out.setdefault("tradução vazia", []).append(key)
+            continue
+        text = texts[-1]
+        if key not in same and is_portuguese(key) and key in texts and len(key) > 3:
+            out.setdefault("igual ao português", []).append(key)
+        has_cyr = any(cyr.search(t) for t in texts)
+        if lang.get("script") == "cyrillic" and not has_cyr and is_portuguese(key) and key not in same:
+            out.setdefault("sem letras cirílicas", []).append(key)
+        if lang.get("script") != "cyrillic" and has_cyr:
+            out.setdefault("letras cirílicas fora do idioma", []).append(key)
+        if latin_only and any(re.search("[ãõç]", t) for t in texts):
+            out.setdefault("acento do português na tradução", []).append(key)
+        if bool(ender.search(key.rstrip())) != bool(ender.search(text.rstrip())) and key[-1:] in ":?!.;…" and lang["code"] != "ru":
+            out.setdefault("pontuação final diferente", []).append(key)
+    return out
+
+
+def rename_hints(data, source_keys):
+    """Para cada chave órfã, a chave nova do código mais parecida (sugere o comando rename)."""
+    import difflib
+    gone = orphans(data, source_keys)
+    pool = [k for k in source_keys if k not in data]
+    hints = []
+    for k in gone:
+        near = difflib.get_close_matches(k, pool, n=1, cutoff=0.75)
+        if near:
+            hints.append((k, near[0]))
+    return hints
+
+
 def check():
     same = same_keys()
     keys = {k: v for k, v in keys_from_source().items() if k not in same}
@@ -485,6 +530,7 @@ def check():
     source = set(keys_from_source())
     print("Idiomas: %d textos de interface no código" % len(keys))
     problems = 0
+    hints_done = False
     for lang in langs:
         code = lang["code"]
         data = load_lang(code)
@@ -503,6 +549,12 @@ def check():
               % (code, lang["name"], len(missing), len(bad), len(orphan)))
         for k in bad[:5]:
             print("      %s: %s" % (k, forms_problem(k, data[k])))
+        for kind, ks in quality_warnings(lang, data).items():
+            print("      aviso: %d %s (ex.: %s)" % (len(ks), kind, "; ".join(repr(k[:30]) for k in ks[:3])))
+        if not hints_done and orphan:
+            hints_done = True
+            for old, new in rename_hints(data, source):
+                print('      texto mudou? python i18n_tool.py rename %s %s' % (json.dumps(old, ensure_ascii=False), json.dumps(new, ensure_ascii=False)))
         problems += bool(missing or bad or orphan)
     for msg in launcher_problems(langs):
         print("  launcher.py: " + msg)
