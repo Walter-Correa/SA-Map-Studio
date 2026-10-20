@@ -27,7 +27,7 @@ export function setupTexturesTab() {
     if (texlib.state === 'ready') {
       fillCategories();
       filterTextures();
-      if (texlib.progress.total) toast(plural(texlib.items.length, 'textura pronta', 'texturas prontas') + ' para usar');
+      if (texlib.progress.total) toast(`${plural(texlib.items.length, 'textura pronta', 'texturas prontas')} para usar`);
     }
   });
   const chips = ['Todas', 'Favoritas', 'Recentes', 'No projeto', 'SA-MP'];
@@ -244,7 +244,7 @@ export function updateTarget() {
   const idx = app.editor.matSel;
   if (objs.length && idx.length) {
     el.className = 'tex-target ready';
-    el.innerHTML = `Aplicar no${idx.length > 1 ? 's índices' : ' índice'} <b>${idx.join(', ')}</b> de ${objs.length > 1 ? plural(objs.length, 'objeto', 'objetos') : esc(modelLabel(objs[0].item.model))}.`;
+    el.innerHTML = `${idx.length > 1 ? 'Aplicar nos índices' : 'Aplicar no índice'} <b>${idx.join(', ')}</b> de ${objs.length > 1 ? plural(objs.length, 'objeto', 'objetos') : esc(modelLabel(objs[0].item.model))}.`;
   } else if (objs.length) {
     el.className = 'tex-target';
     el.innerHTML = 'Escolha os índices no inspetor (à direita) ou use a ferramenta Textura (T) e clique na parte do objeto.';
@@ -269,5 +269,7 @@ export function applyLibraryTexture(item) {
   const rec = store.get('texRecent', []).filter(k => k !== item.key);
   rec.unshift(item.key);
   store.set('texRecent', rec.slice(0, 80));
-  toast(`${item.name} aplicada no${indices.length > 1 ? 's índices' : ' índice'} ${indices.join(', ')}${n > 1 ? ' de ' + plural(n, 'objeto', 'objetos') : ''}`);
+  const where = indices.join(', ');
+  if (indices.length > 1) toast(n > 1 ? `${item.name} aplicada nos índices ${where} de ${plural(n, 'objeto', 'objetos')}` : `${item.name} aplicada nos índices ${where}`);
+  else toast(n > 1 ? `${item.name} aplicada no índice ${where} de ${plural(n, 'objeto', 'objetos')}` : `${item.name} aplicada no índice ${where}`);
 }

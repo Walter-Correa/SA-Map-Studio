@@ -5,6 +5,7 @@ import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDraw
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
 import { modelPreviewImage } from '../editor/modelPreview.js';
+import { t, onLanguageChange } from './i18n.js';
 
 const RIGHT_BOX_HINT = 'No jogo, a caixa alinhada à direita vai da borda esquerda da tela até o texto';
 import { openSpritePicker } from './spritePicker.js';
@@ -168,6 +169,8 @@ export function initTextDrawEditor(app) {
   appRef = app;
   dialogEl = document.getElementById('dlgTextDraw');
   if (!dialogEl) return;
+  // Textos desenhados no canvas não passam pela tradução da página: redesenha ao trocar o idioma
+  onLanguageChange(() => { if (dialogEl.open) redrawCanvas(); });
 
   canvasEl = dialogEl.querySelector('#tdCanvas');
   if (canvasEl) {
@@ -1366,7 +1369,7 @@ function renderModelPreview(td, bounds, isSelected = false) {
     ctx.fillStyle = 'rgba(101,181,255,0.8)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Carregando modelo', bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+    ctx.fillText(t('Carregando modelo'), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   } else {
     // Se ainda está carregando ou não tem miniatura, exibe texto indicativo
     ctx.font = 'bold 11px Inter, sans-serif';

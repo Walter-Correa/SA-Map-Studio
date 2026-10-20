@@ -27,6 +27,12 @@ Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente s
 - **Organização e Pasta testing**: A pasta raiz do projeto deve permanecer sempre limpa e organizada, contendo apenas os arquivos e pastas estruturais do projeto. Todos os testes, scripts temporários e arquivos de verificação devem ser criados e executados exclusivamente dentro da pasta `testing/`.
 - **Limpeza de Testes**: Ao finalizar cada tarefa, todos os arquivos e pastas criados para testes dentro de `testing/` devem ser rigorosamente apagados, mantendo apenas arquivos essenciais que serão utilizados em testes futuros (e o `.gitkeep`).
 
-## 5. Demonstração Visual (Prints de Novas Funcionalidades)
+## 5. Idiomas
+- **Todo texto novo em todos os idiomas**: o editor sai sempre em todos os idiomas de `compile-sources/js/lang/languages.json`. Todo texto novo ou alterado da interface, das novidades (changelog do `about.js`), das janelas do `serve.py` e das mensagens do servidor de teste precisa ter tradução em todos os arquivos `js/lang/<sigla>.json`; os textos do instalador ficam na tabela `TEXTS` do `launcher.py`. Rodar `python compile-sources/i18n_check.py` antes de compilar: deve mostrar 0 faltando em todos.
+- **Frases inteiras**: não montar frases em pedaços (`"Aplicar no" + "s índices"`); use templates com a frase inteira ou `plural(n, 'item', 'itens')`.
+- **Sem tradução**: nomes do jogo e do SA-MP, teclas e código Pawn exportado ficam iguais (`compile-sources/i18n_same.txt`, `translate="no"` no HTML).
+- **Idiomas novos** entram sempre no fim de `languages.json`, com o nome escrito no próprio idioma e sem país.
+
+## 6. Demonstração Visual (Prints de Novas Funcionalidades)
 - **Sempre exibir prints ao final da tarefa**: Sempre que uma nova funcionalidade ou melhoria visual for adicionada ao editor, é obrigatório capturar e mostrar na resposta final uma ou mais prints demonstrando a funcionalidade em ação.
 

@@ -60,7 +60,7 @@ export class GameData {
     const ideTexts = new Array(ideList.length);
     await pool(ideList, 8, async (p, k) => {
       ideTexts[k] = await fs.tryText(p);
-      if (ideTexts[k] === null && !/custom/i.test(p)) this.warnings.push('IDE não encontrado: ' + p);
+      if (ideTexts[k] === null && !/custom/i.test(p)) this.warnings.push(`IDE não encontrado: ${p}`);
       onProgress('Lendo definições de objetos', 0.05 + 0.15 * (++done / ideList.length));
     });
     ideList.forEach((p, k) => {
@@ -127,7 +127,7 @@ export class GameData {
         }
         this.imgFiles.push(img);
       } catch (err) {
-        if (!/custom/i.test(img)) this.warnings.push('Não consegui ler ' + img + ' (' + err.message + ')');
+        if (!/custom/i.test(img)) this.warnings.push(`Não consegui ler ${img} (${err.message})`);
       }
     }
 

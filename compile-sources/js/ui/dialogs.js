@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
+import { t, getLanguage } from './i18n.js';
 import { Project, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
@@ -53,7 +54,7 @@ export function setupExport() {
   };
   $('#exSave').onclick = async () => {
     const data = await postJSON('/api/export', { filename: fileName(), content: $('#exportText').value, ansi: $('#exAnsi').checked });
-    if (data.ok) toast('Salvo em ' + data.path, 'ok', 6000); else toast(data.error || 'Erro ao salvar', 'error');
+    if (data.ok) toast(`Salvo em ${data.path}`, 'ok', 6000); else toast(data.error || 'Erro ao salvar', 'error');
   };
 }
 
@@ -101,7 +102,7 @@ export function setupImport() {
   const analyzeBytes = async (bytes, name) => {
     summary.textContent = 'Analisando';
     try { parsed = await importAny(bytes, { filename: name, gd: app.gd, readSqlite }); }
-    catch (err) { parsed = null; summary.textContent = 'Não consegui ler esse arquivo: ' + err.message; return; }
+    catch (err) { parsed = null; summary.textContent = `Não consegui ler esse arquivo: ${err.message}`; return; }
     show();
   };
   let t;
@@ -213,6 +214,38 @@ export function setupImport() {
 
 // =====================================================================  testar no jogo
 // Linhas do arquivo lido pelo gamemode de teste (servidor-teste/samapstudio.pwn)
+// Mensagens do servidor de teste no jogo, na mesma ordem de gMsg no samapstudio.pwn. Vão traduzidas
+// para o idioma do editor (linhas MSG|id|texto); em português o gamemode já tem o texto.
+const TEST_MESSAGES = [
+  'SA Map Studio: teste do mapa.',
+  'Comandos: /fly (/voar) /map (/mapa) /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos',
+  'Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.',
+  'Modo de voo desativado. Você retornou à posição onde o voo foi ativado.',
+  'Animações dos actors sincronizadas e reaplicadas.',
+  'Câmera teleportada para o centro do mapa.',
+  'Teleportado para o centro do mapa em teste.',
+  'Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d',
+  'Use /v [modelo], de 400 a 611.',
+  'Uso: /w [0 a 45] (ou /weather, /clima) - Clima atual: %d',
+  'ID de clima inválido! Escolha um valor entre 0 e 45.',
+  'Clima alterado para %d.',
+  'Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horário atual: %02d:%02d',
+  'Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).',
+  'Horário alterado para %02d:%02d.',
+  'Reproduzindo Sound ID %d.',
+  'Use /som [soundid] para testar um som (ex: /som 1052).',
+  'Nenhum checkpoint no mapa atual.',
+  'Teleportado para o checkpoint atual.',
+  'Comandos do servidor de teste:',
+  '  /fly (/voar) - Alternar voo livre da câmera',
+  '  /map (/mapa) - Teleportar ao centro do mapa em teste',
+  '  /w [0-45] - Alterar clima (ex: /w 10)',
+  '  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)',
+  '  /v [modelo] - Criar veículo (ex: /v 411)',
+  '  /anim - Ressincronizar animações dos actors',
+  '  /jetpack, /spawn, /pos - Utilidades gerais',
+];
+
 function signed(v) { return parseColor(v) | 0; }
 export function mapLines(project, spawn, env, center, useStreamer = false) {
   const clean = (s) => String(s ?? '').replace(/[|\r\n]/g, ' ');
@@ -222,6 +255,12 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
   ];
   if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}`);
   if (center) lines.push(`C|${center.x.toFixed(4)}|${center.y.toFixed(4)}|${center.z.toFixed(4)}`);
+  if (getLanguage() !== 'pt') {
+    TEST_MESSAGES.forEach((m, i) => {
+      const lead = m.match(/^\s*/)[0];
+      lines.push(`MSG|${i}|${clean(lead + t(m.trim()))}`);
+    });
+  }
   const allProjects = [project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])];
   const objUidToIdx = new Map();
   const vehUidToIdx = new Map();

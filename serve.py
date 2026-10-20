@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.21.2"
+VERSION = "3.22.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -2041,6 +2041,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "ok": is_valid and not needs_setup,
                 "insideGta": inside_gta,
                 "version": VERSION,
+                "language": cfg.get("language") or "",
                 "build": build_info(),
                 "problem": gta_problem(State.gta_path) if (State.gta_path and not needs_setup) else "",
                 "folders": {"projects": PROJECTS_DIR, "exports": EXPORTS_DIR, "data": DATA_DIR}
@@ -2133,6 +2134,13 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/anim_cache/cancel":
             AnimCacheManager.cancel_batch_download()
             return self.send_json({"ok": True, "cancelled": True})
+        if path == "/api/language":
+            body = self.read_json() or {}
+            code = str(body.get("language") or "").strip().lower()
+            if not re.fullmatch(r"[a-z]{2,3}", code):
+                return self.send_json({"ok": False}, 400)
+            update_config(language=code)
+            return self.send_json({"ok": True, "language": code})
         if path == "/api/config":
             body = self.read_json() or {}
             p = (body.get("gtaPath") or body.get("gta_path") or "").strip().strip('"')
@@ -2764,19 +2772,59 @@ def _version_tuple(v):
     return tuple(int("".join(c for c in p if c.isdigit()) or 0) for p in str(v or "0").split("."))
 
 
+# Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor
+WINDOWS_LANGS = {0x09: "en", 0x0A: "es", 0x16: "pt", 0x10: "it", 0x0C: "fr"}
+_ui_tables = {}
+
+
+def _ui_table(code):
+    """js/lang/<code>.json da interface (as mensagens do servidor usam as mesmas traduções)."""
+    if code not in _ui_tables:
+        _ui_tables[code] = {}
+        dirs = [APP_DIR, COMPILE_SOURCES_DIR]
+        if FROZEN:
+            exe_folder = os.path.dirname(os.path.abspath(sys.executable))
+            dirs += [exe_folder, os.path.join(exe_folder, "_internal")]
+        for d in dirs:
+            try:
+                with open(os.path.join(d, "js", "lang", code + ".json"), encoding="utf-8") as f:
+                    _ui_tables[code] = json.load(f)
+                break
+            except Exception:
+                continue
+    return _ui_tables[code]
+
+
+def ui_text(text, *args):
+    """Texto de janela do Windows no idioma do editor: o escolhido (config.json), senão o do Windows,
+    senão inglês. Sem tradução, fica o inglês e depois o português."""
+    code = str(load_config().get("language") or "")
+    if not code and IS_WINDOWS:
+        try:
+            import ctypes
+            code = WINDOWS_LANGS.get(ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF, "")
+        except Exception:
+            code = ""
+    code = code if re.fullmatch(r"[a-z]{2,3}", code or "") else "en"
+    if code != "pt":
+        text = _ui_table(code).get(text) or _ui_table("en").get(text) or text
+    return text.format(*args)
+
+
 def version_compatible():
     """A pasta guarda a versão mais nova que já a usou (config.json). Uma versão mais antiga não abre
     nela, para não estragar projetos e configurações gravados pela nova. Senão, grava esta versão."""
     stored = load_config().get("app_version") or ""
     if stored and _version_tuple(stored) > _version_tuple(VERSION):
-        text = ("Esta pasta já foi usada pela versão %s do SA Map Studio, que é mais nova que esta (%s).\n\n"
-                "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos "
-                "e configurações. Use a versão %s ou mais nova." % (stored, VERSION, stored))
+        text = "\n\n".join((
+            ui_text("Esta pasta já foi usada pela versão {0} do SA Map Studio, que é mais nova que esta ({1}).", stored, VERSION),
+            ui_text("Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações."),
+            ui_text("Use a versão {0} ou mais nova.", stored)))
         print(text)
         if IS_WINDOWS and "--no-browser" not in sys.argv:
             try:
                 import ctypes
-                ctypes.windll.user32.MessageBoxW(None, text, "SA Map Studio - Versão incompatível", 0x10 | 0x40000)
+                ctypes.windll.user32.MessageBoxW(None, text, "SA Map Studio - " + ui_text("Versão incompatível"), 0x10 | 0x40000)
             except Exception:
                 pass
         return False
@@ -2809,7 +2857,7 @@ def single_instance():
                     u.ShowWindow(hwnd, 9)
                 u.SetForegroundWindow(hwnd)
             else:
-                u.MessageBoxW(None, "O SA Map Studio já está aberto.", "SA Map Studio", 0x40 | 0x40000)
+                u.MessageBoxW(None, ui_text("O SA Map Studio já está aberto."), "SA Map Studio", 0x40 | 0x40000)
             return False
         _EDITOR_MUTEX_HANDLE = h
     except Exception:

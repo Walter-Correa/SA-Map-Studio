@@ -6,6 +6,14 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.22.0', date: '20/10/2026', items: [
+      'O editor está em inglês, espanhol, português, italiano e francês: o botão Idioma no menu superior troca na hora, sem reiniciar, e a escolha fica salva.',
+      'Na primeira abertura o idioma segue o do Windows (português de Portugal e do Brasil usam o mesmo português); texto sem tradução aparece em inglês.',
+      'O instalador, as janelas de aviso do editor e as mensagens do servidor de teste no jogo seguem o idioma escolhido.',
+      'Nomes do jogo e do SA-MP e o código Pawn exportado continuam iguais em todos os idiomas.',
+    ],
+  },
+  {
     version: '3.21.2', date: '20/10/2026', items: [
       'A área do manipulador (gizmo) volta a ter prioridade: clicar nas setas usa o manipulador; o clicar e arrastar direto vale só clicando no item fora dela.',
       'O botão Mover/Girar do manipulador não é acionado enquanto um item ou as setas estão sendo arrastados.',

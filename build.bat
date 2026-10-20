@@ -95,6 +95,8 @@ set "VERFILE=%SRC%compile-sources\version_info.txt"
 rem A versao gravada no .exe sempre segue a VERSION do serve.py
 "%VPY%" "%SRC%compile-sources\sync_version.py"
 if errorlevel 1 goto erro
+rem Confere se todos os textos da interface tem traducao em todos os idiomas (so avisa, nao para)
+"%VPY%" -X utf8 "%SRC%compile-sources\i18n_check.py"
 
 rem ---------------- 1. Compila o Motor do Sistema (sa-map-studio.exe)
 echo Compilando o motor do sistema...

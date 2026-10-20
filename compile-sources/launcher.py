@@ -85,6 +85,143 @@ def get_base_paths():
     return exe_dir, res_dir, target_dir, target_exe
 
 
+# Textos do launcher nos idiomas do editor (en, es, pt, it, fr). Ele roda antes de a pasta existir, então
+# os textos ficam aqui e não nos js/lang/*.json. Idioma novo: acrescente a sigla em LANGS e um texto em cada linha.
+LANGS = ("en", "es", "pt", "it", "fr")
+TEXTS = {
+    "open": ("SA Map Studio is already open.",
+             "SA Map Studio ya está abierto.",
+             "O SA Map Studio já está aberto.",
+             "SA Map Studio è già aperto.",
+             "SA Map Studio est déjà ouvert."),
+    "cant_delete": ("Could not delete {0}",
+                    "No se pudo eliminar {0}",
+                    "Não foi possível apagar {0}",
+                    "Impossibile eliminare {0}",
+                    "Impossible de supprimer {0}"),
+    "incomplete": ("The package is incomplete ({0}).",
+                   "El paquete está incompleto ({0}).",
+                   "O pacote está incompleto ({0}).",
+                   "Il pacchetto è incompleto ({0}).",
+                   "Le paquet est incomplet ({0})."),
+    "extracting": ("Extracting: {0}", "Extrayendo: {0}", "Extraindo: {0}", "Estrazione: {0}", "Extraction : {0}"),
+    "installing": ("Installing files", "Instalando archivos", "Instalando arquivos", "Installazione dei file",
+                   "Installation des fichiers"),
+    "done": ("Done! Opening the editor", "¡Listo! Abriendo el editor", "Concluído! Abrindo o editor",
+             "Fatto! Apertura dell'editor", "Terminé ! Ouverture de l'éditeur"),
+    "t_install": ("Installation", "Instalación", "Instalação", "Installazione", "Installation"),
+    "t_update": ("Update", "Actualización", "Atualização", "Aggiornamento", "Mise à jour"),
+    "t_incompatible": ("Incompatible version", "Versión incompatible", "Versão incompatível",
+                       "Versione incompatibile", "Version incompatible"),
+    "t_error": ("Error", "Error", "Erro", "Errore", "Erreur"),
+    "t_install_error": ("Installation error", "Error de instalación", "Erro na instalação",
+                        "Errore di installazione", "Erreur d'installation"),
+    "close_editor": (
+        "To update SA Map Studio to version {0}, close the open editor and the test server, if it is "
+        "running. Save your project before closing.\n\nOpen now: {1}\n\nAfter closing, click Retry.",
+        "Para actualizar SA Map Studio a la versión {0}, cierra el editor abierto y el servidor de "
+        "pruebas, si está en ejecución. Guarda tu proyecto antes de cerrar.\n\nAbiertos ahora: {1}\n\n"
+        "Después de cerrar, haz clic en Reintentar.",
+        "Para atualizar o SA Map Studio para a versão {0}, feche o editor que está aberto e o servidor "
+        "de testes, se estiver rodando. Salve o seu projeto antes de fechar.\n\nAbertos agora: {1}\n\n"
+        "Depois de fechar, clique em Tentar novamente.",
+        "Per aggiornare SA Map Studio alla versione {0}, chiudi l'editor aperto e il server di prova, "
+        "se è in esecuzione. Salva il progetto prima di chiudere.\n\nAperti ora: {1}\n\n"
+        "Dopo averli chiusi, fai clic su Riprova.",
+        "Pour mettre à jour SA Map Studio vers la version {0}, fermez l'éditeur ouvert et le serveur de "
+        "test s'il est lancé. Enregistrez votre projet avant de fermer.\n\nOuverts : {1}\n\n"
+        "Après la fermeture, cliquez sur Réessayer."),
+    "no_bundle": ("The SA Map Studio resource package was not found in the executable.",
+                  "No se encontró el paquete de recursos de SA Map Studio en el ejecutable.",
+                  "O pacote de recursos do SA Map Studio não foi encontrado no executável.",
+                  "Il pacchetto di risorse di SA Map Studio non è stato trovato nell'eseguibile.",
+                  "Le paquet de ressources de SA Map Studio est introuvable dans l'exécutable."),
+    "recover_fail": (
+        "Could not finish the previous update:\n{0}\n\nClose the editor and the test server and open it again.",
+        "No se pudo terminar la actualización anterior:\n{0}\n\nCierra el editor y el servidor de pruebas y "
+        "vuelve a abrirlo.",
+        "Não foi possível terminar a atualização anterior:\n{0}\n\nFeche o editor e o servidor de testes e "
+        "abra de novo.",
+        "Impossibile completare l'aggiornamento precedente:\n{0}\n\nChiudi l'editor e il server di prova e "
+        "riaprilo.",
+        "Impossible de terminer la mise à jour précédente :\n{0}\n\nFermez l'éditeur et le serveur de test "
+        "puis rouvrez-le."),
+    "older_exe": (
+        "This executable is SA Map Studio version {0}, but this folder already has version {1}, which is "
+        "newer.\n\nAn old version does not open in a folder of a newer version, so your projects and settings "
+        "are not damaged. Use the executable of version {1} or newer.",
+        "Este ejecutable es la versión {0} de SA Map Studio, pero esta carpeta ya tiene la versión {1}, "
+        "que es más nueva.\n\nUna versión antigua no se abre en una carpeta de una versión más nueva, para no "
+        "dañar tus proyectos y ajustes. Usa el ejecutable de la versión {1} o más nueva.",
+        "Este executável é a versão {0} do SA Map Studio, mas esta pasta já está com a versão {1}, que é "
+        "mais nova.\n\nUma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus "
+        "projetos e configurações. Use o executável da versão {1} ou mais nova.",
+        "Questo eseguibile è la versione {0} di SA Map Studio, ma questa cartella ha già la versione {1}, "
+        "più recente.\n\nUna versione vecchia non si apre in una cartella di una versione più recente, per non "
+        "danneggiare progetti e impostazioni. Usa l'eseguibile della versione {1} o più recente.",
+        "Cet exécutable est la version {0} de SA Map Studio, mais ce dossier contient déjà la version {1}, "
+        "plus récente.\n\nUne ancienne version ne s'ouvre pas dans le dossier d'une version plus récente, pour "
+        "ne pas abîmer vos projets et réglages. Utilisez l'exécutable de la version {1} ou plus récente."),
+    "disk_update": ("Not enough disk space to update SA Map Studio: {0} MB free are needed.",
+                    "No hay espacio en disco para actualizar SA Map Studio: se necesitan {0} MB libres.",
+                    "Falta espaço em disco para atualizar o SA Map Studio: são necessários {0} MB livres.",
+                    "Spazio su disco insufficiente per aggiornare SA Map Studio: servono {0} MB liberi.",
+                    "Espace disque insuffisant pour mettre à jour SA Map Studio : {0} Mo libres requis."),
+    "disk_install": ("Not enough disk space to install SA Map Studio: {0} MB free are needed.",
+                     "No hay espacio en disco para instalar SA Map Studio: se necesitan {0} MB libres.",
+                     "Falta espaço em disco para instalar o SA Map Studio: são necessários {0} MB livres.",
+                     "Spazio su disco insufficiente per installare SA Map Studio: servono {0} MB liberi.",
+                     "Espace disque insuffisant pour installer SA Map Studio : {0} Mo libres requis."),
+    "updating_to": ("Updating to version {0}", "Actualizando a la versión {0}", "Atualizando para a versão {0}",
+                    "Aggiornamento alla versione {0}", "Mise à jour vers la version {0}"),
+    "first_run": ("Preparing the editor for the first time", "Preparando el editor por primera vez",
+                  "Preparando o editor pela primeira vez", "Preparazione dell'editor per la prima volta",
+                  "Préparation de l'éditeur pour la première fois"),
+    "update_fail": (
+        "Could not update SA Map Studio:\n{0}\n\nNothing was changed: the editor will open in the version "
+        "that was already installed.",
+        "No se pudo actualizar SA Map Studio:\n{0}\n\nNo se cambió nada: el editor se abrirá en la versión "
+        "que ya estaba instalada.",
+        "Não foi possível atualizar o SA Map Studio:\n{0}\n\nNada foi alterado: o editor vai abrir na "
+        "versão que já estava instalada.",
+        "Impossibile aggiornare SA Map Studio:\n{0}\n\nNon è stato modificato nulla: l'editor si aprirà "
+        "nella versione già installata.",
+        "Impossible de mettre à jour SA Map Studio :\n{0}\n\nRien n'a été modifié : l'éditeur s'ouvrira "
+        "dans la version déjà installée."),
+    "install_fail": ("Could not prepare SA Map Studio:\n{0}",
+                     "No se pudo preparar SA Map Studio:\n{0}",
+                     "Não foi possível preparar o SA Map Studio:\n{0}",
+                     "Impossibile preparare SA Map Studio:\n{0}",
+                     "Impossible de préparer SA Map Studio :\n{0}"),
+}
+# Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor
+WINDOWS_LANGS = {0x09: "en", 0x0A: "es", 0x16: "pt", 0x10: "it", 0x0C: "fr"}
+_lang_cache = []
+
+
+def ui_lang():
+    """Idioma escolhido no editor (data/config.json); sem escolha, o do Windows; senão inglês."""
+    if not _lang_cache:
+        code = ""
+        try:
+            with open(os.path.join(get_base_paths()[2], "data", "config.json"), encoding="utf-8") as f:
+                code = str(json.load(f).get("language") or "")
+        except Exception:
+            pass
+        if code not in LANGS and os.name == "nt":
+            try:
+                import ctypes
+                code = WINDOWS_LANGS.get(ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF, "")
+            except Exception:
+                code = ""
+        _lang_cache.append(code if code in LANGS else "en")
+    return _lang_cache[0]
+
+
+def tr(key, *args):
+    return TEXTS[key][LANGS.index(ui_lang())].format(*args)
+
+
 # ---------------------------------------------------------------------------- Windows: instâncias
 
 _held_mutexes = []
@@ -205,7 +342,7 @@ def _dialog(kind, title, text):
 
 def show_already_open():
     if not focus_editor():
-        _dialog("info", WINDOW_TITLE, "O SA Map Studio já está aberto.")
+        _dialog("info", WINDOW_TITLE, tr("open"))
 
 
 # ---------------------------------------------------------------------------- manifesto e versões
@@ -279,7 +416,7 @@ def _rmtree(path):
         if not os.path.lexists(path):
             return
         time.sleep(0.25)
-    raise OSError("Não foi possível apagar " + path)
+    raise OSError(tr("cant_delete", path))
 
 
 def _write_journal(exe_dir, data):
@@ -384,12 +521,12 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
             z.extract(info, staging)
             if idx % 25 == 0 or idx == total:
                 name = os.path.basename(info.filename)
-                progress(idx / total * 80.0, "Extraindo: " + (name if len(name) <= 35 else name[:32]))
+                progress(idx / total * 80.0, tr("extracting", name if len(name) <= 35 else name[:32]))
     new_root = os.path.join(staging, ROOT_NAME)
     files = list(new_manifest.get("files") or [])
     missing = [f for f in files + [MANIFEST_REL] if not os.path.isfile(_native(new_root, f))]
     if missing:
-        raise RuntimeError("O pacote está incompleto (%s)." % missing[0])
+        raise RuntimeError(tr("incomplete", missing[0]))
 
     # 2. Plano
     top = lambda rel: rel.split("/", 1)[0]
@@ -413,7 +550,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
         for n, (op, rel) in enumerate(ops, 1):
             _do(op, rel, target, new_root, backup)
             if n % 25 == 0 or n == len(ops):
-                progress(80.0 + 20.0 * n / len(ops), "Instalando arquivos")
+                progress(80.0 + 20.0 * n / len(ops), tr("installing"))
         _write_journal(exe_dir, {"state": "done", "ops": ops})
     except BaseException:
         for op, rel in reversed(ops):
@@ -439,7 +576,7 @@ def run_with_progress(subtitle, exe_dir, work):
         return
 
     root = tk.Tk()
-    root.title(WINDOW_TITLE + " - Instalação")
+    root.title(WINDOW_TITLE + " - " + tr("t_install"))
     root.configure(bg="#1c2228")
     root.resizable(False, False)
     root.protocol("WM_DELETE_WINDOW", lambda: None)  # não fecha no meio
@@ -507,7 +644,7 @@ def run_with_progress(subtitle, exe_dir, work):
     def worker():
         try:
             work(progress)
-            progress(100.0, "Concluído! Abrindo o editor")
+            progress(100.0, tr("done"))
             time.sleep(0.4)
         except BaseException as e:  # noqa: B036 - repassado para a thread principal
             result["error"] = e
@@ -544,10 +681,8 @@ def wait_until_closed(target_dir, version):
         if not open_now:
             return True
         focus_editor()
-        text = ("Para atualizar o SA Map Studio para a versão %s, feche o editor que está aberto "
-                "e o servidor de testes, se estiver rodando. Salve o seu projeto antes de fechar.\n\n"
-                "Abertos agora: %s\n\nDepois de fechar, clique em Tentar novamente." % (version, ", ".join(open_now)))
-        if not _dialog("retry", WINDOW_TITLE + " - Atualização", text):
+        text = tr("close_editor", version, ", ".join(open_now))
+        if not _dialog("retry", WINDOW_TITLE + " - " + tr("t_update"), text):
             return False
 
 
@@ -589,7 +724,7 @@ def main():
                 proc.terminate()
                 proc.wait()
             sys.exit(proc.returncode)
-        _dialog("error", "Erro", "O pacote de recursos do SA Map Studio não foi encontrado no executável.")
+        _dialog("error", tr("t_error"), tr("no_bundle"))
         sys.exit(1)
 
     # Um launcher por vez: outro aberto significa editor aberto (ou instalando)
@@ -600,8 +735,7 @@ def main():
     try:
         recover(exe_dir)
     except Exception as e:
-        _dialog("error", WINDOW_TITLE, "Não foi possível terminar a atualização anterior:\n%s\n\n"
-                "Feche o editor e o servidor de testes e abra de novo." % e)
+        _dialog("error", WINDOW_TITLE, tr("recover_fail", e))
         sys.exit(1)
 
     new_manifest = manifest_from_zip(bundle_zip) or {"version": "0", "build": "", "files": None}
@@ -613,11 +747,8 @@ def main():
     # Versão antiga numa pasta de versão mais nova: não abre nem instala (projetos e configurações
     # gravados pela versão nova podem não funcionar na antiga)
     if installed and old_manifest and version_tuple(new_manifest.get("version")) < version_tuple(old_manifest.get("version")):
-        _dialog("error", WINDOW_TITLE + " - Versão incompatível",
-                "Este executável é a versão %s do SA Map Studio, mas esta pasta já está com a versão %s, "
-                "que é mais nova.\n\nUma versão antiga não abre numa pasta de versão mais nova, para não "
-                "estragar os seus projetos e configurações. Use o executável da versão %s ou mais nova."
-                % (new_manifest.get("version"), old_manifest.get("version"), old_manifest.get("version")))
+        _dialog("error", WINDOW_TITLE + " - " + tr("t_incompatible"),
+                tr("older_exe", new_manifest.get("version"), old_manifest.get("version")))
         sys.exit(1)
 
     if not need:
@@ -637,14 +768,13 @@ def main():
     except OSError:
         free = need_bytes
     if free < need_bytes:
-        _dialog("error", WINDOW_TITLE, "Falta espaço em disco para %s o SA Map Studio: são necessários %d MB livres."
-                % ("atualizar" if installed else "instalar", need_bytes // (1024 * 1024)))
+        _dialog("error", WINDOW_TITLE, tr("disk_update" if installed else "disk_install", need_bytes // (1024 * 1024)))
         if installed:
             launch(target_exe, exe_dir)
         sys.exit(1)
 
     files = new_manifest.get("files")
-    subtitle = ("Atualizando para a versão %s" % version) if installed else "Preparando o editor pela primeira vez"
+    subtitle = tr("updating_to", version) if installed else tr("first_run")
     try:
         if files is None:
             # Pacote sem manifesto (não deveria acontecer): instala do jeito antigo, sem apagar nada
@@ -653,10 +783,9 @@ def main():
             run_with_progress(subtitle, exe_dir, lambda progress: install(bundle_zip, exe_dir, new_manifest, old_manifest, progress))
     except Exception as e:
         if installed:
-            _dialog("error", WINDOW_TITLE, "Não foi possível atualizar o SA Map Studio:\n%s\n\n"
-                    "Nada foi alterado: o editor vai abrir na versão que já estava instalada." % e)
+            _dialog("error", WINDOW_TITLE, tr("update_fail", e))
             launch(target_exe, exe_dir)
-        _dialog("error", "Erro na instalação", "Não foi possível preparar o SA Map Studio:\n%s" % e)
+        _dialog("error", tr("t_install_error"), tr("install_fail", e))
         sys.exit(1)
 
     if not os.path.isfile(target_exe):

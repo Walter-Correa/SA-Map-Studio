@@ -1912,7 +1912,7 @@ function bindMaterials(objs) {
     } else if (a === 'clear') ed.clearMaterials(uids, idx);
     else if (a === 'clearall') ed.clearMaterials(uids, null);
     else if (a === 'copy') { const n = ed.copyMaterials(); toast(n ? plural(n, 'material copiado', 'materiais copiados') : 'Esse objeto não tem trocas de material', n ? 'ok' : 'warn'); renderInspector(); }
-    else if (a === 'paste') { const n = ed.pasteMaterials(); if (n) toast('Materiais colados em ' + plural(n, 'objeto', 'objetos')); }
+    else if (a === 'paste') { const n = ed.pasteMaterials(); if (n) toast(`Materiais colados em ${plural(n, 'objeto', 'objetos')}`); }
     else if (a === 'applytext') applyTextNow(uids, idx);
   });
 }

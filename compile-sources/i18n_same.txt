@@ -1,0 +1,376 @@
+# Textos que ficam iguais em todos os idiomas (nomes próprios, nomes de teclas, termos do SA-MP/Pawn,
+# fontes, seletores e códigos). O i18n_check.py não cobra tradução deles. Uma chave por linha.
+C:\Program Files (x86)\Rockstar Games\GTA San Andreas
+SA Map Studio
+San Andreas
+Shift / Alt
+Page Up / Page Down
+End
+Delete
+Ctrl+Z / Ctrl+Y
+Esc
+Escape
+Enter
+Backspace
+Del
+Space
+Arrow
+Aa
+Hg
+Carl CJ Johnson
+Da Nang Boy
+Grove Street (Cul-de-Sac)
+Pawn
+Min X
+Min Y
+Max X
+Max Y
+Pos X
+Pos Y
+Pos X (0-640)
+Pos Y (0-448)
+Letter Size X
+Letter Size Y
+Text Size X
+Text Size Y
+Zoom
+Rot X
+Rot Y
+Rot Z
+Offset X
+Offset Y
+Offset Z
+Next X
+Next Y
+Next Z
+Stream distance
+Draw distance
+Stream Dist.
+Paintjob
+Paintjob 1 (0)
+Paintjob 2 (1)
+Paintjob 3 (2)
+Tuning
+SetPlayerCameraPos + LookAt
+InterpolateCameraPos + LookAt
+SAFE ZONE ({0} × {1})
+Model #{0}
+Box
+[Player]
+| Font: {0}
+Preview
+Icon {0}
+Files
+Promise
+Stack: {0}
+Unhandled Promise Rejection: {0}
+[GangZones] Não foi possível carregar /api/radarmap
+Arial
+Arial Black
+Calibri
+Comic Sans MS
+Courier New
+Georgia
+Impact
+Lucida Console
+Segoe UI
+Tahoma
+Times New Roman
+Trebuchet MS
+Verdana
+Webdings
+Wingdings
+Dynamic
+Text
+Text:
+SQLite format 3
+Rar!
+Português
+) por causa das barras de progresso.
+{0} [INFO] Registros reiniciados pelo usuário.
+SA Map Studio - servidor local
+não abre navegador nem janela
+abre no navegador em vez da janela própria
+vehicleid = {0}{1}
+AddVehicleComponent(vehicleid, {0}){1}
+Create3DTextLabel({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});{8}
+CreateDynamic3DTextLabel({0}, {1}, {2}, {3}, {4}, {5}, INVALID_PLAYER_ID, INVALID_VEHICLE_ID, {6}, {7}, {8});{9}
+CreatePickup({0}, {1}, {2}, {3}, {4}, {5});{6}
+CreateDynamicPickup({0}, {1}, {2}, {3}, {4}, {5});{6}
+// Extras dos objetos (texturas, movimentação e anexação):
+switch (step)
+Tierra Robada
+Cesar Vialpando
+Snakehead (Da Nang)
+Getting into a Nevada plane anim
+Getting out of a Nevada plane anim
+Do it baby, do it
+Tornado
+btn small {0}
+dialog narrow
+btn danger
+btn primary
+da nang
+312 skins
+567 sprites
+# Nomes originais do jogo (MapIcons, pickups, armas e peças de tuning em inglês)
+Los Santos
+San Fierro
+Las Venturas
+Colored Square/Triangle
+White Square
+Player position
+Player (Menu Map)
+North
+Air Yard
+Barbers
+Big Smoke
+Boat Yard
+Burger Shot
+Quarry
+Catalina
+Cesar
+Cluckin' Bell
+Carl Johnson (CJ)
+Carl Johnson
+Diner
+Emmet
+Enemy Attack
+Fire
+Girlfriend
+Loco Syndicate
+Loco
+Madd Dogg
+Caligula's Casino
+OG Loc (MC Strap)
+MC Strap
+Mod Garage
+TransFender / Loco Low Co / Wheel Arch Angels.
+OG Loc
+Well Stacked Pizza Co.
+Well Stacked Pizza Co
+Police
+Property for sale
+Property not for sale
+Race
+Ryder
+Save House
+School
+Mystery
+Sweet
+Tattoo
+The Truth
+Waypoint
+Toreno's Ranch
+Triads
+Triads Casino
+Clothes Shop
+Woozie (Wu Zi Mu)
+Woozie
+Zero
+Disco Date
+Drinking Date
+Restaurant
+Trucking
+Robbery
+Race Tournament
+Gym
+Car Impound
+Light
+Closest Airstrip
+Varrios Los Aztecas
+Ballas
+Los Santos Vagos
+San Fierro Rifa
+Grove Street Families
+Pay 'n' Spray
+MapIcon 1
+Logo GTA III
+Katana
+Desert Eagle
+Sawnoff Shotgun
+SPAS-12 (Combat Shotgun)
+Micro Uzi
+Minigun
+Jetpack
+Pickup ID {0}
+Nitro
+Pro Spoiler
+Win Spoiler
+Drag Spoiler
+Alpha Spoiler
+Champ Spoiler
+Fury Spoiler
+Worx Spoiler
+Alien Spoiler (Flash)
+X-Flow Spoiler (Flash)
+Alien Spoiler (Stratum)
+X-Flow Spoiler (Stratum)
+Alien Spoiler (Sultan)
+X-Flow Spoiler (Sultan)
+X-Flow Spoiler (Elegy)
+Alien Spoiler (Elegy)
+X-Flow Spoiler (Jester)
+Alien Spoiler (Jester)
+X-Flow Spoiler (Uranus)
+Alien Spoiler (Uranus)
+Fury Hood
+Champ Hood
+Race Hood Scoop
+Worx Hood Scoop
+Left Oval Hood Vent
+Right Oval Hood Vent
+Left Square Hood Vent
+Right Square Hood Vent
+Roof Scoop
+Alien Roof (Sultan)
+X-Flow Roof (Sultan)
+X-Flow Roof (Elegy)
+Alien Roof (Elegy)
+X-Flow Roof (Flash)
+Alien Roof (Flash)
+Alien Roof (Stratum)
+X-Flow Roof (Stratum)
+Alien Roof (Jester)
+X-Flow Roof (Jester)
+Alien Roof (Uranus)
+X-Flow Roof (Uranus)
+Sideskirt
+Right Sideskirt
+Alien Sideskirt (Sultan)
+Alien Sideskirt Right (Sultan)
+X-Flow Sideskirt Right (Sultan)
+X-Flow Sideskirt (Sultan)
+Alien Sideskirt (Elegy)
+X-Flow Sideskirt (Elegy)
+Alien Sideskirt Right (Elegy)
+X-Flow Sideskirt Right (Elegy)
+Sideskirt (Broadway)
+Alien Sideskirt (Flash)
+X-Flow Sideskirt (Flash)
+Alien Sideskirt Right (Flash)
+X-Flow Sideskirt Right (Flash)
+Alien Sideskirt (Stratum)
+X-Flow Sideskirt (Stratum)
+Alien Sideskirt Right (Stratum)
+X-Flow Sideskirt Right (Stratum)
+Alien Sideskirt (Jester)
+X-Flow Sideskirt (Jester)
+Alien Sideskirt Right (Jester)
+X-Flow Sideskirt Right (Jester)
+Alien Sideskirt (Uranus)
+X-Flow Sideskirt (Uranus)
+Alien Sideskirt Right (Uranus)
+X-Flow Sideskirt Right (Uranus)
+Left Chrome Sideskirt
+Right Chrome Sideskirt
+Left Wheelarch Skirt
+Right Wheelarch Skirt
+Left Chrome Trim
+Right Chrome Trim
+Left Flame Skirt
+Right Flame Skirt
+Left Slamin Skirt
+Right Slamin Skirt
+Left Chrome Strip
+Right Chrome Strip
+Left Stripe Skirt
+Right Stripe Skirt
+Left Classic Skirt
+Round Fog Lamps
+Square Fog Lamps
+Nitro 10x
+Nitro 5x
+Nitro 2x
+Upswept Exhaust
+Twin Exhaust
+Large Exhaust
+Medium Exhaust
+Small Exhaust
+Alien Exhaust (Sultan)
+X-Flow Exhaust (Sultan)
+Alien Exhaust (Elegy)
+X-Flow Exhaust (Elegy)
+Alien Exhaust (Flash)
+X-Flow Exhaust (Flash)
+Alien Exhaust (Stratum)
+X-Flow Exhaust (Stratum)
+Alien Exhaust (Uranus)
+X-Flow Exhaust (Uranus)
+Alien Exhaust (Jester)
+X-Flow Exhaust (Jester)
+Chrome Exhaust
+Slamin Exhaust
+Offroad
+Shadow
+Mega
+Rimshine
+Wires
+Classic
+Twist
+Cutter
+Switch
+Grove
+Import
+Dollar
+Trance
+Atomic
+Ahab
+Virtual
+Access
+Bass Boost (Stereo)
+Chrome Front Bumper
+X-Flow Front Bumper (Flash)
+Alien Front Bumper (Flash)
+Alien Front Bumper (Stratum)
+X-Flow Front Bumper (Stratum)
+Alien Front Bumper (Jester)
+X-Flow Front Bumper (Sultan)
+Alien Front Bumper (Uranus)
+Alien Front Bumper (Sultan)
+Alien Front Bumper (Elegy)
+X-Flow Front Bumper (Elegy)
+X-Flow Front Bumper (Jester)
+Slamin Front Bumper
+X-Flow Rear Bumper (Sultan)
+Alien Rear Bumper (Sultan)
+X-Flow Rear Bumper (Elegy)
+Alien Rear Bumper (Elegy)
+Alien Rear Bumper (Flash)
+X-Flow Rear Bumper (Flash)
+Alien Rear Bumper (Stratum)
+X-Flow Rear Bumper (Stratum)
+Alien Rear Bumper (Jester)
+X-Flow Rear Bumper (Jester)
+X-Flow Rear Bumper (Uranus)
+Alien Rear Bumper (Uranus)
+Chrome Rear Bumper
+Slamin Rear Bumper
+Chrome Grill
+Bullbar
+Chrome Wing
+Chrome Front Bullbar
+Chrome Rear Bullbar
+Slamin Front Bullbar
+Slamin Rear Bullbar
+Alien Roof Scoop
+X-Flow Roof Scoop
+Alien Roof Vent
+X-Flow Roof Vent
+Convertible Roof (Blade)
+Little Sign Front
+Little Sign Rear
+Vinyl Hardtop Roof (Blade)
+Hardtop Roof (Savanna)
+Softtop Roof (Savanna)
+Elegy
+Flash
+Stratum
+Sultan
+Uranus
+Jester
+Blade
+Savanna
+Broadway
+Remington
+Slamvan

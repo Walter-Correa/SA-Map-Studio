@@ -3,7 +3,7 @@
 **Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
 *SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.21.2-f0a630)
+![Versão](https://img.shields.io/badge/versão-3.22.0-f0a630)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -22,6 +22,7 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - [A pasta do programa](#a-pasta-do-programa)
 - [Atalhos](#atalhos)
 - [Estrutura do código](#estrutura-do-código)
+- [Idiomas](#idiomas)
 - [Histórico de versões](#histórico-de-versões)
 - [Créditos e licenças](#créditos-e-licenças)
 
@@ -96,6 +97,12 @@ o código Pawn pronto para colar no seu gamemode ou filterscript.
 - **Exporta** para Pawn (`CreateDynamicObject` ou `CreateObject`, funções prontas ou só as linhas,
   com as câmeras) e IPL. O `.pwn` sai em ANSI para os acentos aparecerem certos no pawno.
   O código gerado compila **sem warnings**.
+
+### Idiomas
+- English, Español, Português, Italiano e Français, escolhidos no botão **Idioma** do menu superior; a troca é
+  na hora, sem reiniciar, e fica salva. Na primeira abertura segue o idioma do Windows (sem país: português de
+  Portugal e do Brasil usam o mesmo português); sem tradução, fica o inglês.
+- O instalador, as janelas de aviso e as mensagens do servidor de teste no jogo seguem o mesmo idioma.
 
 ### Projetos
 - Salvos sozinhos na pasta `projects`, inclusive ao fechar as janelas de edição e ao fechar o programa; abrir
@@ -253,7 +260,38 @@ A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece n
 
 ---
 
+## Idiomas
+
+O código e a interface são escritos em português, e o próprio texto em português é a chave da tradução.
+Os arquivos ficam em `compile-sources/js/lang/` e vão sempre junto na compilação:
+
+- `languages.json`: a lista do menu, na ordem em que aparece, com o nome de cada idioma escrito nele mesmo.
+- `<sigla>.json` (ex.: `en.json`): `"texto em português": "tradução"`. Partes variáveis usam `{0}`, `{1}`
+  (ex.: `"{0} itens selecionados": "{0} items selected"`); no texto do servidor de teste os `%d`/`%s` ficam
+  como estão. Um texto que falta aparece em inglês.
+- Nomes do jogo e do SA-MP, teclas e o código Pawn exportado não são traduzidos (lista em
+  `compile-sources/i18n_same.txt`). Para um trecho da interface que não deve ser traduzido, use
+  `translate="no"` no HTML.
+- O instalador (`compile-sources/launcher.py`) tem os seus textos na tabela `TEXTS`, porque roda antes de a
+  pasta do programa existir.
+
+Para adicionar um idioma: copie `en.json` para `<sigla>.json`, traduza os valores, acrescente
+`{"code": "<sigla>", "name": "<nome no próprio idioma>"}` no fim de `languages.json` e a sigla em `LANGS`/`TEXTS`
+do `launcher.py` (e em `WINDOWS_LANGS` do `launcher.py` e do `serve.py`, para a detecção pelo Windows).
+
+`python compile-sources/i18n_check.py` mostra quantos textos faltam em cada idioma (o `build.bat` roda e só
+avisa); `--missing en` lista os que faltam em inglês.
+
+---
+
 ## Histórico de versões
+
+### 3.22.0 — 20/10/2026
+- O editor fica em inglês, espanhol, português, italiano e francês, trocados no botão Idioma do menu superior
+  na hora e sem reiniciar; a escolha fica salva.
+- Na primeira abertura o idioma segue o do Windows; texto sem tradução aparece em inglês.
+- O instalador, as janelas de aviso e as mensagens do servidor de teste no jogo seguem o idioma escolhido.
+- Nomes do jogo e do SA-MP e o código Pawn exportado continuam iguais em todos os idiomas.
 
 ### 3.21.2 — 20/10/2026
 - A área do manipulador tem prioridade sobre o clicar e arrastar direto, que vale só clicando no item fora dela.

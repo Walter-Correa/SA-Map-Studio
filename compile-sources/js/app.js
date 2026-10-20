@@ -28,6 +28,7 @@ import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
 import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
 import { installColorPicker } from './ui/colorPicker.js';
+import { initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange } from './ui/i18n.js';
 
 let water = null;
 let hintDismissed = false;
@@ -75,7 +76,13 @@ async function boot() {
   const status = $('#bootStatus');
   let cfg;
   try { cfg = await (await fetch('/api/config')).json(); }
-  catch { status.textContent = 'Não consegui falar com o servidor. Abra o programa pelo SA Map Studio.exe (ou serve.py).'; status.classList.add('error'); return; }
+  catch {
+    await initI18n();
+    status.textContent = 'Não consegui falar com o servidor. Abra o programa pelo SA Map Studio.exe (ou serve.py).'; status.classList.add('error'); return;
+  }
+  // Idioma antes de a interface aparecer: o escolhido pelo usuário ou o do sistema
+  await initI18n(cfg.language);
+  setupLanguageMenu();
   if (cfg.needsSetup || !cfg.ok) {
     showSetup(cfg.detectedPath || cfg.gtaPath || '', cfg.problem, cfg.needsSetup);
     return;
@@ -167,7 +174,7 @@ async function start(cfg) {
     // Volta para a escolha da pasta, mostrando o erro, em vez de travar na abertura
     setBootProgress(null);
     bar.style.width = '0%';
-    showSetup(cfg.gtaPath || '', 'Erro ao ler os arquivos do jogo: ' + err.message, false);
+    showSetup(cfg.gtaPath || '', `Erro ao ler os arquivos do jogo: ${err.message}`, false);
     return;
   }
   setBootProgress(null);
@@ -351,7 +358,7 @@ function setupToolbar(cfg) {
   app.on('view-interiors', (on) => { if ($('#showInteriors').checked !== on) { $('#showInteriors').checked = on; applyView(); } });
   vp.fly.onSpeed = (s) => { $('#camSpeed').value = Math.round(Math.min(300, s)); $('#camSpeedOut').textContent = Math.round(s); };
   if ($('#testGtaPath')) $('#testGtaPath').value = cfg.gtaPath || '';
-  if ($('#gtaInfo')) $('#gtaInfo').textContent = 'Pasta do GTA: ' + cfg.gtaPath + ' · ' + app.gd.instances.length.toLocaleString('pt-BR') + ' objetos no mapa';
+  if ($('#gtaInfo')) $('#gtaInfo').textContent = `Pasta do GTA: ${cfg.gtaPath} · ${app.gd.instances.length.toLocaleString()} objetos no mapa`;
   const btnChange = $('#btnChangeGta');
   if (btnChange) btnChange.onclick = () => { closePopovers(); changeGtaFolder(); };
 
@@ -742,7 +749,7 @@ function doUndo() {
     const l = uProj.undo();
     if (l) {
       const suffix = uProj !== app.project ? ` [${uProj.name}]` : '';
-      toast('Desfeito: ' + l + suffix);
+      toast(`Desfeito: ${l}${suffix}`);
       updateUndoButtons();
     }
   }
@@ -754,7 +761,7 @@ function doRedo() {
     const l = rProj.redo();
     if (l) {
       const suffix = rProj !== app.project ? ` [${rProj.name}]` : '';
-      toast('Refeito: ' + l + suffix);
+      toast(`Refeito: ${l}${suffix}`);
       updateUndoButtons();
     }
   }
@@ -771,6 +778,26 @@ function setupPopover(btnSel, popSel, onOpen) {
   });
   pop.addEventListener('click', e => e.stopPropagation());
 }
+// Botão Idioma: lista com o nome de cada idioma no próprio idioma; troca na hora e fica salvo
+function setupLanguageMenu() {
+  const list = $('#languageList');
+  if (!list) return;
+  const render = () => {
+    const cur = getLanguage();
+    list.innerHTML = getLanguages().map(l =>
+      `<button type="button" class="lang-item${l.code === cur ? ' active' : ''}" data-lang="${esc(l.code)}" lang="${esc(l.code)}" aria-pressed="${l.code === cur}">${esc(l.name)}</button>`).join('');
+  };
+  render();
+  onLanguageChange(render);
+  list.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-lang]');
+    if (!b) return;
+    closePopovers();
+    if (b.dataset.lang !== getLanguage()) await setLanguage(b.dataset.lang, { save: true });
+  });
+  setupPopover('#btnLanguage', '#popLanguage');
+}
+
 function closePopovers() {
   if (openPop) openPop.hidden = true;
   openPop = null;
@@ -782,7 +809,9 @@ function updatePlacingHint() {
   const ed = app.editor, h = $('#placingHint');
   if (!ed.placing && ed.mode === 'texture') {
     h.innerHTML = ed.matSel.length
-      ? `Índice${ed.matSel.length > 1 ? 's' : ''} <b>${ed.matSel.join(', ')}</b> escolhido${ed.matSel.length > 1 ? 's' : ''}. Clique numa textura na aba Texturas ou edite no inspetor. Ctrl + clique soma índices, Shift + clique soma objetos.`
+      ? (ed.matSel.length > 1
+        ? `Índices <b>${ed.matSel.join(', ')}</b> escolhidos. Clique numa textura na aba Texturas ou edite no inspetor. Ctrl + clique soma índices, Shift + clique soma objetos.`
+        : `Índice <b>${ed.matSel.join(', ')}</b> escolhido. Clique numa textura na aba Texturas ou edite no inspetor. Ctrl + clique soma índices, Shift + clique soma objetos.`)
       : 'Ferramenta <b>Textura</b>: clique numa parte de um objeto do projeto para escolher o índice de material.';
     h.hidden = false;
     return;

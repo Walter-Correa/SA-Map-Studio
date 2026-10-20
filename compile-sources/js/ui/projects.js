@@ -204,7 +204,7 @@ async function renameProject(newName) {
   $('#projectName').value = newName;
   await saveNow();
   if (old && old !== newName) await fetch('/api/projects/' + encodeURIComponent(old), { method: 'DELETE' });
-  toast('Projeto renomeado para "' + newName + '"');
+  toast(`Projeto renomeado para "${newName}"`);
 }
 
 async function openProjectsDialog() {
@@ -272,7 +272,7 @@ async function openProjectsDialog() {
     if (btnOpen) {
       btnOpen.onclick = async () => {
         try { await switchTo(p.name); dlg.close(); }
-        catch (err) { toast('Não consegui abrir: ' + err.message, 'error'); }
+        catch (err) { toast(`Não consegui abrir: ${err.message}`, 'error'); }
       };
     }
 
@@ -285,7 +285,7 @@ async function openProjectsDialog() {
           toast(`Projeto "${p.name}" carregado e coexistindo no mundo (${mode === 'readonly' ? 'Não editável' : 'Editável'})!`, 'ok', 4000);
           openProjectsDialog();
         } catch (err) {
-          toast('Não consegui carregar para coexistir: ' + err.message, 'error');
+          toast(`Não consegui carregar para coexistir: ${err.message}`, 'error');
         }
       };
     });
@@ -323,7 +323,7 @@ async function openProjectsDialog() {
           toast(`${uids.length} itens mesclados de "${p.name}" para "${app.project.name}"!`, 'ok', 5000);
           dlg.close();
         } catch (err) {
-          toast('Erro ao mesclar projeto: ' + err.message, 'error');
+          toast(`Erro ao mesclar projeto: ${err.message}`, 'error');
         }
       };
     }
@@ -338,7 +338,7 @@ async function openProjectsDialog() {
 
     ul.appendChild(li);
   }
-  $('#projectsFolder').textContent = folder ? 'Os projetos ficam em ' + folder : '';
+  $('#projectsFolder').textContent = folder ? `Os projetos ficam em ${folder}` : '';
   $('#newProjectName').value = '';
   if (!dlg.open) dlg.showModal();
 }
@@ -371,7 +371,7 @@ export function setupProjects() {
         $('#dlgProjects').close();
         toast(`Projeto "${project.name}" carregado com sucesso!`, 'ok');
       } catch (err) {
-        toast('Erro ao abrir arquivo .json: ' + err.message, 'error', 5000);
+        toast(`Erro ao abrir arquivo .json: ${err.message}`, 'error', 5000);
       }
     };
   }

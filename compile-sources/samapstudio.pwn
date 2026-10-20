@@ -56,6 +56,40 @@ new Float:gFlySavedPos[MAX_PLAYERS][4];
 new gFlySavedInterior[MAX_PLAYERS];
 new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
+// Mensagens mostradas no jogo. O editor manda a tradução no idioma escolhido (linhas MSG|id|texto do
+// mapa.txt); sem tradução fica o português. A ordem é a mesma de TEST_MESSAGES no dialogs.js do editor.
+#define SAMSP_MAX_MSGS        27
+new gMsg[SAMSP_MAX_MSGS][192] =
+{
+    "SA Map Studio: teste do mapa.",
+    "Comandos: /fly (/voar) /map (/mapa) /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos",
+    "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.",
+    "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.",
+    "Animações dos actors sincronizadas e reaplicadas.",
+    "Câmera teleportada para o centro do mapa.",
+    "Teleportado para o centro do mapa em teste.",
+    "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d",
+    "Use /v [modelo], de 400 a 611.",
+    "Uso: /w [0 a 45] (ou /weather, /clima) - Clima atual: %d",
+    "ID de clima inválido! Escolha um valor entre 0 e 45.",
+    "Clima alterado para %d.",
+    "Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horário atual: %02d:%02d",
+    "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).",
+    "Horário alterado para %02d:%02d.",
+    "Reproduzindo Sound ID %d.",
+    "Use /som [soundid] para testar um som (ex: /som 1052).",
+    "Nenhum checkpoint no mapa atual.",
+    "Teleportado para o checkpoint atual.",
+    "Comandos do servidor de teste:",
+    "  /fly (/voar) - Alternar voo livre da câmera",
+    "  /map (/mapa) - Teleportar ao centro do mapa em teste",
+    "  /w [0-45] - Alterar clima (ex: /w 10)",
+    "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)",
+    "  /v [modelo] - Criar veículo (ex: /v 411)",
+    "  /anim - Ressincronizar animações dos actors",
+    "  /jetpack, /spawn, /pos - Utilidades gerais"
+};
+
 new bool:gPlayerSpawned[MAX_PLAYERS];
 // Spawn já pedido e ainda não feito: a escolha de personagem é chamada várias vezes e não pode spawnar de novo
 new bool:gSpawnRequested[MAX_PLAYERS];
@@ -499,6 +533,12 @@ stock SAMSP_CarregarMapa()
             }
             case 'M':
             {
+                if (tipo[1] == 'S' && tipo[2] == 'G')
+                {
+                    new id = SAMSP_Int(linha, 1);
+                    if (id >= 0 && id < SAMSP_MAX_MSGS) SAMSP_Resto(linha, 2, gMsg[id], sizeof(gMsg[]));
+                    continue;
+                }
                 if (tipo[1] == 'I')
                 {
                     if (gTotalMapIcons >= SAMSP_MAX_MAPICONS) continue;
@@ -1381,8 +1421,8 @@ public OnPlayerSpawn(playerid)
     SAMSP_PreloadAllAnims(playerid);
     SetTimerEx("SAMSP_SyncActorAnims", 500, false, "i", playerid);
     SetTimerEx("SAMSP_SyncActorAnims", 1500, false, "i", playerid);
-    SendClientMessage(playerid, SAMSP_COR_INFO, "SA Map Studio: teste do mapa.");
-    SendClientMessage(playerid, SAMSP_COR_OK, "Comandos: /fly (/voar)  /map (/mapa)  /w [clima]  /t [hora]  /anim  /jetpack  /v [modelo]  /spawn  /pos");
+    SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[0]);
+    SendClientMessage(playerid, SAMSP_COR_OK, gMsg[1]);
     return 1;
 }
 
@@ -1495,7 +1535,7 @@ stock IniciarFlyMode(playerid)
     gNoClip[playerid][noclip_udold] = 0;
     gNoClip[playerid][noclip_lrold] = 0;
 
-    SendClientMessage(playerid, SAMSP_COR_OK, "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.");
+    SendClientMessage(playerid, SAMSP_COR_OK, gMsg[2]);
     return 1;
 }
 
@@ -1521,7 +1561,7 @@ public SAMSP_RestaurarPosVoo(playerid)
     SetCameraBehindPlayer(playerid);
     gReturningFromFly[playerid] = false;
     SetTimerEx("SAMSP_SyncActorAnims", 500, false, "i", playerid);
-    SendClientMessage(playerid, SAMSP_COR_INFO, "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.");
+    SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[3]);
     return 1;
 }
 
@@ -1545,7 +1585,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     if (!strcmp(cmdtext, "/anim", true) || !strcmp(cmdtext, "/reanim", true) || !strcmp(cmdtext, "/animar", true))
     {
         SAMSP_SyncActorAnims(playerid);
-        SendClientMessage(playerid, SAMSP_COR_OK, "Animações dos actors sincronizadas e reaplicadas.");
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[4]);
         return 1;
     }
 
@@ -1556,7 +1596,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         {
             StopPlayerObject(playerid, gNoClip[playerid][noclip_flyobject]);
             SetPlayerObjectPos(playerid, gNoClip[playerid][noclip_flyobject], gMapCenter[0], gMapCenter[1], gMapCenter[2]);
-            SendClientMessage(playerid, SAMSP_COR_OK, "Câmera teleportada para o centro do mapa.");
+            SendClientMessage(playerid, SAMSP_COR_OK, gMsg[5]);
             return 1;
         }
 
@@ -1574,7 +1614,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
             SetPlayerPos(playerid, gMapCenter[0], gMapCenter[1], gMapCenter[2]);
             SetCameraBehindPlayer(playerid);
         }
-        SendClientMessage(playerid, SAMSP_COR_OK, "Teleportado para o centro do mapa em teste.");
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[6]);
         return 1;
     }
 
@@ -1594,7 +1634,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new Float:x, Float:y, Float:z, Float:a, msg[128];
         GetPlayerPos(playerid, x, y, z);
         GetPlayerFacingAngle(playerid, a);
-        format(msg, sizeof(msg), "Posição: %.4f, %.4f, %.4f  Ângulo: %.1f  Interior: %d", x, y, z, a, GetPlayerInterior(playerid));
+        format(msg, sizeof(msg), gMsg[7], x, y, z, a, GetPlayerInterior(playerid));
         SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] %s", msg);
         return 1;
@@ -1604,7 +1644,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new modelo = (cmdtext[2] == ' ') ? strval(cmdtext[3]) : 411;
         if (modelo < 400 || modelo > 611)
         {
-            SendClientMessage(playerid, SAMSP_COR_INFO, "Use /v [modelo], de 400 a 611.");
+            SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[8]);
             return 1;
         }
         new Float:x, Float:y, Float:z, Float:a;
@@ -1632,7 +1672,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         if (cmdtext[paramIdx] == EOS)
         {
             new msg[128];
-            format(msg, sizeof(msg), "Uso: /w [0 a 45] (ou /weather, /clima) - Clima atual: %d", gClima);
+            format(msg, sizeof(msg), gMsg[9], gClima);
             SendClientMessage(playerid, SAMSP_COR_INFO, msg);
             return 1;
         }
@@ -1640,7 +1680,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         new novoClima = strval(cmdtext[paramIdx]);
         if (novoClima < 0 || novoClima > 255)
         {
-            SendClientMessage(playerid, SAMSP_COR_INFO, "ID de clima inválido! Escolha um valor entre 0 e 45.");
+            SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[10]);
             return 1;
         }
 
@@ -1652,7 +1692,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         }
 
         new msg[128];
-        format(msg, sizeof(msg), "Clima alterado para %d.", gClima);
+        format(msg, sizeof(msg), gMsg[11], gClima);
         SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] Clima alterado para %d por player %d.", gClima, playerid);
         return 1;
@@ -1675,7 +1715,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         if (cmdtext[paramIdx] == EOS)
         {
             new msg[128];
-            format(msg, sizeof(msg), "Uso: /t [0-23] [minutos] ou /t HH:MM (ex: /t 12 ou /t 22:30) - Horário atual: %02d:%02d", gHora, gMinuto);
+            format(msg, sizeof(msg), gMsg[12], gHora, gMinuto);
             SendClientMessage(playerid, SAMSP_COR_INFO, msg);
             return 1;
         }
@@ -1708,7 +1748,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 
         if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59)
         {
-            SendClientMessage(playerid, SAMSP_COR_INFO, "Horário inválido! Use hora de 0 a 23 e minutos de 0 a 59 (ex: /t 14 ou /t 14:30).");
+            SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[13]);
             return 1;
         }
 
@@ -1721,7 +1761,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
         }
 
         new msg[128];
-        format(msg, sizeof(msg), "Horário alterado para %02d:%02d.", gHora, gMinuto);
+        format(msg, sizeof(msg), gMsg[14], gHora, gMinuto);
         SendClientMessage(playerid, SAMSP_COR_OK, msg);
         printf("[SA Map Studio] Horário alterado para %02d:%02d por player %d.", gHora, gMinuto, playerid);
         return 1;
@@ -1738,11 +1778,11 @@ public OnPlayerCommandText(playerid, cmdtext[])
             new sid = strval(cmdtext[pIdx]);
             PlayerPlaySound(playerid, sid, 0.0, 0.0, 0.0);
             new msg[96];
-            format(msg, sizeof(msg), "Reproduzindo Sound ID %d.", sid);
+            format(msg, sizeof(msg), gMsg[15], sid);
             SendClientMessage(playerid, SAMSP_COR_OK, msg);
             return 1;
         }
-        SendClientMessage(playerid, SAMSP_COR_INFO, "Use /som [soundid] para testar um som (ex: /som 1052).");
+        SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[16]);
         return 1;
     }
 
@@ -1751,27 +1791,27 @@ public OnPlayerCommandText(playerid, cmdtext[])
     {
         if (gTotalCheckpoints <= 0)
         {
-            SendClientMessage(playerid, SAMSP_COR_INFO, "Nenhum checkpoint no mapa atual.");
+            SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[17]);
             return 1;
         }
         new idx = gPlayerRaceCPIdx[playerid];
         if (!gCheckpoints[idx][cp_isRace]) idx = gPlayerNormalCPIdx[playerid];
         SetPlayerPos(playerid, gCheckpoints[idx][cp_x], gCheckpoints[idx][cp_y], gCheckpoints[idx][cp_z] + 1.0);
-        SendClientMessage(playerid, SAMSP_COR_OK, "Teleportado para o checkpoint atual.");
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[18]);
         return 1;
     }
 
     // Ajuda e lista de comandos
     if (!strcmp(cmdtext, "/ajuda", true) || !strcmp(cmdtext, "/help", true) || !strcmp(cmdtext, "/comandos", true))
     {
-        SendClientMessage(playerid, SAMSP_COR_INFO, "Comandos do servidor de teste:");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /fly (/voar) - Alternar voo livre da câmera");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /map (/mapa) - Teleportar ao centro do mapa em teste");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /w [0-45] - Alterar clima (ex: /w 10)");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /v [modelo] - Criar veículo (ex: /v 411)");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /anim - Ressincronizar animações dos actors");
-        SendClientMessage(playerid, SAMSP_COR_OK, "  /jetpack, /spawn, /pos - Utilidades gerais");
+        SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[19]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[20]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[21]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[22]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[23]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[24]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[25]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[26]);
         return 1;
     }
     return 0;
