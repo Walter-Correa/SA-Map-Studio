@@ -17,7 +17,7 @@ const NO_TRANSLATE = '[translate="no"], .no-i18n';
 const NO_CONTENT = 'script, style, textarea, code, pre, svg';
 const SKIP_SELECTOR = `${NO_TRANSLATE}, ${NO_CONTENT}`;
 
-let languages = [];          // [{ code, name }] na ordem do menu
+let languages = [];          // [{ code, name, windows, script }] de languages.json
 let current = SOURCE_LANG;
 let tables = [];             // [{ exact: Map, patterns: [] }] do idioma atual e do de reserva
 const cache = new Map();     // código -> Promise<objeto do arquivo>
@@ -29,10 +29,26 @@ export const missing = new Set(); // textos sem tradução vistos na tela (para 
 
 // ---------------------------------------------------------------------------- tradução
 
-function compile(data) {
+// Formas de plural: a tradução pode ser um objeto { one, few, many, other } (as categorias de
+// Intl.PluralRules do idioma) em vez de texto. A forma é escolhida pelo número da parte variável
+// "count" (padrão {0}). Ex. em ru.json: "{0} objetos": { "one": "{0} объект", "few": "{0} объекта",
+// "many": "{0} объектов", "other": "{0} объекта" }. O português só tem singular e plural (plural()).
+const PLURAL_FORMS = ['zero', 'one', 'two', 'few', 'many', 'other'];
+const isForms = (v) => v && typeof v === 'object' && typeof v.other === 'string';
+function pickForm(value, args, rules) {
+  if (!isForms(value)) return value;
+  const raw = String(args[value.count ?? 0] ?? '').replace(/[^\d.,-]/g, '');
+  const n = Number(raw.replace(/[.,](?=\d{3}(\D|$))/g, '').replace(',', '.'));
+  const form = Number.isFinite(n) && raw !== '' ? rules.select(n) : 'other';
+  return value[form] || value.other;
+}
+
+function compile(data, code) {
   const exact = new Map(), patterns = [];
+  let rules;
+  try { rules = new Intl.PluralRules(code === SOURCE_LANG ? 'pt-BR' : code); } catch { rules = new Intl.PluralRules('en'); }
   for (const [key, value] of Object.entries(data || {})) {
-    if (key.startsWith('_') || typeof value !== 'string' || !value) continue;
+    if (key.startsWith('_') || !(typeof value === 'string' ? value : isForms(value))) continue;
     exact.set(key, value);
     if (!/\{\d+\}/.test(key)) continue;
     const pieces = key.split(/(\{\d+\})/);
@@ -48,10 +64,12 @@ function compile(data) {
     patterns.push({ re: new RegExp('^' + src + '$'), order, value, hint: longest, weight: key.replace(/\{\d+\}/g, '').length });
   }
   patterns.sort((a, b) => b.weight - a.weight);
-  return { exact, patterns };
+  return { exact, patterns, rules };
 }
 
-function fill(value, args) {
+function fill(value, args, rules) {
+  if (rules) value = pickForm(value, args, rules);
+  else if (isForms(value)) value = value.other;
   return value.replace(/\{(\d+)\}/g, (all, i) => (args[+i] !== undefined ? args[+i] : all));
 }
 
@@ -59,7 +77,7 @@ function fill(value, args) {
 function lookup(core, depth = 2) {
   for (const table of tables) {
     const hit = table.exact.get(core);
-    if (hit !== undefined) return hit;
+    if (hit !== undefined) return isForms(hit) ? hit.other : hit;
   }
   if (depth <= 0) return null;
   for (const table of tables) {
@@ -69,7 +87,7 @@ function lookup(core, depth = 2) {
       if (!m) continue;
       const args = [];
       p.order.forEach((n, i) => { args[n] = translatePart(m[i + 1], depth - 1); });
-      return fill(p.value, args);
+      return fill(p.value, args, table.rules);
     }
   }
   return null;
@@ -133,14 +151,18 @@ export function translateText(text) {
 // Para o código: t('Carregando modelo'), t('Som #{0}', id)
 export function t(key, ...args) {
   if (current === SOURCE_LANG) return args.length ? fill(key, args) : key;
-  const out = lookup(key, 0);
-  return fill(out ?? key, args);
+  for (const table of tables) {
+    const hit = table.exact.get(key);
+    if (hit !== undefined) return fill(hit, args, table.rules);
+  }
+  return fill(key, args);
 }
 
 // Só a tabela de reserva (inglês): para onde o alfabeto do idioma não aparece (chat do SA-MP)
 export function tFallback(key) {
   if (current === SOURCE_LANG) return key;
-  return tables[tables.length - 1]?.exact.get(key) ?? key;
+  const hit = tables[tables.length - 1]?.exact.get(key);
+  return hit === undefined ? key : fill(hit, []);
 }
 
 // ---------------------------------------------------------------------------- página
@@ -245,12 +267,14 @@ export function systemLanguage() {
 export async function setLanguage(code, { save = false } = {}) {
   if (!languages.some(l => l.code === code)) code = systemLanguage();
   const list = [];
-  if (code !== SOURCE_LANG) list.push(compile(await loadFile(code)));
-  if (code !== SOURCE_LANG && code !== FALLBACK_LANG) list.push(compile(await loadFile(FALLBACK_LANG)));
+  if (code !== SOURCE_LANG) list.push(compile(await loadFile(code), code));
+  if (code !== SOURCE_LANG && code !== FALLBACK_LANG) list.push(compile(await loadFile(FALLBACK_LANG), FALLBACK_LANG));
   current = code;
   tables = list;
   missing.clear();
   document.documentElement.lang = code;
+  // Escrita do idioma (languages.json "script"): o CSS troca a fonte quando a Barlow não tem as letras
+  document.documentElement.dataset.script = languages.find(l => l.code === code)?.script || 'latin';
   walk(document.body);
   translateTitle();
   if (save) { try { await postJSON('/api/language', { language: code }); } catch { /* fica só nesta sessão */ } }

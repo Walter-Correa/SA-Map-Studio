@@ -6,10 +6,18 @@ de idioma em js/lang/.
 Os textos são escritos em português no código; cada texto (sem os espaços das pontas) é a chave usada
 nos arquivos de idioma. Partes variáveis viram {0}, {1}, ... na ordem em que aparecem.
 
+Uma tradução pode ser texto ou um objeto de formas de plural {"one": ..., "few": ..., "many": ...,
+"other": ..., "count": N} (categorias de Intl.PluralRules do idioma; "count" diz qual parte variável é
+o número, padrão {0}). Cada forma precisa das mesmas partes variáveis da chave.
+
 Uso:
-  python i18n_check.py              confere os idiomas (o build chama assim e só avisa, não para)
+  python i18n_check.py              confere os idiomas e o launcher (o build chama assim e só avisa)
   python i18n_check.py --dump F     grava em F a lista de chaves achadas no código (JSON)
   python i18n_check.py --missing L  mostra as chaves que faltam no idioma L (ex.: en)
+  python i18n_check.py --orphans    mostra as chaves dos arquivos de idioma que o código não usa mais
+  python i18n_check.py --prune      apaga essas chaves órfãs de todos os arquivos de idioma
+
+Para traduzir em lote, renomear chaves e importar formas de plural, use i18n_tool.py.
 """
 
 import os
@@ -366,10 +374,89 @@ def load_lang(code):
         return json.load(f)
 
 
+PLURAL_FORMS = ("zero", "one", "two", "few", "many", "other")
+VARS = re.compile(r"\{\d+\}|%[-+0#]*\d*(?:\.\d+)?[dsfi](?![A-Za-z])")
+
+
+def is_forms(value):
+    return isinstance(value, dict) and isinstance(value.get("other"), str)
+
+
+def forms_problem(key, value):
+    """Texto do problema da tradução de key (partes variáveis, espaços, formas de plural) ou None."""
+    if is_forms(value):
+        extra = set(value) - set(PLURAL_FORMS) - {"count"}
+        if extra:
+            return "forma de plural desconhecida: " + ", ".join(sorted(extra))
+        count = value.get("count", 0)
+        if not isinstance(count, int) or "{%d}" % count not in key:
+            return "count %r não é parte variável da chave" % (count,)
+        texts = [value[f] for f in PLURAL_FORMS if f in value]
+    elif isinstance(value, str):
+        texts = [value]
+    else:
+        return "valor não é texto nem formas de plural"
+    want = sorted(VARS.findall(key))
+    for text in texts:
+        if not isinstance(text, str):
+            return "forma de plural não é texto"
+        if sorted(VARS.findall(text)) != want:
+            return "partes variáveis diferentes: " + text
+        if text != text.strip():
+            return "espaço nas pontas: %r" % text
+    return None
+
+
+def orphans(data, source_keys):
+    """Chaves de um idioma que não batem com nenhum texto do código, nem exato nem como modelo."""
+    out = []
+    for k in data:
+        if k.startswith("_") or k in source_keys:
+            continue
+        pats = lang_patterns({k: None})
+        if not pats or not any(pats[0].match(sk) for sk in source_keys):
+            out.append(k)
+    return out
+
+
+def save_lang(code, data):
+    """Grava no formato dos arquivos: uma chave por linha, formas de plural na mesma linha."""
+    lines = ["%s: %s" % (json.dumps(k, ensure_ascii=False), json.dumps(v, ensure_ascii=False))
+             for k, v in data.items()]
+    with open(os.path.join(LANG_DIR, code + ".json"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("{\n " + ",\n ".join(lines) + "\n}\n")
+
+
+def launcher_problems(langs):
+    """O launcher.py tem os próprios textos e a tabela de idiomas do Windows: confere com languages.json."""
+    import ast
+    with open(os.path.join(HERE, "launcher.py"), "r", encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    found = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) \
+                and node.targets[0].id in ("TEXTS", "WINDOWS_LANGS"):
+            found[node.targets[0].id] = ast.literal_eval(node.value)
+    texts, wins = found.get("TEXTS", {}), found.get("WINDOWS_LANGS", {})
+    codes = [lang["code"] for lang in langs]
+    out = ['TEXTS sem o bloco "%s"' % c for c in codes if c not in texts]
+    out += ['TEXTS tem "%s", que não está no languages.json' % c for c in texts if c not in codes]
+    base = set(texts.get("en", {}))
+    for code, block in texts.items():
+        if set(block) != base:
+            out.append('TEXTS["%s"] com chaves diferentes do inglês: %s' % (code, ", ".join(sorted(set(block) ^ base))))
+    want = {int(lang["windows"], 16): lang["code"] for lang in langs if lang.get("windows")}
+    if wins != want:
+        diff = sorted(set(wins.items()) ^ set(want.items()))
+        out.append("WINDOWS_LANGS diferente do languages.json: " + ", ".join("0x%02X=%s" % d for d in diff))
+    return out
+
+
 def check():
     same = same_keys()
     keys = {k: v for k, v in keys_from_source().items() if k not in same}
     langs = languages()
+    source = set(keys_from_source())
     print("Idiomas: %d textos de interface no código" % len(keys))
     problems = 0
     for lang in langs:
@@ -384,10 +471,16 @@ def check():
             continue
         pats = lang_patterns(data)
         missing = [k for k in keys if not covered(k, data, pats)]
-        bad = [k for k, v in data.items() if not k.startswith("_") and isinstance(v, str) and
-               sorted(re.findall(r"\{\d+\}", k)) != sorted(re.findall(r"\{\d+\}", v))]
-        print("  %-3s %-10s %d faltando, %d com partes variáveis diferentes" % (code, lang["name"], len(missing), len(bad)))
-        problems += bool(missing or bad)
+        bad = [k for k, v in data.items() if not k.startswith("_") and forms_problem(k, v)]
+        orphan = orphans(data, source)
+        print("  %-3s %-10s %d faltando, %d com partes variáveis diferentes, %d órfãs"
+              % (code, lang["name"], len(missing), len(bad), len(orphan)))
+        for k in bad[:5]:
+            print("      %s: %s" % (k, forms_problem(k, data[k])))
+        problems += bool(missing or bad or orphan)
+    for msg in launcher_problems(langs):
+        print("  launcher.py: " + msg)
+        problems += 1
     return problems
 
 
@@ -407,6 +500,21 @@ def main():
         for k, where in keys_from_source().items():
             if k not in same and not covered(k, data, pats):
                 print("%s\t%s" % (where, k))
+        return
+    if "--orphans" in sys.argv or "--prune" in sys.argv:
+        source = set(keys_from_source())
+        total = 0
+        for lang in languages():
+            data = load_lang(lang["code"])
+            if not data:
+                continue
+            gone = orphans(data, source)
+            total += len(gone)
+            for k in gone:
+                print("%s\t%s" % (lang["code"], k))
+            if gone and "--prune" in sys.argv:
+                save_lang(lang["code"], {k: v for k, v in data.items() if k not in gone})
+        print("%d chaves órfãs%s" % (total, " apagadas" if "--prune" in sys.argv else ""))
         return
     check()
 

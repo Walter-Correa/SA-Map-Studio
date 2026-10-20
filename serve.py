@@ -2772,28 +2772,41 @@ def _version_tuple(v):
     return tuple(int("".join(c for c in p if c.isdigit()) or 0) for p in str(v or "0").split("."))
 
 
-# Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor
-WINDOWS_LANGS = {0x09: "en", 0x0A: "es", 0x16: "pt", 0x10: "it", 0x0C: "fr", 0x07: "de", 0x15: "pl", 0x18: "ro",
-                 0x0E: "hu", 0x1F: "tr", 0x21: "id", 0x2A: "vi", 0x19: "ru", 0x22: "uk", 0x02: "bg"}
 _ui_tables = {}
 
 
-def _ui_table(code):
-    """js/lang/<code>.json da interface (as mensagens do servidor usam as mesmas traduções)."""
-    if code not in _ui_tables:
-        _ui_tables[code] = {}
+def _lang_file(name):
+    """js/lang/<name>.json da interface (as mensagens do servidor usam as mesmas traduções)."""
+    if name not in _ui_tables:
+        _ui_tables[name] = {}
         dirs = [APP_DIR, COMPILE_SOURCES_DIR]
         if FROZEN:
             exe_folder = os.path.dirname(os.path.abspath(sys.executable))
             dirs += [exe_folder, os.path.join(exe_folder, "_internal")]
         for d in dirs:
             try:
-                with open(os.path.join(d, "js", "lang", code + ".json"), encoding="utf-8") as f:
-                    _ui_tables[code] = json.load(f)
+                with open(os.path.join(d, "js", "lang", name + ".json"), encoding="utf-8") as f:
+                    _ui_tables[name] = json.load(f)
                 break
             except Exception:
                 continue
-    return _ui_tables[code]
+    return _ui_tables[name]
+
+
+def _ui_table(code):
+    return _lang_file(code)
+
+
+def windows_langs():
+    """Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor, lido do
+    campo "windows" de js/lang/languages.json (a lista única dos idiomas)."""
+    out = {}
+    for lang in _lang_file("languages") or []:
+        try:
+            out[int(str(lang.get("windows")), 16)] = lang["code"]
+        except (TypeError, ValueError, KeyError):
+            continue
+    return out
 
 
 def ui_text(text, *args):
@@ -2803,12 +2816,14 @@ def ui_text(text, *args):
     if not code and IS_WINDOWS:
         try:
             import ctypes
-            code = WINDOWS_LANGS.get(ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF, "")
+            code = windows_langs().get(ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF, "")
         except Exception:
             code = ""
     code = code if re.fullmatch(r"[a-z]{2,3}", code or "") else "en"
     if code != "pt":
         text = _ui_table(code).get(text) or _ui_table("en").get(text) or text
+        if isinstance(text, dict):  # formas de plural: a janela usa a forma geral
+            text = text.get("other") or ""
     return text.format(*args)
 
 

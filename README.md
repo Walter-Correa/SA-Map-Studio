@@ -268,6 +268,7 @@ compile-sources/
 ├── launcher_frames/           frames of the launcher's animated icon
 ├── package_bundle.py          packs the program into the launcher zip
 ├── i18n_check.py, i18n_same.txt  translation check used by the build
+├── i18n_tool.py               batch translation, plural forms and key rename for the language files
 ├── samapstudio.pwn / .amx     test server gamemode
 ├── anim-list.json             animation list
 └── version_info.txt           .exe version metadata
@@ -287,10 +288,17 @@ Rotation follows the SA-MP convention (Z, X, Y order), so what you see in the ed
 The code and the interface are written in Brazilian Portuguese, and the Portuguese text itself is the translation key.
 The files are in `compile-sources/js/lang/` and are always included in the build:
 
-- `languages.json`: the menu list, with each language name written in that language; the menu sorts it alphabetically.
+- `languages.json`: the menu list, one entry per language: `code` (file name and `<html lang>`), `name` (written in
+  that language, without a country; the menu sorts by it), `windows` (Windows primary language id, e.g. `"0x19"`, used
+  by `serve.py` to pick the language on first launch) and optional `script` (`"cyrillic"` sets
+  `<html data-script="cyrillic">`, and `css/app.css` swaps the Barlow font, which has no Cyrillic letters, for Segoe UI).
 - `<code>.json` (e.g. `en.json`): `"Portuguese text": "translation"`. Variable parts use `{0}`, `{1}`
   (e.g. `"{0} itens selecionados": "{0} items selected"`); in the test server texts, `%d`/`%s` stay as they are.
   A missing text shows in English.
+- Plural forms: a translation can be an object with the language's `Intl.PluralRules` categories instead of a text,
+  e.g. in `ru.json` `"{0} objetos": {"one": "{0} объект", "few": "{0} объекта", "many": "{0} объектов", "other": "{0} объекта"}`.
+  The number is `{0}`; add `"count": 1` when it is another part. `other` is required. Russian, Ukrainian, Polish and
+  Romanian use them for the counts written with `plural()`; the other languages need only the plain text.
 - Texts joined with ` — `, ` · `, ` | ` or ` - ` and labels with a count at the end (`Móveis (985)`) are translated piece
   by piece, so each piece needs its own key.
 - Game and SA-MP names, keys and the exported Pawn code are not translated (list in `compile-sources/i18n_same.txt`). For
@@ -301,12 +309,27 @@ The files are in `compile-sources/js/lang/` and are always included in the build
   runs before the program folder exists.
 - The version history (`CHANGELOG` in `about.js`) is written only in English and has no keys in the language files.
 
-To add a language: copy `en.json` to `<code>.json`, translate the values, add
-`{"code": "<code>", "name": "<name in its own language>"}` to `languages.json`, and add a block for the code to `TEXTS`
-in `launcher.py` (and to `WINDOWS_LANGS` in `launcher.py` and `serve.py`, for Windows detection).
+To add a language: add `{"code": "<code>", "name": "<name in its own language>", "windows": "0x.."}` to
+`languages.json`, create `<code>.json` with only `"_meta"`, run `i18n_tool.py export --lang <code>`, translate the batches
+and import them; then add a block for the code to `TEXTS` and to `WINDOWS_LANGS` in `launcher.py` (the installer runs
+before the folder exists, so it cannot read `languages.json`).
 
-`python compile-sources/i18n_check.py` shows how many texts are missing in each language (`build.bat` runs it and only
-warns); `--missing en` lists the ones missing in English.
+Tools (in `compile-sources/`, run with Python 3):
+
+- `python compile-sources/i18n_check.py` checks every language: missing texts, translations whose `{0}`/`%d` parts,
+  plural forms or edge spaces differ from the key, orphan keys the code no longer uses, and `TEXTS`/`WINDOWS_LANGS` in
+  `launcher.py` against `languages.json`. `build.bat` runs it and only warns. `--missing en` lists the texts missing in
+  English, `--orphans` lists the orphan keys and `--prune` deletes them from every file.
+- `python compile-sources/i18n_tool.py export [folder] [--lang ru uk] [--size 200]` writes what is missing (default
+  folder `testing/i18n/`): `keys.json` (id → Portuguese key) and batches `<code>-01.txt` with one `id<TAB>English text`
+  line per key. Replace the English text with the translation.
+- `python compile-sources/i18n_tool.py import testing/i18n/ru-01.txt` merges the batch into `ru.json` (the language comes
+  from the file name, or `--lang`). The id can also be the Portuguese key itself; an existing translation is replaced.
+  Plural forms go on one line: `one: {0} объект | few: {0} объекта | many: {0} объектов | other: {0} объекта` (plus
+  `count: N` when needed), and `\n` is a line break. Lines whose `{0}`/`%d` parts differ from the key or with spaces at
+  the edges are refused and listed.
+- `python compile-sources/i18n_tool.py rename "old text" "new text"` renames a key in every language file (and in
+  `i18n_same.txt`) after the Portuguese text changes in the code, keeping the translations.
 
 ---
 

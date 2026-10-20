@@ -32,6 +32,12 @@
   color-scheme: dark;
 }
 
+/* Barlow has no Cyrillic glyphs: bg/ru/uk ("script": "cyrillic" in languages.json) use Segoe UI. */
+:root[data-script="cyrillic"] {
+  --font: 'Segoe UI', system-ui, sans-serif;
+  --font-cond: 'Segoe UI', system-ui, sans-serif;
+}
+
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
