@@ -14,7 +14,8 @@ const TEXT_ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
 // translate="no" / .no-i18n: nothing is translated. In the rest, the content stays as is, but attributes
 // (placeholder, title, aria-label) are translated, like a textarea's placeholder.
 const NO_TRANSLATE = '[translate="no"], .no-i18n';
-const NO_CONTENT = 'script, style, textarea, code, pre, svg';
+// <code class="i18n-code"> opts in to translation (command arguments like [clima])
+const NO_CONTENT = ['script', 'style', 'textarea', 'pre', 'svg', 'code:not(.i18n-code)'].join(', ');
 const SKIP_SELECTOR = `${NO_TRANSLATE}, ${NO_CONTENT}`;
 
 let languages = [];          // [{ code, name, windows, script }] from languages.json

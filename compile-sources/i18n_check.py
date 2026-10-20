@@ -32,6 +32,7 @@ JS_DIR = os.path.join(HERE, "js")
 LANG_DIR = os.path.join(JS_DIR, "lang")
 SOURCE_LANG = "pt"
 SAME_FILE = os.path.join(HERE, "i18n_same.txt")
+EXTRA_FILE = os.path.join(HERE, "i18n_extra.txt")
 
 
 def same_keys():
@@ -333,6 +334,14 @@ def keys_from_source():
             for m in re.finditer(r"""plural\(\s*[^,]+?,\s*(['"])(.*?)\1\s*,\s*(['"])(.*?)\3\s*\)""", src):
                 for w in (m.group(2), m.group(4)):
                     add(PH + " " + w, rel, force=True)
+    # Pieces the detection cannot see (a lone word between tags): listed by hand in i18n_extra.txt
+    try:
+        with open(EXTRA_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip() and not line.startswith("#"):
+                    found.setdefault(line.rstrip("\n"), "i18n_extra.txt")
+    except OSError:
+        pass
     # Editor server messages that appear in the interface (errors, warnings)
     with open(os.path.join(ROOT, "serve.py"), "r", encoding="utf-8") as f:
         for lit in py_literals(f.read()):

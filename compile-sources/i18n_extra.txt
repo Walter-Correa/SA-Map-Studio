@@ -1,0 +1,4 @@
+# Texts that need a translation but that i18n_check.py cannot find on its own (a lone word between tags).
+# One per line, exactly as the page shows it, without the edge spaces.
+(voar),
+e

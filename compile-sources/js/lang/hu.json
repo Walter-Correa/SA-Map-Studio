@@ -181,6 +181,8 @@
  "Servidor de teste local (porta": "Helyi tesztszerver (port",
  "). Comandos no jogo:": "). Parancsok a játékban:",
  "(centro do mapa),": "(a térkép közepe),",
+ "(voar),": "(repülés),",
+ "e": "és",
  "Trocar": "Módosítás",
  "Servidor de Teste": "Tesztszerver",
  "Onde nascer": "Hol jelenj meg",

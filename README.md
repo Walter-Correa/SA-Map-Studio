@@ -267,7 +267,7 @@ compile-sources/
 ├── launcher.py                single executable: extracts or updates the program
 ├── launcher_frames/           frames of the launcher's animated icon
 ├── package_bundle.py          packs the program into the launcher zip
-├── i18n_check.py, i18n_same.txt  translation check used by the build
+├── i18n_check.py, i18n_same.txt, i18n_extra.txt  translation check used by the build
 ├── i18n_tool.py               batch translation, plural forms and key rename for the language files
 ├── samapstudio.pwn / .amx     test server gamemode
 ├── anim-list.json             animation list
@@ -303,6 +303,8 @@ The files are in `compile-sources/js/lang/` and are always included in the build
   by piece, so each piece needs its own key.
 - Game and SA-MP names, keys and the exported Pawn code are not translated (list in `compile-sources/i18n_same.txt`). For
   a part of the interface that must not be translated, use `translate="no"` in the HTML.
+- Text inside `<code>` is not translated; to translate a command argument such as `[clima]`, use `<code class="i18n-code">`.
+  A lone word between tags (`e`, `(voar),`) that the check cannot detect goes in `compile-sources/i18n_extra.txt`.
 - Text that does not go through the page (canvas, textarea content, code generated for the game) uses `t('text')` from
   `js/ui/i18n.js`.
 - The installer (`compile-sources/launcher.py`) keeps its texts in the `TEXTS` table (one block per language), because it

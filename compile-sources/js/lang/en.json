@@ -181,6 +181,8 @@
  "Servidor de teste local (porta": "Local test server (port",
  "). Comandos no jogo:": "). In-game commands:",
  "(centro do mapa),": "(map center),",
+ "(voar),": "(fly),",
+ "e": "and",
  "Trocar": "Change",
  "Servidor de Teste": "Test Server",
  "Onde nascer": "Where to spawn",
