@@ -137,6 +137,12 @@ export function t(key, ...args) {
   return fill(out ?? key, args);
 }
 
+// Só a tabela de reserva (inglês): para onde o alfabeto do idioma não aparece (chat do SA-MP)
+export function tFallback(key) {
+  if (current === SOURCE_LANG) return key;
+  return tables[tables.length - 1]?.exact.get(key) ?? key;
+}
+
 // ---------------------------------------------------------------------------- página
 
 function skipped(el) {
@@ -218,7 +224,9 @@ async function loadFile(code) {
   return cache.get(code);
 }
 
-export function getLanguages() { return languages.slice(); }
+// Lista do menu sempre em ordem alfabética pelo nome (no próprio idioma); idiomas novos entram no lugar certo
+const byName = new Intl.Collator('en', { sensitivity: 'base' });
+export function getLanguages() { return languages.slice().sort((a, b) => byName.compare(a.name, b.name)); }
 export function getLanguage() { return current; }
 // Formato de números e datas do idioma (toLocaleString)
 export function uiLocale() { return current === 'pt' ? 'pt-BR' : current; }

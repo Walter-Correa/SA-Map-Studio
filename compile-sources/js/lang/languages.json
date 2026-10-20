@@ -1,7 +1,17 @@
 [
+  { "code": "id", "name": "Bahasa Indonesia" },
+  { "code": "de", "name": "Deutsch" },
   { "code": "en", "name": "English" },
   { "code": "es", "name": "Español" },
-  { "code": "pt", "name": "Português" },
+  { "code": "fr", "name": "Français" },
   { "code": "it", "name": "Italiano" },
-  { "code": "fr", "name": "Français" }
+  { "code": "hu", "name": "Magyar" },
+  { "code": "pl", "name": "Polski" },
+  { "code": "pt", "name": "Português" },
+  { "code": "ro", "name": "Română" },
+  { "code": "vi", "name": "Tiếng Việt" },
+  { "code": "tr", "name": "Türkçe" },
+  { "code": "bg", "name": "Български" },
+  { "code": "ru", "name": "Русский" },
+  { "code": "uk", "name": "Українська" }
 ]

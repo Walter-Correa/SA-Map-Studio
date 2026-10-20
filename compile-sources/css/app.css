@@ -160,7 +160,7 @@ body.cursor-hidden * {
 .tools .popover { left: 0; right: auto; }
 .popover.wide { width: 320px; }
 .popover.lang-pop { width: 190px; }
-.lang-list { display: grid; gap: 2px; }
+.lang-list { display: grid; gap: 2px; max-height: min(60vh, 470px); overflow-y: auto; }
 .lang-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 7px 10px; background: transparent; border: 1px solid transparent; border-radius: var(--radius-s); color: var(--paper-dim); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .lang-item:hover { background: var(--asphalt-700); color: var(--paper); }
 .lang-item.active { color: var(--paper); border-color: var(--sodium); }

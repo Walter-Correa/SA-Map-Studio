@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.23.0"
+VERSION = "3.24.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -2773,7 +2773,8 @@ def _version_tuple(v):
 
 
 # Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor
-WINDOWS_LANGS = {0x09: "en", 0x0A: "es", 0x16: "pt", 0x10: "it", 0x0C: "fr"}
+WINDOWS_LANGS = {0x09: "en", 0x0A: "es", 0x16: "pt", 0x10: "it", 0x0C: "fr", 0x07: "de", 0x15: "pl", 0x18: "ro",
+                 0x0E: "hu", 0x1F: "tr", 0x21: "id", 0x2A: "vi", 0x19: "ru", 0x22: "uk", 0x02: "bg"}
 _ui_tables = {}
 
 

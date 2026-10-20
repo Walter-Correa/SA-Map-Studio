@@ -315,6 +315,9 @@ def keys_from_source():
             rel = os.path.relpath(path, HERE).replace(os.sep, "/")
             with open(path, "r", encoding="utf-8") as f:
                 src = f.read()
+            if name == "about.js":
+                # O histórico de versões fica só em inglês e nunca é traduzido
+                src = re.sub(r"const CHANGELOG = \[.*?\n\];", "", src, flags=re.S)
             for parts in js_literals(src):
                 for text in parts_variants(parts):
                     add(text, rel, catalog=name in CATALOG_FILES)

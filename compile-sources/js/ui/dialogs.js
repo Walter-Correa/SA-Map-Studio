@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
-import { t, getLanguage } from './i18n.js';
+import { t, tFallback, getLanguage } from './i18n.js';
 import { Project, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
@@ -246,6 +246,22 @@ const TEST_MESSAGES = [
   '  /jetpack, /spawn, /pos - Utilidades gerais',
 ];
 
+// O chat do SA-MP só mostra Windows-1252: letras fora dele perdem o acento (ł → l, ș → s, ơ → o);
+// se ainda sobrar alguma (alfabeto cirílico), a mensagem vai em inglês.
+const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const GAME_LETTERS = { 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ı': 'i' };
+const inCp1252 = (ch) => ch.codePointAt(0) < 0x100 || CP1252_EXTRA.includes(ch);
+function gameText(s) {
+  let out = '';
+  for (const ch of s) {
+    if (inCp1252(ch)) { out += ch; continue; }
+    const base = GAME_LETTERS[ch] ?? ch.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (![...base].every(inCp1252)) return null;
+    out += base;
+  }
+  return out;
+}
+
 function signed(v) { return parseColor(v) | 0; }
 export function mapLines(project, spawn, env, center, useStreamer = false) {
   const clean = (s) => String(s ?? '').replace(/[|\r\n]/g, ' ');
@@ -258,7 +274,8 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
   if (getLanguage() !== 'pt') {
     TEST_MESSAGES.forEach((m, i) => {
       const lead = m.match(/^\s*/)[0];
-      lines.push(`MSG|${i}|${clean(lead + t(m.trim()))}`);
+      const text = gameText(t(m.trim())) ?? tFallback(m.trim());
+      lines.push(`MSG|${i}|${clean(lead + text)}`);
     });
   }
   const allProjects = [project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])];

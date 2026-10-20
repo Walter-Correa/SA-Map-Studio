@@ -3,7 +3,7 @@
 **Map editor for GTA San Andreas, SA-MP and open.mp**: a renewed replacement for the old
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D.
 
-![Version](https://img.shields.io/badge/version-3.23.0-f0a630)
+![Version](https://img.shields.io/badge/version-3.24.0-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -111,11 +111,15 @@ generates Pawn code ready to paste into your gamemode or filterscript.
   Portuguese names, is still imported.
 
 ### Languages
-- English, Español, Português, Italiano and Français, chosen with the **Language** button in the top menu; the switch is
-  instant, without restarting, and is saved. On first launch the editor follows the Windows language (no country:
+- 15 languages: Bahasa Indonesia, Deutsch, English, Español, Français, Italiano, Magyar, Polski, Português, Română,
+  Tiếng Việt, Türkçe, Български, Русский and Українська, chosen with the **Language** button in the top menu (listed in
+  alphabetical order); the switch is instant, without restarting, and is saved. On first launch the editor follows the Windows language (no country:
   Portuguese from Portugal and Brazil use the same Portuguese); text without a translation shows in English.
 - Numbers and dates use the format of the chosen language.
-- The installer, the warning windows and the test server messages in the game follow the same language.
+- The installer, the warning windows and the test server messages in the game follow the same language. The SA-MP chat
+  only shows Windows-1252 text, so letters outside it lose their accent (ł → l) and the Cyrillic languages use English
+  there.
+- The version history is always in English and is not translated.
 
 ### Projects
 - Saved automatically in the `projects` folder, also when closing the editing windows and the program; opening another
@@ -283,7 +287,7 @@ Rotation follows the SA-MP convention (Z, X, Y order), so what you see in the ed
 The code and the interface are written in Brazilian Portuguese, and the Portuguese text itself is the translation key.
 The files are in `compile-sources/js/lang/` and are always included in the build:
 
-- `languages.json`: the menu list, in the order it appears, with each language name written in that language.
+- `languages.json`: the menu list, with each language name written in that language; the menu sorts it alphabetically.
 - `<code>.json` (e.g. `en.json`): `"Portuguese text": "translation"`. Variable parts use `{0}`, `{1}`
   (e.g. `"{0} itens selecionados": "{0} items selected"`); in the test server texts, `%d`/`%s` stay as they are.
   A missing text shows in English.
@@ -293,12 +297,13 @@ The files are in `compile-sources/js/lang/` and are always included in the build
   a part of the interface that must not be translated, use `translate="no"` in the HTML.
 - Text that does not go through the page (canvas, textarea content, code generated for the game) uses `t('text')` from
   `js/ui/i18n.js`.
-- The installer (`compile-sources/launcher.py`) keeps its texts in the `TEXTS` table, because it runs before the program
-  folder exists.
+- The installer (`compile-sources/launcher.py`) keeps its texts in the `TEXTS` table (one block per language), because it
+  runs before the program folder exists.
+- The version history (`CHANGELOG` in `about.js`) is written only in English and has no keys in the language files.
 
 To add a language: copy `en.json` to `<code>.json`, translate the values, add
-`{"code": "<code>", "name": "<name in its own language>"}` at the end of `languages.json`, and add the code to
-`LANGS`/`TEXTS` in `launcher.py` (and to `WINDOWS_LANGS` in `launcher.py` and `serve.py`, for Windows detection).
+`{"code": "<code>", "name": "<name in its own language>"}` to `languages.json`, and add a block for the code to `TEXTS`
+in `launcher.py` (and to `WINDOWS_LANGS` in `launcher.py` and `serve.py`, for Windows detection).
 
 `python compile-sources/i18n_check.py` shows how many texts are missing in each language (`build.bat` runs it and only
 warns); `--missing en` lists the ones missing in English.
@@ -306,6 +311,13 @@ warns); `--missing en` lists the ones missing in English.
 ---
 
 ## Version history
+
+### 3.24.0 — 20/10/2026
+- 10 new languages: Deutsch, Polski, Română, Magyar, Türkçe, Bahasa Indonesia, Tiếng Việt, Русский, Українська and Български (15 in all).
+- The Language menu lists the languages in alphabetical order and scrolls when they do not fit.
+- The installer and the Windows language detection cover the 15 languages.
+- Test server messages in the game: letters the SA-MP chat cannot show lose their accent, and the Cyrillic languages use English.
+- The version history is now always in English and is no longer translated.
 
 ### 3.23.0 — 20/10/2026
 - Translation completed: option lists made of joined texts, textarea placeholders, the diagnostic report, canvas texts,

@@ -30,11 +30,12 @@ This file defines ongoing guidelines and rules that must be strictly followed in
 - **Test cleanup**: When finishing each task, every file and folder created for tests inside `testing/` must be deleted, keeping only essential files that will be used in future tests (and `.gitkeep`).
 
 ## 5. Languages
-- **Every new text in every language**: the editor always ships in every language of `compile-sources/js/lang/languages.json`. Every new or changed text of the interface, of what's new (the `about.js` changelog), of the `serve.py` windows and of the test server messages needs a translation in every `js/lang/<code>.json` file; the installer texts live in the `TEXTS` table of `launcher.py`. Run `python compile-sources/i18n_check.py` before building: it must show 0 missing in every language.
+- **Every new text in every language**: the editor always ships in every language of `compile-sources/js/lang/languages.json`. Every new or changed text of the interface, of the `serve.py` windows and of the test server messages needs a translation in every `js/lang/<code>.json` file; the installer texts live in the `TEXTS` table of `launcher.py`. Run `python compile-sources/i18n_check.py` before building: it must show 0 missing in every language.
 - **Correct spelling**: every language, including the Brazilian Portuguese base, must have correct spelling, accents and punctuation (for example `¿`/`¡` in Spanish and the space before `: ; ! ?` in French).
 - **Whole sentences**: do not build sentences from pieces (`"Aplicar no" + "s índices"`, `` `Selecione um ${tipo}` ``); use templates with the whole sentence or `plural(n, 'item', 'itens')`. Text drawn on a canvas, placed in a textarea value or generated for the game goes through `t()`.
 - **Not translated**: game and SA-MP names, keys and the exported Pawn code stay the same (`compile-sources/i18n_same.txt`, `translate="no"` in the HTML).
-- **New languages** always go at the end of `languages.json`, with the name written in the language itself and without a country.
+- **Changelog only in English**: the version history (`CHANGELOG` in `about.js` and "Version history" in `readme.md`) is always written in English and never translated into any other language, not even Portuguese. It has no keys in the `js/lang/<code>.json` files, the editor shows it with `translate="no"` and `i18n_check.py` ignores it.
+- **New languages** are added to `languages.json` with the name written in the language itself and without a country; the Language menu sorts them alphabetically by name on its own.
 
 ## 6. Visual Demonstration (Screenshots of New Features)
 - **Always show screenshots at the end of the task**: Whenever a new feature or visual improvement is added to the editor, it is mandatory to capture and show one or more screenshots of the feature in action in the final answer.
