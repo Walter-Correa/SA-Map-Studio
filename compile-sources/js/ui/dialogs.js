@@ -1,4 +1,4 @@
-// Diálogos de exportar, importar (qualquer formato) e testar o mapa no jogo.
+// Export, import (any format) and in-game map test dialogs.
 import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
@@ -124,7 +124,7 @@ export function setupImport() {
   drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
   drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); takeFile(e.dataTransfer.files[0]); });
-  // Soltar um arquivo em qualquer lugar da janela também abre o importar
+  // Dropping a file anywhere in the window also opens the import
   window.addEventListener('dragover', (e) => { if (e.dataTransfer?.types?.includes('Files')) e.preventDefault(); });
   window.addEventListener('drop', (e) => {
     if (dlg.open || !e.dataTransfer?.files?.length) return;
@@ -133,12 +133,12 @@ export function setupImport() {
   });
   const open = () => {
     parsed = null; fileBytes = null; $('#importText').value = ''; $('#importFileName').textContent = '';
-    // Substituir e mesclar começam sempre desmarcados: a escolha vale só para aquela importação
+    // Replace and merge always start unchecked: the choice applies only to that import
     for (const id of ['#importReplace', '#importMerge']) { const c = $(id); if (c) c.checked = false; }
     show(); if (!dlg.open) dlg.showModal();
   };
   $('#btnImport').onclick = () => { open(); $('#importText').focus(); };
-  // Substituir e mesclar não valem juntos: marcar um desmarca o outro
+  // Replace and merge do not work together: checking one unchecks the other
   const optReplace = $('#importReplace'), optMerge = $('#importMerge');
   if (optReplace && optMerge) {
     optReplace.addEventListener('change', () => { if (optReplace.checked) optMerge.checked = false; });
@@ -149,22 +149,22 @@ export function setupImport() {
     const replace = $('#importReplace').checked;
     const merge = !replace && $('#importMerge')?.checked;
     const projName = parsed.name || (fileName ? fileName.replace(/\.[^/.]+$/, '').trim() : '');
-    // Nem substituir nem mesclar: o projeto atual é salvo e fechado e a importação vira um projeto novo.
-    // Mesclar: os itens entram no projeto aberto, que mantém o nome e o cabeçalho que já tinha.
+    // Neither replace nor merge: the current project is saved and closed and the import becomes a new project.
+    // Merge: the items go into the open project, which keeps the name and header it already had.
     if (!replace && !merge) {
       $('#importGo').disabled = true;
       try { await switchTo(new Project(await uniqueName(projName || 'Mapa importado'))); }
       finally { $('#importGo').disabled = false; }
     }
     const project = app.project, ed = app.editor;
-    // Cópia profunda: o que foi lido continua intacto (dá para importar de novo) e nada é compartilhado
+    // Deep copy: what was read stays intact (it can be imported again) and nothing is shared
     const clone = (o) => JSON.parse(JSON.stringify(o));
     const KIND_LISTS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws'];
     const items = prepareImportItems(KIND_LISTS.flatMap(k => (parsed[k] || []).map(o => ({ ...clone(o), kind: k }))));
     const removeUids = replace ? KIND_LISTS.flatMap(k => (project[k] || []).map(o => o.uid)) : [];
     const header = parsed.pwnHeader || parsed.preservedHeader || '';
     const cams = parsed.cameras ? normalizeCameras(parsed.cameras) : null;
-    // Um passo só no desfazer/refazer: itens, cabeçalho, código original e câmeras
+    // A single undo/redo step: items, header, original code and cameras
     project.importItems(`Importar ${items.length} itens`, removeUids, items, (p) => {
       if (merge) {
         if (header && !p.pwnHeader) p.pwnHeader = header;
@@ -201,7 +201,7 @@ export function setupImport() {
       ...(parsed.checkpoints || []),
       ...(parsed.mapIcons || []),
     ];
-    // Depois de importar nada fica selecionado: só a câmera vai até os itens
+    // After importing nothing is selected: only the camera goes to the items
     ed.select([]);
     if (placed.length) {
       positionCameraOverProject(project);
@@ -212,10 +212,10 @@ export function setupImport() {
   };
 }
 
-// =====================================================================  testar no jogo
-// Linhas do arquivo lido pelo gamemode de teste (servidor-teste/samapstudio.pwn)
-// Mensagens do servidor de teste no jogo, na mesma ordem de gMsg no samapstudio.pwn. Vão traduzidas
-// para o idioma do editor (linhas MSG|id|texto); em português o gamemode já tem o texto.
+// =====================================================================  test in game
+// Lines of the file read by the test gamemode (servidor-teste/samapstudio.pwn)
+// Test server messages in game, in the same order as gMsg in samapstudio.pwn. They go translated
+// to the editor's language (MSG|id|text lines); in Portuguese the gamemode already has the text.
 const TEST_MESSAGES = [
   'SA Map Studio: teste do mapa.',
   'Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos',
@@ -246,8 +246,8 @@ const TEST_MESSAGES = [
   '  /jetpack, /spawn, /pos - Utilidades gerais',
 ];
 
-// O chat do SA-MP só mostra Windows-1252: letras fora dele perdem o acento (ł → l, ș → s, ơ → o);
-// se ainda sobrar alguma (alfabeto cirílico), a mensagem vai em inglês.
+// The SA-MP chat only shows Windows-1252: letters outside it lose their accent (ł → l, ș → s, ơ → o);
+// if any are still left (Cyrillic alphabet), the message goes in English.
 const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
 const GAME_LETTERS = { 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ı': 'i' };
 const inCp1252 = (ch) => ch.codePointAt(0) < 0x100 || CP1252_EXTRA.includes(ch);
@@ -305,7 +305,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       }
       vehIdx++;
     }
-    // Objetos acoplados a veículos (AttachObjectToVehicle) e a objetos (AttachObjectToObject)
+    // Objects attached to vehicles (AttachObjectToVehicle) and to objects (AttachObjectToObject)
     for (const o of p.objects || []) {
       if (!o.attach || !o.attach.to) continue;
       const cIdx = objUidToIdx.get(o.uid);
@@ -376,7 +376,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
 function spawnPoint(kind) {
   const ed = app.editor, cam = app.vp.camera;
   const yaw = app.vp.fly.yaw;
-  // Ângulo do SA-MP: 0 = norte (+Y), cresce no sentido anti-horário
+  // SA-MP angle: 0 = north (+Y), increases counterclockwise
   const a = (((yaw * 180 / Math.PI) - 90) % 360 + 360) % 360;
   const down = (x, y, zTop) => {
     const rc = new THREE.Raycaster(new THREE.Vector3(x, y, zTop), new THREE.Vector3(0, 0, -1), 0, 1500);
@@ -396,7 +396,7 @@ function spawnPoint(kind) {
     const z = down(c.x, c.y, c.z + 200);
     return { x: c.x, y: c.y, z: z ?? c.z + 2, a };
   }
-  // Ponto do chão no centro da tela
+  // Ground point at the center of the screen
   const hit = app.vp.raycast(new THREE.Vector2(0, 0), [ed.root, ...app.streamer.pickables()], 600);
   if (hit) return { x: hit.point.x, y: hit.point.y, z: (down(hit.point.x, hit.point.y, hit.point.z + 3) ?? hit.point.z + 1), a };
   const z = down(cam.position.x, cam.position.y, cam.position.z);

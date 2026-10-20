@@ -33,13 +33,13 @@ IS_WINDOWS = os.name == "nt"
 
 ROOT_NAME = "sa-map-studio"
 MANIFEST_REL = "system/bundle.json"
-PROGRAM_DIRS = ("system", "test-server")      # trocadas inteiras na atualização
+PROGRAM_DIRS = ("system", "test-server")      # replaced whole on update
 USER_DIRS = ("projects", "exported", "data")  # nunca apagadas
 STAGING_NAME = ".sa-map-studio-update"
 BACKUP_NAME = ".sa-map-studio-backup"
 JOURNAL_NAME = ".sa-map-studio-update.json"
-EDITOR_MUTEX = "Local\\SAMapStudio.Editor"      # criado pelo editor (serve.py)
-LAUNCHER_MUTEX = "Local\\SAMapStudio.Launcher"  # um launcher por vez
+EDITOR_MUTEX = "Local\\SAMapStudio.Editor"      # created by the editor (serve.py)
+LAUNCHER_MUTEX = "Local\\SAMapStudio.Launcher"  # one launcher at a time
 WINDOW_TITLE = "SA Map Studio"
 ENGINE_EXE = "sa-map-studio.exe"
 
@@ -85,8 +85,8 @@ def get_base_paths():
     return exe_dir, res_dir, target_dir, target_exe
 
 
-# Textos do launcher em todos os idiomas do editor. Ele roda antes de a pasta existir, então os textos
-# ficam aqui e não nos js/lang/*.json. Idioma novo: acrescente um bloco com a sigla e todas as chaves.
+# Launcher texts in all the editor's languages. It runs before the folder exists, so the texts
+# live here and not in js/lang/*.json. New language: add a block with the code and all the keys.
 TEXTS = {
     "en": {
         "open": "SA Map Studio is already open.",
@@ -435,7 +435,7 @@ TEXTS = {
     },
 }
 LANGS = tuple(TEXTS)
-# Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor
+# Windows primary language (GetUserDefaultUILanguage & 0x3FF) to the editor's code
 WINDOWS_LANGS = {0x09: "en", 0x0A: "es", 0x16: "pt", 0x10: "it", 0x0C: "fr", 0x07: "de", 0x15: "pl", 0x18: "ro",
                  0x0E: "hu", 0x1F: "tr", 0x21: "id", 0x2A: "vi", 0x19: "ru", 0x22: "uk", 0x02: "bg"}
 _lang_cache = []
@@ -464,7 +464,7 @@ def tr(key, *args):
     return TEXTS[ui_lang()][key].format(*args)
 
 
-# ---------------------------------------------------------------------------- Windows: instâncias
+# ---------------------------------------------------------------------------- Windows: instances
 
 _held_mutexes = []
 
@@ -587,7 +587,7 @@ def show_already_open():
         _dialog("info", WINDOW_TITLE, tr("open"))
 
 
-# ---------------------------------------------------------------------------- manifesto e versões
+# ---------------------------------------------------------------------------- manifest and versions
 
 def manifest_from_zip(bundle_zip):
     try:
@@ -621,7 +621,7 @@ def _native(base, rel):
 
 
 def _retry(fn, *args):
-    # Antivírus e indexação seguram arquivos por instantes: tenta de novo antes de desistir
+    # Antivirus and indexing hold files for a moment: retries before giving up
     for attempt in range(40):
         try:
             return fn(*args)
@@ -679,13 +679,13 @@ def _read_journal(exe_dir):
         return None
 
 
-# Operações do plano (cada uma pode ser desfeita mesmo se parou no meio):
-#   swapdir  pasta do programa trocada: a antiga vai para a cópia de segurança e a nova entra
-#   adddir   pasta do programa que não existia
-#   deldir   pasta do programa que não existe mais
-#   replace  arquivo do pacote que já existia
-#   add      arquivo novo do pacote
-#   delete   arquivo do pacote anterior que não vem neste
+# Plan operations (each can be undone even if it stopped midway):
+#   swapdir  program folder swapped: the old one goes to the backup copy and the new one comes in
+#   adddir   program folder that did not exist
+#   deldir   program folder that no longer exists
+#   replace  package file that already existed
+#   add      new package file
+#   delete   file from the previous package that is not in this one
 def _do(op, rel, target, staging, backup):
     t, s, b = _native(target, rel), _native(staging, rel), _native(backup, rel)
     if op in ("swapdir", "replace", "deldir", "delete") and os.path.lexists(t):
@@ -704,7 +704,7 @@ def _undo(op, rel, target, backup):
 
 
 def _prune_empty(target, rels):
-    # Pastas que ficaram vazias porque o pacote não traz mais nada nelas (nunca as pastas do usuário)
+    # Folders left empty because the package no longer brings anything into them (never the user's folders)
     keep = {os.path.normcase(os.path.join(target, d)) for d in USER_DIRS} | {os.path.normcase(target)}
     for rel in rels:
         d = os.path.dirname(_native(target, rel))
@@ -742,7 +742,7 @@ def recover(exe_dir):
     elif j and j.get("state") == "done":
         _cleanup(exe_dir, j.get("ops"))
     else:
-        # Descompactação interrompida antes de mexer na pasta: só sobra a pasta temporária
+        # Extraction interrupted before touching the folder: only the temporary folder is left
         _rmtree(os.path.join(exe_dir, STAGING_NAME))
         _rmtree(os.path.join(exe_dir, BACKUP_NAME))
 
@@ -755,7 +755,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
     _rmtree(staging)
     _rmtree(backup)
 
-    # 1. Descompacta à parte (a pasta instalada ainda não foi tocada)
+    # 1. Extracts separately (the installed folder has not been touched yet)
     with zipfile.ZipFile(bundle_zip, "r") as z:
         infos = [i for i in z.infolist() if not i.is_dir()]
         total = max(1, len(infos))
@@ -786,7 +786,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
         if top(f) not in PROGRAM_DIRS and f not in new_set and os.path.isfile(_native(target, f)):
             ops.append(["delete", f])
 
-    # 3. Aplica com diário; qualquer erro desfaz tudo
+    # 3. Applies with a journal; any error undoes everything
     _write_journal(exe_dir, {"state": "applying", "ops": ops})
     try:
         for n, (op, rel) in enumerate(ops, 1):
@@ -805,7 +805,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
     _cleanup(exe_dir, ops)
 
 
-# ---------------------------------------------------------------------------- janela de progresso
+# ---------------------------------------------------------------------------- progress window
 
 def run_with_progress(subtitle, exe_dir, work):
     """Mostra a janela de progresso enquanto work(progress) roda. Repassa o erro de work."""
@@ -821,7 +821,7 @@ def run_with_progress(subtitle, exe_dir, work):
     root.title(WINDOW_TITLE + " - " + tr("t_install"))
     root.configure(bg="#1c2228")
     root.resizable(False, False)
-    root.protocol("WM_DELETE_WINDOW", lambda: None)  # não fecha no meio
+    root.protocol("WM_DELETE_WINDOW", lambda: None)  # does not close midway
 
     frames = []
     for cand in (
@@ -888,7 +888,7 @@ def run_with_progress(subtitle, exe_dir, work):
             work(progress)
             progress(100.0, tr("done"))
             time.sleep(0.4)
-        except BaseException as e:  # noqa: B036 - repassado para a thread principal
+        except BaseException as e:  # noqa: B036 - passed on to the main thread
             result["error"] = e
         finally:
             root.after(0, root.destroy)
@@ -899,7 +899,7 @@ def run_with_progress(subtitle, exe_dir, work):
         raise result["error"]
 
 
-# ---------------------------------------------------------------------------- execução
+# ---------------------------------------------------------------------------- execution
 
 def launch(target_exe, exe_dir):
     try:
@@ -938,8 +938,8 @@ def main():
 
     exe_dir, res_dir, target_dir, target_exe = get_base_paths()
 
-    # O editor grava tudo na própria pasta. Numa pasta protegida (como a do GTA em Arquivos de
-    # Programas) ele se abre de novo pedindo administrador; em qualquer outra pasta, não pede nada.
+    # The editor writes everything to its own folder. In a protected folder (like GTA's in Program
+    # Files) it reopens asking for administrator; in any other folder, it asks for nothing.
     if getattr(sys, "frozen", False) and not dir_writable(target_dir if os.path.isdir(target_dir) else exe_dir):
         if relaunch_as_admin():
             sys.exit(0)
@@ -969,7 +969,7 @@ def main():
         _dialog("error", tr("t_error"), tr("no_bundle"))
         sys.exit(1)
 
-    # Um launcher por vez: outro aberto significa editor aberto (ou instalando)
+    # One launcher at a time: another one open means the editor is open (or installing)
     if not acquire_mutex(LAUNCHER_MUTEX):
         show_already_open()
         sys.exit(0)
@@ -986,8 +986,8 @@ def main():
     need = (not installed or not old_manifest or not new_manifest.get("build")
             or old_manifest.get("build") != new_manifest.get("build"))
 
-    # Versão antiga numa pasta de versão mais nova: não abre nem instala (projetos e configurações
-    # gravados pela versão nova podem não funcionar na antiga)
+    # Old version in a newer version's folder: neither opens nor installs (projects and settings
+    # saved by the new version may not work in the old one)
     if installed and old_manifest and version_tuple(new_manifest.get("version")) < version_tuple(old_manifest.get("version")):
         _dialog("error", WINDOW_TITLE + " - " + tr("t_incompatible"),
                 tr("older_exe", new_manifest.get("version"), old_manifest.get("version")))
@@ -1003,7 +1003,7 @@ def main():
     if not wait_until_closed(target_dir, version):
         sys.exit(0)
 
-    # Espaço: o pacote é descompactado inteiro antes da troca
+    # Space: the package is fully extracted before the swap
     need_bytes = int((new_manifest.get("size") or 0) * 1.1) + 64 * 1024 * 1024
     try:
         free = shutil.disk_usage(exe_dir).free
@@ -1019,7 +1019,7 @@ def main():
     subtitle = tr("updating_to", version) if installed else tr("first_run")
     try:
         if files is None:
-            # Pacote sem manifesto (não deveria acontecer): instala do jeito antigo, sem apagar nada
+            # Package without a manifest (should not happen): installs the old way, deleting nothing
             run_with_progress(subtitle, exe_dir, lambda progress: zipfile.ZipFile(bundle_zip).extractall(exe_dir))
         else:
             run_with_progress(subtitle, exe_dir, lambda progress: install(bundle_zip, exe_dir, new_manifest, old_manifest, progress))

@@ -1,10 +1,10 @@
-// "Novidades e documentação": histórico de versões, todos os recursos do editor,
-// data e hora da última compilação e os direitos reservados.
+// "Novidades e documentação": version history, all the editor's features,
+// date and time of the last build and the rights reserved.
 import { app, $, esc } from './common.js';
 
 export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
-// Histórico de versões: sempre escrito em inglês e nunca traduzido (sem chaves nos arquivos de idioma)
+// Version history: always written in English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
@@ -557,7 +557,7 @@ const FEATURES = [
 export function setupAbout() {
   const dlg = $('#dlgAbout');
   $('#btnAbout').onclick = async () => {
-    try { app.cfg = { ...app.cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* usa o que já tem */ }
+    try { app.cfg = { ...app.cfg, ...(await (await fetch('/api/config')).json()) }; } catch { /* uses what it already has */ }
     render();
     dlg.showModal();
   };

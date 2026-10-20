@@ -1,5 +1,5 @@
 import { uiLocale } from './i18n.js';
-// Projetos: salvar automático, abrir (salvando e fechando o atual), criar, renomear e apagar.
+// Projects: autosave, open (saving and closing the current one), create, rename and delete.
 import * as THREE from 'three';
 import { Project } from '../editor/project.js';
 import { app, $, esc, store, toast, showConfirm } from './common.js';
@@ -35,13 +35,13 @@ export function saveProject(project) {
   return chain;
 }
 
-// Janelas de edição (TextDraws, MapIcons, GangZones) mexem direto no projeto:
-// ao fechar (X, Concluir ou Esc), salva na hora se algo mudou desde que a janela abriu
+// Edit windows (TextDraws, MapIcons, GangZones) work directly on the project:
+// on closing (X, Done or Esc), saves right away if anything changed since the window opened
 export function autosaveOnClose(dialogEl, kind) {
   if (!dialogEl) return;
   let before = null;
   const snap = () => JSON.stringify(app.project?.[kind] || []);
-  // O atributo "open" muda em qualquer forma de abrir ou fechar o <dialog>
+  // The "open" attribute changes with any way of opening or closing the <dialog>
   new MutationObserver(() => {
     if (dialogEl.open) {
       if (before === null) before = snap();
@@ -61,8 +61,8 @@ export function saveNow() {
   return Promise.all(list.map(p => saveProject(p)));
 }
 
-// Seleção que vale para retomar o projeto: só itens do próprio projeto. Objeto do mundo, item de
-// projeto coexistente ou nada selecionado (por exemplo depois de apagar) deixam o projeto sem seleção.
+// Selection that counts for resuming the project: only the project's own items. A world object, an item of a
+// coexisting project or nothing selected (for example after deleting) leave the project with no selection.
 function resumableSelection(project) {
   const ed = app.editor;
   if (!ed || ed.worldSelection?.length) return [];
@@ -107,7 +107,7 @@ async function fetchProject(name) {
   return Project.fromJSON(await res.json());
 }
 
-// Câmera ao abrir ou importar: calcula o centro de todos os itens do projeto e foca no item mais próximo dele
+// Camera on open or import: computes the center of all the project's items and focuses on the item closest to it
 const SPATIAL_KINDS = ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons'];
 
 export function projectFocusItem(p) {
@@ -140,8 +140,8 @@ export function positionCameraOverProject(p) {
   app.streamer.invalidate();
 }
 
-// Coloca o projeto no editor (o anterior já deve ter sido salvo)
-// keepCamera: usa a câmera salva no projeto em vez de focar no centro dos itens
+// Puts the project in the editor (the previous one must already have been saved)
+// keepCamera: uses the camera saved in the project instead of focusing on the items' center
 export function useProject(p, { keepCamera = false } = {}) {
   unsub?.();
   app.emit('project-closing');
@@ -153,7 +153,7 @@ export function useProject(p, { keepCamera = false } = {}) {
   const resume = (p.lastSelection || []).filter(u => p.kindOf(u));
   if (keepCamera && p.camera) app.vp.fly.setPose(new THREE.Vector3(p.camera.x, p.camera.y, p.camera.z), p.camera.yaw, p.camera.pitch);
   else if (resume.length && resume.length === p.lastSelection.length) {
-    // Retoma de onde parou: seleciona os últimos itens, liga o gizmo e leva a câmera até ele
+    // Resumes where it left off: selects the last items, turns on the gizmo and takes the camera to it
     app.editor.select(resume);
     app.editor.focusGizmo();
   } else positionCameraOverProject(p);
@@ -164,7 +164,7 @@ export function useProject(p, { keepCamera = false } = {}) {
   app.emit('project', p);
 }
 
-// Abre outro projeto: salva e fecha o que estava aberto
+// Opens another project: saves and closes the one that was open
 export async function switchTo(nameOrProject) {
   const old = app.project;
   await saveNow();
@@ -179,8 +179,8 @@ export async function openInitialProject() {
   const last = store.get('lastProject', null);
   if (last) { try { useProject(await fetchProject(last)); app.initialProjectLoaded = true; return; } catch { /* abre outro */ } }
   const list = await listProjects();
-  for (const p of list.projects) { try { useProject(await fetchProject(p.name)); return; } catch { /* próximo */ } }
-  // Primeira abertura do editor: começa pelo mapa de exemplo, na câmera salva nele
+  for (const p of list.projects) { try { useProject(await fetchProject(p.name)); return; } catch { /* next */ } }
+  // First editor launch: starts with the example map, at the camera saved in it
   try {
     const ex = await (await fetch('/api/example_project')).json();
     if (ex.ok && ex.project) {
@@ -189,7 +189,7 @@ export async function openInitialProject() {
       app.initialProjectLoaded = true;
       return;
     }
-  } catch { /* sem exemplo: projeto vazio */ }
+  } catch { /* no example: empty project */ }
   useProject(new Project('Meu mapa'));
   saveNow();
   app.initialProjectLoaded = true;
@@ -376,7 +376,7 @@ export function setupProjects() {
       }
     };
   }
-  // Chamado pela janela do programa (serve.py) antes de fechar: salva tudo e só então a janela fecha
+  // Called by the program window (serve.py) before closing: saves everything and only then the window closes
   window.__samapSaveAll = () => saveNow().then(() => true, () => false);
   window.addEventListener('beforeunload', (e) => {
     if (isDirty()) { saveNow(); e.preventDefault(); e.returnValue = ''; }

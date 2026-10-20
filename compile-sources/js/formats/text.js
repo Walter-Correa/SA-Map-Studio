@@ -1,4 +1,4 @@
-// Formatos de texto do GTA SA: gta.dat / default.dat, IDE e IPL (texto).
+// GTA SA text formats: gta.dat / default.dat, IDE and IPL (text).
 
 function cleanLines(text) {
   return text.split(/\r?\n/).map(l => {
@@ -28,7 +28,7 @@ export function parseDat(text) {
 
 const IDE_OBJECT_SECTIONS = new Set(['objs', 'tobj', 'anim', 'cars', 'peds', 'weap', 'hier']);
 
-// IDE: definições de modelos. Retorna {objects:[], txdParents:[[filho,pai]]}
+// IDE: model definitions. Returns {objects:[], txdParents:[[child,parent]]}
 export function parseIde(text, source = '') {
   const objects = [];
   const txdParents = [];
@@ -56,12 +56,12 @@ export function parseIde(text, source = '') {
       source,
     };
     if (section === 'objs' || section === 'tobj') {
-      // SA: id, model, txd, drawdist, flags  (ou com meshcount antes das distâncias)
+      // SA: id, model, txd, drawdist, flags  (or with meshcount before the distances)
       let rest = f.slice(3);
       if (section === 'tobj') rest = rest.slice(0, rest.length - 2);
       if (rest.length >= 2) {
         if (rest.length === 2) { def.drawDist = parseFloat(rest[0]); def.flags = parseInt(rest[1], 10) || 0; }
-        else { // meshCount, distâncias..., flags
+        else { // meshCount, distances..., flags
           const n = parseInt(rest[0], 10) || 1;
           def.drawDist = parseFloat(rest[1 + Math.max(0, n - 1)] ?? rest[1]);
           def.flags = parseInt(rest[rest.length - 1], 10) || 0;
@@ -87,7 +87,7 @@ export function parseIde(text, source = '') {
   return { objects, txdParents };
 }
 
-// IPL texto: seção "inst" (id, nome, interior, x, y, z, qx, qy, qz, qw, lod)
+// Text IPL: "inst" section (id, name, interior, x, y, z, qx, qy, qz, qw, lod)
 export function parseIplText(text) {
   const inst = [];
   const cars = [];

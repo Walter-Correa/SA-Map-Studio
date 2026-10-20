@@ -1,5 +1,5 @@
-/* SA Map Studio — tema "asfalto e sinalização da Califórnia" */
-/* Fonte Barlow (SIL Open Font License, ver fonts/OFL.txt) — desenhada a partir da sinalização da Califórnia */
+/* SA Map Studio — "California asphalt and signage" theme */
+/* Barlow font (SIL Open Font License, see fonts/OFL.txt) — designed from California signage */
 @font-face { font-family: 'Barlow'; src: url('../fonts/Barlow-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Barlow'; src: url('../fonts/Barlow-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Barlow'; src: url('../fonts/Barlow-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
@@ -101,7 +101,7 @@ code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 0.92em; bac
 .viewport { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #6f9fd0; grid-column: 2; grid-row: 2; }
 .viewport canvas { display: block; width: 100%; height: 100%; outline: none; }
 
-/* Ocultação do ponteiro do mouse durante movimentação da câmera / tela */
+/* Hiding the mouse pointer while the camera / screen is moving */
 body.cursor-hidden,
 body.cursor-hidden * {
   cursor: none !important;
@@ -128,7 +128,7 @@ body.cursor-hidden * {
 .actions .btn { padding: 0 5px; flex-shrink: 0; }
 .divider { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
 
-/* ---------------------------------------------------------------- botões */
+/* ---------------------------------------------------------------- buttons */
 .btn {
   display: inline-flex; align-items: center; gap: 5px;
   height: 31px; padding: 0 9px;
@@ -301,7 +301,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--sodium); width
 .slot.changed .slot-name { color: var(--sodium); }
 .slot .slot-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); }
 .color-row { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; }
-/* Seletor de cor próprio (o WebView2 não abre o nativo) */
+/* Custom color picker (WebView2 does not open the native one) */
 .cp-panel { position: fixed; z-index: 100000; width: 220px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
   background: var(--asphalt-900, #1c2228); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
 .cp-sv { position: relative; height: 130px; border-radius: 4px; overflow: hidden; cursor: crosshair; touch-action: none; }
@@ -371,7 +371,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--sodium); width
 .pal-alpha input { accent-color: var(--sodium); }
 .ol-tag { font-size: 11px; color: var(--sodium); white-space: nowrap; }
 
-/* ---------------------------------------------------------------- câmeras */
+/* ---------------------------------------------------------------- cameras */
 .cam-panel { overflow-y: auto; overflow-x: hidden; flex: 1; padding: 10px 12px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-content: start; }
 .cam-section, .cam-item, .cam-key { min-width: 0; }
 .cam-section { display: grid; gap: 8px; }
@@ -517,7 +517,7 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .setup p.setup-hint { color: var(--paper-mute); font-size: 13px; }
 .error { color: var(--danger) !important; }
 
-/* ---------------------------------------------------------------- diálogos */
+/* ---------------------------------------------------------------- dialogs */
 .dialog {
   border: 1px solid var(--asphalt-500); border-radius: 8px; padding: 0;
   background: var(--asphalt-700); color: var(--paper);
@@ -583,14 +583,14 @@ legend.sub { margin-top: 8px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* ---------------------------------------------------------------- telas menores / responsividade */
-/* Os rótulos da barra superior somem um a um só quando não cabem (fitTopbar em app.js) */
+/* The top bar labels disappear one by one only when they do not fit (fitTopbar in app.js) */
 .lbl, .lbl2, .lbl-seg, .lbl-keep, .lbl-export, .lbl-test { display: inline; }
 .topbar .no-lbl > span[class^="lbl"], .brand.no-lbl > span, .save-state.no-lbl { display: none; }
 .topbar.tight .btn, .topbar.tight .seg-btn { padding: 0 3px; gap: 3px; }
 .topbar.tight .tools, .topbar.tight .actions { gap: 1px; }
 .topbar.tight .project-name { width: 80px; min-width: 70px; }
 
-/* Botão flutuante nas setas do Gizmo para alternar Mover / Girar */
+/* Floating button on the Gizmo arrows to toggle Move / Rotate */
 .gizmo-mode-toggle {
   position: absolute;
   z-index: 45;
@@ -628,7 +628,7 @@ legend.sub { margin-top: 8px; }
   height: 13px;
 }
 
-/* Diálogo de Sons (PlayerPlaySound) - cabeçalho e filtros fixos, apenas a lista scrolla */
+/* Sounds dialog (PlayerPlaySound) - fixed header and filters, only the list scrolls */
 #dlgSounds:not([open]) {
   display: none !important;
 }
@@ -656,7 +656,7 @@ legend.sub { margin-top: 8px; }
   overflow-y: auto !important;
 }
 
-/* Destaque da categoria ativa no diálogo de Sons */
+/* Highlight of the active category in the Sounds dialog */
 .snd-cat-btn.active {
   background: var(--sodium, #f0a630) !important;
   color: #111 !important;
@@ -685,7 +685,7 @@ legend.sub { margin-top: 8px; }
 .cam-section, .cam-item, .cam-key { grid-template-columns: minmax(0, 1fr); }
 .cam-panel .btn.block { white-space: normal; height: auto; min-height: 32px; padding-top: 5px; padding-bottom: 5px; text-align: left; }
 
-/* ---------------------------------------------------------------- novidades e documentação */
+/* ---------------------------------------------------------------- what's new and documentation */
 .dialog.about { width: min(720px, 94vw); }
 .about-body { overflow-y: auto; max-height: calc(90vh - 130px); min-height: 0; padding-right: 6px; display: grid; gap: 18px; }
 .about-head { display: flex; gap: 14px; align-items: center; }
@@ -703,7 +703,7 @@ legend.sub { margin-top: 8px; }
 .cl-head span { color: var(--paper-mute); font-size: 12.5px; }
 .about-foot { flex: none; border-top: 1px solid var(--line); padding-top: 10px; color: var(--sodium); font-weight: 700; font-size: 12.5px; text-align: center; }
 
-/* ---------------------------------------------------------------- escopo de seleção / movimento */
+/* ---------------------------------------------------------------- selection / movement scope */
 .scope-toggle {
   display: flex; gap: 4px; margin: 0; background: var(--asphalt-900); padding: 3px; border-radius: var(--radius-s); border: 1px solid var(--line);
 }
@@ -737,7 +737,7 @@ legend.sub { margin-top: 8px; }
   display: none !important;
 }
 
-/* Botões nas bordas internas dos menus laterais */
+/* Buttons on the inner edges of the side menus */
 .sidebar-toggle {
   position: absolute;
   top: 50%;
@@ -775,7 +775,7 @@ legend.sub { margin-top: 8px; }
   transition: transform 0.2s ease;
 }
 
-/* Toggle do menu esquerdo (na borda direita/interna do menu esquerdo) */
+/* Left menu toggle (on the right/inner edge of the left menu) */
 .sidebar-toggle.left {
   right: -16px;
   border-left: none;
@@ -785,7 +785,7 @@ legend.sub { margin-top: 8px; }
   transform: rotate(180deg);
 }
 
-/* Toggle do menu direito (na borda esquerda/interna do menu direito) */
+/* Right menu toggle (on the left/inner edge of the right menu) */
 .sidebar-toggle.right {
   left: -16px;
   border-right: none;
@@ -795,7 +795,7 @@ legend.sub { margin-top: 8px; }
   transform: rotate(180deg);
 }
 
-/* Direitos reservados no boot */
+/* Rights reserved at boot */
 .boot-rights {
   margin-top: 16px;
   font-size: 11.5px;
@@ -805,7 +805,7 @@ legend.sub { margin-top: 8px; }
   opacity: 0.85;
 }
 
-/* Coordenadas do clique do mouse no topo do menu lateral direito */
+/* Mouse click coordinates at the top of the right side menu */
 .click-coords-bar {
   flex: none;
   background: var(--asphalt-800);
@@ -873,7 +873,7 @@ legend.sub { margin-top: 8px; }
   margin-right: 2px;
 }
 
-/* Sistema de Diagnóstico e Logs */
+/* Diagnostics and Logs System */
 .dialog.wide {
   width: min(860px, 95vw);
 }
@@ -916,7 +916,7 @@ legend.sub { margin-top: 8px; }
   pointer-events: none;
 }
 
-/* Seletor de Animações - Split View Modal */
+/* Animation Picker - Split View Modal */
 #dlgAnimPicker {
   width: min(1120px, 96vw);
   height: 88vh;
@@ -1067,7 +1067,7 @@ legend.sub { margin-top: 8px; }
   box-shadow: 0 0 0 1.5px var(--gold-400);
 }
 
-/* Previne scroll horizontal nos menus laterais e adapta todo o conteúdo */
+/* Prevents horizontal scroll in the side menus and fits all the content */
 .sidebar,
 .sidebar.left,
 .sidebar.right,
@@ -1120,7 +1120,7 @@ legend.sub { margin-top: 8px; }
   background: rgba(0, 102, 255, 0.15);
   border-color: var(--accent);
 }
-/* Auto preencher das barras: destacado quando desligado, preenchido quando ligado */
+/* Bar auto-fill: highlighted when off, filled when on */
 .btn.pb-autofill { justify-content: center; border-color: var(--accent-2, #f0a630); color: var(--accent-2, #f0a630); font-weight: 600; }
 .btn.pb-autofill:hover { background: rgba(240, 166, 48, 0.12); }
 .btn.pb-autofill.on { background: var(--accent-2, #f0a630); color: #1c2228; }
@@ -1167,7 +1167,7 @@ legend.sub { margin-top: 8px; }
 }
 
 /* ==========================================================================
-   Seletor Modal de Skins e Sprites
+   Skin and Sprite Picker Modal
    ========================================================================== */
 .picker-grid-scroll {
   scrollbar-width: thin;

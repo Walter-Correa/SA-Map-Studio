@@ -1,6 +1,6 @@
 // ===========================================================================
-// SA Map Studio - Lugares e Interiores para teleporte
-// Destinos organizados em 'Locais no mundo' e 'Interiores' com coordenadas
+// SA Map Studio - Places and Interiors for teleport
+// Destinations organized into 'Locais no mundo' and 'Interiores' with coordinates
 // ===========================================================================
 
 export const WORLD_PLACES = [
@@ -1728,10 +1728,10 @@ export const INTERIOR_PLACES = [
   }
 ];
 
-// Compatibilidade retroativa com código anterior
+// Backward compatibility with earlier code
 export const PLACES = WORLD_PLACES;
 
-// Região aproximada para a placa da câmera
+// Approximate region for the camera sign
 export function regionOf(x, y, z) {
   if (z > 900 || z < -80) return 'Interior';
   if (x > 44 && y < -768 && x < 3000) return 'Los Santos';

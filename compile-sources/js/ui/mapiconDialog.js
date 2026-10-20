@@ -1,4 +1,4 @@
-// Editor visual 2D de MapIcons (semelhante ao de GangZones) + Janela de Lista Visual de MapIcons (IDs 0 a 63)
+// 2D visual MapIcon editor (similar to the GangZone one) + Visual MapIcon List Window (IDs 0 to 63)
 import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl, getNextMapIconName } from '../world/mapicons.js';
 import { makeMapIcon } from '../editor/project.js';
 import { app, $, $$, esc, toast, copyText, arrowStep } from './common.js';
@@ -415,7 +415,7 @@ function duplicateSelectedMapIcon() {
   if (!m) return;
   const list = app.project?.mapIcons || [];
 
-  // Encontra a posição livre mais próxima radialmente
+  // Finds the nearest free position radially
   let bestPos = { x: m.x + 25, y: m.y };
   let found = false;
   for (const radius of [25, 40, 60, 80]) {
@@ -776,7 +776,7 @@ function copyAllMapIconsPawn() {
 }
 
 // ============================================================================
-// Modal Seletor Visual de MapIcons (64 ícones oficiais 0 a 63)
+// Visual MapIcon Picker Modal (64 official icons 0 to 63)
 // ============================================================================
 let pickerModalEl = null;
 let pickerCallback = null;

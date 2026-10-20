@@ -10,8 +10,8 @@ import time
 import hashlib
 import zipfile
 
-# Manifesto gravado dentro do pacote: o launcher compara o da pasta instalada com o do .exe novo
-# para saber se precisa atualizar e quais arquivos do programa deixaram de existir nesta versão
+# Manifest stored inside the package: the launcher compares the installed folder's with the new .exe's
+# to know whether it needs to update and which program files no longer exist in this version
 MANIFEST = "system/bundle.json"
 
 
@@ -34,7 +34,7 @@ def package_bundle(staging_dir, output_zip):
     total_files = 0
     total_uncompressed = 0
     
-    # Arquivos ou pastas a ignorar
+    # Files or folders to ignore
     ignore_names = {"__pycache__", ".git", ".gitkeep", "LEIA-ME.txt", "leia-me.txt"}
     ignore_exts = {".pyc", ".pyo", ".pdb", ".dmp", ".ilk", ".exp"}
     

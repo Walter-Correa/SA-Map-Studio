@@ -1,8 +1,8 @@
-// Seletor de cor próprio para todos os <input type="color"> do editor.
-// O WebView2 (janela do editor) não abre o seletor nativo do navegador, então o clique no campo é
-// interceptado e abre este painel: quadrado de saturação/brilho, barra de matiz, código hexadecimal e
-// cores prontas. Ao escolher, o valor do campo muda e os eventos "input" e "change" são disparados,
-// como no seletor nativo, então quem já escuta o campo continua funcionando.
+// Custom color picker for all <input type="color"> in the editor.
+// WebView2 (the editor window) does not open the browser's native picker, so the click on the field is
+// intercepted and opens this panel: saturation/brightness square, hue bar, hexadecimal code and
+// ready-made colors. On choosing, the field value changes and the "input" and "change" events are fired,
+// as with the native picker, so anything already listening to the field keeps working.
 
 const SWATCHES = [
   '#ffffff', '#e0e0e0', '#9e9e9e', '#545454', '#000000', '#f44336', '#e91e63', '#9c27b0',
@@ -125,7 +125,7 @@ function open(input) {
   panel.querySelectorAll('.cp-sw button').forEach(b => b.onclick = () => { current.hsv = rgbToHsv(...hexToRgb(b.dataset.c)); paint(); });
   panel.querySelector('.cp-ok').onclick = () => close(true);
 
-  // Posição: logo abaixo do campo (ou acima, se não couber), sempre dentro da janela
+  // Position: right below the field (or above, if it does not fit), always inside the window
   paint();
   const r = input.getBoundingClientRect(), w = panel.offsetWidth, h = panel.offsetHeight;
   const left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
@@ -138,7 +138,7 @@ function open(input) {
   document.addEventListener('keydown', onKey, true);
 }
 
-// Intercepta o clique em qualquer <input type="color"> (inclusive os criados depois)
+// Intercepts the click on any <input type="color"> (including ones created later)
 export function installColorPicker() {
   document.addEventListener('click', (e) => {
     const input = e.target?.closest?.('input[type="color"]');

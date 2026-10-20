@@ -1,13 +1,13 @@
-// Desenho de TextDraws igual ao GTA SA / SA-MP: lê data/fonts.dat e models/fonts.txd da pasta do jogo
-// e reproduz as contas do CFont (largura das letras, quebra de linha, alinhamento e caixa).
-// Tudo é calculado em pixels de uma tela de referência e devolvido também em unidades 640x448 do SA-MP.
+// TextDraw rendering identical to GTA SA / SA-MP: reads data/fonts.dat and models/fonts.txd from the game folder
+// and reproduces CFont's calculations (letter width, line wrapping, alignment and box).
+// Everything is computed in pixels of a reference screen and also returned in SA-MP 640x448 units.
 import { parseTxd, decodeToRGBA } from '../formats/txd.js';
 
-export const TD_SCREEN = { w: 1920, h: 1080 };   // resolução de referência da prévia (16:9)
-export const TD_WIDTH = 640, TD_HEIGHT = 448;   // espaço de coordenadas das TextDraws no SA-MP
+export const TD_SCREEN = { w: 1920, h: 1080 };   // preview reference resolution (16:9)
+export const TD_WIDTH = 640, TD_HEIGHT = 448;   // TextDraw coordinate space in SA-MP
 const UX = TD_SCREEN.w / TD_WIDTH, UY = TD_SCREEN.h / TD_HEIGHT;
 
-// Cores das tags ~x~ (HudColours do jogo)
+// Colors of the ~x~ tags (the game's HudColours)
 const TAG_COLORS = {
   r: [180, 25, 29], g: [54, 104, 44], b: [50, 60, 127], w: [225, 225, 225], s: [225, 225, 225],
   y: [226, 192, 99], p: [168, 110, 252], l: [0, 0, 0],
@@ -18,7 +18,7 @@ let loading = null;
 
 export function gtaFontsReady() { return fonts.ready; }
 
-// Carrega fontes do jogo uma vez; onReady é chamado quando ficam prontas (para redesenhar)
+// Loads the game fonts once; onReady is called when they are ready (to redraw)
 export function loadGtaFonts(onReady) {
   if (!loading) {
     loading = (async () => {
@@ -70,7 +70,7 @@ function parseFontsDat(text) {
   }
 }
 
-// Fonte do SA-MP (0 a 3) -> textura (0 = font2, 1 = font1) e sub-fonte do CFont::SetFontStyle
+// SA-MP font (0 to 3) -> texture (0 = font2, 1 = font1) and CFont::SetFontStyle sub-font
 function fontStyle(font) {
   switch (font) {
     case 0: return { tex: 0, sub: 0 };   // FONT_GOTHIC
@@ -103,7 +103,7 @@ function subFontChar(id, sub) {
 
 const CP1252 = { '€': 0x80, '‚': 0x82, 'ƒ': 0x83, '„': 0x84, '…': 0x85, '†': 0x86, '‡': 0x87, 'ˆ': 0x88, '‰': 0x89, 'Š': 0x8A, '‹': 0x8B, 'Œ': 0x8C, 'Ž': 0x8E, '‘': 0x91, '’': 0x92, '“': 0x93, '”': 0x94, '•': 0x95, '–': 0x96, '—': 0x97, '˜': 0x98, '™': 0x99, 'š': 0x9A, '›': 0x9B, 'œ': 0x9C, 'ž': 0x9E, 'Ÿ': 0x9F };
 
-// Índice da letra no CFont (caractere - 0x20); '_' vira espaço como no jogo
+// Letter index in CFont (character - 0x20); '_' becomes a space as in the game
 function letterId(ch, sub) {
   let code = ch.charCodeAt(0);
   if (code > 255) code = CP1252[ch] ?? 0x3F;
@@ -120,7 +120,7 @@ function rgba(num) {
   return [(v >>> 24) & 255, (v >>> 16) & 255, (v >>> 8) & 255, v & 255];
 }
 
-// Os mesmos valores que vão para TextDrawCreate / LetterSize / TextSize, em pixels da tela de referência
+// The same values that go to TextDrawCreate / LetterSize / TextSize, in reference screen pixels
 function screenParams(td) {
   const letterX = Number(td.letterSizeX) || 0, letterY = Number(td.letterSizeY) || 0;
   return {
@@ -130,7 +130,7 @@ function screenParams(td) {
   };
 }
 
-// Quebra o texto em linhas (tags ~n~, cores e largura máxima do alinhamento), como o CFont
+// Breaks the text into lines (~n~ tags, colors and maximum alignment width), like CFont
 export function layoutTextDraw(td) {
   const p = screenParams(td);
   const align = td.align ?? td.alignment ?? 1;
@@ -195,8 +195,8 @@ export function layoutTextDraw(td) {
     return { x: lx, y: p.y + idx * lineH, width: l.width, glyphs: l.glyphs };
   });
 
-  // CFont::GetTextRect (caixa com 4 px de margem). No cliente SA-MP 0.3.7 a caixa alinhada à direita
-  // ignora o TextSize e vai sempre da borda esquerda da tela até 4 px depois do x (medido no jogo).
+  // CFont::GetTextRect (box with a 4 px margin). In the SA-MP 0.3.7 client the right-aligned box
+  // ignores TextSize and always goes from the left edge of the screen to 4 px after x (measured in game).
   let box = null;
   if (td.useBox) {
     let left, right;
@@ -212,30 +212,30 @@ export function layoutTextDraw(td) {
   return { lines: out, box, textRect, sx: p.sx, sy: p.sy, tex, outline, shadow: td.shadow | 0, align };
 }
 
-// Retângulo ocupado (unidades 640x448) para seleção e arrasto
+// Occupied rectangle (640x448 units) for selection and dragging
 export function textDrawRect(td) {
   if (td.type === 'progress') {
     return { x: +td.x || 0, y: +td.y || 0, w: Math.max(4, +td.pbWidth || 0), h: Math.max(4, +td.pbHeight || 0) };
   }
   const lay = layoutTextDraw(td);
   const r = lay.box || lay.textRect;
-  // Caixas invertidas (TextSize antes do x ou altura negativa) também valem, como no jogo
+  // Inverted boxes (TextSize before x or negative height) also count, as in the game
   const left = Math.min(r.left, r.right), right = Math.max(r.left, r.right);
   const top = Math.min(r.top, r.bottom), bottom = Math.max(r.top, r.bottom);
   return { x: left / UX, y: top / UY, w: Math.max(4, (right - left) / UX), h: Math.max(4, (bottom - top) / UY) };
 }
 
-// Barra de progresso (SA Progress Bar Pro, progressbarpro.inc): os mesmos 3 sprites LD_SPAC:white que a include cria,
-// em unidades 640x448: fundo, trilho dentro da borda e a parte cheia conforme valor e direção.
-// Borda: pbBorder na horizontal e 1,25 vez isso na vertical (1 unidade tem 3,00 px x 2,41 px em 1920x1080),
-// limitada como na include (0,5 a 5). blinkOn: fase acesa da piscada (cor da piscada ou interior apagado;
-// a borda troca para pbBlinkBorderColor se houver).
+// Progress bar (SA Progress Bar Pro, progressbarpro.inc): the same 3 LD_SPAC:white sprites the include creates,
+// in 640x448 units: background, track inside the border and the filled part according to value and direction.
+// Border: pbBorder horizontally and 1.25 times that vertically (1 unit is 3.00 px x 2.41 px at 1920x1080),
+// limited as in the include (0.5 to 5). blinkOn: lit phase of the blink (blink color or interior off;
+// the border switches to pbBlinkBorderColor if there is one).
 export const PB_BORDER_Y_RATIO = 1.25;
-// Modelos da include: 0 barra, 1 anel de segmentos, 2 círculo que cresce do centro
+// Include styles: 0 bar, 1 segment ring, 2 circle that grows from the center
 export const PB_STYLES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE'];
 
-// Anel (PB_STYLE_RING), igual a PB_RenderRing da include: pontos de borda e segmentos em volta do
-// centro da caixa, começando no topo; o tamanho do segmento vem do tamanho do anel e da quantidade
+// Ring (PB_STYLE_RING), same as PB_RenderRing in the include: border points and segments around the
+// box center, starting at the top; the segment size comes from the ring size and the count
 function ringParts(bar, blinkOn) {
   const x = +bar.x || 0, y = +bar.y || 0;
   const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
@@ -282,8 +282,8 @@ export function progressBarParts(bar, blinkOn = false) {
   const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
   const c = blinking && blinkColor ? blinkColor : base;
   const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
-  // Borda limitada como na include: de 0,5 a 5, nunca maior do que cabe (sobra 1 unidade de interior)
-  // e nunca menor que a mínima
+  // Border limited as in the include: from 0.5 to 5, never larger than what fits (1 unit of interior left over)
+  // and never smaller than the minimum
   const n = Number(bar.pbBorder ?? 1);
   const fit = Math.max(0.5, Math.min((w - 1) / 2, (h - 1) / (2 * PB_BORDER_Y_RATIO)));
   const bx = Math.min(Number.isFinite(n) ? Math.max(0.5, Math.min(5, n)) : 1, fit), by = bx * PB_BORDER_Y_RATIO;
@@ -292,18 +292,18 @@ export function progressBarParts(bar, blinkOn = false) {
   const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
   const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || alpha);
   const parts = [{ shape, x, y, w, h, color: borderColor }];
-  if (blinking && !blinkColor) return parts; // sem cor: o interior apaga
+  if (blinking && !blinkColor) return parts; // no color: the interior goes off
   parts.push({ shape, x: ix, y: iy, w: iw, h: ih, color: fillColor });
   const part = max > 0 ? Math.min(1, v / max) : 0;
   if (part > 0 && iw > 0 && ih > 0 && shape === 'circle') {
-    // Círculo: cresce a partir do centro
+    // Circle: grows from the center
     parts.push({ shape, x: ix + iw * (1 - part) / 2, y: iy + ih * (1 - part) / 2, w: iw * part, h: ih * part, color: c });
   } else if (part > 0 && iw > 0 && ih > 0) {
     const m = { shape, x: ix, y: iy, w: iw, h: ih, color: c };
     switch (bar.pbDir | 0) {
       case 1: m.x += iw * (1 - part); m.w = iw * part; break; // esquerda
-      case 2: m.y += ih * (1 - part); m.h = ih * part; break; // para cima
-      case 3: m.h = ih * part; break;                         // para baixo
+      case 2: m.y += ih * (1 - part); m.h = ih * part; break; // upward
+      case 3: m.h = ih * part; break;                         // downward
       default: m.w = iw * part;                               // direita
     }
     parts.push(m);
@@ -311,14 +311,14 @@ export function progressBarParts(bar, blinkOn = false) {
   return parts;
 }
 
-// Desenha a barra na prévia (canvas na resolução de referência TD_SCREEN) com a regra de pixel do
-// Direct3D 9 usada pelo jogo: um pixel é pintado se o centro dele (coordenada inteira) cai no
-// retângulo, ou seja, de ceil(início) até ceil(fim) - 1. Assim as bordas têm os mesmos pixels do jogo.
+// Draws the bar in the preview (canvas at the TD_SCREEN reference resolution) with the Direct3D 9
+// pixel rule used by the game: a pixel is painted if its center (integer coordinate) falls inside the
+// rectangle, that is, from ceil(start) to ceil(end) - 1. This way the borders have the same pixels as the game.
 export function drawProgressBar(ctx, bar, blinkOn = false) {
   for (const r of progressBarParts(bar, blinkOn)) {
     const c = rgba(r.color);
     if (r.shape === 'circle') {
-      // Formas redondas (sprite LD_BEAT:chit): elipse com o mesmo tamanho do círculo do sprite
+      // Round shapes (LD_BEAT:chit sprite): ellipse with the same size as the sprite's circle
       if (r.w <= 0 || r.h <= 0) continue;
       ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
       ctx.beginPath();
@@ -334,7 +334,7 @@ export function drawProgressBar(ctx, bar, blinkOn = false) {
   }
 }
 
-// Largura do texto em unidades 640 (para criar a caixa automaticamente)
+// Text width in 640 units (to create the box automatically)
 export function textDrawTextWidth(td) {
   const lay = layoutTextDraw({ ...td, useBox: 0, textSizeX: 100000, textSizeY: 100000, align: 1, x: 0 });
   return Math.max(...lay.lines.map(l => l.width)) / UX;
@@ -360,7 +360,7 @@ function tinted(tex, r, g, b) {
 
 function drawGlyphs(ctx, lay, dx, dy, forceColor) {
   const cellW = fonts.atlas[lay.tex].canvas.width / 16;
-  const cellH = cellW * 1.25;              // 16 colunas de 32x40 px (12,8 linhas)
+  const cellH = cellW * 1.25;              // 16 columns of 32x40 px (12.8 rows)
   for (const line of lay.lines) {
     for (const g of line.glyphs) {
       const col = forceColor || g.color;
@@ -377,7 +377,7 @@ function drawGlyphs(ctx, lay, dx, dy, forceColor) {
   ctx.globalAlpha = 1;
 }
 
-// Desenha a TextDraw de texto (fontes 0 a 3) em pixels da tela de referência
+// Draws the text TextDraw (fonts 0 to 3) in reference screen pixels
 export function drawTextDraw(ctx, td) {
   const lay = layoutTextDraw(td);
   if (lay.box) {
@@ -397,7 +397,7 @@ export function drawTextDraw(ctx, td) {
   return lay;
 }
 
-// Sem os arquivos de fonte do jogo: mesma posição e tamanho, com uma fonte do sistema
+// Without the game font files: same position and size, with a system font
 function drawFallback(ctx, td, lay) {
   ctx.save();
   ctx.textBaseline = 'top';

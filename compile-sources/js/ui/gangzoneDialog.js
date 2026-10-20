@@ -1,5 +1,5 @@
-// Editor e gerenciador visual de GangZones (GangZoneCreate)
-// Modal com mapa do radar do GTA SA (-3000 a +3000), zoom, pan,
+// Visual GangZone editor and manager (GangZoneCreate)
+// Modal with the GTA SA radar map (-3000 to +3000), zoom, pan,
 import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName, findFreeGangZoneSpot } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
 import { toast, arrowStep, showAlert } from './common.js';
@@ -45,7 +45,7 @@ let isDraggingHandle = null; // { zone, handle: 'nw'|'ne'|'sw'|'se'|'move', star
 let dragStartSnapshot = null;
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
-let activeSnapLines = []; // Linhas de guia do snap
+let activeSnapLines = []; // Snap guide lines
 
 let gzUndoStack = [];
 let gzRedoStack = [];
@@ -118,7 +118,7 @@ function updateGzUndoButtons() {
   if (btnR) btnR.disabled = gzRedoStack.length === 0;
 }
 
-// Estado da visualização do canvas
+// Canvas view state
 const view = {
   zoom: 1.0,
   panX: 0,
@@ -210,7 +210,7 @@ function setupDialogEvents() {
     };
   }
 
-  // Inputs da zona selecionada
+  // Selected zone inputs
   const nameInput = dialogEl.querySelector('#gzName');
   if (nameInput) {
     nameInput.oninput = (e) => {
@@ -411,7 +411,7 @@ function setupCanvasEvents() {
     const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
     const newZoom = Math.max(0.2, Math.min(10.0, view.zoom * zoomFactor));
 
-    // Zoom centrado na posição do mouse
+    // Zoom centered on the mouse position
     view.panX = mx - (mx - view.panX) * (newZoom / view.zoom);
     view.panY = my - (my - view.panY) * (newZoom / view.zoom);
     view.zoom = newZoom;
@@ -427,7 +427,7 @@ function setupCanvasEvents() {
     const cy = e.clientY - rect.top;
     const w = canvasToWorld(cx, cy);
 
-    // Botão direito (2), botão do meio (1) ou barra de espaço/Shift/Alt = Pan / Mover mapa
+    // Right button (2), middle button (1) or space bar/Shift/Alt = Pan / Move map
     if (e.button === 2 || e.button === 1 || e.shiftKey || e.altKey) {
       isPanning = true;
       panStart = { x: e.clientX - view.panX, y: e.clientY - view.panY };
@@ -441,7 +441,7 @@ function setupCanvasEvents() {
         selectedUid
       });
 
-      // Verifica clique nas alças de redimensionamento da zona selecionada
+      // Checks for a click on the selected zone's resize handles
       const selZone = getSelectedZone();
       if (selZone) {
         const handle = getHandleAtPos(selZone, cx, cy);
@@ -460,7 +460,7 @@ function setupCanvasEvents() {
         }
       }
 
-      // Verifica se clicou dentro de alguma zona existente para selecioná-la
+      // Checks whether the click was inside any existing zone to select it
       const clickedZone = findZoneAtWorld(w.x, w.y);
       if (clickedZone) {
         selectedUid = clickedZone.uid;
@@ -480,7 +480,7 @@ function setupCanvasEvents() {
         return;
       }
 
-      // Inicia criação de nova zona por arrasto
+      // Starts creating a new zone by dragging
       const snapEnabled = isSnapActive();
       let startPt = { x: w.x, y: w.y };
       if (snapEnabled) {
@@ -504,7 +504,7 @@ function setupCanvasEvents() {
     const cy = e.clientY - rect.top;
     const w = canvasToWorld(cx, cy);
 
-    // Atualiza HUD de coordenadas
+    // Updates the coordinates HUD
     const hudCoords = dialogEl.querySelector('#gzHudCoords');
     if (hudCoords) {
       hudCoords.textContent = `X: ${w.x.toFixed(1)} | Y: ${w.y.toFixed(1)}`;
@@ -548,7 +548,7 @@ function setupCanvasEvents() {
         z.maxx = Math.round(newMaxX);
         z.maxy = Math.round(newMaxY);
       } else {
-        // Redimensionamento por alça
+        // Resizing by handle
         let minx = isDraggingHandle.origMinX;
         let miny = isDraggingHandle.origMinY;
         let maxx = isDraggingHandle.origMaxX;
@@ -599,7 +599,7 @@ function setupCanvasEvents() {
       return;
     }
 
-    // Atualiza cursor dinamicamente conforme hover em alças, bordas ou centro da zona
+    // Updates the cursor dynamically according to hover over handles, edges or the zone center
     if (!isPanning && !isDraggingHandle && !isDrawing) {
       const selZone = getSelectedZone();
       let cursorSet = false;
@@ -650,7 +650,7 @@ function setupCanvasEvents() {
       isDrawing = null;
       activeSnapLines = [];
 
-      // Só cria se tiver tamanho mínimo relevante (ex: >= 15 unidades)
+      // Only creates it if it has a relevant minimum size (e.g. >= 15 units)
       if ((maxx - minx) >= 15 && (maxy - miny) >= 15) {
         if (!appRef.project.gangZones) appRef.project.gangZones = [];
         if (dragStartSnapshot) gzPushUndoSnapshot(dragStartSnapshot);
@@ -659,7 +659,7 @@ function setupCanvasEvents() {
           name: `Zona ${count}`,
           comment: `Zona ${count}`,
           minx, miny, maxx, maxy,
-          color: 0x33AA3390, // Grove Street verde translúcido por padrão
+          color: 0x33AA3390, // Translucent Grove Street green by default
         });
         appRef.project.gangZones.push(newZ);
         appRef.project.modified = true;
@@ -737,13 +737,13 @@ function getHandleAtPos(z, cx, cy) {
   const { left, right, top, bottom } = getZoneCanvasBounds(z);
   const tol = 8;
 
-  // 1. Cantos da zona
+  // 1. Zone corners
   if (Math.hypot(cx - left, cy - top) <= tol) return 'nw';
   if (Math.hypot(cx - right, cy - top) <= tol) return 'ne';
   if (Math.hypot(cx - left, cy - bottom) <= tol) return 'sw';
   if (Math.hypot(cx - right, cy - bottom) <= tol) return 'se';
 
-  // 2. Bordas da zona (topo=n, baixo=s, esquerda=w, direita=e)
+  // 2. Zone edges (top=n, bottom=s, left=w, right=e)
   if (cx >= left - tol && cx <= right + tol) {
     if (Math.abs(cy - top) <= tol) return 'n';
     if (Math.abs(cy - bottom) <= tol) return 's';
@@ -753,7 +753,7 @@ function getHandleAtPos(z, cx, cy) {
     if (Math.abs(cx - right) <= tol) return 'e';
   }
 
-  // 3. Área interna
+  // 3. Inner area
   if (cx >= left && cx <= right && cy >= top && cy <= bottom) {
     return 'move';
   }
@@ -857,30 +857,30 @@ function redrawCanvas() {
   ctx.fillStyle = '#161922';
   ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
 
-  // Desenha a imagem do mapa do radar
+  // Draws the radar map image
   if (imgLoaded && radarImg) {
     const imgW = radarImg.width * view.zoom;
     const imgH = radarImg.height * view.zoom;
     ctx.drawImage(radarImg, view.panX, view.panY, imgW, imgH);
   } else {
-    // Grade de referência se a imagem não carregar
+    // Reference grid if the image does not load
     drawFallbackGrid();
   }
 
-  // Desenha os limites externos do GTA SA (-3000 a +3000)
+  // Draws the outer limits of GTA SA (-3000 to +3000)
   const tl = worldToCanvas(WORLD_MIN, WORLD_MAX);
   const br = worldToCanvas(WORLD_MAX, WORLD_MIN);
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
   ctx.lineWidth = 1.5;
   ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
 
-  // Desenha todas as GangZones do projeto
+  // Draws all the project's GangZones
   const zones = appRef.project?.gangZones || [];
   for (const z of zones) {
     drawZone(z, z.uid === selectedUid);
   }
 
-  // Desenha retângulo em criação
+  // Draws the rectangle being created
   if (isDrawing) {
     const minx = Math.min(isDrawing.startX, isDrawing.curX);
     const maxx = Math.max(isDrawing.startX, isDrawing.curX);
@@ -901,7 +901,7 @@ function redrawCanvas() {
     ctx.setLineDash([]);
   }
 
-  // Desenha linhas-guia magnéticas (snap)
+  // Draws the magnetic guide lines (snap)
   if (activeSnapLines.length > 0) {
     ctx.strokeStyle = '#00FFFF';
     ctx.lineWidth = 1;
@@ -929,7 +929,7 @@ function drawZone(z, isSelected) {
   const w = cBottomRight.x - cTopLeft.x;
   const h = cBottomRight.y - cTopLeft.y;
 
-  // Preenchimento translúcido com cor da GangZone
+  // Translucent fill with the GangZone color
   ctx.fillStyle = gzColorToRgba(z.color);
   ctx.fillRect(cTopLeft.x, cTopLeft.y, w, h);
 
@@ -938,7 +938,7 @@ function drawZone(z, isSelected) {
   ctx.lineWidth = isSelected ? 2.5 : 1;
   ctx.strokeRect(cTopLeft.x, cTopLeft.y, w, h);
 
-  // Nome da zona no centro
+  // Zone name at the center
   if (w > 30 && h > 18) {
     ctx.font = 'bold 12px Inter, sans-serif';
     ctx.fillStyle = '#FFFFFF';
@@ -950,7 +950,7 @@ function drawZone(z, isSelected) {
     ctx.shadowBlur = 0;
   }
 
-  // Alças de redimensionamento nos cantos para zona selecionada
+  // Resize handles at the corners for the selected zone
   if (isSelected) {
     const handleSize = 7;
     ctx.fillStyle = '#FFFFFF';
@@ -1063,7 +1063,7 @@ function updateSidebarFields() {
     hexInput.value = '0x' + (Number(z.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   }
 
-  // Renderiza paleta rápida de cores
+  // Renders the quick color palette
   const presetsEl = dialogEl.querySelector('#gzPresets');
   if (presetsEl && !presetsEl.hasChildNodes()) {
     presetsEl.innerHTML = '';
@@ -1089,7 +1089,7 @@ function updateSidebarFields() {
 
 const NO_SPACE_MSG = 'Não há mais espaço livre no mapa para novas GangZones. Reduza ou apague alguma zona para abrir espaço.';
 
-// Centro da visão atual do radar, em coordenadas do mundo
+// Center of the current radar view, in world coordinates
 function viewCenterWorld() {
   const imgW = (radarImg?.width || 1536) * view.zoom;
   const imgH = (radarImg?.height || 1536) * view.zoom;
@@ -1101,7 +1101,7 @@ function viewCenterWorld() {
 
 function createNewZoneAtCenter() {
   if (!appRef.project.gangZones) appRef.project.gangZones = [];
-  // Zona nova (300 x 300) no espaço livre mais próximo do centro da visão; reduzida se precisar
+  // New zone (300 x 300) in the free space nearest to the view center; shrunk if needed
   const spot = findFreeGangZoneSpot(appRef.project.gangZones, { width: 300, height: 300, near: viewCenterWorld() });
   if (!spot) { showAlert(NO_SPACE_MSG, { title: 'Sem espaço para GangZones' }); return; }
   gzPushUndo();
@@ -1145,7 +1145,7 @@ function focusSelectedZone() {
   const cx = (z.minx + z.maxx) / 2;
   const cy = (z.miny + z.maxy) / 2;
 
-  // Centraliza a gangzone na visão 2D do radar
+  // Centers the gangzone in the radar's 2D view
   const normX = (cx - WORLD_MIN) / WORLD_SIZE;
   const normY = (WORLD_MAX - cy) / WORLD_SIZE;
   const imgW = (radarImg?.width || 1536) * view.zoom;
@@ -1164,7 +1164,7 @@ function duplicateSelectedZone() {
   const origin = { minx: Math.min(z.minx, z.maxx), maxx: Math.max(z.minx, z.maxx), miny: Math.min(z.miny, z.maxy), maxy: Math.max(z.miny, z.maxy) };
   const w = (origin.maxx - origin.minx) || 100;
   const h = (origin.maxy - origin.miny) || 100;
-  // Encostada num lado livre da original; sem lado livre, o espaço livre mais próximo (reduzida se precisar)
+  // Placed against a free side of the original; with no free side, the nearest free space (shrunk if needed)
   const spot = findFreeGangZoneSpot(allZones, { width: w, height: h, origin, near: { x: (origin.minx + origin.maxx) / 2, y: (origin.miny + origin.maxy) / 2 } });
   if (!spot) { showAlert(NO_SPACE_MSG, { title: 'Sem espaço para GangZones' }); return; }
   gzPushUndo();

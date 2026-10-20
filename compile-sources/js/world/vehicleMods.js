@@ -1,9 +1,9 @@
-// Suporte completo a veículos: cores do carcols.dat, paintjobs e tuning (AddVehicleComponent)
-// Conforme a especificação : 
-// e regras oficiais de compatibilidade do servidor.
+// Full vehicle support: carcols.dat colors, paintjobs and tuning (AddVehicleComponent)
+// As per the specification:
+// and the server's official compatibility rules.
 
-// Suporte completo a veículos: cores do carcols.dat, paintjobs e tuning (AddVehicleComponent)
-// Conforme a especificação : 
+// Full vehicle support: carcols.dat colors, paintjobs and tuning (AddVehicleComponent)
+// As per the specification:
 
 export const CAR_COLORS = [
   [0,0,0], [245,245,245], [42,119,161], [132,4,16], [38,55,57], [134,68,110], [215,142,16], [76,117,183],
@@ -65,7 +65,7 @@ export const COMPONENT_TYPES = {
   15: 'Grade / Bullbar Traseira',
 };
 
-// Mapeamento completo de componentes
+// Complete component mapping
 
 export const VEHICLE_COMPONENTS = {
   // Spoilers (0)
@@ -297,17 +297,17 @@ export const VEHICLE_COMPONENTS = {
   1131: { type: 2, name: 'Softtop Roof (Savanna)' },
 };
 
-// Modelos válidos para troca de cores (IsVehicleValidForColor)
+// Models valid for color changes (IsVehicleValidForColor)
 export const VALID_COLOR_VEHICLES = new Set([400, 401, 402, 403, 404, 405, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 418, 419, 420, 421, 422, 423, 424, 426, 427, 428, 429, 430, 431, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 448, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 466, 467, 468, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 521, 522, 524, 525, 526, 527, 529, 530, 531, 533, 534, 535, 536, 539, 540, 541, 542, 543, 544, 545, 546, 547, 549, 550, 551, 552, 553, 554, 555, 557, 558, 559, 560, 561, 562, 563, 565, 566, 567, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 585, 586, 587, 588, 589, 591, 592, 595, 596, 597, 598, 599, 600, 602, 603, 604, 605, 608, 609, 611]);
 
-// Modelos válidos para tuning (IsVehicleValidForModding)
+// Models valid for tuning (IsVehicleValidForModding)
 export const VALID_MODDING_VEHICLES = new Set([400, 401, 402, 403, 404, 405, 406, 409, 410, 411, 412, 413, 414, 415, 418, 419, 420, 421, 422, 423, 424, 426, 428, 429, 430, 431, 434, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 466, 467, 468, 471, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 487, 489, 491, 492, 493, 494, 495, 496, 498, 499, 500, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 521, 522, 526, 527, 529, 531, 533, 534, 535, 536, 539, 540, 541, 542, 543, 545, 546, 547, 549, 550, 551, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 565, 566, 567, 568, 571, 573, 575, 576, 577, 578, 579, 580, 581, 583, 585, 586, 587, 589, 592, 594, 595, 600, 602, 603, 604, 605, 609]);
 
-// Modelos com suporte universal de tuning (Nitro, Rodas, Som, Hidráulica)
+// Models with universal tuning support (Nitro, Wheels, Stereo, Hydraulics)
 export const UNIVERSAL_MOD_VEHICLES = new Set([402, 403, 407, 408, 409, 411, 412, 413, 414, 416, 419, 423, 424, 427, 428, 429, 431, 433, 434, 437, 438, 440, 441, 442, 443, 445, 451, 455, 456, 457, 458, 459, 466, 467, 470, 474, 475, 479, 480, 482, 483, 485, 490, 494, 495, 498, 499, 502, 503, 504, 505, 506, 507, 508, 514, 515, 524, 525, 526, 528, 530, 531, 532, 533, 541, 543, 544, 545, 552, 554, 555, 564, 566, 568, 571, 572, 573, 574, 578, 579, 582, 583, 587, 588, 594, 596, 597, 598, 599, 601, 602, 604, 605, 609]);
 export const UNIVERSAL_MODS = new Set([1008, 1009, 1010, 1025, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086, 1087, 1096, 1097, 1098]);
 
-// Tabela específica de tuning por modelo (IsModValidForVehicle)
+// Model-specific tuning table (IsModValidForVehicle)
 export const SPECIFIC_VEHICLE_MODS = {
   "400": [
     1008,
@@ -1797,17 +1797,17 @@ export const SPECIFIC_VEHICLE_MODS = {
   ]
 };
 
-// Validação de cor do veículo conforme Pawn IsVehicleValidForColor
+// Vehicle color validation as in Pawn IsVehicleValidForColor
 export function isVehicleValidForColor(model) {
   return VALID_COLOR_VEHICLES.has(model | 0);
 }
 
-// Validação de modificações no veículo conforme Pawn IsVehicleValidForModding
+// Vehicle modification validation as in Pawn IsVehicleValidForModding
 export function isVehicleValidForModding(model) {
   return VALID_MODDING_VEHICLES.has(model | 0);
 }
 
-// Validação de paintjob conforme Pawn IsPaintjobValidForVehicle
+// Paintjob validation as in Pawn IsPaintjobValidForVehicle
 export function isPaintjobValidForVehicle(paint, model) {
   const m = model | 0;
   switch (paint | 0) {
@@ -1822,13 +1822,13 @@ export function isPaintjobValidForVehicle(paint, model) {
   }
 }
 
-// Veículos que suportam paintjobs no SA-MP (ao menos 1 paintjob válido)
+// Vehicles that support paintjobs in SA-MP (at least 1 valid paintjob)
 export function supportsPaintjob(model) {
   const m = model | 0;
   return isPaintjobValidForVehicle(0, m) || isPaintjobValidForVehicle(1, m) || isPaintjobValidForVehicle(2, m);
 }
 
-// Retorna lista de paintjobs disponíveis para o modelo: ex [0, 1, 2]
+// Returns the list of paintjobs available for the model: e.g. [0, 1, 2]
 export function getCompatiblePaintjobs(model) {
   const m = model | 0;
   const list = [];
@@ -1838,12 +1838,12 @@ export function getCompatiblePaintjobs(model) {
   return list;
 }
 
-// Validação de peça / mod de tuning conforme Pawn IsModValidForVehicle
+// Tuning part / mod validation as in Pawn IsModValidForVehicle
 export function isModValidForVehicle(mod, model) {
   const m = model | 0;
   const c = mod | 0;
 
-  // 0. Se o componente possui nome de outro veículo específico, rejeita imediatamente
+  // 0. If the component has the name of another specific vehicle, rejects immediately
   const comp = VEHICLE_COMPONENTS[c];
   if (comp && comp.name) {
     const CAR_NAMES = {
@@ -1859,19 +1859,19 @@ export function isModValidForVehicle(mod, model) {
     }
   }
 
-  // 1. Modelos universais (Nitro, Rodas, Som, Hidráulica)
+  // 1. Universal models (Nitro, Wheels, Stereo, Hydraulics)
   if (UNIVERSAL_MOD_VEHICLES.has(m)) {
     if (UNIVERSAL_MODS.has(c)) return true;
   }
 
-  // 2. Tabela específica do modelo
+  // 2. Model-specific table
   const allowed = SPECIFIC_VEHICLE_MODS[m];
   if (allowed && allowed.includes(c)) return true;
 
   return false;
 }
 
-// Retorna todos os componentes compatíveis com o modelo
+// Returns all components compatible with the model
 export function getCompatibleMods(model) {
   const m = model | 0;
   if (!isVehicleValidForModding(m)) return [];

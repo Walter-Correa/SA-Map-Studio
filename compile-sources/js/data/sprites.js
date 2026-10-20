@@ -1,4 +1,4 @@
-// Catálogo completo de 567 sprites para TextDraws do GTA San Andreas / SA-MP
+// Complete catalog of 567 sprites for GTA San Andreas / SA-MP TextDraws
 
 export const TEXTDRAW_SPRITES = [
   {

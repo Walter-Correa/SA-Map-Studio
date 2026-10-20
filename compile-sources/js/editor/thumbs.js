@@ -1,12 +1,12 @@
-// Miniaturas dos objetos do catálogo.
-// - Primeiro procura no cache em disco (Dados/cache/miniaturas): aparecem na hora.
-// - O que falta é desenhado em lotes (vários objetos por leitura da placa de vídeo)
-//   e salvo no disco, então só é gerado uma vez.
-// - "Preparar todas" gera em segundo plano as que faltam, aos poucos.
+// Thumbnails of the catalog objects.
+// - First looks in the disk cache (Dados/cache/miniaturas): they appear right away.
+// - What is missing is drawn in batches (several objects per graphics card read)
+//   and saved to disk, so it is only generated once.
+// - "Preparar todas" generates the missing ones in the background, little by little.
 import * as THREE from 'three';
 
 const SIZE = 96;
-const COLS = 4, ROWS = 4;            // lote de até 16 miniaturas por leitura
+const COLS = 4, ROWS = 4;            // batch of up to 16 thumbnails per read
 const BATCH = COLS * ROWS;
 
 export class Thumbnails extends EventTarget {
@@ -14,8 +14,8 @@ export class Thumbnails extends EventTarget {
     super();
     this.renderer = renderer;
     this.models = models;
-    this.have = new Set();      // ids com miniatura no disco
-    this.urls = new Map();      // id -> url (disco ou gerada agora) | null
+    this.have = new Set();      // ids with a thumbnail on disk
+    this.urls = new Map();      // id -> url (disk or generated now) | null
     this.waiting = new Map();   // id -> [callbacks]
     this.queue = [];
     this.busy = false;
@@ -53,10 +53,10 @@ export class Thumbnails extends EventTarget {
     this.pump();
   }
 
-  // Prepara miniaturas em segundo plano de forma contida e leve
+  // Prepares thumbnails in the background in a contained, light way
   async prepareAllOnBoot() {}
 
-  // Descarta pedidos que saíram da tela (os do fundo continuam)
+  // Discards requests that left the screen (the ones in the background continue)
   cancelExcept(ids) {
     const keep = new Set(ids);
     this.queue = this.queue.filter(id => keep.has(id) || this.background.ids?.has(id) || (this.waiting.delete(id), false));
@@ -75,7 +75,7 @@ export class Thumbnails extends EventTarget {
           batch.push(id);
         }
         if (!batch.length) continue;
-        // Carrega os modelos do lote em paralelo (no grupo de workers)
+        // Loads the batch models in parallel (in the worker group)
         const loaded = new Set(batch.filter(id => this.models.ready.has(id)));
         const timeout = () => new Promise(r => setTimeout(() => r(null), 20000));
         const templates = await Promise.all(batch.map(id => Promise.race([this.models.getModel(id).catch(() => null), timeout()])));
@@ -92,11 +92,11 @@ export class Thumbnails extends EventTarget {
           const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
           if (this.background.ids?.delete(id)) { this.background.done++; this.dispatchEvent(new Event('progress')); }
           this.finish(id, diskUrl);
-          // Modelos carregados só para a miniatura saem imediatamente da memória
+          // Models loaded only for the thumbnail leave memory immediately
           const canRelease = this.releasable ? this.releasable(id) : true;
           if (!loaded.has(id) && canRelease) this.releaseModel(id);
         }
-        // Libera imediatamente texturas para manter uso de RAM/VRAM mínimo
+        // Immediately frees textures to keep RAM/VRAM usage minimal
         this.models.releaseTxds?.();
         await new Promise(r => setTimeout(r, this.background.running && !this.waiting.size ? 150 : 0));
         await new Promise(r => requestAnimationFrame(r));
@@ -122,7 +122,7 @@ export class Thumbnails extends EventTarget {
     this.models.models.delete(id);
   }
 
-  // Desenha até 16 modelos numa só textura e lê os pixels uma vez (sem travar a tela)
+  // Draws up to 16 models on a single texture and reads the pixels once (without freezing the screen)
   async renderBatch(ids, templates) {
     const r = this.renderer;
     const prev = r.getRenderTarget();
@@ -132,7 +132,7 @@ export class Thumbnails extends EventTarget {
     ids.forEach((id, i) => {
       const t = templates[i];
       const col = i % COLS, row = Math.floor(i / COLS);
-      // Num render target o three.js usa o viewport/scissor do próprio alvo
+      // On a render target three.js uses the target's own viewport/scissor
       tg.viewport.set(col * SIZE, row * SIZE, SIZE, SIZE);
       tg.scissor.set(col * SIZE, row * SIZE, SIZE, SIZE);
       r.setRenderTarget(tg);
@@ -172,7 +172,7 @@ export class Thumbnails extends EventTarget {
       const col = i % COLS, row = Math.floor(i / COLS);
       const img = this.ctx.createImageData(SIZE, SIZE);
       for (let y = 0; y < SIZE; y++) {
-        // A leitura vem de baixo para cima
+        // The reading goes from bottom to top
         const srcRow = row * SIZE + (SIZE - 1 - y);
         const src = (srcRow * W + col * SIZE) * 4;
         img.data.set(this.pixels.subarray(src, src + SIZE * 4), y * SIZE * 4);
@@ -184,7 +184,7 @@ export class Thumbnails extends EventTarget {
     });
   }
 
-  // ---------- geração em segundo plano ----------
+  // ---------- background generation ----------
   startBackground(ids) {
     const missing = ids.filter(id => !this.have.has(id) && !this.urls.has(id));
     this.background = { running: true, done: 0, total: missing.length, ids: new Set(missing) };

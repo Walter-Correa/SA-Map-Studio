@@ -1,5 +1,5 @@
-// Carrega os dados do jogo pela rota /gta/ do servidor local:
-// gta.dat/default.dat -> IDEs (modelos) -> índices dos IMG -> IPLs (instâncias do mapa).
+// Loads the game data through the local server's /gta/ route:
+// gta.dat/default.dat -> IDEs (models) -> IMG indices -> IPLs (map instances).
 import { decodeText } from '../formats/binary.js';
 import { parseImgHeader, parseImgDirectory } from '../formats/img.js';
 import { parseDat, parseIde, parseIplText } from '../formats/text.js';
@@ -42,9 +42,9 @@ export class GameData {
     this.models = new Map();      // id -> def
     this.modelByName = new Map(); // nome -> def
     this.txdParents = new Map();  // txd -> txd pai
-    this.imgFiles = [];           // caminhos dos IMG carregados
+    this.imgFiles = [];           // paths of the loaded IMGs
     this.entries = new Map();     // "nome.ext" -> {img, offset, size}
-    this.instances = [];          // todas as instâncias do mapa
+    this.instances = [];          // all the map instances
     this.warnings = [];
   }
 
@@ -73,7 +73,7 @@ export class GameData {
       for (const [c, par] of txdParents) this.txdParents.set(c, par);
     });
 
-    // Registra todas as skins de Actors (0 a 311) garantindo que todas tenham DFF e TXD mapeados
+    // Registers all Actor skins (0 to 311) ensuring they all have DFF and TXD mapped
     for (const s of ALL_SKINS) {
       const def = {
         id: s.id,
@@ -89,7 +89,7 @@ export class GameData {
       if (!this.modelByName.has(s.model)) this.modelByName.set(s.model, def);
     }
 
-    // Registra todas as armas  (321 a 372)
+    // Registers all weapons (321 to 372)
     for (const w of ALL_WEAPONS) {
       if (!this.models.has(w.id)) {
         const def = {
@@ -121,7 +121,7 @@ export class GameData {
         const count = parseImgHeader(head);
         const dir = await fs.read(img, 0, 8 + count * 32);
         for (const e of parseImgDirectory(dir, count)) {
-          // Entrada vazia (tamanho 0) não é lida: sem isso o arquivo .img inteiro seria baixado
+          // Empty entry (size 0) is not read: without this the whole .img file would be downloaded
           if (!e.size || !e.name) continue;
           this.entries.set(e.name.toLowerCase(), { img, offset: e.offset, size: e.size });
         }
@@ -131,7 +131,7 @@ export class GameData {
       }
     }
 
-    // Registra modelo e textura padrão de Carl Johnson (Skin 0 / CJ)
+    // Registers Carl Johnson's default model and texture (Skin 0 / CJ)
     this.entries.set('cj.dff', { img: 'models/cj.dff', offset: 0, size: 0 });
     this.entries.set('cj.txd', { img: 'models/cj.txd', offset: 0, size: 0 });
 
@@ -148,12 +148,12 @@ export class GameData {
       if (!iplTexts[k]) return;
       const base = p.replace(/\\/g, '/').split('/').pop().replace(/\.ipl$/i, '').toLowerCase();
       const { inst } = parseIplText(iplTexts[k]);
-      // map: posição no arquivo -> índice global (o "lod" do IPL aponta para a posição no arquivo)
+      // map: position in the file -> global index (the IPL's "lod" points to the position in the file)
       const map = inst.map(it => this.addInstance(it, base));
       textIpl.set(base, map);
     });
 
-    // ---- IPL binário (streaming) dentro dos IMG ----
+    // ---- Binary IPL (streaming) inside the IMGs ----
     const streams = [];
     for (const [name, e] of this.entries) {
       const m = /^(.+)_stream\d+\.ipl$/.exec(name);
@@ -177,7 +177,7 @@ export class GameData {
       }
     });
 
-    // Instâncias dos IPL de texto apontam para o LOD pela posição no mesmo arquivo
+    // Instances of text IPLs point to the LOD by position in the same file
     for (const map of textIpl.values()) {
       for (const idx of map) {
         if (idx < 0) continue;
@@ -186,20 +186,20 @@ export class GameData {
         inst.lodIndex = l >= 0 && l < map.length ? map[l] : -1;
       }
     }
-    // Liga cada LOD aos seus filhos (para trocar LOD <-> modelo detalhado)
+    // Links each LOD to its children (to swap LOD <-> detailed model)
     for (const inst of this.instances) {
       if (inst.lodIndex >= 0) {
         const lod = this.instances[inst.lodIndex];
         if (lod) { (lod.children || (lod.children = [])).push(inst); inst.lodRef = lod; lod.isLod = true; }
       }
     }
-    // Quem tem LOD próprio é um modelo detalhado, mesmo que o nome comece com "lod"
+    // Anything with its own LOD is a detailed model, even if the name starts with "lod"
     for (const inst of this.instances) if (inst.lodRef && !inst.children) inst.isLod = false;
     onProgress('Pronto', 1);
     return this;
   }
 
-  // Devolve o índice global da instância (ou -1 se o modelo não tem definição)
+  // Returns the instance's global index (or -1 if the model has no definition)
   addInstance(it, base) {
     const def = this.models.get(it.id);
     if (!def) { this.skipped = (this.skipped || 0) + 1; return -1; }
@@ -209,8 +209,8 @@ export class GameData {
       id: it.id, def,
       x: it.x, y: it.y, z: it.z,
       qx: it.qx, qy: it.qy, qz: it.qz, qw: it.qw,
-      // Os bits altos do campo "interior" são flags do jogo (sem importância, túnel...):
-      // o número do interior fica só no byte de baixo
+      // The high bits of the "interior" field are game flags (unimportant, tunnel...):
+      // the interior number is only in the low byte
       interior: flags & 0xff,
       rawLod: it.lod,
       lodIndex: -1,
@@ -239,7 +239,7 @@ export class GameData {
       if (d.type === 'weap' || isWeaponModelId(d.id)) {
         category = 'Armas';
       } else if (d.type === 'peds') {
-        if (d.id !== 0) continue; // No catálogo "todos" ou "actors" mantém apenas uma skin disponível (ID 0)
+        if (d.id !== 0) continue; // In the "all" or "actors" catalog keeps only one skin available (ID 0)
         category = 'Actors (Personagens)';
       } else if (d.type === 'cars') {
         category = 'Veículos';

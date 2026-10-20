@@ -42,11 +42,11 @@ def same_keys():
     except OSError:
         return set()
 
-# Arquivos que não têm texto de interface (bibliotecas, nomes próprios do jogo, dados binários)
+# Files that have no interface text (libraries, proper game names, binary data)
 SKIP_FILES = {"vendor", "lang", "sprites.js", "loader.worker.js", "textures.worker.js",
               "prep.js", "streamer.js", "binary.js", "dff.js", "img.js", "iplbin.js", "txd.js", "text.js"}
 TEXT_ATTRS = ("title", "placeholder", "aria-label", "alt", "data-tip", "data-title")
-# Catálogos com nomes e falas originais do jogo (em inglês): só os textos em português são da interface
+# Catalogs with original game names and lines (in English): only the Portuguese texts belong to the interface
 CATALOG_FILES = {"sounds.js", "actors.js", "places.js"}
 PT_SIGNS = re.compile(r"[ãõçáéíóúâêôàÃÕÇÁÉÍÓÚÂÊÔÀ]|\b\w+(ando|endo|indo|ado|ido|ada|ida|ais|eis)\b|\b(de|do|da|dos|das|não|com|para|em|um|uma|ao|aos|ou|sem|pelo|pela|"
                       r"nos|nas|que|se|seu|sua|e|o|os|as|ônibus|porta|carro|som|música|rádio|local|efeito|missões|"
@@ -57,7 +57,7 @@ EN_SIGNS = re.compile(r"\b(the|you|your|i|i'm|it's|is|are|what|this|that|and|of|
                       r"drowned|razors|shining|children|cover|look|keep|diversion|five|minutes)\b", re.I)
 
 
-# Palavras portuguesas comuns nos catálogos (lugares, skins, sons) que não têm acento
+# Common Portuguese words in the catalogs (places, skins, sounds) that have no accent
 PT_WORDS = set("""prefeitura delegacia aeroporto torre centro ponte financeiro clube cassino navio pirata cachoeiras
 castelo bairro represa fazenda modelo oficina barbearia academia restaurante mar aberto esportes conversas gestos combate
 armas lazer adulto trabalho cotidiano movimento posturas policial xerife especial agente federal bombeiro esteira rolante
@@ -67,7 +67,7 @@ buzina curta longa disparo morte voz escola pequena urbana autoescolas academias
 
 def is_portuguese(key):
     """Nos catálogos: o texto está em português (não é fala ou nome original em inglês)?"""
-    head = re.sub(r"(['\"]).*", " ", key)  # fora das falas originais entre aspas
+    head = re.sub(r"(['\"]).*", " ", key)  # outside the original lines in quotes
     if re.search(r"[ãõçâêôáéíóúà]", head, re.I) or set(re.findall(r"[a-zà-ÿ]+", head.lower())) & PT_WORDS:
         return True
     text = re.sub(r"\{\d+\}", " ", key)
@@ -76,7 +76,7 @@ def is_portuguese(key):
     return pt > 0 and pt >= en
 
 
-# ---------------------------------------------------------------------------- leitura do JS
+# ---------------------------------------------------------------------------- JS reading
 
 def js_literals(src):
     """Strings do código JS: cada uma vem como lista de partes (texto ou None para ${...})."""
@@ -137,7 +137,7 @@ def js_literals(src):
         if c == "/" and i + 1 < n and src[i + 1] == "*":
             j = src.find("*/", i + 2); i = n if j < 0 else j + 2; continue
         if c == "/" and prev in "(,=:[!&|?{};+-*%<>~^" + "\n":
-            # expressão regular: pula até a barra de fechamento
+            # regular expression: skips to the closing slash
             j = i + 1; in_cls = False
             while j < n and src[j] != "\n":
                 if src[j] == "\\":
@@ -168,7 +168,7 @@ def _unescape(esc):
 
 # ---------------------------------------------------------------------------- textos
 
-PH = "\u0000"  # marca de parte variável
+PH = "\u0000"  # variable part marker
 
 
 class Expr(str):
@@ -227,7 +227,7 @@ CODEISH = re.compile(r"=>|===|!==|\(\)\s*[;{]|\bfunction\b|\breturn\b|\bconst\b|
                      r"^[\w.]+\(.*\)\s*;?$")
 
 
-# Código Pawn gerado e assinaturas de arquivo (não são textos de interface)
+# Generated Pawn code and file signatures (not interface texts)
 PAWN_LIKE = re.compile(r"^(//(?! Ex)|# |#[A-Za-z]|new |stock |forward |public |case |for \(|[a-z]\w*\s*=\s*[A-Z]\w+\()|playerid|\);\s*($|//)|^\{\d+\}\(")
 
 
@@ -237,7 +237,7 @@ CSS_LIKE = re.compile(r"^[.#\[][\w-]|[\w\]]\[[\w-]+(=|\])|\b\d*px\b.*\b(sans-ser
 def is_ui_text(key):
     if len(key) < 2 or len(key) > 3000:
         return False
-    # Frase em português (novidades, ajuda): vale mesmo com ";", ":" ou nomes do Pawn no meio
+    # Portuguese sentence (what's new, help): counts even with ";", ":" or Pawn names in the middle
     if len(re.findall(r"[A-Za-zÀ-ÿ]+", key)) >= 6 and len(PT_SIGNS.findall(key)) >= 3 and not key.lstrip().startswith(("//", "#")):
         return True
     if CSS_LIKE.search(key):
@@ -255,10 +255,10 @@ def is_ui_text(key):
         w = letters.strip(" .:!?()[]{}-–—,;\"'")
         if accented:
             return bool(re.fullmatch(r"[A-Za-zÀ-ÿ]+", w))
-        # Uma palavra só: precisa ser palavra comum com inicial maiúscula (não identificador)
+        # A single word: must be a common word with a capital initial (not an identifier)
         return bool(re.fullmatch(r"[A-ZÀ-Þ][a-zß-ÿ]{1,}", w))
-    # Várias palavras: não pode ser lista de classes, seletores ou nomes de código
-    # Lista de classes CSS ou nomes de código: minúsculas com hífen ou sublinhado
+    # Several words: cannot be a list of classes, selectors or code names
+    # List of CSS classes or code names: lowercase with hyphen or underscore
     if re.fullmatch(r"[a-z0-9 _\-]+", letters.strip()) and re.search(r"[_\-]|[a-z]+\d", letters):
         return False
     if all(re.fullmatch(r"[A-Z0-9_]+", w) for w in words) and ("_" in letters or not any(len(w) >= 4 for w in words)):
@@ -269,7 +269,7 @@ def is_ui_text(key):
 def generalize(key):
     """Catálogos: nomes entre aspas e números viram partes variáveis (uma tradução serve para todos)."""
     k = re.sub(r'"[^"]+"', '"\u0001"', key)
-    # Fala original entre aspas simples depois de "Rótulo: " (ex.: Cassino: 'You win!')
+    # Original line in single quotes after "Label: " (e.g. Cassino: 'You win!')
     k = re.sub(r"^([^:']+: )'.+'$", "\\1'\u0001'", k)
     k = re.sub(r"(?<![A-Za-z])\d+(?![A-Za-z])", "\u0001", k)
     n = [0]
@@ -324,16 +324,16 @@ def keys_from_source():
             with open(path, "r", encoding="utf-8") as f:
                 src = f.read()
             if name == "about.js":
-                # O histórico de versões fica só em inglês e nunca é traduzido
+                # The version history stays in English only and is never translated
                 src = re.sub(r"const CHANGELOG = \[.*?\n\];", "", src, flags=re.S)
             for parts in js_literals(src):
                 for text in parts_variants(parts):
                     add(text, rel, catalog=name in CATALOG_FILES)
-            # plural(n, 'item', 'itens') sozinho também aparece na tela como "5 itens"
+            # plural(n, 'item', 'itens') alone also appears on screen as "5 itens"
             for m in re.finditer(r"""plural\(\s*[^,]+?,\s*(['"])(.*?)\1\s*,\s*(['"])(.*?)\3\s*\)""", src):
                 for w in (m.group(2), m.group(4)):
                     add(PH + " " + w, rel, force=True)
-    # Mensagens do servidor do editor que aparecem na interface (erros, avisos)
+    # Editor server messages that appear in the interface (errors, warnings)
     with open(os.path.join(ROOT, "serve.py"), "r", encoding="utf-8") as f:
         for lit in py_literals(f.read()):
             key = normalize(lit)

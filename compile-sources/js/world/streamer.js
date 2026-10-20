@@ -1,5 +1,5 @@
-// Streaming do mapa: decide quais instâncias aparecem conforme a câmera,
-// carrega os modelos sob demanda (mais próximos primeiro) e alterna LOD <-> detalhado.
+// Map streaming: decides which instances appear according to the camera,
+// loads models on demand (closest first) and toggles LOD <-> detailed.
 import * as THREE from 'three';
 import { iplQuaternion } from './models.js';
 
@@ -14,14 +14,14 @@ export class WorldStreamer {
     this.root.matrixAutoUpdate = false;
     scene.add(this.root);
     this.grid = new Map();
-    this.shown = new Map();     // índice da instância -> Object3D
-    this.queue = new Set();     // ids de modelos aguardando carregamento
+    this.shown = new Map();     // instance index -> Object3D
+    this.queue = new Set();     // model ids waiting to load
     this.loading = 0;
     this.maxConcurrent = 12;
     this._frustum = new THREE.Frustum();
     this._m = new THREE.Matrix4();
     this._sphere = new THREE.Sphere();
-    this.hidden = new Set();    // instâncias escondidas (RemoveBuilding do projeto)
+    this.hidden = new Set();    // hidden instances (the project's RemoveBuilding)
     this.settings = { drawScale: 1.0, maxDistance: 600, showLod: true, interiors: false, enabled: true };
     this.lastPos = new THREE.Vector3(1e9, 0, 0);
     this.dirty = true;
@@ -42,7 +42,7 @@ export class WorldStreamer {
 
   instanceVisibleByFilter(inst) {
     if (this.hidden.has(inst.index)) return false;
-    // 0 = mundo aberto; 13 = aparece em qualquer lugar
+    // 0 = open world; 13 = appears anywhere
     const isInt = inst.interior !== 0 && inst.interior !== 13;
     return this.settings.interiors ? isInt : !isInt;
   }
@@ -52,7 +52,7 @@ export class WorldStreamer {
     return inst.isLod ? d : Math.min(d, this.settings.maxDistance);
   }
 
-  // camera: a câmera do viewport (posição e direção decidem a ordem de carregamento)
+  // camera: the viewport camera (position and direction decide the loading order)
   update(camera, force = false) {
     if (!this.settings.enabled) return;
     const camPos = camera.position;
@@ -67,9 +67,9 @@ export class WorldStreamer {
     const range = Math.max(this.settings.maxDistance, this.settings.showLod ? Math.max(3000, this.settings.maxDistance * 1.3) * this.settings.drawScale : 0);
     const cx = Math.floor(camPos.x / CELL), cy = Math.floor(camPos.y / CELL);
     const r = Math.ceil(range / CELL);
-    const needModel = new Map(); // id -> prioridade (menor = antes)
+    const needModel = new Map(); // id -> priority (lower = sooner)
     const lodCandidates = [];
-    // O que está na frente da câmera carrega primeiro
+    // What is in front of the camera loads first
     camera.updateMatrixWorld();
     this._frustum.setFromProjectionMatrix(this._m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     const prio = (inst, dist) => {
@@ -77,7 +77,7 @@ export class WorldStreamer {
       this._sphere.radius = 40;
       return this._frustum.intersectsSphere(this._sphere) ? dist : dist * 3 + 150;
     };
-    // Pré-carrega um pouco além da distância de visão, para o objeto já estar pronto quando aparecer
+    // Preloads a bit beyond the view distance, so the object is ready by the time it appears
     const prefetch = 1.25;
     for (let gx = cx - r; gx <= cx + r; gx++) {
       for (let gy = cy - r; gy <= cy + r; gy++) {
@@ -97,7 +97,7 @@ export class WorldStreamer {
         }
       }
     }
-    // LOD: aparece enquanto algum filho próximo ainda não está pronto ou está fora do alcance
+    // LOD: appears while some nearby child is not ready yet or is out of range
     for (const [lod, dist] of lodCandidates) {
       let covered = false;
       if (lod.children && lod.children.length) {
@@ -111,11 +111,11 @@ export class WorldStreamer {
       if (this.models.ready.has(lod.id)) { if (this.models.ready.get(lod.id)) wanted.set(lod.index, lod); }
       else needModel.set(lod.id, Math.min(needModel.get(lod.id) ?? 1e9, prio(lod, dist) * 0.6));
     }
-    // Remove o que saiu
+    // Removes what left
     for (const [idx, obj] of this.shown) {
       if (!wanted.has(idx)) { this.root.remove(obj); this.shown.delete(idx); }
     }
-    // Adiciona o que entrou
+    // Adds what entered
     for (const [idx, inst] of wanted) {
       if (this.shown.has(idx)) continue;
       const obj = this.models.instantiate(inst.id);
@@ -130,13 +130,13 @@ export class WorldStreamer {
       this.root.add(obj);
       this.shown.set(idx, obj);
     }
-    // Fila de carregamento, mais próximos primeiro
+    // Loading queue, closest first
     const order = [...needModel.entries()].sort((a, b) => a[1] - b[1]).map(e => e[0]);
     this.pendingOrder = order;
     this.pump();
     this.stats.shown = this.shown.size;
     this.stats.pending = order.length;
-    // De tempos em tempos libera modelos que ficaram para trás
+    // From time to time releases models that were left behind
     if (now - (this.lastEvict || 0) > 5000) {
       this.lastEvict = now;
       const keep = new Set(this.keepModels ? this.keepModels() : []);
@@ -162,10 +162,10 @@ export class WorldStreamer {
     }
   }
 
-  // Lista de objetos do mundo visíveis para clique (raycast)
+  // List of world objects visible for clicking (raycast)
   pickables() { return this.root.children; }
 
-  // Instâncias perto de um ponto (para remover prédios)
+  // Instances near a point (to remove buildings)
   instancesNear(x, y, z, radius, id = -1) {
     const out = [];
     const r = Math.ceil(radius / CELL) + 1;

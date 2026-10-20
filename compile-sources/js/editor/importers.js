@@ -1,13 +1,13 @@
-// Importação universal: descobre sozinho o formato do arquivo (qualquer extensão)
-// e devolve os objetos, trocas de textura/texto, veículos, prédios removidos e câmeras.
+// Universal import: detects the file format on its own (any extension)
+// and returns the objects, texture/text swaps, vehicles, removed buildings and cameras.
 //
 // Formatos reconhecidos:
-//   - Código Pawn (CreateObject, CreateDynamicObject, SetObjectMaterial[Text], RemoveBuildingForPlayer,
-//     veículos, câmeras): Map Construction, Texture Studio, Fusez, exportações em geral
-//   - Banco SQLite (mapas salvos do Texture Studio e editores parecidos)
-//   - Projeto do SA Map Studio (.json) e listas JSON de objetos
-//   - Mapa do MTA (.map, XML)
-//   - IPL de texto e IPL binário ("bnry") do GTA
+//   - Pawn code (CreateObject, CreateDynamicObject, SetObjectMaterial[Text], RemoveBuildingForPlayer,
+//     vehicles, cameras): Map Construction, Texture Studio, Fusez, exports in general
+//   - SQLite database (saved maps from Texture Studio and similar editors)
+//   - SA Map Studio project (.json) and JSON object lists
+//   - MTA map (.map, XML)
+//   - GTA text IPL and binary IPL ("bnry")
 //   - Linhas soltas "modelo x y z rx ry rz"
 import { parsePwn, isVehicleModel } from './pwn.js';
 import { normalizeMaterial, formatColor, parseColor, MAX_MATERIAL_INDEX } from './materials.js';
@@ -16,7 +16,7 @@ import { isBinaryIpl, parseIplBinary } from '../formats/iplbin.js';
 
 const empty = () => ({ format: '', name: '', objects: [], vehicles: [], actors: [], removed: [], labels: [], pickups: [], gangZones: [], checkpoints: [], mapIcons: [], textDraws: [], cameras: { shots: [], paths: [] }, camera: null, pwnHeader: '', rawPawn: '', spawn: null, notes: [] });
 
-// Texto: UTF-8 quando válido, senão Windows-1252 (o padrão do Pawn no Windows)
+// Text: UTF-8 when valid, otherwise Windows-1252 (the Pawn default on Windows)
 export function decodeBytes(bytes) {
   const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let start = 0;
@@ -29,7 +29,7 @@ export function decodeBytes(bytes) {
 
 const startsWith = (u8, ascii) => [...ascii].every((c, i) => u8[i] === c.charCodeAt(0));
 
-// Quaternion do IPL (conjugado no GTA) -> rotação em graus na ordem ZXY do SA-MP
+// IPL quaternion (conjugated in GTA) -> rotation in degrees in SA-MP's ZXY order
 export function iplQuatToEuler(qx, qy, qz, qw) {
   const x = -qx, y = -qy, z = -qz, w = qw;
   const m12 = 2 * (x * y - z * w), m22 = 1 - 2 * (x * x + z * z);
@@ -102,12 +102,12 @@ function fromSqlite(tables, out) {
       }
       const obj = { ...base, rx: g(ci.rx), ry: g(ci.ry), rz: g(ci.rz), interior: g(ci.interior, -1) | 0, world: g(ci.world, -1) | 0,
         streamDist: Math.max(0, g(ci.stream)), drawDist: Math.max(0, g(ci.draw)), materials: [] };
-      // Cores por índice (lista de 16 valores ARGB)
+      // Colors by index (list of 16 ARGB values)
       if (colorCol >= 0) numList(row[colorCol]).slice(0, MAX_MATERIAL_INDEX + 1).forEach((v, i) => {
         if (v) obj.materials.push(normalizeMaterial({ index: i, model: -1, txd: 'none', texture: 'none', color: formatColor(v) }));
       });
       if (texCol >= 0 && numList(row[texCol]).some(v => v)) skippedTextures++;
-      // Texto do Texture Studio (vai no índice 0)
+      // Texture Studio text (goes in index 0)
       if (textCol >= 0 && row[textCol] && (useText < 0 || +row[useText])) {
         obj.materials = obj.materials.filter(m => m.index !== 0);
         obj.materials.push(normalizeMaterial({ kind: 'text', index: 0, text: String(row[textCol]),
@@ -122,7 +122,7 @@ function fromSqlite(tables, out) {
 }
 
 // ---------------------------------------------------------------- MTA (.map)
-// Cor do MTA ("#RRGGBB", "#RRGGBBAA" ou "r,g,b,a") em RRGGBBAA
+// MTA color ("#RRGGBB", "#RRGGBBAA" or "r,g,b,a") to RRGGBBAA
 function mtaColor(v, def = 0xFFFFFFFF) {
   const s = String(v ?? '').trim();
   let m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(s);
@@ -209,7 +209,7 @@ function fromLooseLines(text, out, gd) {
 }
 
 // ---------------------------------------------------------------- entrada
-// bytes: ArrayBuffer/Uint8Array. readSqlite(bytes) -> {tables} (feito pelo servidor)
+// bytes: ArrayBuffer/Uint8Array. readSqlite(bytes) -> {tables} (done by the server)
 export async function importAny(bytes, { filename = '', gd = null, readSqlite = null } = {}) {
   const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   const out = empty();
@@ -244,7 +244,7 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
                     out.checkpoints.length + out.mapIcons.length +
                     (out.cameras?.shots?.length || 0) + (out.cameras?.paths?.length || 0);
       if (count > 0) return finish(out);
-    } catch { /* não é JSON */ }
+    } catch { /* not JSON */ }
   }
   if (/<\s*(object|removeWorldObject|vehicle|ped|pickup|marker|blip|radararea)\b[^>]*\bpos[XYZ]\s*=/i.test(text) && /<\s*map\b|<\s*\/\s*(object|vehicle|ped)\b|\/>/i.test(text)) {
     out.format = 'Mapa do MTA';
@@ -273,8 +273,8 @@ export async function importAny(bytes, { filename = '', gd = null, readSqlite = 
 }
 
 // ---------------------------------------------------------------- ZIP
-// Lê o diretório central do .zip, descompacta cada arquivo reconhecido (sem compressão ou deflate)
-// e junta os itens de todos eles num resultado só.
+// Reads the .zip central directory, decompresses each recognized file (stored or deflate)
+// and merges the items from all of them into a single result.
 const ZIP_EXT = /\.(pwn|p|inc|txt|ipl|map|json|db|sqlite)$/i;
 async function unzipEntries(u8) {
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
@@ -327,7 +327,7 @@ async function importZip(u8, opts) {
 }
 
 function finish(out) {
-  // Objetos com ID de veículo viram veículos
+  // Objects with a vehicle ID become vehicles
   const objs = [];
   for (const o of out.objects) {
     if (isVehicleModel(o.model)) out.vehicles.push({ model: o.model, x: o.x, y: o.y, z: o.z, rz: o.rz || 0, color1: -1, color2: -1, respawn: -1 });

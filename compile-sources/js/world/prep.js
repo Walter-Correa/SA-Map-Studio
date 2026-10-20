@@ -1,4 +1,4 @@
-// Preparo dos dados de modelo e textura (usado pelo worker e, sem worker, na thread principal).
+// Preparation of model and texture data (used by the worker and, without a worker, on the main thread).
 import { parseDff, geometryGroups } from '../formats/dff.js';
 import { parseTxd, decodeToRGBA, textureHasAlpha } from '../formats/txd.js';
 
@@ -24,7 +24,7 @@ export function prepDff(buf, ambient) {
     const { index, groups } = concatIndices(geometryGroups(g), g.numVerts);
     let colors = null;
     if (g.colors) {
-      // Luz pré-calculada + luz ambiente do dia (o jogo soma o ambiente do timecyc)
+      // Precomputed light + daytime ambient light (the game adds the timecyc ambient)
       const src = g.colors;
       colors = new Uint8Array(src.length);
       for (let i = 0; i < src.length; i += 4) {

@@ -1,13 +1,13 @@
-// Categorias amigáveis para objetos e texturas.
-// O jogo não guarda categorias: elas são deduzidas pelo nome do modelo/textura,
-// pelo arquivo IDE de origem e por alguns intervalos conhecidos de IDs do SA-MP.
+// Friendly categories for objects and textures.
+// The game does not store categories: they are deduced from the model/texture name,
+// the source IDE file and some known SA-MP ID ranges.
 
-// Peças do SA-MP feitas para receber textura (paredes, pisos, planos, concretos, cubos)
+// SA-MP pieces made to receive textures (walls, floors, planes, concretes, cubes)
 const KIT_RANGES = [[18762, 18767], [18980, 18981], [19353, 19417], [19426, 19465], [19475, 19483],
   [19529, 19552], [19603, 19604], [19789, 19791]];
 export const isKitPiece = (id) => KIT_RANGES.some(([a, b]) => id >= a && id <= b);
 
-// Regiões (filtro secundário)
+// Regions (secondary filter)
 export function regionOf(def) {
   const s = (def.source || '').toLowerCase();
   if (s.includes('samp')) return 'SA-MP';
@@ -22,7 +22,7 @@ export function regionOf(def) {
 }
 export const REGIONS = ['SA-MP', 'Los Santos', 'San Fierro', 'Las Venturas', 'Interior do estado', 'Interiores', 'Genéricos', 'Personalizados', 'Outros'];
 
-// Regras na ordem: a primeira que bater vale
+// Rules in order: the first one that matches wins
 const OBJECT_RULES = [
   ['Efeitos e partículas', /(^|_)(fire|smoke|explosion|flame|spark|particle|blood|steam)s?(_|\d|$)|_fx(_|\d|$)/],
   ['Armas', /(gun|rifle|pistol|shotgun|sniper|ammo|weapon|grenade|bomb|knife|sword|katana|colt|deagle|uzi|m4|ak47|rpg|minigun|chainsaw|baton|nightstick|missile|dildo|vibe|knuckle)/],

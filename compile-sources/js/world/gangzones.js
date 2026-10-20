@@ -1,5 +1,5 @@
 // Suporte completo a GangZones (GangZoneCreate)
-// Conforme especificação : 
+// As specified:
 import * as THREE from 'three';
 
 export const DEFAULT_GANGZONE_COLORS = [
@@ -45,15 +45,15 @@ export function hexAndAlphaToGzColor(hexStr, alpha = 0.5) {
   return (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
 }
 
-// Gera o nome sequencial na duplicação: Zona 1 > Zona 1_2 > Zona 1_3
+// Generates the sequential name on duplication: Zona 1 > Zona 1_2 > Zona 1_3
 // ---------------------------------------------------------------------------
-// Espaço livre para uma GangZone nova (duplicar ou adicionar).
-// O mapa vira uma grade com as bordas de todas as zonas; partindo da célula livre mais próxima
-// da original (ou do ponto pedido), cresce o maior retângulo livre que a contém. A zona nova fica
-// nesse espaço, com o tamanho da original reduzido ao do espaço quando ele é menor, e o mais perto
-// possível da original (encostada nela quando o espaço é vizinho). Espaços com menos de 1/4 da
-// largura ou da altura da original (frestas) são ignorados.
-// Zonas podem se encostar, mas não se sobrepor. Retorna { minx, miny, maxx, maxy, scaled } ou null.
+// Free space for a new GangZone (duplicate or add).
+// The map becomes a grid with the edges of all zones; starting from the free cell nearest
+// the original (or the requested point), the largest free rectangle that contains it grows. The new zone sits
+// in that space, with the original's size reduced to the space's when it is smaller, and as close
+// as possible to the original (touching it when the space is adjacent). Spaces smaller than 1/4 of the
+// original's width or height (slivers) are ignored.
+// Zones may touch but not overlap. Returns { minx, miny, maxx, maxy, scaled } or null.
 // ---------------------------------------------------------------------------
 const GZ_WORLD_MIN = -3000, GZ_WORLD_MAX = 3000, GZ_MIN_SIZE = 10;
 
@@ -65,10 +65,10 @@ export function findFreeGangZoneSpot(zones, { width, height, near, origin = null
   const w = Math.max(GZ_MIN_SIZE, width), h = Math.max(GZ_MIN_SIZE, height);
   const cx = near?.x ?? 0, cy = near?.y ?? 0;
   const ref = origin || { minx: cx - w / 2, maxx: cx + w / 2, miny: cy - h / 2, maxy: cy + h / 2 };
-  // Espaço mínimo aceito: evita jogar a cópia numa fresta entre duas zonas
+  // Minimum accepted space: avoids dropping the copy into a sliver between two zones
   const minW = Math.max(GZ_MIN_SIZE, w * 0.25), minH = Math.max(GZ_MIN_SIZE, h * 0.25);
 
-  // Grade com as bordas de todas as zonas e do mapa
+  // Grid with the edges of all zones and of the map
   const xs = [...new Set([GZ_WORLD_MIN, GZ_WORLD_MAX, ...others.flatMap(o => [o.minx, o.maxx])])].sort((a, b) => a - b);
   const ys = [...new Set([GZ_WORLD_MIN, GZ_WORLD_MAX, ...others.flatMap(o => [o.miny, o.maxy])])].sort((a, b) => a - b);
   const nx = xs.length - 1, ny = ys.length - 1;
@@ -81,7 +81,7 @@ export function findFreeGangZoneSpot(zones, { width, height, near, origin = null
   const rowFree = (j, i0, i1) => { for (let i = i0; i <= i1; i++) if (!free[i * ny + j]) return false; return true; };
   const gap = (a0, a1, b0, b1) => Math.max(0, a0 - b1, b0 - a1);
 
-  // Células livres da mais próxima para a mais distante da original
+  // Free cells from nearest to farthest from the original
   const cells = [];
   for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
     if (!free[i * ny + j]) continue;
@@ -92,7 +92,7 @@ export function findFreeGangZoneSpot(zones, { width, height, near, origin = null
 
   const tried = new Set();
   for (const cell of cells) {
-    // Maior retângulo livre que contém a célula: primeiro na horizontal, depois na vertical
+    // Largest free rectangle containing the cell: first horizontally, then vertically
     let i0 = cell.i, i1 = cell.i, j0 = cell.j, j1 = cell.j;
     while (i0 > 0 && free[(i0 - 1) * ny + cell.j] && xs[i1 + 1] - xs[i0 - 1] <= w * 4) i0--;
     while (i1 < nx - 1 && free[(i1 + 1) * ny + cell.j] && xs[i1 + 2] - xs[i0] <= w * 4) i1++;
@@ -104,7 +104,7 @@ export function findFreeGangZoneSpot(zones, { width, height, near, origin = null
     const space = { minx: xs[i0], maxx: xs[i1 + 1], miny: ys[j0], maxy: ys[j1 + 1] };
     const sw = space.maxx - space.minx, sh = space.maxy - space.miny;
     if (sw < minW || sh < minH) continue;
-    // Tamanho da original, reduzido ao do espaço; posição o mais perto possível da original
+    // Original's size, reduced to the space's; position as close as possible to the original
     const fw = Math.min(w, sw), fh = Math.min(h, sh);
     const clampTo = (v, a, b) => Math.max(a, Math.min(b, v));
     const x = clampTo((ref.minx + ref.maxx) / 2 - fw / 2, space.minx, space.maxx - fw);
@@ -132,7 +132,7 @@ export function getNextGangZoneName(origName, existingZones = []) {
   return candidate;
 }
 
-// Auto-alinhamento magnético: encaixa as bordas de uma gangzone nas de outras zonas vizinhas
+// Magnetic auto-alignment: snaps a gangzone's edges to those of neighboring zones
 export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0, isMove = false) {
   let { minx, miny, maxx, maxy } = candidate;
 
@@ -147,7 +147,7 @@ export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0, is
   for (const gz of existingZones) {
     if (!gz || gz.uid === candidate.uid) continue;
 
-    // Todas as bordas X da zona vizinha
+    // All X edges of the neighboring zone
     for (const otherX of [gz.minx, gz.maxx]) {
       const diffMin = Math.abs(minx - otherX);
       if (diffMin < bestDiffX) {
@@ -163,7 +163,7 @@ export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0, is
       }
     }
 
-    // Todas as bordas Y da zona vizinha
+    // All Y edges of the neighboring zone
     for (const otherY of [gz.miny, gz.maxy]) {
       const diffMin = Math.abs(miny - otherY);
       if (diffMin < bestDiffY) {
@@ -214,7 +214,7 @@ export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0, is
   };
 }
 
-// Cria nó 3D para projetar a GangZone no chão da cena Three.js
+// Creates a 3D node to project the GangZone onto the Three.js scene floor
 export function createGangZoneNode(gz) {
   const group = new THREE.Group();
   group.userData = { uid: gz.uid, kind: 'gangZones' };
@@ -223,7 +223,7 @@ export function createGangZoneNode(gz) {
   const h = Math.max(1, gz.maxy - gz.miny);
   const cx = (gz.minx + gz.maxx) / 2;
   const cy = (gz.miny + gz.maxy) / 2;
-  const cz = 5.0; // Altura no mundo
+  const cz = 5.0; // Height in the world
 
   const { hex, alpha } = gzColorToHexAndAlpha(gz.color);
   const colorInt = parseInt(hex.replace('#', ''), 16) || 0xFF0000;
@@ -240,7 +240,7 @@ export function createGangZoneNode(gz) {
   const plane = new THREE.Mesh(planeGeo, planeMat);
   group.add(plane);
 
-  // Linhas das bordas (contorno vibrante)
+  // Edge lines (vibrant outline)
   const edgesGeo = new THREE.EdgesGeometry(planeGeo);
   const edgesMat = new THREE.LineBasicMaterial({
     color: colorInt,

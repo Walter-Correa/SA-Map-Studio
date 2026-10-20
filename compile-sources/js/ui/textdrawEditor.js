@@ -1,6 +1,6 @@
-// Editor visual e interativo de TextDraws (TextDrawCreate / CreatePlayerTextDraw)
-// Tela 640x448 do SA-MP mostrada em 16:9; textos desenhados com as fontes do próprio jogo (tdrender.js),
-// arrasto interativo, fontes 0-5 (incluindo prévias de modelo Font 5), caixas, alinhamento, cores RGBA e exportação Pawn.
+// Visual, interactive TextDraw editor (TextDrawCreate / CreatePlayerTextDraw)
+// SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
+// interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
 import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbAutoFillMax, pbAutoFillValue } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep } from './common.js';
@@ -132,7 +132,7 @@ function loadGameBg() {
   }
 }
 
-// Cores padrão
+// Default colors
 const DEFAULT_TD_COLORS = [
   { name: 'Branco', val: 0xFFFFFFFF },
   { name: 'Preto', val: 0x000000FF },
@@ -169,7 +169,7 @@ export function initTextDrawEditor(app) {
   appRef = app;
   dialogEl = document.getElementById('dlgTextDraw');
   if (!dialogEl) return;
-  // Textos desenhados no canvas não passam pela tradução da página: redesenha ao trocar o idioma
+  // Texts drawn on the canvas do not go through the page translation: redraws when the language changes
   onLanguageChange(() => { if (dialogEl.open) redrawCanvas(); });
 
   canvasEl = dialogEl.querySelector('#tdCanvas');
@@ -184,8 +184,8 @@ export function initTextDrawEditor(app) {
   setupDialogEvents();
 }
 
-// Coordenadas do mouse em unidades 640x448
-// O canvas usa object-fit: contain, então a imagem pode ter faixas vazias em volta dentro do elemento
+// Mouse coordinates in 640x448 units
+// The canvas uses object-fit: contain, so the image may have empty bands around it inside the element
 function canvasPoint(e) {
   const rect = canvasEl.getBoundingClientRect();
   const scale = Math.min(rect.width / canvasEl.width, rect.height / canvasEl.height);
@@ -197,7 +197,7 @@ function canvasPoint(e) {
   };
 }
 
-// Desenho em unidades 640x448 (fundo, grade, sprites, modelos e seleção)
+// Drawing in 640x448 units (background, grid, sprites, models and selection)
 function useLogicalUnits() {
   ctx.setTransform(TD_SCREEN.w / TD_WIDTH, 0, 0, TD_SCREEN.h / TD_HEIGHT, 0, 0);
 }
@@ -292,7 +292,7 @@ function setupDialogEvents() {
       const round = (v) => Math.round(v * 10) / 10;
       td.x = round(td.x + arrow.dx);
       td.y = round(td.y + arrow.dy);
-      // Caixa à esquerda: TextSize X é a borda direita absoluta e acompanha o texto
+      // Left box: TextSize X is the absolute right edge and follows the text
       if (td.useBox && td.font !== 4 && td.font !== 5 && getTdAlign(td) === 1) td.textSizeX = round(td.textSizeX + arrow.dx);
       appRef.project.modified = true;
       updateSidebarFields();
@@ -371,7 +371,7 @@ function bindFieldInputs() {
   bind('#tdLetterY', 'letterSizeY', true);
   bind('#tdSizeX', 'textSizeX', true);
   bind('#tdSizeY', 'textSizeY', true);
-  // Barra de progresso
+  // Progress bar
   const pbName = dialogEl.querySelector('#tdPbName');
   if (pbName) {
     pbName.onfocus = () => tdPushUndo();
@@ -394,7 +394,7 @@ function bindFieldInputs() {
       if (!Number.isFinite(v)) return;
       const min = prop === 'pbWidth' ? PB_MIN_WIDTH : prop === 'pbHeight' ? PB_MIN_HEIGHT : null;
       if (min !== null && v < min) {
-        if (ev?.type !== 'change') return; // digitando: espera terminar antes de aplicar o mínimo
+        if (ev?.type !== 'change') return; // typing: waits until finished before applying the minimum
         v = min;
         el.value = v;
       }
@@ -411,7 +411,7 @@ function bindFieldInputs() {
     };
   }
 
-  // Borda e piscada da barra: valores fora dos limites voltam para o limite (a include também confere)
+  // Bar border and blink: out-of-range values go back to the limit (the include also checks)
   const pbLimited = [
     ['#tdPbBorder', 'pbBorder', (v) => { const td = getSelectedTd(); return fitPbBorder(v, td?.pbWidth, td?.pbHeight); }],
     ['#tdPbBlinkInterval', 'pbBlinkInterval', clampPbBlinkInterval],
@@ -421,8 +421,8 @@ function bindFieldInputs() {
     const el = dialogEl.querySelector(id);
     if (!el) continue;
     el.onfocus = () => tdPushUndo();
-    // Digitando: só usa o valor se ele já estiver dentro do limite, sem mexer no campo.
-    // Ao sair do campo (ou Enter): aplica o limite e mostra o valor final.
+    // Typing: only uses the value if it is already within the limit, without touching the field.
+    // On leaving the field (or Enter): applies the limit and shows the final value.
     const apply = (fix) => {
       const td = getSelectedTd();
       if (!td || td.type !== 'progress') return;
@@ -476,7 +476,7 @@ function bindFieldInputs() {
       redrawCanvas();
     };
   }
-  // Cor da borda (0 = preto com o alfa da barra) e cor da borda durante a piscada (0 = não pisca)
+  // Border color (0 = black with the bar's alpha) and border color during the blink (0 = no blink)
   const colorPair = (checkId, rowId, inputId, prop, checkMeansDefault) => {
     const check = dialogEl.querySelector(checkId), input = dialogEl.querySelector(inputId);
     const value = () => ((parseInt((input?.value || '#000000').slice(1), 16) << 8) | 0xFF) >>> 0;
@@ -525,7 +525,7 @@ function bindFieldInputs() {
       if (!td || td.type !== 'progress') return;
       const typed = Number(String(autoMax.value).replace(',', '.'));
       const v = clampPbAutoFillMax(autoMax.value, td.pbMax);
-      if (!fix && (autoMax.value === '' || !Number.isFinite(typed) || v !== typed)) return; // digitando: só valores válidos
+      if (!fix && (autoMax.value === '' || !Number.isFinite(typed) || v !== typed)) return; // typing: valid values only
       td.pbAutoFillMax = v;
       if (fix) autoMax.value = v;
       appRef.project.modified = true;
@@ -535,7 +535,7 @@ function bindFieldInputs() {
     autoMax.onchange = () => applyAutoMax(true);
   }
 
-  // Modelo da barra: ao trocar de barra para um formato redondo, a caixa vira 40 x 50 (redonda na tela)
+  // Bar style: when switching a bar to a round shape, the box becomes 40 x 50 (round on screen)
   const styleSel = dialogEl.querySelector('#tdPbStyle');
   if (styleSel) styleSel.onchange = () => {
     const td = getSelectedTd();
@@ -558,7 +558,7 @@ function bindFieldInputs() {
       const td = getSelectedTd();
       if (!td || td.type !== 'progress') return;
       const v = clampPbSegments(segInp.value);
-      if (!fix && (segInp.value === '' || Number(segInp.value) !== v)) return; // digitando: só valores já válidos
+      if (!fix && (segInp.value === '' || Number(segInp.value) !== v)) return; // typing: only already valid values
       td.pbSegments = v;
       if (fix) segInp.value = v;
       syncPbStyleRows(td);
@@ -569,7 +569,7 @@ function bindFieldInputs() {
     segInp.onchange = () => applySeg(true);
   }
 
-  // Contorno e sombra: só ligado (1) ou desligado (0)
+  // Outline and shadow: only on (1) or off (0)
   for (const [id, prop] of [['#tdOutline', 'outline'], ['#tdShadow', 'shadow']]) {
     const el = dialogEl.querySelector(id);
     if (!el) continue;
@@ -632,7 +632,7 @@ function bindFieldInputs() {
       const prevAlign = getTdAlign(td);
       const newAlign = +selAlign.value;
       if (prevAlign !== newAlign && td.useBox && td.font !== 4 && td.font !== 5) {
-        // A caixa à direita não usa TextSize no jogo; nos outros alinhamentos ela volta a envolver o texto
+        // The right box does not use TextSize in the game; in the other alignments it wraps the text again
         const textW = Math.ceil(textDrawTextWidth(td));
         if (newAlign === 2) td.textSizeY = textW;
         else if (newAlign === 1) td.textSizeX = Math.round(td.x + textW);
@@ -686,7 +686,7 @@ function bindFieldInputs() {
     };
   }
 
-  // Ordem de criação (camadas): botões abaixo da lista
+  // Creation order (layers): buttons below the list
   for (const [id, where] of [['#tdOrderBack', 'back'], ['#tdOrderDown', -1], ['#tdOrderUp', 1], ['#tdOrderFront', 'front']]) {
     const b = dialogEl.querySelector(id);
     if (b) b.onclick = () => moveSelectedTd(where);
@@ -739,7 +739,7 @@ function bindFieldInputs() {
   if (colBg) colBg.oninput = onBgChange;
 }
 
-// Cache de miniaturas de modelos 3D (Font 5)
+// 3D model thumbnail cache (Font 5)
 const modelImgCache = new Map();
 
 function getOrLoadModelThumbnail(modelId) {
@@ -805,7 +805,7 @@ function setupCanvasEvents() {
       selectedIdx
     });
 
-    // 1. Checa se clicou na alça de redimensionamento do TextDraw selecionado
+    // 1. Checks whether the selected TextDraw's resize handle was clicked
     const curTd = getSelectedTd();
     if (curTd) {
       const curBounds = getTextDrawBounds(curTd);
@@ -832,7 +832,7 @@ function setupCanvasEvents() {
       }
     }
 
-    // 2. Busca TextDraw clicado de trás para frente (ordem de exibição)
+    // 2. Looks up the clicked TextDraw from back to front (display order)
     for (let i = tds.length - 1; i >= 0; i--) {
       const td = tds[i];
       const bounds = getTextDrawBounds(td);
@@ -860,7 +860,7 @@ function setupCanvasEvents() {
     const { sx, sy } = canvasPoint(e);
 
     if (!isDraggingTd) {
-      // Atualiza estilo do cursor do mouse ao passar por cima
+      // Updates the mouse cursor style on hover
       const curTd = getSelectedTd();
       if (curTd) {
         const curBounds = getTextDrawBounds(curTd);
@@ -893,13 +893,13 @@ function setupCanvasEvents() {
       const newH = Math.max(10, Math.round(isDraggingTd.origH + dy));
 
       if (td.type === 'progress') {
-        // Barra: o arrasto muda largura e altura na mesma proporção do retângulo
+        // Bar: dragging changes width and height in the same proportion as the rectangle
         const rx = newW / Math.max(4, isDraggingTd.origW), ry = newH / Math.max(4, isDraggingTd.origH);
         td.pbWidth = Number(Math.max(PB_MIN_WIDTH, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
         td.pbHeight = Number(Math.max(PB_MIN_HEIGHT, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(2));
         syncPbBorderLimit(td);
       } else if (td.font === 4 || td.font === 5) {
-        // Sprite (Font 4) e Prévia de modelo 3D (Font 5): textSizeX e textSizeY são largura e altura
+        // Sprite (Font 4) and 3D model preview (Font 5): textSizeX and textSizeY are width and height
         td.textSizeX = newW;
         td.textSizeY = newH;
       } else if (td.useBox && getTdAlign(td) !== 3) {
@@ -913,7 +913,7 @@ function setupCanvasEvents() {
           td.letterSizeY = Number(Math.max(0.05, (isDraggingTd.origLetterY || 1) * ratioY).toFixed(3));
         }
       } else {
-        // Texto normal: escala letterSizeX e letterSizeY proporcionalmente ao arrasto
+        // Normal text: scales letterSizeX and letterSizeY proportionally to the drag
         const ratioX = newW / Math.max(4, isDraggingTd.origW);
         const ratioY = newH / Math.max(4, isDraggingTd.origH);
         td.letterSizeX = Number(Math.max(0.05, (isDraggingTd.origLetterX || 0.35) * ratioX).toFixed(3));
@@ -925,7 +925,7 @@ function setupCanvasEvents() {
       const newX = Math.round(Math.max(0, Math.min(640, isDraggingTd.origX + dx)));
       const newY = Math.round(Math.max(0, Math.min(TD_HEIGHT, isDraggingTd.origY + dy)));
 
-      // A caixa acompanha o texto (TextSize X é coordenada absoluta à esquerda e à direita)
+      // The box follows the text (TextSize X is an absolute coordinate on the left and right)
       if (td.useBox && td.font !== 4 && td.font !== 5 && getTdAlign(td) !== 2) {
         td.textSizeX = Math.round(isDraggingTd.origSizeX + (newX - isDraggingTd.origX));
       }
@@ -958,13 +958,13 @@ function getTdAlign(td) {
   return td.align !== undefined ? td.align : (td.alignment !== undefined ? td.alignment : 1);
 }
 
-const BOX_PAD_X = 4 * TD_WIDTH / TD_SCREEN.w;   // margem de 4 px da caixa do CFont
+const BOX_PAD_X = 4 * TD_WIDTH / TD_SCREEN.w;   // 4 px margin of the CFont box
 
 function isBoxOnly(td) {
   return td.isBox || td.text === '_' || !td.text || String(td.text).trim() === '';
 }
 
-// Retângulo ocupado em unidades 640x448
+// Occupied rectangle in 640x448 units
 function getTextDrawBounds(td) {
   if (td.type === 'progress') return textDrawRect(td);
   if (td.font === 4 || td.font === 5) {
@@ -980,10 +980,10 @@ function getSelectedTd() {
   return tds[selectedIdx] || null;
 }
 
-// ---------- Ordem das TextDraws (camadas) ----------
-// O SA-MP desenha na ordem dos IDs: o que é criado primeiro fica por baixo. As TextDraws de jogador
-// (e as barras, que são de jogador) vêm depois de todas as globais, então ficam sempre por cima delas.
-// A lista guarda essa ordem: globais primeiro, depois as de jogador, cada grupo na ordem de criação.
+// ---------- TextDraw order (layers) ----------
+// SA-MP draws in ID order: what is created first sits underneath. Player TextDraws
+// (and the bars, which are player ones) come after all the global ones, so they are always on top of them.
+// The list keeps this order: globals first, then player ones, each group in creation order.
 let dragTdIdx = -1;
 const isPlayerLayer = (td) => Boolean(td?.isPlayer) || td?.type === 'progress';
 
@@ -998,7 +998,7 @@ function normalizeTdOrder() {
   appRef.project.modified = true;
 }
 
-// Move a TextDraw da posição "from" para antes da posição "to" (dentro do mesmo grupo)
+// Moves the TextDraw from position "from" to before position "to" (within the same group)
 function moveTdTo(from, to) {
   const tds = appRef?.project?.textDraws;
   if (!tds || from < 0 || from >= tds.length) return;
@@ -1030,15 +1030,15 @@ function moveSelectedTd(where) {
   else moveTdTo(selectedIdx, Math.min(last + 1, selectedIdx + 2));
 }
 
-// ---------- Prévia da piscada (BlinkPlayerProgressBar) ----------
-// Igual à include: começa aceso e troca a cada intervalo; com duração, para no fim e a prévia
-// recomeça depois de 1 s para dar para ver de novo.
+// ---------- Blink preview (BlinkPlayerProgressBar) ----------
+// Same as the include: starts lit and toggles every interval; with a duration, stops at the end and the preview
+// restarts after 1 s so it can be seen again.
 let syncPbBlinkFields = null;
 
 // ---------- Auto preencher (AutoFillPlayerProgressBar) ----------
-// Ligado, fica salvo na barra e vai para o código; a prévia anima com o mesmo tempo da include:
-// enche do valor atual até "Preencher até", segura, volta e segura. O valor salvo não muda.
-const autoFillStart = new Map(); // barra -> início da animação na prévia
+// When on, it is saved in the bar and goes into the code; the preview animates with the same timing as the include:
+// fills from the current value up to "Preencher até", holds, goes back and holds. The saved value does not change.
+const autoFillStart = new Map(); // bar -> animation start in the preview
 function autoFillPreviewValue(td) {
   if (!autoFillStart.has(td)) autoFillStart.set(td, performance.now());
   return pbAutoFillValue(td, performance.now() - autoFillStart.get(td));
@@ -1058,14 +1058,14 @@ function syncAutoFillControls(td) {
   }
 }
 
-// Valor com ao menos uma casa decimal (1.0, 2.5, 0.75)
+// Value with at least one decimal place (1.0, 2.5, 0.75)
 function decimalText(v) {
   const t = String(Math.round(Number(v) * 100) / 100);
   return t.includes('.') ? t : t + '.0';
 }
 
-// Campos que dependem do modelo: segmentos só no anel, direção não vale para o círculo, e um aviso
-// com as PlayerTextDraws que a barra usa no jogo
+// Fields that depend on the style: segments only on the ring, direction does not apply to the circle, and a notice
+// with the PlayerTextDraws the bar uses in the game
 function syncPbStyleRows(td) {
   if (!dialogEl || !td) return;
   const style = td.pbStyle | 0;
@@ -1082,7 +1082,7 @@ function syncPbStyleRows(td) {
   }
 }
 
-// Mostra o seletor de cor só quando a cor própria está ligada
+// Shows the color picker only when the custom color is on
 function syncPbColorRows(td) {
   if (!dialogEl || !td) return;
   const show = (id, on) => { const el = dialogEl.querySelector(id); if (el) el.style.display = on ? 'flex' : 'none'; };
@@ -1090,7 +1090,7 @@ function syncPbColorRows(td) {
   show('#tdPbBlinkBorderColorRow', Boolean(td.pbBlinkBorderColor));
 }
 
-// Limite do campo Borda conforme o tamanho da barra; uma borda que não cabe mais é reduzida
+// Border field limit according to the bar size; a border that no longer fits is reduced
 function syncPbBorderLimit(td) {
   if (!dialogEl || !td || td.type !== 'progress') return;
   const max = maxPbBorder(td.pbWidth, td.pbHeight);
@@ -1165,7 +1165,7 @@ function redrawCanvas() {
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
   useLogicalUnits();
 
-  // Fundo do jogo / GTA SA (esticado em 16:9, como o próprio jogo faz com o HUD)
+  // Game background / GTA SA (stretched to 16:9, as the game itself does with the HUD)
   if (showGameBg && gameBgImg && gameBgImg.complete && gameBgImg.naturalWidth > 0) {
     ctx.drawImage(gameBgImg, 0, 0, TD_WIDTH, TD_HEIGHT);
   } else {
@@ -1201,7 +1201,7 @@ function drawGrid() {
     ctx.stroke();
   }
 
-  // Margem segura da tela do jogo (Safe Zone): sombra preta para contraste + tracejado magenta
+  // Game screen safe margin (Safe Zone): black shadow for contrast + magenta dashes
   const sz = { x: 20, y: 20, w: TD_WIDTH - 40, h: TD_HEIGHT - 40 };
   ctx.lineWidth = 3 * px;
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
@@ -1213,7 +1213,7 @@ function drawGrid() {
   ctx.strokeRect(sz.x, sz.y, sz.w, sz.h);
   ctx.setLineDash([]);
 
-  // Rótulo desenhado em pixels para não deformar com a escala vertical
+  // Label drawn in pixels so it does not distort with the vertical scale
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const label = `SAFE ZONE (${sz.w} × ${sz.h})`;
   const lx = sz.x * TD_SCREEN.w / TD_WIDTH, ly = sz.y * TD_SCREEN.h / TD_HEIGHT - 6;
@@ -1248,7 +1248,7 @@ function renderTextDraw(td, isSelected) {
   } else if (td.font === 4) {
     renderSpriteTextDraw(td, bounds);
   } else {
-    // Texto e caixa com as contas e as fontes do GTA SA, em pixels da tela de referência
+    // Text and box with GTA SA's calculations and fonts, in reference screen pixels
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     drawTextDraw(ctx, td);
@@ -1256,7 +1256,7 @@ function renderTextDraw(td, isSelected) {
     useLogicalUnits();
   }
 
-  // Borda de seleção e alça de redimensionamento
+  // Selection border and resize handle
   if (isSelected) {
     const px = TD_WIDTH / TD_SCREEN.w, py = TD_HEIGHT / TD_SCREEN.h;
     ctx.strokeStyle = '#00CCFF';
@@ -1321,7 +1321,7 @@ function renderSpriteTextDraw(td, bounds) {
       }
     }
   } else {
-    // Vetor de fallback / placeholder enquanto a imagem carrega
+    // Fallback vector / placeholder while the image loads
     const spLower = sprite.toLowerCase();
     ctx.fillStyle = col.css;
     ctx.strokeStyle = col.css;
@@ -1348,7 +1348,7 @@ function renderSpriteTextDraw(td, bounds) {
 }
 
 function renderModelPreview(td, bounds, isSelected = false) {
-  // Se não estiver selecionado e não tiver caixa ativa, desenha apenas contorno discreto
+  // If not selected and no active box, draws only a discreet outline
   if (!isSelected && !td.useBox) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
     ctx.lineWidth = 1;
@@ -1356,10 +1356,10 @@ function renderModelPreview(td, bounds, isSelected = false) {
   }
 
   const modelId = td.previewModel ?? 411;
-  // Fundo: o SA-MP limpa a imagem da prévia com a cor de fundo (BackgroundColor) da TextDraw
+  // Background: SA-MP clears the preview image with the TextDraw's background color (BackgroundColor)
   const bg = toHexRgba(td.backgroundColor ?? 0x00000000);
   if (bg.a > 0) { ctx.fillStyle = bg.css; ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h); }
-  // Modelo 3D de verdade, desenhado como no jogo (256 x 256 esticado para a caixa)
+  // Real 3D model, drawn as in the game (256 x 256 stretched to the box)
   const img = modelPreviewImage(appRef, td, () => { if (dialogEl?.open) redrawCanvas(); });
 
   if (img) {
@@ -1371,7 +1371,7 @@ function renderModelPreview(td, bounds, isSelected = false) {
     ctx.textBaseline = 'middle';
     ctx.fillText(t('Carregando modelo'), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   } else {
-    // Se ainda está carregando ou não tem miniatura, exibe texto indicativo
+    // If it is still loading or has no thumbnail, shows an indicator text
     ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillStyle = '#65B5FF';
     ctx.textAlign = 'center';
@@ -1379,7 +1379,7 @@ function renderModelPreview(td, bounds, isSelected = false) {
     ctx.fillText(t('MODELO 3D: #{0}', modelId), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   }
 
-  // Tag do Modelo no canto superior apenas quando selecionado
+  // Model tag in the top corner only when selected
   if (isSelected) {
     ctx.font = '9px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
@@ -1505,7 +1505,7 @@ function updateSidebarFields() {
   const bgCol = toHexRgba(td.backgroundColor ?? 0x000000FF);
   setVal('#tdBgColor', bgCol.hex);
 
-  // Barra de progresso: só posição, cor e os campos da barra
+  // Progress bar: only position, color and the bar's fields
   const isBar = td.type === 'progress';
   dialogEl.querySelectorAll('#tdDetailsPanel .td-std').forEach(el => { el.style.display = isBar ? 'none' : ''; });
   const pbPanel = dialogEl.querySelector('#tdProgressPanel');
@@ -1540,13 +1540,13 @@ function updateSidebarFields() {
     syncAutoFillControls(td);
   }
 
-  // Painel de Sprite (Font 4)
+  // Sprite panel (Font 4)
   const spritePanel = dialogEl.querySelector('#tdSpritePanel');
   if (spritePanel) {
     spritePanel.style.display = td.font === 4 ? 'block' : 'none';
   }
 
-  // Controles específicos de Font 5 (Model Preview)
+  // Font 5-specific controls (Model Preview)
   const modelPanel = dialogEl.querySelector('#tdModelPreviewPanel');
   if (modelPanel) {
     modelPanel.style.display = td.font === 5 ? 'block' : 'none';
@@ -1706,8 +1706,8 @@ function duplicateSelectedTextDraw() {
   const td = getSelectedTd();
   if (!td) return;
   tdPushUndo();
-  // A cópia fica fora da original, encostada na borda de baixo (ou de cima, se não couber na tela)
-  // e na mesma coluna (mesmo X), como no jogo a TextDraw ocupa o retângulo de textDrawRect
+  // The copy sits outside the original, against the bottom edge (or the top, if it does not fit on screen)
+  // and in the same column (same X), as in the game the TextDraw occupies the textDrawRect rectangle
   const r = textDrawRect(td), gap = 2;
   let dy = r.h + gap;
   if (r.y + r.h + gap + r.h > TD_HEIGHT && r.y - gap - r.h >= 0) dy = -(r.h + gap);

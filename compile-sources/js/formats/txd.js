@@ -1,5 +1,5 @@
-// Leitor de TXD (RenderWare Texture Dictionary) do GTA SA (PC, D3D8/D3D9).
-// Mantém DXT comprimido quando possível; converte os demais formatos para RGBA.
+// GTA SA TXD (RenderWare Texture Dictionary) reader (PC, D3D8/D3D9).
+// Keeps DXT compressed when possible; converts the other formats to RGBA.
 import { BinaryReader } from './binary.js';
 
 const FMT_MASK = 0x0f00;
@@ -14,12 +14,12 @@ function fourcc(n) {
 function header(r) { return { type: r.u32(), size: r.u32(), version: r.u32() }; }
 
 function parseNative(r, end) {
-  // Struct do TextureNative
+  // TextureNative struct
   const h = header(r);
   if (h.type !== 1) return null;
   const sEnd = r.pos + h.size;
   const platform = r.u32();
-  r.u32(); // filtro / endereçamento
+  r.u32(); // filter / addressing
   const name = r.str(32).toLowerCase();
   const mask = r.str(32).toLowerCase();
   const rasterFormat = r.u32();
@@ -80,7 +80,7 @@ export function parseTxd(buffer) {
   return textures;
 }
 
-// ---------- Decodificação para RGBA (formatos sem compressão e fallback DXT) ----------
+// ---------- Decoding to RGBA (uncompressed formats and DXT fallback) ----------
 
 function c565(v, out, o) {
   out[o] = ((v >> 11) & 31) * 255 / 31 | 0;
@@ -188,7 +188,7 @@ export function decodeToRGBA(tex, level = 0) {
   return out;
 }
 
-// Indica se a textura tem transparência relevante (para alpha test / blending)
+// Tells whether the texture has relevant transparency (for alpha test / blending)
 export function textureHasAlpha(tex) {
   if (tex.compression === 'DXT3' || tex.compression === 'DXT5') return true;
   if (tex.compression === 'DXT1') return tex.alpha;

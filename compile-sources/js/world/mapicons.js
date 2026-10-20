@@ -1,5 +1,5 @@
-// Catálogo completo dos 64 MapIcons oficiais (SetPlayerMapIcon / CreateDynamicMapIcon)
-// e renderização de marcadores no mapa 3D.
+// Complete catalog of the 64 official MapIcons (SetPlayerMapIcon / CreateDynamicMapIcon)
+// and marker rendering on the 3D map.
 import * as THREE from 'three';
 
 export const MAPICON_STYLES = [
@@ -92,7 +92,7 @@ export function createMapIconNode(mi) {
   const group = new THREE.Group();
   group.name = `mapicon_${mType}`;
 
-  // Cria um sprite flutuante + haste vertical para visualização clara no mundo 3D
+  // Creates a floating sprite + vertical pole for clear visualization in the 3D world
   const canvas = document.createElement('canvas');
   canvas.width = 64;
   canvas.height = 64;
@@ -156,14 +156,14 @@ export function createMapIconNode(mi) {
   sprite.renderOrder = 10;
   group.add(sprite);
 
-  // Haste e base no chão
+  // Pole and base on the ground
   const poleGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.2, 8);
   poleGeo.rotateX(Math.PI / 2);
   poleGeo.translate(0, 0, 1.1);
   const poleMat = new THREE.MeshBasicMaterial({ color: 0xf0a630, transparent: true, opacity: 0.75 });
   group.add(new THREE.Mesh(poleGeo, poleMat));
 
-  // Se o estilo for 2 ou 3 (MAPICON_*_CHECKPOINT), desenha também o marcador vermelho no chão
+  // If the style is 2 or 3 (MAPICON_*_CHECKPOINT), also draws the red marker on the ground
   if (mi.style === 2 || mi.style === 3) {
     const cpGeo = new THREE.CylinderGeometry(1.2, 1.2, 1.6, 24, 1, true);
     cpGeo.rotateX(Math.PI / 2);
@@ -172,7 +172,7 @@ export function createMapIconNode(mi) {
     group.add(new THREE.Mesh(cpGeo, cpMat));
   }
 
-  // Esfera invisível para seleção por clique no mundo 3D
+  // Invisible sphere for click selection in the 3D world
   const pickGeo = new THREE.CylinderGeometry(1.1, 1.1, 3.2, 12);
   pickGeo.rotateX(Math.PI / 2);
   pickGeo.translate(0, 0, 1.6);
@@ -184,7 +184,7 @@ export function createMapIconNode(mi) {
   return group;
 }
 
-// Gera o nome sequencial na duplicação: MapIcon 1 > MapIcon 1_2 > MapIcon 1_3
+// Generates the sequential name on duplication: MapIcon 1 > MapIcon 1_2 > MapIcon 1_3
 export function getNextMapIconName(origName, existingIcons = []) {
   const baseRaw = (origName || 'MapIcon 1').trim();
   const m = baseRaw.match(/^(.*?)_(\d+)$/);

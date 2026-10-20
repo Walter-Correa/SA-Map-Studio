@@ -1,4 +1,4 @@
-// Viewport 3D: renderer, cena, céu, água e câmera livre estilo editor.
+// 3D viewport: renderer, scene, sky, water and editor-style free camera.
 import * as THREE from 'three';
 
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
@@ -107,7 +107,7 @@ export class FlyCamera {
       }
     });
     document.addEventListener('pointerlockchange', () => {
-      // Não cancela looking caso o lock falhe ou mude
+      // Does not cancel looking if the lock fails or changes
     });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('pointerdown', (e) => {
@@ -365,7 +365,7 @@ export class Viewport {
     this.sun.position.set(40, -60, 100);
     this.scene.add(this.sun);
     this.fly = new FlyCamera(this.camera, renderer.domElement);
-    // Vista inicial (projeto vazio sem câmera salva): Grove Street
+    // Initial view (empty project with no saved camera): Grove Street
     this.fly.setPose(new THREE.Vector3(2516.859, -1699.420, 26.124), 2.319, -0.098);
     this.frameCallbacks = [];
     this.timer = new THREE.Timer();
@@ -387,19 +387,19 @@ export class Viewport {
     const loop = (timestamp) => {
       requestAnimationFrame(loop);
 
-      // Controle dinâmico de taxa de quadros (FPS) para economia inteligente de CPU:
+      // Dynamic frame rate (FPS) control for smart CPU saving:
       const isHidden = document.hidden;
       const isModalOpen = Boolean(document.querySelector('dialog.open, dialog[open]'));
       const isCameraActive = this.fly?._movingState || this.fly?.looking || this.fly?.panning || (this.fly?.keys?.size > 0);
       const isInteracting = isCameraActive || this.renderRequested;
 
-      let targetFps = 60; // Limite padrão de 60 FPS (fluido e suave, eliminando desperdício de 144Hz/240Hz)
+      let targetFps = 60; // Default limit of 60 FPS (fluid and smooth, eliminating the waste of 144Hz/240Hz)
       if (isHidden) {
-        targetFps = 2; // Aba oculta ou minimizado: 2 FPS (quase 0% CPU)
+        targetFps = 2; // Hidden tab or minimized: 2 FPS (almost 0% CPU)
       } else if (isModalOpen) {
         targetFps = 5; // Modais abertos (TextDraws, GangZones, etc): 5 FPS
       } else if (!isInteracting) {
-        targetFps = 30; // Ocioso (sem mover a câmera): 30 FPS (animação de pickups perfeita com CPU baixíssimo)
+        targetFps = 30; // Idle (camera not moving): 30 FPS (perfect pickup animation with very low CPU)
       }
 
       const minInterval = 1000 / targetFps;
@@ -425,7 +425,7 @@ export class Viewport {
   }
 
   setupSky() {
-    // Degradê do céu como fundo (cor do horizonte também é a cor da névoa)
+    // Sky gradient as the background (horizon color is also the fog color)
     const c = document.createElement('canvas'); c.width = 2; c.height = 256;
     const g = c.getContext('2d');
     this.skyCanvas = c;
@@ -466,7 +466,7 @@ export class Viewport {
     const time = hour + minute / 60.0;
     const w = Math.max(0, Math.min(45, weatherId | 0));
 
-    // Ângulo do sol: 6h = Leste (+X), 12h = Zênite (+Z), 18h = Oeste (-X)
+    // Sun angle: 6h = East (+X), 12h = Zenith (+Z), 18h = West (-X)
     const rad = ((time - 6) / 12) * Math.PI;
     const isDay = time >= 5.5 && time <= 19.5;
     const isDawn = time >= 4.8 && time < 6.8;
@@ -478,13 +478,13 @@ export class Viewport {
     let sunZ = Math.sin(rad);
 
     if (!isDay) {
-      // Posiciona a lua suave à noite
+      // Positions the soft moon at night
       sunZ = Math.max(0.3, -sunZ * 0.8);
       sunX = -sunX;
     }
     this.sun.position.set(sunX * 60, sunY * 60, Math.max(30, sunZ * 80));
 
-    // Condições de clima do SA-MP (0 a 45)
+    // SA-MP weather conditions (0 to 45)
     const isRain = w === 8 || w === 16 || w === 33;
     const isFog = w === 4 || w === 9 || w === 20 || w === 44;
     const isSand = w === 19;
@@ -662,7 +662,7 @@ export class Viewport {
   }
 }
 
-// Água do water.dat (quadriláteros e triângulos)
+// Water from water.dat (quads and triangles)
 export function buildWater(text) {
   const pos = [];
   for (const raw of text.split(/\r?\n/)) {

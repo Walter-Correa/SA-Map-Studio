@@ -1,10 +1,10 @@
-// Painel de cores ARGB (0xAARRGGBB), no formato que o SA-MP usa em
+// ARGB color panel (0xAARRGGBB), in the format SA-MP uses in
 // SetObjectMaterial (materialcolor) e SetObjectMaterialText (fontcolor / backcolor).
 import { argbParts, makeArgb, parseColor, formatColor, cssColor, hexRgb } from '../editor/materials.js';
 import { CAR_COLORS, carColorHex } from '../world/vehicleMods.js';
 import { esc, store } from './common.js';
 
-// Cores comuns: tons de construção, cores vivas e a escala de cinza
+// Common colors: construction shades, vivid colors and the gray scale
 const SWATCHES = [
   '0xFFFFFFFF', '0xFFE0E0E0', '0xFFBDBDBD', '0xFF9E9E9E', '0xFF757575', '0xFF545454', '0xFF333333', '0xFF000000',
   '0xFFF44336', '0xFFE91E63', '0xFF9C27B0', '0xFF673AB7', '0xFF3F51B5', '0xFF2196F3', '0xFF03A9F4', '0xFF00BCD4',
@@ -21,8 +21,8 @@ function pushRecent(v) {
   store.set('recentColors', list.slice(0, 16));
 }
 
-// Cria o painel dentro de "el". onChange(cor) é chamado ao escolher (cor = "0" ou "0xAARRGGBB").
-//   allowNone: mostra o botão "Sem cor (0)", que no SA-MP mantém a cor original
+// Creates the panel inside "el". onChange(color) is called on choosing (color = "0" or "0xAARRGGBB").
+//   allowNone: shows the "Sem cor (0)" button, which in SA-MP keeps the original color
 export function colorPalette(el, { value = '0', allowNone = true, noneLabel = 'Sem cor (0)', onChange }) {
   let cur = formatColor(parseColor(value));
   el.classList.add('palette');
@@ -75,7 +75,7 @@ function pushRecentCarColor(id) {
   store.set('recentCarColors', list.slice(0, 16));
 }
 
-// Paleta dedicada para as 256 cores de veículos (0 a 255)
+// Dedicated palette for the 256 vehicle colors (0 to 255)
 export function vehicleColorPalette(el, { value = -1, onChange }) {
   let cur = parseInt(value, 10);
   if (!Number.isFinite(cur)) cur = -1;
@@ -147,7 +147,7 @@ export function vehicleColorPalette(el, { value = -1, onChange }) {
   return { get value() { return cur; }, set: (v) => set(v, false) };
 }
 
-// Popover flutuante para escolha de cor de veículo
+// Floating popover for choosing a vehicle color
 export function openVehicleColorPicker(targetEl, { value = -1, onSelect }) {
   document.querySelectorAll('.veh-color-popover').forEach(p => p.remove());
   const pop = document.createElement('div');

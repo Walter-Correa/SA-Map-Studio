@@ -1,4 +1,4 @@
-// Catálogo de sons (PlayerPlaySound) com prévia de áudio real do GTA SA
+// Sound catalog (PlayerPlaySound) with real GTA SA audio preview
 import { SOUND_CATALOG, SOUND_CATEGORIES, getSoundInfo } from '../world/sounds.js';
 import { app, $, $$, esc, toast, copyText } from './common.js';
 
@@ -136,7 +136,7 @@ function renderSoundList() {
     countEl.textContent = `${filtered.length} de ${SOUND_CATALOG.length} sons`;
   }
 
-  // Se o som selecionado não estiver na lista filtrada, mantém o ID sem forçar seleção arbitrária
+  // If the selected sound is not in the filtered list, keeps the ID without forcing an arbitrary selection
   listEl.innerHTML = filtered.map(s => {
     const isSel = s.id === selectedSoundId;
     const isPlaying = s.id === playingSoundId;
@@ -167,7 +167,7 @@ function renderSoundList() {
       userSelectedSoundId = id;
       selectedSoundId = id;
       listEl.querySelectorAll('.snd-row').forEach(r => r.classList.toggle('selected', r === row));
-      // Toca automaticamente ao selecionar a linha
+      // Plays automatically when the row is selected
       playSoundPreview(id);
     };
   });
@@ -206,10 +206,10 @@ export function openSoundDialog(options = {}) {
   if (!dialogEl) return;
   onSelectCallback = options.onSelect || null;
 
-  // Ao abrir deve sempre estar na categoria Todos
+  // On opening it must always be in the All category
   activeCategory = 'Todos';
 
-  // Primeiro som da lista ou último selecionado pelo usuário recentemente
+  // First sound in the list or the one the user selected most recently
   if (userSelectedSoundId !== null) {
     selectedSoundId = userSelectedSoundId;
   } else if (options.currentSoundId !== undefined) {
@@ -218,13 +218,13 @@ export function openSoundDialog(options = {}) {
     selectedSoundId = SOUND_CATALOG[0]?.id || 0;
   }
 
-  // Atualiza botões de categoria e renderiza lista
+  // Updates category buttons and renders the list
   updateCategoryButtons();
   renderSoundList();
 
   if (!dialogEl.open) dialogEl.showModal();
 
-  // Scrolla até o item selecionado sem tocar automaticamente ao abrir
+  // Scrolls to the selected item without playing automatically on open
   setTimeout(() => {
     const selRow = dialogEl.querySelector(`.snd-row[data-snd-row="${selectedSoundId}"]`);
     if (selRow) selRow.scrollIntoView({ block: 'nearest' });

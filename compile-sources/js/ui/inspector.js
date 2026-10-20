@@ -1,5 +1,5 @@
-// Inspetor (painel da direita): posição, rotação, opções e o editor de materiais do SA-MP
-// (SetObjectMaterial e SetObjectMaterialText) com todos os índices do objeto.
+// Inspector (right panel): position, rotation, options and the SA-MP material editor
+// (SetObjectMaterial and SetObjectMaterialText) with all of the object's indices.
 import * as THREE from 'three';
 import { categoryOf } from '../world/gamedata.js';
 import { drawMaterialText } from '../world/models.js';
@@ -266,7 +266,7 @@ const actionGrid = () => `<div class="btn-grid">
       <button type="button" class="btn" data-act="focus"><svg><use href="#i-focus"/></svg>Focar</button>
     </div>`;
 
-// Velocidade com casas decimais (sempre ao menos uma: 1.0, 2.5, 0.125)
+// Speed with decimal places (always at least one: 1.0, 2.5, 0.125)
 const speedText = (v) => { const t = String(clampTransformSpeed(v)); return t.includes('.') ? t : t + '.0'; };
 
 function speedSection() {
@@ -722,7 +722,7 @@ function bindCommon() {
 
 function bindSpeedControls() {
   $$('#inspector [data-speed]').forEach(inp => {
-    // Digitando: só usa o valor se ele já estiver dentro do limite; ao sair do campo aplica o limite
+    // While typing: only uses the value if it is already within the limit; on leaving the field it applies the limit
     const apply = (fix) => {
       const raw = parseFloat(String(inp.value).replace(',', '.'));
       if (!fix && (!Number.isFinite(raw) || clampTransformSpeed(raw) !== raw)) return;
@@ -1241,7 +1241,7 @@ function bindVehicle(v) {
     };
   }
 
-  // Bind de seleção múltipla de componentes de tuning
+  // Multi-selection bind for tuning components
   $$('#inspector [data-veh-comp-toggle]').forEach(chk => {
     chk.onchange = () => {
       const scrollParent = $('#sidebarRight');
@@ -1257,7 +1257,7 @@ function bindVehicle(v) {
       project.updateItems(isChecked ? 'Instalar Componente' : 'Remover Componente', [uid], (o) => {
         if (!o.components) o.components = [];
         if (isChecked) {
-          // Desmarca qualquer outro componente do mesmo grupo / slot (mutuamente exclusivo por slot)
+          // Unchecks any other component of the same group / slot (mutually exclusive per slot)
           o.components = o.components.filter(existingId => {
             const ec = VEHICLE_COMPONENTS[existingId];
             return !ec || ec.type !== typeId;
@@ -1627,7 +1627,7 @@ function bindMulti(items) {
     });
   });
 
-  // Rotação conjunta de múltiplos objetos presos ao mesmo eixo
+  // Joint rotation of multiple objects locked to the same axis
   $$('#inspector [data-multi-rot]').forEach(inp => {
     inp.addEventListener('change', () => {
       const axis = inp.dataset.multiRot;
@@ -1957,8 +1957,8 @@ function applyTextNow(uids, idx) {
   if (keepFocus) document.getElementById(keepFocus)?.focus();
 }
 
-// Abrir o editor (ou trocar de aba ou de índice) nunca escreve no objeto: o texto que já existe é
-// carregado como está, e só uma alteração do usuário ou o botão aplicam o rascunho
+// Opening the editor (or switching tab or index) never writes to the object: the existing text is
+// loaded as is, and only a user change or the button applies the draft
 function bindTextEditor(uids, o, idx) {
   const cur = matOf(o, idx[0]);
   if (cur && isText(cur)) textDraft = { ...textDraft, ...normalizeMaterial(cur) };

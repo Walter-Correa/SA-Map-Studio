@@ -1,4 +1,4 @@
-// Seletor Modal de Sprites para TextDraws com Galeria Visual Completa
+// Sprite Picker Modal for TextDraws with Complete Visual Gallery
 import { $, $$, esc, plural, toast } from './common.js';
 import { TEXTDRAW_SPRITES } from '../data/sprites.js';
 
@@ -60,7 +60,7 @@ export function setupSpritePicker() {
     };
   }
 
-  // Botão aplicar
+  // Apply button
   if (btnApply) {
     btnApply.onclick = () => {
       applySelectedSprite();

@@ -1,5 +1,5 @@
-// Biblioteca de texturas: índice de todas as texturas do jogo (feito em segundo plano
-// por um Web Worker e guardado em cache no disco), categorias e miniaturas.
+// Texture library: index of all the game textures (built in the background
+// by a Web Worker and cached on disk), categories and thumbnails.
 import { textureCategory } from '../world/categories.js';
 
 const OBJECT_TYPES = new Set(['objs', 'tobj', 'anim']);
@@ -13,8 +13,8 @@ export class TextureLibrary extends EventTarget {
     this.items = [];              // {key, txd, name, w, h, alpha, model, samp, category}
     this.byKey = new Map();
     this.txdModel = this.buildTxdModelMap();
-    this.have = new Set();        // miniaturas que já estão no disco
-    this.urls = new Map();        // chave -> URL gerada agora (ou null)
+    this.have = new Set();        // thumbnails already on disk
+    this.urls = new Map();        // key -> URL generated now (or null)
     this.thumbWaiting = new Map();
     this.thumbQueue = [];
     this.thumbBusy = 0;
@@ -25,7 +25,7 @@ export class TextureLibrary extends EventTarget {
 
   setHave(keys) { for (const k of keys || []) this.have.add(k); }
 
-  // Para cada TXD, um modelo que o carrega (o SetObjectMaterial precisa do ID de um modelo que use o TXD)
+  // For each TXD, a model that loads it (SetObjectMaterial needs the ID of a model that uses the TXD)
   buildTxdModelMap() {
     const map = new Map();
     const defs = [...this.gd.models.values()].filter(d => OBJECT_TYPES.has(d.type)).sort((a, b) => a.id - b.id);
@@ -44,7 +44,7 @@ export class TextureLibrary extends EventTarget {
     for (const [name, e] of this.gd.entries) {
       if (!name.endsWith('.txd')) continue;
       const txd = name.slice(0, -4);
-      if (!this.txdModel.has(txd)) continue; // nenhum objeto usa: o SA-MP não consegue carregar
+      if (!this.txdModel.has(txd)) continue; // no object uses it: SA-MP cannot load it
       out.push({ name: txd, img: e.img, offset: e.offset, size: e.size });
     }
     return out;
@@ -58,7 +58,7 @@ export class TextureLibrary extends EventTarget {
 
   emit(type, detail) { this.dispatchEvent(new CustomEvent(type, { detail })); }
 
-  // Abre o índice já salvo, sem iniciar a leitura
+  // Opens the already saved index, without starting the read
   async tryCache() {
     const sig = this.signature(this.txdEntries());
     try {
@@ -67,13 +67,13 @@ export class TextureLibrary extends EventTarget {
       const data = await res.json();
       if (!data.items || data.signature !== sig) return false;
       this.setIndex(data.items);
-      // Não inicia geração em massa em segundo plano para economizar RAM
+      // Does not start mass background generation to save RAM
       return true;
     } catch { return false; }
   }
 
-  // Lista as texturas de todos os TXDs. O servidor lê só os cabeçalhos (leva poucos segundos);
-  // se não der, um Web Worker lê os arquivos. Miniaturas são geradas sob demanda para os itens visíveis.
+  // Lists the textures of all TXDs. The server reads only the headers (takes a few seconds);
+  // if that fails, a Web Worker reads the files. Thumbnails are generated on demand for the visible items.
   async startIndex() {
     if (this.state === 'loading') return;
     const entries = this.txdEntries();
@@ -93,7 +93,7 @@ export class TextureLibrary extends EventTarget {
       this.setIndex(items);
       fetch('/api/cache/textures', { method: 'POST', body: JSON.stringify({ signature: sig, items }) }).catch(() => {});
       return;
-    } catch { /* servidor antigo: lê no navegador */ }
+    } catch { /* old server: reads in the browser */ }
     this.indexWorker = new Worker(new URL('../world/textures.worker.js', import.meta.url), { type: 'module' });
     this.indexWorker.onmessage = (ev) => {
       const m = ev.data;
@@ -113,8 +113,8 @@ export class TextureLibrary extends EventTarget {
     this.indexWorker.postMessage({ type: 'index', entries, thumbs: false, have: [...this.have], base: location.origin + '/gta/' });
   }
 
-  // ---------------------------------------------------------------- miniaturas em segundo plano
-  // Um TXD por vez, e só quando o mapa não está carregando (para não disputar a conexão).
+  // ---------------------------------------------------------------- background thumbnails
+  // One TXD at a time, and only when the map is not loading (to avoid competing for the connection).
   startThumbs() {
     const byTxd = new Map();
     for (const it of this.items) if (!this.have.has(it.key)) { if (!byTxd.has(it.txd)) byTxd.set(it.txd, []); byTxd.get(it.txd).push(it.name); }
@@ -129,8 +129,8 @@ export class TextureLibrary extends EventTarget {
     const bg = this.bg;
     if (!bg || !bg.running || bg.busy) return;
     if (!bg.queue.length) { bg.running = false; this.missingThumbs = this.items.filter(i => !this.have.has(i.key)).length; this.emit('thumbs'); return; }
-    // Espera o mapa terminar de carregar e as miniaturas pedidas pela tela
-    // (com o mapa carregando, faz no máximo um TXD a cada 1,5 s)
+    // Waits for the map to finish loading and for the thumbnails requested by the screen
+    // (while the map is loading, does at most one TXD every 1.5 s)
     const busy = this.isBusy?.() || this.thumbQueue.length || this.thumbBusy;
     if (busy && performance.now() - (bg.last || 0) < 1500) { clearTimeout(this.bgTimer); this.bgTimer = setTimeout(() => this.pumpBg(), 500); return; }
     bg.last = performance.now();

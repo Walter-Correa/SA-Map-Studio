@@ -1,19 +1,19 @@
-// Prévia de modelo 3D das TextDraws (TEXT_DRAW_FONT_MODEL_PREVIEW) desenhada como o cliente do SA-MP:
-// - o modelo é desenhado numa imagem quadrada de 256 x 256, depois esticada para a caixa (TextSize);
-// - câmera em (0, 0, 50) olhando para -Y (Z para cima), campo de visão de 53,13° (janela 0,5),
-//   recorte de 0,01 a 300;
-// - o modelo usa a esfera de colisão (arquivo COL): fica em (-centro.x, distância, 50 - centro.z),
-//   com distância = (-0,1 - 2,25 x raio) x zoom;
-// - rotação no espaço do modelo, em volta da origem dele: Z, depois Y, depois X, depois o deslocamento;
-// - os modelos 1373, 3118, 3552 e 3553 são trocados pelo 18631 girado 180° em Z;
-// - pedestres ficam na pose parada do jogo (IDLE_stance do anim/ped.ifp), com o skin aplicado nos ossos.
+// 3D model preview of TextDraws (TEXT_DRAW_FONT_MODEL_PREVIEW) drawn like the SA-MP client:
+// - the model is drawn on a square 256 x 256 image, then stretched to the box (TextSize);
+// - camera at (0, 0, 50) looking toward -Y (Z up), field of view of 53.13° (window 0.5),
+//   clipping from 0.01 to 300;
+// - the model uses the collision sphere (COL file): it sits at (-center.x, distance, 50 - center.z),
+//   with distance = (-0.1 - 2.25 x radius) x zoom;
+// - rotation in model space, around its origin: Z, then Y, then X, then the offset;
+// - models 1373, 3118, 3552 and 3553 are replaced by 18631 rotated 180° on Z;
+// - pedestrians are in the game's idle pose (IDLE_stance from anim/ped.ifp), with the skin applied to the bones.
 import * as THREE from 'three';
 
 const SIZE = 256;
 const SWAP_MODELS = new Set([1373, 3118, 3552, 3553]);
-const PED_SPHERE = [0, 0, 0, 1.0]; // colisão fixa de pedestre do GTA (gta_sa.exe 0x5baf16: raio 1,0, centro 0)
+const PED_SPHERE = [0, 0, 0, 1.0]; // fixed GTA pedestrian collision (gta_sa.exe 0x5baf16: radius 1.0, center 0)
 
-// Sem o ped.ifp ou sem ossos no modelo: a malha sem animação fica um pouco abaixo da pose do jogo
+// Without ped.ifp or without bones in the model: the mesh with no animation sits a bit below the game pose
 const PED_LIFT = 0.06;
 
 let renderer = null, target = null, scene = null, camera = null, pixels = null;
@@ -22,7 +22,7 @@ const images = new Map();   // chave -> { canvas, ready }
 const posedPeds = new Map(); // modelo -> Promise<THREE.Group | null>
 let idlePose = null;         // Promise<Map(osso -> { q, t }) | null>
 
-// Primeiro quadro da animação IDLE_stance (arquivo ANP3): rotação de cada osso e posição do osso raiz
+// First frame of the IDLE_stance animation (ANP3 file): rotation of each bone and root bone position
 function parseIdlePose(buf) {
   if (!buf || buf.byteLength < 36) return null;
   const v = new DataView(buf), u8 = new Uint8Array(buf);
@@ -54,7 +54,7 @@ function loadIdlePose() {
   return idlePose;
 }
 
-// Pedestre na pose parada: cada vértice vai com os ossos que o movem (até 4, com peso)
+// Pedestrian in the idle pose: each vertex follows the bones that move it (up to 4, weighted)
 function posePed(template, pose) {
   const frames = template?.userData?.frames;
   const root = frames?.find(f => f.hanim);
@@ -134,7 +134,7 @@ function setup(app) {
   if (!renderer) return false;
   target = new THREE.WebGLRenderTarget(SIZE, SIZE, { depthBuffer: true });
   scene = new THREE.Scene();
-  // Luz forte e quase uniforme, como a prévia do jogo (medida num print do SA-MP)
+  // Strong, almost uniform light, like the game preview (measured from an SA-MP screenshot)
   scene.add(new THREE.AmbientLight(0xffffff, 2.7));
   const sun = new THREE.DirectionalLight(0xffffff, 0.5);
   sun.position.set(-1, 2, 53);
@@ -172,12 +172,12 @@ async function render(app, td, entry) {
   const obj = posed ? posed.clone() : app.models.instantiate(id);
   if (!obj) { entry.failed = true; return; }
   if (def?.type === 'cars') {
-    try { app.editor?.applyVehicleVisuals?.(obj, { model: id, color1: td.previewColor1, color2: td.previewColor2 }); } catch { /* sem cores */ }
+    try { app.editor?.applyVehicleVisuals?.(obj, { model: id, color1: td.previewColor1, color2: td.previewColor2 }); } catch { /* no colors */ }
   }
   if (isPed && !posed) obj.position.z += PED_LIFT;
   let sph = await colSphere(app, id);
   if (!sph) {
-    // Sem colisão: usa a esfera da malha
+    // No collision: uses the mesh sphere
     const s = new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
     sph = [s.center.x, s.center.y, s.center.z, s.radius || 1];
   }
@@ -202,7 +202,7 @@ async function render(app, td, entry) {
   renderer.setRenderTarget(prevTarget);
   renderer.setClearColor(prevClear, prevAlpha);
   scene.remove(holder);
-  // A leitura vem de baixo para cima
+  // The reading goes from bottom to top
   const ctx = entry.canvas.getContext('2d');
   const img = ctx.createImageData(SIZE, SIZE);
   for (let y = 0; y < SIZE; y++) img.data.set(pixels.subarray((SIZE - 1 - y) * SIZE * 4, (SIZE - y) * SIZE * 4), y * SIZE * 4);
@@ -210,7 +210,7 @@ async function render(app, td, entry) {
   entry.ready = true;
 }
 
-// Imagem 256 x 256 da prévia (ou null enquanto renderiza); onReady é chamada quando ficar pronta
+// 256 x 256 preview image (or null while rendering); onReady is called when it is ready
 export function clearModelPreviews() { images.clear(); }
 
 export function modelPreviewImage(app, td, onReady) {
@@ -223,7 +223,7 @@ export function modelPreviewImage(app, td, onReady) {
     images.set(key, entry);
     if (images.size > 96) images.delete(images.keys().next().value);
     render(app, td, entry).catch(() => { entry.failed = true; }).finally(() => {
-      for (const cb of entry.waiting) { try { cb(); } catch { /* prévia fechada */ } }
+      for (const cb of entry.waiting) { try { cb(); } catch { /* preview closed */ } }
       entry.waiting.clear();
     });
   }

@@ -1,5 +1,5 @@
 // Suporte completo a 3D Text Labels (Create3DTextLabel e CreateDynamic3DTextLabel)
-// Conforme especificação : 
+// As specified:
 import * as THREE from 'three';
 
 export const STANDARD_LABEL_COLORS = [
@@ -22,7 +22,7 @@ export const STANDARD_LABEL_COLORS = [
 export function labelColorToHex(num) {
   if (num === undefined || num === null) return '#FFFFFF';
   const val = Number(num) >>> 0;
-  // No SA-MP / Pawn: 0xRRGGBBAA
+  // In SA-MP / Pawn: 0xRRGGBBAA
   const r = (val >>> 24) & 0xFF;
   const g = (val >>> 16) & 0xFF;
   const b = (val >>> 8) & 0xFF;
@@ -47,7 +47,7 @@ export function hexToLabelColor(hexStr, alpha = 0xFF) {
   return (((r << 24) | (g << 16) | (b << 8) | a) >>> 0);
 }
 
-// Renderiza o texto com suporte a quebras de linha (\n ou reais) e códigos de cor ({FFFFFF} ou [FFFFFF])
+// Renders the text with support for line breaks (\n or real) and color codes ({FFFFFF} or [FFFFFF])
 export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -95,7 +95,7 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   canvas.width = w;
   canvas.height = h;
 
-  // Fundo escuro semi-transparente arredondado (transparência aumentada em 50%)
+  // Rounded semi-transparent dark background (transparency increased by 50%)
   ctx.font = `bold ${fontSize}px "Segoe UI", Arial, sans-serif`;
   ctx.fillStyle = 'rgba(10, 12, 16, 0.36)';
   const r = 10;
@@ -116,7 +116,7 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Desenha cada linha e segmento
+  // Draws each line and segment
   let y = padY + fontSize - 4;
   for (const segs of parsedLines) {
     let lineWidth = 0;
@@ -124,7 +124,7 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
     let x = (w - lineWidth) / 2;
 
     for (const s of segs) {
-      // Sombra para legibilidade perfeita
+      // Shadow for perfect legibility
       ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
       ctx.fillText(s.text, x + 2, y + 2);
 
@@ -138,7 +138,7 @@ export function renderLabelCanvas(text, defaultHex = '#FFFFFF') {
   return { canvas, width: w, height: h };
 }
 
-// Cria o nó 3D (Sprite) para visualização e interação no Three.js
+// Creates the 3D node (Sprite) for display and interaction in Three.js
 export function createLabelNode(label) {
   const group = new THREE.Group();
   group.userData = { uid: label.uid, kind: 'labels', isLabel: true };
@@ -165,7 +165,7 @@ export function createLabelNode(label) {
   sprite.userData = { uid: label.uid, kind: 'labels', isLabel: true, noPick: true };
   group.add(sprite);
 
-  // Caixa invisível para clique e gizmo
+  // Invisible box for click and gizmo
   const hitGeo = new THREE.BoxGeometry(
     Math.max(0.6, width * scaleMul * 0.8),
     Math.max(0.6, height * scaleMul * 0.8),

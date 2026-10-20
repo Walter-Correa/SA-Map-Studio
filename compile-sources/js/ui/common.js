@@ -1,5 +1,5 @@
 import { uiLocale } from './i18n.js';
-// Utilidades compartilhadas pela interface e o objeto "app" com as peças principais.
+// Utilities shared by the interface and the "app" object with the main pieces.
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -8,10 +8,10 @@ export const plural = (n, um, varios) => `${n.toLocaleString(uiLocale())} ${n ==
 
 export const store = {
   get(k, def) { try { const v = localStorage.getItem('samap.' + k); return v === null ? def : JSON.parse(v); } catch { return def; } },
-  set(k, v) { try { localStorage.setItem('samap.' + k, JSON.stringify(v)); } catch { /* sem armazenamento */ } },
+  set(k, v) { try { localStorage.setItem('samap.' + k, JSON.stringify(v)); } catch { /* no storage */ } },
 };
 
-// Peças do programa (preenchidas na inicialização)
+// Program pieces (filled in at initialization)
 export const app = {
   gd: null, vp: null, models: null, streamer: null, editor: null, thumbs: null, texlib: null,
   project: null,
@@ -21,8 +21,8 @@ export const app = {
 };
 if (typeof window !== 'undefined') window.app = app;
 
-// Setas do teclado nas janelas de edição: 1 unidade por toque (0,1 com Shift), repetição limitada
-// para o ajuste fino não correr demais. Devolve { dx, dy, first } ou null quando a tecla não é seta.
+// Keyboard arrows in the edit windows: 1 unit per press (0.1 with Shift), limited repeat
+// so fine adjustment does not run away. Returns { dx, dy, first } or null when the key is not an arrow.
 let lastArrowAt = 0;
 export function arrowStep(e) {
   const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -66,7 +66,7 @@ export async function postJSON(url, body) {
   return res.json();
 }
 
-// Lê coordenadas de um texto livre: "x, y, z", "x y z", SetPlayerPos(playerid, x, y, z), etc.
+// Reads coordinates from free text: "x, y, z", "x y z", SetPlayerPos(playerid, x, y, z), etc.
 export function parseCoords(text) {
   const s = String(text || '');
   const call = /\(\s*(?:playerid\s*,\s*)?([^)]*)\)/i.exec(s);
@@ -77,7 +77,7 @@ export function parseCoords(text) {
   return { x: n[0], y: n[1], z: n.length >= 3 ? n[2] : null, interior: interior ? +interior[1] : null };
 }
 
-// Arrastar a letra do eixo para ajustar um número
+// Drag the axis letter to adjust a number
 export function bindScrub(el, { get, set, step = 0.02, done }) {
   el.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -95,7 +95,7 @@ export function bindScrub(el, { get, set, step = 0.02, done }) {
   });
 }
 
-// Diálogo modal para entrada de texto / apelidos
+// Modal dialog for text / nickname input
 export function showPrompt({ title = 'Definir apelido', desc = '', value = '', placeholder = '' } = {}) {
   return new Promise((resolve) => {
     let dlg = $('#dlgPrompt');
@@ -155,7 +155,7 @@ export function showPrompt({ title = 'Definir apelido', desc = '', value = '', p
   });
 }
 
-// Diálogo de confirmação com design padrão do editor (centralizado, título "SA Map Studio")
+// Confirmation dialog with the editor's standard design (centered, title "SA Map Studio")
 export function showConfirm(message, {
   title = 'SA Map Studio',
   confirmText = 'OK',
@@ -231,7 +231,7 @@ export function showConfirm(message, {
   });
 }
 
-// Diálogo de alerta simples (apenas botão OK)
+// Simple alert dialog (OK button only)
 export function showAlert(message, { title = 'SA Map Studio', okText = 'OK' } = {}) {
   return new Promise((resolve) => {
     let dlg = $('#dlgConfirm');

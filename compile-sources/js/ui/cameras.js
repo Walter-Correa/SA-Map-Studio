@@ -1,13 +1,13 @@
-// Aba Câmeras: pontos fixos (SetPlayerCameraPos + SetPlayerCameraLookAt) e movimentos
-// (InterpolateCameraPos + InterpolateCameraLookAt) com prévia no editor e código Pawn pronto.
+// Cameras tab: fixed points (SetPlayerCameraPos + SetPlayerCameraLookAt) and movements
+// (InterpolateCameraPos + InterpolateCameraLookAt) with an editor preview and ready Pawn code.
 import * as THREE from 'three';
 import { cameraFunctions } from '../editor/pwn.js';
 import { app, $, $$, esc, fmt, plural, toast, copyText, showConfirm } from './common.js';
 import { t as tr } from './i18n.js';
 
-let openPath = null;      // id do movimento aberto
-let helper = null;        // desenho do caminho na cena
-let preview = null;       // prévia tocando
+let openPath = null;      // id of the open movement
+let helper = null;        // path drawing in the scene
+let preview = null;       // preview playing
 
 const uid = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const cams = () => app.project.cameras;
@@ -15,7 +15,7 @@ const changed = () => { app.project.touch('cameras'); render(); drawHelper(); };
 const v3 = (v) => new THREE.Vector3(v.x, v.y, v.z);
 const round = (v) => ({ x: Math.round(v.x * 1e4) / 1e4, y: Math.round(v.y * 1e4) / 1e4, z: Math.round(v.z * 1e4) / 1e4 });
 
-// Vista atual do editor: posição da câmera e o ponto para onde ela olha
+// Current editor view: camera position and the point it looks at
 function currentView() {
   const cam = app.vp.camera;
   const pos = cam.position.clone();
@@ -138,7 +138,7 @@ async function onClick(e) {
     const j = a === 'key-up' ? ki - 1 : ki + 1;
     if (j < 0 || j >= path.keys.length) return;
     const k = path.keys;
-    // Troca só os pontos de vista; tempos ficam nos lugares
+    // Swaps only the viewpoints; times stay in place
     [k[ki].pos, k[j].pos] = [k[j].pos, k[ki].pos];
     [k[ki].look, k[j].look] = [k[j].look, k[ki].look];
     const tmpName = k[ki].name;
@@ -170,7 +170,7 @@ function onChange(e) {
   }
 }
 
-// ---------------------------------------------------------------- desenho do caminho
+// ---------------------------------------------------------------- path drawing
 function drawHelper() {
   if (helper) { app.vp.scene.remove(helper); helper.traverse(o => o.geometry?.dispose()); helper = null; }
   const p = cams().paths.find(x => x.id === openPath);
@@ -182,7 +182,7 @@ function drawHelper() {
   const dot = new THREE.SphereGeometry(0.35, 10, 8);
   const dotMat = new THREE.MeshBasicMaterial({ color: 0xf0a630, depthTest: false, transparent: true });
   if (p && p.keys.length) {
-    // Curva suave entre os pontos (só desenho: o jogo faz o movimento sozinho)
+    // Smooth curve between the points (drawing only: the game does the movement itself)
     const pts = p.keys.map(k => v3(k.pos));
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.length > 1 ? sampleMove(p, 24) : pts), lineMat);
     g.add(line);
@@ -212,8 +212,8 @@ function sampleMove(p, perSeg) {
   return out;
 }
 
-// ---------------------------------------------------------------- prévia
-const ease = (t) => 0.5 - Math.cos(Math.PI * t) / 2;  // aproximação do CAMERA_MOVE
+// ---------------------------------------------------------------- preview
+const ease = (t) => 0.5 - Math.cos(Math.PI * t) / 2;  // approximation of CAMERA_MOVE
 
 function startPreview(path) {
   if (path.keys.length < 2) return;

@@ -1,4 +1,4 @@
-// Seletor Modal de Animações com Split View (Painel de Prévia em Vídeo e Cache Offline)
+// Modal Animation Picker with Split View (Video Preview Panel and Offline Cache)
 import { $, $$, esc, toast } from './common.js';
 import { POPULAR_ANIMATIONS, ALL_ANIMATIONS, ANIM_CATEGORIES, classifyAnim } from '../world/actors.js';
 
@@ -32,7 +32,7 @@ export function setupAnimPicker() {
     };
   });
 
-  // Limpar animação do actor
+  // Clear actor animation
   if (btnClear) {
     btnClear.onclick = () => {
       if (onSelectCallback) onSelectCallback(null);
@@ -42,7 +42,7 @@ export function setupAnimPicker() {
     };
   }
 
-  // Botão aplicar animação selecionada
+  // Button to apply the selected animation
   if (btnApply) {
     btnApply.onclick = () => {
       if (previewedAnim && onSelectCallback) {
@@ -51,7 +51,7 @@ export function setupAnimPicker() {
     };
   }
 
-  // Botão baixar pacote offline
+  // Button to download the offline package
   if (btnDownloadAll) {
     btnDownloadAll.onclick = async () => {
       const status = await getCacheStatus();
@@ -66,7 +66,7 @@ export function setupAnimPicker() {
     };
   }
 
-  // Busca em tempo real
+  // Real-time search
   let searchTimer = null;
   if (inputSearch) {
     inputSearch.oninput = () => {
@@ -97,7 +97,7 @@ export function setupAnimPicker() {
     });
   }
 
-  // Navegação e seleção na lista (apenas no clique para fixar a seleção)
+  // List navigation and selection (only on click to lock the selection)
   if (listContainer) {
     listContainer.addEventListener('click', (e) => {
       const card = e.target.closest('[data-anim-idx]');
@@ -132,7 +132,7 @@ function getAnimFromCard(card) {
 function setPreview(anim, activeCard = null) {
   previewedAnim = anim;
 
-  // Atualiza destaque visual do card
+  // Updates the card's visual highlight
   const listContainer = $('#animPickerList');
   if (listContainer) {
     listContainer.querySelectorAll('.anim-card').forEach(c => c.classList.remove('active'));
@@ -144,7 +144,7 @@ function setPreview(anim, activeCard = null) {
     }
   }
 
-  // Detalhes no painel direito
+  // Details in the right panel
   const titleEl = $('#prevAnimTitle');
   const libEl = $('#prevAnimLib');
   const codeEl = $('#prevAnimCode');
@@ -162,7 +162,7 @@ function setPreview(anim, activeCard = null) {
     btnApply.innerHTML = `<svg><use href="#i-check"/></svg>Aplicar "${esc(anim.label || anim.name)}"`;
   }
 
-  // Carrega vídeo no player
+  // Loads the video in the player
   playVideo(anim.lib, anim.name);
 }
 
@@ -302,7 +302,7 @@ function renderList() {
     `;
   }).join('');
 
-  // Pré-seleciona a primeira animação caso não haja nenhuma ativa
+  // Pre-selects the first animation if none is active
   if (!previewedAnim && items.length > 0) {
     const firstAnim = items[0].source === 'pop' ? POPULAR_ANIMATIONS[items[0].idx] : ALL_ANIMATIONS[items[0].idx];
     setPreview(firstAnim);

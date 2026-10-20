@@ -1,5 +1,5 @@
-// Modelos de armas do GTA San Andreas /  (IDs 321 a 372).
-// Referência oficial: 
+// GTA San Andreas weapon models /  (IDs 321 to 372).
+// Official reference:
 
 export const ALL_WEAPONS = [
   { weaponId: 1, id: 331, model: 'brassknuckle', txd: 'brassknuckle', name: 'Soco-inglês (Brass Knuckles)' },

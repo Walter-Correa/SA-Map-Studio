@@ -1,15 +1,15 @@
-// Trocas de material , no mesmo formato das funções do jogo:
+// Material swaps, in the same format as the game functions:
 //
 //   SetObjectMaterial(objectid, materialindex, modelid, txdname[], texturename[], materialcolor = 0)
 //   SetObjectMaterialText(objectid, text[], materialindex = 0, materialsize = OBJECT_MATERIAL_SIZE_256x128,
 //                         fontface[] = "Arial", fontsize = 24, bold = 1, fontcolor = 0xFFFFFFFF,
 //                         backcolor = 0, textalignment = OBJECT_MATERIAL_TEXT_ALIGN_LEFT)
 //
-// No projeto cada troca é guardada assim:
-//   textura: { index, model, txd, texture, color }          color = "0" ou "0xAARRGGBB"
+// In the project each swap is stored like this:
+//   texture: { index, model, txd, texture, color }          color = "0" or "0xAARRGGBB"
 //   texto:   { index, kind: 'text', text, size, font, fontSize, bold, fontColor, backColor, align }
 
-export const MAX_MATERIAL_INDEX = 15; // o SA-MP aceita os índices 0 a 15
+export const MAX_MATERIAL_INDEX = 15; // SA-MP accepts indices 0 to 15
 
 export const MATERIAL_SIZES = [
   [10, '32x32'], [20, '64x32'], [30, '64x64'], [40, '128x32'], [50, '128x64'], [60, '128x128'],
@@ -50,7 +50,7 @@ export function makeArgb(a, r, g, b) {
 export const cssColor = (v) => { const p = argbParts(v); return `rgba(${p.r},${p.g},${p.b},${(p.a / 255).toFixed(3)})`; };
 export const hexRgb = (v) => { const p = argbParts(v); return '#' + [p.r, p.g, p.b].map(x => x.toString(16).padStart(2, '0')).join(''); };
 
-// ---------------------------------------------------------------- strings do Pawn
+// ---------------------------------------------------------------- Pawn strings
 export function decodePawnString(lit) {
   let s = String(lit ?? '').trim();
   if (s.startsWith('"')) s = s.slice(1, s.endsWith('"') && s.length > 1 ? -1 : undefined);
@@ -91,7 +91,7 @@ export const toInt = (v, def) => {
 
 export const isText = (m) => !!m && (m.kind === 'text' || m.text !== undefined);
 
-// Aceita os formatos antigos (com "rest" cru) e devolve sempre o formato atual
+// Accepts the old formats (with raw "rest") and always returns the current format
 export function normalizeMaterial(m) {
   if (!m) return null;
   if (isText(m)) {
@@ -129,16 +129,16 @@ export function normalizeMaterial(m) {
   };
 }
 
-// Verifica se a troca é a remoção da textura (deixando o índice invisível)
-// Formato padrão : SetObjectMaterial(obj, slot, 0, "none", "none", 0);
+// Checks whether the swap is the texture removal (leaving the index invisible)
+// Standard format : SetObjectMaterial(obj, slot, 0, "none", "none", 0);
 export const isNoneTexture = (m) => !isText(m) && (m?.model === 0 || m?.model === -1) &&
   String(m?.txd || '').toLowerCase() === 'none' && String(m?.texture || '').toLowerCase() === 'none' &&
   parseColor(m?.color) === 0;
 
-// Troca que só muda a cor (o SA-MP aceita modelid -1 com txd/texture "none" para manter a textura original e alterar a cor)
+// Swap that only changes the color (SA-MP accepts modelid -1 with txd/texture "none" to keep the original texture and change the color)
 export const keepsTexture = (m) => !isText(m) && !isNoneTexture(m) && (m?.model === -1 || /^none$/i.test(m?.texture || 'none') || /^none$/i.test(m?.txd || 'none'));
 
-// Um material por índice: o último definido vale (igual ao jogo)
+// One material per index: the last one set wins (same as the game)
 export function setMaterial(list, mat) {
   const out = (list || []).filter(m => m.index !== mat.index);
   out.push(mat);
@@ -146,7 +146,7 @@ export function setMaterial(list, mat) {
   return out;
 }
 
-// ---------------------------------------------------------------- código Pawn
+// ---------------------------------------------------------------- Pawn code
 export function materialCall(m, varName = 'objectid', fn = 'SetDynamicObjectMaterial') {
   const t = normalizeMaterial(m);
   const dynamic = fn.includes('Dynamic');
@@ -163,7 +163,7 @@ export function materialCall(m, varName = 'objectid', fn = 'SetDynamicObjectMate
   return `${fn}(${varName}, ${t.index}, ${t.model}, ${encodePawnString(t.txd)}, ${encodePawnString(t.texture)}, ${t.color === '0' ? 0 : t.color});`;
 }
 
-// Texto com códigos de cor {RRGGBB} -> partes [{text, color}]
+// Text with color codes {RRGGBB} -> parts [{text, color}]
 export function colorSegments(text, baseColor) {
   const out = [];
   let color = baseColor;

@@ -1,4 +1,4 @@
-// Projeto: objetos criados, veículos e prédios removidos, com desfazer/refazer.
+// Project: created objects, vehicles and removed buildings, with undo/redo.
 import { isVehicleModel } from './pwn.js';
 import { normalizeMaterial } from './materials.js';
 import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
@@ -8,9 +8,9 @@ let uidCounter = 1;
 let _globalOpSeq = 0;
 const newUid = () => 'o' + (Date.now().toString(36)) + (uidCounter++).toString(36);
 
-// Acoplamentos de projetos antigos que apontam para um pai que não existe mais (uid trocado numa importação
-// anterior): o pai é reencontrado pela posição, já que o objeto acoplado fica gravado onde o deslocamento
-// a partir do pai o coloca. Só troca quando todos os acoplados daquele pai batem com o mesmo item.
+// Attachments in old projects that point to a parent that no longer exists (uid changed in an earlier
+// import): the parent is found again by position, since the attached object is stored where the offset
+// from the parent places it. Only swaps when all attachments of that parent match the same item.
 export function repairAttachments(objects, vehicles) {
   const known = new Set([...objects, ...vehicles].map(o => o.uid).filter(Boolean));
   const groups = new Map();
@@ -38,8 +38,8 @@ export function repairAttachments(objects, vehicles) {
   return fixed;
 }
 
-// Itens que entram no projeto (importar, mesclar): cada um ganha um uid novo e os acoplamentos passam a
-// apontar para a cópia do pai que veio junto, então mesclar o mesmo projeto não junta tudo num pai só.
+// Items entering the project (import, merge): each gets a new uid and the attachments are
+// pointed to the copy of the parent that came along, so merging the same project does not join everything under one parent.
 export function prepareImportItems(items) {
   repairAttachments(items.filter(i => i.kind === 'objects'), items.filter(i => i.kind === 'vehicles'));
   const map = new Map();
@@ -68,7 +68,7 @@ export function makeObject(data) {
     projectId: data.projectId || '',
     raw: data.raw ? { ...data.raw } : null,
     materials: (data.materials || []).map(normalizeMaterial).filter(Boolean)
-      .filter((m, i, all) => all.findLastIndex(x => x.index === m.index) === i) // um por índice (o último vale)
+      .filter((m, i, all) => all.findLastIndex(x => x.index === m.index) === i) // one per index (the last one wins)
       .sort((a, b) => a.index - b.index),
     move: data.move ? {
       targetX: +data.move.targetX || 0,
@@ -196,8 +196,8 @@ export function makeGangZone(data) {
   };
 }
 
-// Versão 2: os campos guardam exatamente os parâmetros do SA-MP (TextDrawLetterSize, TextDrawTextSize...).
-// Projetos antigos guardavam largura/altura do editor e eram convertidos só na exportação.
+// Version 2: the fields store exactly the SA-MP parameters (TextDrawLetterSize, TextDrawTextSize...).
+// Old projects stored the editor's width/height and were converted only on export.
 const TD_VERSION = 2;
 
 function migrateLegacyTextDraw(data) {
@@ -224,7 +224,7 @@ function migrateLegacyTextDraw(data) {
   return d;
 }
 
-// Nome do sprite como o jogo encontra (biblioteca e textura)
+// Sprite name as the game finds it (library and texture)
 function normalizeSpriteName(text) {
   const colon = text.indexOf(':');
   if (colon === -1) return text;
@@ -238,33 +238,33 @@ function normalizeSpriteName(text) {
   return text;
 }
 
-// Barra de progresso (SA Progress Bar Pro, progressbarpro.inc): chamadas para criar, definir o valor e mostrar para o jogador
+// Progress bar (SA Progress Bar Pro, progressbarpro.inc): calls to create, set the value and show to the player
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
 
-// Limites da progressbarpro.inc (os mesmos PB_BORDER_MIN/MAX e PB_BLINK_MIN/MAX da include)
+// progressbarpro.inc limits (the same PB_BORDER_MIN/MAX and PB_BLINK_MIN/MAX as the include)
 export const PB_LIMITS = { borderMin: 0.5, borderMax: 5, borderDefault: 1, borderYRatio: 1.25, minInner: 1, blinkMin: 50, blinkMax: 60000, blinkDefault: 250 };
 const clampNum = (v, min, max, def) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : def; };
 export const clampPbBorder = (v) => clampNum(v, PB_LIMITS.borderMin, PB_LIMITS.borderMax, PB_LIMITS.borderDefault);
-// Maior borda que cabe na barra (como PB_FitBorder da include): sobra PB_MIN_INNER de interior,
-// lembrando que a borda de cima e de baixo é 1,25 vez a dos lados. Toda barra tem pelo menos a mínima.
+// Largest border that fits in the bar (like PB_FitBorder in the include): leaves PB_MIN_INNER of interior,
+// remembering that the top and bottom border is 1.25 times the sides. Every bar has at least the minimum.
 export function maxPbBorder(width, height) {
   const w = Number(width) || 0, h = Number(height) || 0;
   const limit = Math.min(PB_LIMITS.borderMax, (w - PB_LIMITS.minInner) / 2, (h - PB_LIMITS.minInner) / (2 * PB_LIMITS.borderYRatio));
   return Math.max(PB_LIMITS.borderMin, Math.floor(limit * 100) / 100);
 }
-// Menor largura e altura em que a borda mínima ainda deixa interior
+// Smallest width and height at which the minimum border still leaves interior
 export const PB_MIN_WIDTH = PB_LIMITS.borderMin * 2 + PB_LIMITS.minInner;
 export const PB_MIN_HEIGHT = PB_LIMITS.borderMin * 2 * PB_LIMITS.borderYRatio + PB_LIMITS.minInner;
 export const fitPbBorder = (v, width, height) => Math.min(clampPbBorder(v), maxPbBorder(width, height));
 export const clampPbBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, PB_LIMITS.blinkDefault));
 export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0));
-// Modelos da barra (o mesmo PB_STYLE_* da include) e segmentos do anel (PB_RING_MIN a PB_RING_MAX)
+// Bar styles (the same PB_STYLE_* as the include) and ring segments (PB_RING_MIN to PB_RING_MAX)
 export const PB_STYLE_NAMES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE'];
 export const clampPbStyle = (v) => { const n = Number(v) | 0; return n >= 0 && n <= 2 ? n : 0; };
 export const clampPbSegments = (v) => Math.round(clampNum(v, 4, 60, 24));
-// Auto preencher (AutoFillPlayerProgressBar): até onde enche, de 0 ao valor máximo da barra
+// Auto fill (AutoFillPlayerProgressBar): how far it fills, from 0 to the bar's maximum value
 export const clampPbAutoFillMax = (v, max) => clampNum(v, 0, Math.max(0, Number(max) || 0), Math.max(0, Number(max) || 0));
-// Tempo do ciclo, igual a PB_AUTOFILL_RISE / HOLD_TOP / FALL / HOLD_BASE da include
+// Cycle time, same as PB_AUTOFILL_RISE / HOLD_TOP / FALL / HOLD_BASE in the include
 export const PB_AUTOFILL_TIMING = { rise: 1000, holdTop: 400, fall: 1000, holdBase: 300 };
 export function pbAutoFillValue(td, elapsed) {
   const { rise, holdTop, fall, holdBase } = PB_AUTOFILL_TIMING;
@@ -280,13 +280,13 @@ export function pbAutoFillValue(td, elapsed) {
   return value + (target - value) * f;
 }
 
-// Variável da barra no código: progress_0, progress_1... na ordem das barras do projeto
+// Bar variable in the code: progress_0, progress_1... in the order of the project's bars
 export function progressBarVar(td, all = []) {
   const n = all.filter(t => t.type === 'progress').indexOf(td);
   return `progress_${n < 0 ? 0 : n}`;
 }
 
-// Variável da TextDraw no código: textdraw_0, textdraw_1... na ordem das TextDraws (sem contar as barras)
+// TextDraw variable in the code: textdraw_0, textdraw_1... in the order of the TextDraws (not counting the bars)
 export function textDrawVar(td, all = []) {
   const n = all.filter(t => t.type !== 'progress').indexOf(td);
   return `textdraw_${n < 0 ? 0 : n}`;
@@ -298,8 +298,8 @@ export function progressBarPawn(td, varName, fmt) {
   const hex = hexOf(td.color ?? 0xFF1C1CFF);
   const borderCol = Number(td.pbBorderColor || 0) >>> 0;
   const style = clampPbStyle(td.pbStyle);
-  // Ordem da include: ..., direction, style, segments, border, bordercolour (a borda sempre vai escrita,
-  // porque o servidor pode mudar o PB_BORDER_DEFAULT)
+  // Include order: ..., direction, style, segments, border, bordercolour (the border is always written,
+  // because the server may change PB_BORDER_DEFAULT)
   const segs = style === 1 ? clampPbSegments(td.pbSegments) : 'PB_RING_SEGMENTS';
   const lines = [
     `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${PB_STYLE_NAMES[style]}, ${segs}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${borderCol ? ', ' + hexOf(borderCol) : ''});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
@@ -316,7 +316,7 @@ export function progressBarPawn(td, varName, fmt) {
   return lines;
 }
 
-// Parâmetros finais das funções TextDraw*, usados na exportação Pawn e no servidor de teste
+// Final parameters of the TextDraw* functions, used in the Pawn export and the test server
 export function textDrawNative(td) {
   const font = td.font ?? 1;
   const special = font === 4 || font === 5;
@@ -478,7 +478,7 @@ export class Project {
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
-    this.lastSelection = [];   // itens selecionados no último salvamento (para retomar de onde parou)
+    this.lastSelection = [];   // items selected at the last save (to resume where it left off)
     this.cameras = emptyCameras();
     this.undoStack = [];
     this.redoStack = [];
@@ -509,7 +509,7 @@ export class Project {
     };
   }
 
-  // Mudanças fora do histórico (câmeras): só avisa para salvar
+  // Changes outside the history (cameras): only warns to save
   touch(what = 'cameras') { this.emit({ type: what, uids: [] }); }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
@@ -528,7 +528,7 @@ export class Project {
     return k ? { uid, kind: k, data: JSON.parse(JSON.stringify(this.find(uid))) } : { uid, kind: null, data: null };
   }
 
-  // Aplica estados (cria, atualiza ou apaga) sem mexer no histórico
+  // Applies states (creates, updates or deletes) without touching the history
   applyStates(states) {
     const changed = [];
     for (const s of states) {
@@ -547,8 +547,8 @@ export class Project {
     return changed;
   }
 
-  // Executa uma mudança registrando desfazer/refazer.
-  // fn() faz as alterações diretamente; uids indica quem pode mudar.
+  // Runs a change recording undo/redo.
+  // fn() makes the changes directly; uids says who may change.
   transact(label, uids, fn) {
     const before = uids.map(u => this.snapshot(u));
     const createdUids = fn() || [];
@@ -562,7 +562,7 @@ export class Project {
     this.emit({ type: 'transact', label, uids: all });
   }
 
-  // Registra uma mudança já feita (ex.: arrastar com o gizmo)
+  // Records a change already made (e.g. dragging with the gizmo)
   record(label, before, after) {
     if (JSON.stringify(before) === JSON.stringify(after)) return;
     this.undoStack.push({ label, before, after, _seq: ++_globalOpSeq });
@@ -570,8 +570,8 @@ export class Project {
     this.emit({ type: 'transact', label, uids: after.map(s => s.uid) });
   }
 
-  // Importação num passo só do desfazer: tira os itens (substituir), põe os novos e troca cabeçalho,
-  // código original e câmeras do projeto
+  // Import in a single undo step: removes the items (replace), adds the new ones and swaps the header,
+  // original code and project cameras
   importItems(label, removeUids, items, meta = null) {
     const fields = () => JSON.parse(JSON.stringify({ pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '', cameras: this.cameras }));
     const metaBefore = fields();
@@ -642,7 +642,7 @@ export class Project {
     this.emit({ type: 'clearHistory', uids: [] });
   }
 
-  // Adiciona um item de qualquer tipo suportado com registro de undo/redo
+  // Adds an item of any supported type with undo/redo recording
   add(kind, data, label = 'Adicionar') {
     let created = null;
     this.transact(label, [], () => {
@@ -655,7 +655,7 @@ export class Project {
     return created;
   }
 
-  // ---- operações de alto nível ----
+  // ---- high-level operations ----
   addItems(label, a, b) {
     let kind = null;
     let items = null;
@@ -743,9 +743,9 @@ export class Project {
   }
 }
 
-// ---------------------------------------------------------------- câmeras
+// ---------------------------------------------------------------- cameras
 // shots: pontos fixos (SetPlayerCameraPos + SetPlayerCameraLookAt)
-// paths: sequências de InterpolateCameraPos/LookAt. Cada passo vai do ponto anterior até este.
+// paths: sequences of InterpolateCameraPos/LookAt. Each step goes from the previous point to this one.
 export function emptyCameras() { return { shots: [], paths: [] }; }
 
 const vec = (v) => ({ x: +v?.x || 0, y: +v?.y || 0, z: +v?.z || 0 });

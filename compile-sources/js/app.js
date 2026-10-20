@@ -1,5 +1,5 @@
-// SA Map Studio: abertura do programa e a parte da interface que liga tudo
-// (barra de ferramentas, visão, teleporte, abas, lista do projeto, atalhos).
+// SA Map Studio: program startup and the part of the interface that ties everything together
+// (toolbar, view, teleport, tabs, project list, shortcuts).
 import * as THREE from 'three';
 import { GameData, GameFS } from './world/gamedata.js';
 import { ModelCache } from './world/models.js';
@@ -33,8 +33,8 @@ import { t, initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange, 
 let water = null;
 let hintDismissed = false;
 
-// Barra superior: mostra todos os rótulos que couberem; quando falta espaço, primeiro aperta os
-// espaçamentos e depois esconde os rótulos menos importantes, um por vez (os ícones continuam)
+// Top bar: shows every label that fits; when space runs out, first tightens the
+// spacing and then hides the least important labels, one at a time (the icons stay)
 const TOPBAR_HIDE_ORDER = [
   '#saveState', '.brand', '.seg-btn[data-mode="texture"]', '.seg-btn[data-mode="rotate"]', '.seg-btn[data-mode="translate"]',
   '#btnSpace', '#btnSnap', '#btnProjects', '#btnSounds', '#btn3DText', '#btnGangZones', '#btnTextDraws',
@@ -57,7 +57,7 @@ export function fitTopbar() {
 }
 
 function setupTopbarFit() {
-  // Reajusta só quando a janela para de mudar de tamanho (medir a barra recalcula o layout da página)
+  // Readjusts only when the window stops changing size (measuring the bar recalculates the page layout)
   let timer = 0;
   const schedule = () => {
     clearTimeout(timer);
@@ -65,7 +65,7 @@ function setupTopbarFit() {
   };
   window.addEventListener('resize', schedule);
   document.fonts?.ready?.then(schedule);
-  // O botão Mundo/Objeto troca de texto: reajusta quando o rótulo muda
+  // The World/Object button changes its text: readjusts when the label changes
   const space = $('#btnSpace');
   if (space) new MutationObserver(schedule).observe(space, { childList: true, subtree: true, characterData: true });
   schedule();
@@ -80,7 +80,7 @@ async function boot() {
     await initI18n();
     status.textContent = 'Não consegui falar com o servidor. Abra o programa pelo SA Map Studio.exe (ou serve.py).'; status.classList.add('error'); return;
   }
-  // Idioma antes de a interface aparecer: o escolhido pelo usuário ou o do sistema
+  // Language before the interface appears: the one chosen by the user or the system's
   await initI18n(cfg.language);
   setupLanguageMenu();
   if (cfg.needsSetup || !cfg.ok) {
@@ -171,7 +171,7 @@ async function start(cfg) {
       setBootProgress(p);
     });
   } catch (err) {
-    // Volta para a escolha da pasta, mostrando o erro, em vez de travar na abertura
+    // Goes back to the folder selection, showing the error, instead of freezing at startup
     setBootProgress(null);
     bar.style.width = '0%';
     showSetup(cfg.gtaPath || '', `Erro ao ler os arquivos do jogo: ${err.message}`, false);
@@ -188,16 +188,16 @@ async function start(cfg) {
   try {
     water = buildWater(await gd.fs.text('data/water.dat'));
     vp.scene.add(water);
-  } catch { /* sem água */ }
+  } catch { /* no water */ }
   app.project = new Project('Meu mapa');
   const editor = new Editor({ viewport: vp, streamer, models, gamedata: gd, project: app.project });
   app.editor = editor;
-  // TXDs das trocas de textura e modelos do projeto não saem da memória
+  // TXDs of texture swaps and project models do not leave memory
   models.pinnedTxds = () => app.project.objects.flatMap(o => (o.materials || []).filter(m => !isText(m)).map(m => String(m.txd || '').toLowerCase())).filter(t => t && t !== 'none');
   streamer.keepModels = () => [...app.project.objects, ...app.project.vehicles, ...(app.project.actors || [])].map(o => o.model || o.skin).concat(editor.placing ? [editor.placing.model] : []);
   app.texlib = new TextureLibrary(gd);
   app.texlib.isBusy = () => streamer.stats.pending > 0 || streamer.loading > 0 || thumbs.queue.length > 0;
-  // Miniaturas que já estão no disco aparecem na hora
+  // Thumbnails already on disk appear right away
   const have = await thumbs.loadIndex();
   app.texlib.setHave(have.tex);
 
@@ -233,7 +233,7 @@ async function start(cfg) {
   for (const w of gd.warnings) toast(w, 'warn', 6000);
   setInterval(updateHud, 250);
 
-  // Sinal de vida para o servidor feito num Worker: continua mesmo se a tela ficar ocupada
+  // Heartbeat to the server done in a Worker: keeps going even if the screen is busy
   try {
     const src = `const p=()=>fetch(${JSON.stringify(location.origin + '/api/ping')},{cache:'no-store'}).catch(()=>{});p();setInterval(p,10000);`;
     new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
@@ -244,7 +244,7 @@ async function start(cfg) {
   window.samap = app;
 }
 
-// =====================================================================  barra de ferramentas e visão
+// =====================================================================  toolbar and view
 function setupToolbar(cfg) {
   const ed = app.editor, vp = app.vp, streamer = app.streamer;
   $$('[data-mode]').forEach(b => b.onclick = () => ed.setMode(b.dataset.mode));
@@ -286,7 +286,7 @@ function setupToolbar(cfg) {
   ed.on('extra-project-change', updateUndoButtons);
   ed.on('selection', updateUndoButtons);
 
-  // Visão
+  // View
   const view = store.get('view', { dist: 600, speed: 25, lod: true, water: true, interiors: false, showSelectionBox: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
   const applyView = () => {
     const v = {
@@ -321,7 +321,7 @@ function setupToolbar(cfg) {
     const minute = isNaN(timeParts[1]) ? 0 : Math.max(0, Math.min(59, timeParts[1]));
     vp.setEnvironment(v.weather, hour, minute, v.interiors);
 
-    // Sincroniza com as opções do teste de mapa
+    // Syncs with the map test options
     const testSaved = store.get('test', {});
     testSaved.weather = v.weather;
     testSaved.time = v.time;
@@ -362,7 +362,7 @@ function setupToolbar(cfg) {
   const btnChange = $('#btnChangeGta');
   if (btnChange) btnChange.onclick = () => { closePopovers(); changeGtaFolder(); };
 
-  // Recolhimento independente dos menus laterais pelas bordas internas
+  // Independent collapsing of the side menus via the inner edges
   let leftCollapsed = false;
   let rightCollapsed = false;
   let autoCollapsedPrevLeft = false;
@@ -410,7 +410,7 @@ function setupToolbar(cfg) {
     }
   });
 
-  // Recolhimento automático durante movimento da câmera
+  // Automatic collapsing during camera movement
   vp.fly.onActivity = (isMoving) => {
     const shouldAuto = $('#autoCollapseSidebars')?.checked ?? false;
     if (!shouldAuto) return;
@@ -427,7 +427,7 @@ function setupToolbar(cfg) {
     }
   };
 
-  // Coordenadas do clique do mouse no topo do menu lateral direito
+  // Mouse click coordinates at the top of the right side menu
   const updateClickCoords = (eventOrPt) => {
     const pt = eventOrPt?.detail || eventOrPt;
     if (!pt) return;
@@ -471,7 +471,7 @@ function setupToolbar(cfg) {
     copyCurrentCoords();
   });
 
-  // Lugares e teleporte (Locais no mundo e Interiores)
+  // Places and teleport (World locations and Interiors)
   let activeGotoTab = store.get('gotoTab', 'world');
   let activeGotoCat = 'Todos';
   const placesEl = $('#placesList');
@@ -585,7 +585,7 @@ function setupToolbar(cfg) {
     closePopovers();
   };
   $('#gotoInput').value = store.get('lastGoto', '');
-  // Placa: clique abre o teleporte, botão direito copia a posição
+  // Sign: click opens the teleport, right click copies the position
   const sign = $('#sign');
   sign.style.pointerEvents = 'auto';
   sign.addEventListener('click', (e) => { e.stopPropagation(); openGoto(); });
@@ -619,7 +619,7 @@ function openGoto() {
   }, 0);
 }
 
-// Marcador do ponto de teleporte (some sozinho)
+// Teleport point marker (disappears on its own)
 let marker = null, markerTimer = null;
 function showMarker(p) {
   if (!marker) {
@@ -667,7 +667,7 @@ function teleport({ x, y, z, interior }) {
     toast(`Teleportado para ${fmt(x, 2)}, ${fmt(y, 2)}, ${fmt(zz, 2)}`);
   };
   if (z !== null && z !== undefined) { finish(z); return; }
-  // Sem z: vai para cima do ponto, espera o mapa carregar e desce até o chão
+  // No z: goes above the point, waits for the map to load and drops to the ground
   fly.setPose(new THREE.Vector3(x, y, 150), fly.yaw, -0.6);
   app.streamer.update(app.vp.camera, true);
   let tries = 0;
@@ -778,7 +778,7 @@ function setupPopover(btnSel, popSel, onOpen) {
   });
   pop.addEventListener('click', e => e.stopPropagation());
 }
-// Botão Idioma: lista com o nome de cada idioma no próprio idioma; troca na hora e fica salvo
+// Language button: list with each language's name in its own language; switches instantly and is saved
 function setupLanguageMenu() {
   const list = $('#languageList');
   if (!list) return;
@@ -850,7 +850,7 @@ function setupTabs() {
   app.vp.renderer.domElement.addEventListener('pointerdown', () => { hintDismissed = true; }, { once: true });
 }
 
-// =====================================================================  lista do projeto
+// =====================================================================  project list
 function setupOutline() {
   app.outlineInverted = store.get('outlineInverted', false);
 
@@ -867,7 +867,7 @@ function setupOutline() {
       return !q || idStr.startsWith(q) || lbl.toLowerCase().includes(q) || cmt.toLowerCase().includes(q);
     };
 
-    // Aplica inversão de ordem se configurada
+    // Applies order reversal if configured
     const order = (arr) => app.outlineInverted ? [...(arr || [])].reverse() : (arr || []);
 
     const allObjs = order(project.objects);
@@ -961,7 +961,7 @@ function setupOutline() {
       const pt = getSpawnTargetPoint(0.98);
       const pk = {
         uid: null,
-        model: 1240, // Saúde (Health / Coração)
+        model: 1240, // Health (Health / Heart)
         type: 1,
         x: pt.x, y: pt.y, z: pt.z,
         world: -1,

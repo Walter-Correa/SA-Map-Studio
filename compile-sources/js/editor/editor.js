@@ -1,5 +1,5 @@
-// Núcleo do editor: liga o projeto à cena, cuida da seleção, do gizmo,
-// do modo de posicionar objetos e da remoção de prédios do mapa original.
+// Editor core: ties the project to the scene, handles selection, the gizmo,
+// object placement mode and removal of buildings from the original map.
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/TransformControls.js';
 import { isTyping } from './viewport.js';
@@ -45,14 +45,14 @@ export class Editor extends EventTarget {
     this.root.name = 'projeto';
     viewport.scene.add(this.root);
     this.nodes = new Map();          // uid -> Object3D
-    this.selection = [];             // uids do projeto
-    this.worldSelection = [];        // instâncias do mapa selecionadas
+    this.selection = [];             // project uids
+    this.worldSelection = [];        // selected map instances
     this.mode = 'translate';
     this.space = 'local';
     this.snap = { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 };
     this.transformSpeed = { move: 1.0, rotate: 1.0 };
     this.placing = null;             // {model, ghost}
-    this.matSel = [];                // índices de material escolhidos (0 a 15)
+    this.matSel = [];                // chosen material indices (0 to 15)
     this.slotHiddenMat = new THREE.MeshBasicMaterial({ visible: false });
     this.slotMat = new THREE.MeshBasicMaterial({ color: 0xf0a630, transparent: true, opacity: 0.38, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -94,7 +94,7 @@ export class Editor extends EventTarget {
     this.hoverBox.visible = false;
     viewport.scene.add(this.hoverBox);
 
-    // Botão flutuante nas setas do Gizmo para alternar Mover / Girar
+    // Floating button on the Gizmo arrows to toggle Move / Rotate
     const toggleBtn = document.createElement('button');
     toggleBtn.type = 'button';
     toggleBtn.className = 'gizmo-mode-toggle';
@@ -105,7 +105,7 @@ export class Editor extends EventTarget {
     const doToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
-      // Arrastando (o item ou as setas) o botão não vale, nem logo depois de soltar sobre ele
+      // While dragging (the item or the arrows) the button does not count, nor right after releasing over it
       if (this.directDragging || this.tc.dragging || performance.now() - (this.dragEndedAt || 0) < 300) return;
       this.setMode(this.mode === 'translate' ? 'rotate' : 'translate');
     };
@@ -123,7 +123,7 @@ export class Editor extends EventTarget {
 
   get renderer() { return this.vp.renderer; }
 
-  // Durante um arrastar o botão Mover/Girar do manipulador fica transparente ao mouse
+  // During a drag the manipulator's Move/Rotate button becomes transparent to the mouse
   setGizmoButtonPassive(on) {
     if (this.gizmoToggleBtn) this.gizmoToggleBtn.style.pointerEvents = on ? 'none' : '';
     if (!on) this.dragEndedAt = performance.now();
@@ -322,7 +322,7 @@ export class Editor extends EventTarget {
         if (kind === 'vehicles') {
           this.applyVehicleVisuals(m, o);
         } else if (kind === 'actors') {
-          // Visual do actor: adiciona indicador/pose
+          // Actor visual: adds indicator/pose
         } else if (o.materials && o.materials.length) {
           this.models.applyMaterials(m, o.materials).then(() => this.updateSlotHighlight());
         }
@@ -380,7 +380,7 @@ export class Editor extends EventTarget {
       });
     };
 
-    // 1. Remove componentes anteriores e restaura peças originais do veículo
+    // 1. Removes previous components and restores the vehicle's original parts
     const toRemove = [];
     m.children.forEach(c => {
       if (c.userData?.isVehicleComp) toRemove.push(c);
@@ -388,7 +388,7 @@ export class Editor extends EventTarget {
     });
     toRemove.forEach(c => m.remove(c));
 
-    // 2. Cores 1 e 2 no chassi
+    // 2. Colors 1 and 2 on the chassis
     applyColorsToObj(m);
 
     // 3. Paintjob
@@ -436,7 +436,7 @@ export class Editor extends EventTarget {
       }).catch(() => {});
     }
 
-    // 4. Componentes de Tuning (acoplados automaticamente nos dummies corretos do DFF)
+    // 4. Tuning components (automatically attached to the correct DFF dummies)
     if (o.components && o.components.length) {
       const dummies = m.userData?.dummies || {};
       const hideVehicleFrames = (names) => {
@@ -451,7 +451,7 @@ export class Editor extends EventTarget {
         const compDef = this.models.gd.models.get(compId);
         const cName = (compDef?.model || compObj.name || '').toLowerCase();
 
-        // Reseta a matriz interna de centralização do DFF do componente para usar o espaço local do dummy do carro
+        // Resets the component DFF's internal centering matrix to use the car dummy's local space
         compObj.children.forEach(cm => {
           cm.position.set(0, 0, 0);
           cm.rotation.set(0, 0, 0);
@@ -472,7 +472,7 @@ export class Editor extends EventTarget {
           });
         };
 
-        // Rodas: substitui todas as rodas originais e instancia em cada dummy de roda com escala ajustada ao diâmetro original
+        // Wheels: replaces all original wheels and instantiates on each wheel dummy with scale adjusted to the original diameter
         if (cName.startsWith('wheel_')) {
           let stockRadius = null;
           for (const c of m.children) {
@@ -512,7 +512,7 @@ export class Editor extends EventTarget {
           return;
         }
 
-        // Tabela oficial de pares de saias laterais do GTA San Andreas (Esquerda -> Direita)
+        // Official table of GTA San Andreas side skirt pairs (Left -> Right)
         const SIDESKIRT_PAIRS = {
           1007: 1017, // Transfender: wg_l_b_ssk -> wg_r_b_ssk
           1026: 1027, // Sultan: wg_l_a_s -> wg_r_a_s
@@ -537,14 +537,14 @@ export class Editor extends EventTarget {
           1134: 1137, // Tornado: wg_l_lr_t1 -> wg_r_lr_t1
         };
 
-        // Saias laterais (wg_l / wg_r): aplicam-se em ambas as laterais do veículo
+        // Side skirts (wg_l / wg_r): apply to both sides of the vehicle
         if (cName.startsWith('wg_l_') || cName.startsWith('wg_lr_') || cName.startsWith('wg_') || SIDESKIRT_PAIRS[compId]) {
           const leftMat = dummies['ug_wing_left'] || dummies['chassis'];
           if (leftMat) compObj.applyMatrix4(leftMat);
           markComp(compObj);
           m.add(compObj);
 
-          // Lado direito da saia lateral: carrega o modelo nativo correspondente do GTA SA
+          // Right side of the side skirt: loads the corresponding native GTA SA model
           const rightCompId = SIDESKIRT_PAIRS[compId];
           const rightMat = dummies['ug_wing_right'];
           if (rightCompId && rightMat) {
@@ -660,7 +660,7 @@ export class Editor extends EventTarget {
     if (this.selection.includes(uid)) this.refreshSelectionBoxes();
   }
 
-  // Esconde do mapa os prédios removidos no projeto
+  // Hides from the map the buildings removed in the project
   updateHiddenWorld() {
     const hidden = new Set();
     for (const r of this.project.removed) {
@@ -669,7 +669,7 @@ export class Editor extends EventTarget {
     this.streamer.setHidden(hidden);
   }
 
-  // ------------------------------------------------------------------ seleção
+  // ------------------------------------------------------------------ selection
   emit(type, detail) { this.dispatchEvent(new CustomEvent(type, { detail })); }
   on(type, fn) { const h = (e) => fn(e.detail, e); this.addEventListener(type, h); return () => this.removeEventListener(type, h); }
 
@@ -763,7 +763,7 @@ export class Editor extends EventTarget {
     this.tc.showX = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showY = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showZ = true;
-    this.tc.enabled = !this.directDragging; // durante o clicar e arrastar o manipulador fica parado
+    this.tc.enabled = !this.directDragging; // during click and drag the manipulator stays still
     this.gizmo.visible = true;
     this.applySnap();
   }
@@ -778,7 +778,7 @@ export class Editor extends EventTarget {
   }
   setSpace(space) { this.space = space; this.attachGizmo(); this.emit('mode'); }
   setSnap(s) { Object.assign(this.snap, s); this.applySnap(); this.emit('mode'); }
-  // Velocidade do gizmo: de 0,001 a 10,0 (padrão 1,0) para movimento e rotação
+  // Gizmo speed: from 0.001 to 10.0 (default 1.0) for movement and rotation
   setTransformSpeed(speeds) {
     if (speeds.move !== undefined) {
       this.transformSpeed.move = clampTransformSpeed(speeds.move);
@@ -857,7 +857,7 @@ export class Editor extends EventTarget {
     const C = this.dragStart.pivotPos;
 
     if (this.mode === 'rotate') {
-      // Rotação conjunta e rígida em torno do centro comum C
+      // Joint rigid rotation around the common center C
       const Q = this.pivot.quaternion.clone().multiply(this.dragStart.pivotQuat.clone().invert());
 
       for (const { uid, kind, pos, quat } of this.dragStart.nodes) {
@@ -878,7 +878,7 @@ export class Editor extends EventTarget {
         }
       }
     } else {
-      // Movimento conjunto preservando distâncias relativas
+      // Joint movement preserving relative distances
       const dPos = this.pivot.position.clone().sub(C);
 
       for (const { uid, kind, pos, quat } of this.dragStart.nodes) {
@@ -889,7 +889,7 @@ export class Editor extends EventTarget {
         node.scale.set(1, 1, 1);
         node.updateMatrixWorld(true);
 
-        // Encaixe magnético em bordas de objetos próximos
+        // Magnetic snap to edges of nearby objects
         if (this.mode === 'translate' && this.snap.magnetic && this.selection.length === 1) {
           const itemAttached = this.findProjectOf(uid)?.find(uid);
           if (!itemAttached?.attach || !itemAttached.attach.to) {
@@ -909,7 +909,7 @@ export class Editor extends EventTarget {
       }
     }
 
-    // Se o objeto manipulado estiver anexado (attach), calcula os novos offsets relativos em tempo real
+    // If the manipulated object is attached (attach), computes the new relative offsets in real time
     for (const u of this.selection) {
       const p = this.findProjectOf(u);
       const it = p?.find(u);
@@ -972,7 +972,7 @@ export class Editor extends EventTarget {
     this.attachGizmo();
   }
 
-  // Rotação conjunta pelo painel Inspetor em torno do centro comum
+  // Joint rotation via the Inspector panel around the common center
   rotateSelectionTogether(rxDeg, ryDeg, rzDeg) {
     const items = this.selectedItems();
     if (!items.length) return;
@@ -1004,14 +1004,14 @@ export class Editor extends EventTarget {
     this.emit('change');
   }
 
-  // Anexação de objetos (AttachObjectToObject / AttachObjectToVehicle)
+  // Object attachment (AttachObjectToObject / AttachObjectToVehicle)
   updateAttachedChildren() {
     if (!this.project) return;
     const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
     for (const p of projects) {
       for (const obj of (p.objects || [])) {
         if (!obj.attach || !obj.attach.to) continue;
-        // Se o filho estiver sendo manipulado diretamente pelo gizmo, preserva sua posição no mundo
+        // If the child is being manipulated directly by the gizmo, preserves its world position
         if (this.dragging && this.selection.includes(obj.uid)) continue;
         const parentNode = this.nodes.get(obj.attach.to);
         const childNode = this.nodes.get(obj.uid);
@@ -1057,14 +1057,14 @@ export class Editor extends EventTarget {
     };
   }
 
-  // Teste em tempo real de MoveObject / MoveDynamicObject (executa exatamente 1 vez)
+  // Real-time test of MoveObject / MoveDynamicObject (runs exactly once)
   testMoveObject(uid) {
     this.stopMoveObject(uid);
     const obj = this.project.find(uid);
     const node = this.nodes.get(uid);
     if (!obj || !obj.move || !node) return;
 
-    // Reseta para o ponto de partida do objeto
+    // Resets to the object's starting point
     node.position.set(obj.x, obj.y, obj.z);
     const startRot = new THREE.Euler((obj.rx || 0) * D2R, (obj.ry || 0) * D2R, (obj.rz || 0) * D2R, 'ZXY');
     node.quaternion.setFromEuler(startRot);
@@ -1185,7 +1185,7 @@ export class Editor extends EventTarget {
       if (n?.userData?.isLabel || n?.userData?.kind === 'labels') continue;
       if (n) {
         add(n, 0xff5555);
-        // Destaca também objetos anexados a este veículo / objeto (AttachObjectToObject / AttachObjectToVehicle)
+        // Also highlights objects attached to this vehicle / object (AttachObjectToObject / AttachObjectToVehicle)
         for (const [otherUid, otherNode] of this.nodes) {
           const otherItem = this.findProjectOf(otherUid)?.find(otherUid);
           if (otherItem?.attach?.to === u) {
@@ -1217,9 +1217,9 @@ export class Editor extends EventTarget {
       }
       if (e.button === 0) {
         down = { x: e.clientX, y: e.clientY, t: performance.now() };
-        // Clicar e arrastar um item move na hora: se ele ainda não está selecionado, é selecionado ao começar
-        // a arrastar (Shift/Ctrl somam à seleção). A área do manipulador (gizmo) tem prioridade: o arrastar
-        // direto só vale clicando no item fora dela. Durante o arrastar direto o manipulador fica parado.
+        // Click and drag an item moves it immediately: if it is not selected yet, it is selected when the drag starts
+        // (Shift/Ctrl add to the selection). The manipulator (gizmo) area has priority: direct
+        // dragging only applies when clicking the item outside it. During a direct drag the manipulator stays still.
         if (!this.tc.dragging && !this.placing && this.mode === 'translate' && !this.gizmoUnderPointer(e)) {
           const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());
           const hitUid = hit?.object?.userData?.uid;
@@ -1296,7 +1296,7 @@ export class Editor extends EventTarget {
       }
     });
 
-    // O manipulador volta a reagir quando o botão é solto (mesmo fora da janela do mapa)
+    // The manipulator reacts again when the button is released (even outside the map window)
     const releaseGizmo = () => {
       if (!this.directDragging) return;
       this.directDragging = false;
@@ -1349,7 +1349,7 @@ export class Editor extends EventTarget {
     });
   }
 
-  // Dados do arrastar direto (no plano horizontal da altura do primeiro item selecionado). False se não der.
+  // Direct drag data (on the horizontal plane at the height of the first selected item). False if not possible.
   prepareDirectDrag(drag) {
     const selItems = this.selectedItems();
     if (!selItems.length) return false;
@@ -1372,7 +1372,7 @@ export class Editor extends EventTarget {
 
   pickTargets() { return [this.root, ...this.streamer.pickables()]; }
 
-  // O mouse está sobre uma parte do manipulador (setas, planos ou centro) que pode ser usada?
+  // Is the mouse over a part of the manipulator (arrows, planes or center) that can be used?
   gizmoUnderPointer(e) {
     if (!this.tc.object || !this.gizmo.visible || !this.tc.enabled) return false;
     if (this.tc.axis) return true;
@@ -1381,7 +1381,7 @@ export class Editor extends EventTarget {
     this.gizmo.updateMatrixWorld(true);
     const rc = new THREE.Raycaster();
     rc.setFromCamera(this.vp.ndc(e), this.vp.camera);
-    // O grupo das áreas de pegar é invisível de propósito; só as partes escondidas (eixo travado) não valem
+    // The group of grab areas is invisible on purpose; only the hidden parts (locked axis) do not count
     return rc.intersectObject(picker, true).some(h => h.object.visible);
   }
 
@@ -1403,7 +1403,7 @@ export class Editor extends EventTarget {
     if (inst) this.selectWorld([inst], e.shiftKey || e.ctrlKey);
   }
 
-  // Ponto do mundo sob o mouse (para posicionar objetos)
+  // World point under the mouse (to place objects)
   surfacePoint(e, exclude) {
     const rc = new THREE.Raycaster();
     rc.setFromCamera(this.vp.ndc(e), this.vp.camera);
@@ -1411,7 +1411,7 @@ export class Editor extends EventTarget {
     const hits = rc.intersectObjects(this.pickTargets(), true)
       .filter(h => !h.object.userData.noPick && (!exclude || !isDescendant(h.object, exclude)));
     if (hits.length) return { point: hits[0].point, normal: hits[0].face?.normal, object: hits[0].object };
-    // Sem superfície: plano horizontal na altura da câmera - 10, ou 30 m à frente
+    // No surface: horizontal plane at the camera height - 10, or 30 m ahead
     const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -Math.max(0, this.vp.camera.position.z - 20));
     const p = new THREE.Vector3();
     if (rc.ray.intersectPlane(plane, p) && p.distanceTo(this.vp.camera.position) < Math.max(1200, this.vp.camera.far * 0.5)) return { point: p };
@@ -1455,7 +1455,7 @@ export class Editor extends EventTarget {
     const pl = this.placing;
     if (!pl) return;
     const { point, object } = this.surfacePoint(e, pl.ghost);
-    // Herda o interior da superfície (prédio do jogo ou objeto do projeto)
+    // Inherits the interior of the surface (game building or project object)
     const inst = object?.userData.instance;
     const under = object?.userData.uid ? this.project.find(object.userData.uid) : null;
     pl.interior = inst ? (inst.interior > 0 && inst.interior !== 13 ? inst.interior : -1) : (under?.interior ?? pl.interior ?? -1);
@@ -1491,7 +1491,7 @@ export class Editor extends EventTarget {
       kind,
       model: pl.model,
       skin: pl.model,
-      type: 1, // Tipo padrão para pickups (1: sempre visível)
+      type: 1, // Default type for pickups (1: always visible)
       world: 0,
       x: round(p.x), y: round(p.y), z: round(p.z),
       rx: 0, ry: 0, rz: pl.rz,
@@ -1512,7 +1512,7 @@ export class Editor extends EventTarget {
     this.emit('placing');
   }
 
-  // ------------------------------------------------------------------ ações
+  // ------------------------------------------------------------------ actions
   duplicateSelection() {
     const items = this.selectedItems();
     if (!items.length) return;
@@ -1549,7 +1549,7 @@ export class Editor extends EventTarget {
           itemCopy.nexty = Math.round((itemCopy.y + dir.y * dist) * 100) / 100;
           itemCopy.nextz = Math.round((itemCopy.z + dir.z * dist) * 100) / 100;
         } else if (s.kind === 'mapIcons') {
-          // Desloca para o espaço vazio mais próximo (evita ficar em cima de outro mapicon)
+          // Moves to the nearest empty space (avoids sitting on top of another mapicon)
           const existing = p.mapIcons || [];
           const dist = 20.0;
           let ox = dist, oy = dist;
@@ -1600,7 +1600,7 @@ export class Editor extends EventTarget {
     return createdUids;
   }
 
-  // Cópia de prédios do mapa no mesmo lugar (os originais continuam lá)
+  // Copy of map buildings in the same place (the originals stay there)
   copyWorldSelection() {
     const list = this.worldSelection;
     if (!list.length) return;
@@ -1670,7 +1670,7 @@ export class Editor extends EventTarget {
     }
   }
 
-  // Coloca o objeto em cima da superfície logo abaixo dele (terreno ou outro objeto)
+  // Places the object on top of the surface right below it (terrain or another object)
   dropToGround() {
     const items = this.selectedItems();
     if (!items.length) return false;
@@ -1729,7 +1729,7 @@ export class Editor extends EventTarget {
     this.focusBox(box);
   }
 
-  // Leva a câmera até as setas de edição (centro da seleção), mantendo a direção atual da visão
+  // Takes the camera to the edit arrows (selection center), keeping the current view direction
   focusGizmo(distance = 18) {
     if (!this.tc.object) { this.focusSelection(); return; }
     const center = this.pivot.getWorldPosition(new THREE.Vector3());
@@ -1756,7 +1756,7 @@ export class Editor extends EventTarget {
     this.streamer.invalidate();
   }
 
-  // Remove os prédios do mapa selecionados (e opcionalmente o LOD deles)
+  // Removes the selected map buildings (and optionally their LOD)
   removeWorldSelection() {
     const list = this.worldSelection;
     if (!list.length) return;
@@ -1778,7 +1778,7 @@ export class Editor extends EventTarget {
     this.emit('selection');
   }
 
-  // Transforma os prédios do mapa em objetos editáveis (remove os originais e cria cópias)
+  // Turns map buildings into editable objects (removes the originals and creates copies)
   convertWorldSelection() {
     const list = this.worldSelection;
     if (!list.length) return;
@@ -1810,12 +1810,12 @@ export class Editor extends EventTarget {
   restoreRemoved(uids) { this.project.deleteItems('Restaurar prédio', uids); }
 
   // ------------------------------------------------------------------ materiais (SetObjectMaterial)
-  // Índices de material do modelo e a textura original de cada um
+  // Model material indices and the original texture of each one
   slotInfo(model) { return this.models.ready.get(model)?.userData.slotInfo || []; }
 
   selectedObjects() { return this.selectedItems().filter(s => s.kind === 'objects'); }
 
-  // Os índices escolhidos só valem enquanto há objetos selecionados
+  // The chosen indices only apply while there are selected objects
   fixMatSel() {
     if (!this.selectedObjects().length) this.matSel = [];
     this.updateSlotHighlight();
@@ -1843,11 +1843,11 @@ export class Editor extends EventTarget {
     const index = slots[k] ?? slots[0] ?? 0;
     this.worldSel = null;
     if (e.ctrlKey || e.metaKey) {
-      // Ctrl + clique: soma ou tira o índice (no mesmo objeto)
+      // Ctrl + click: adds or removes the index (on the same object)
       if (!this.selection.includes(uid)) this.selection = [uid];
       this.matSel = this.matSel.includes(index) ? this.matSel.filter(x => x !== index) : [...this.matSel, index].sort((a, b) => a - b);
     } else if (e.shiftKey) {
-      // Shift + clique: soma o objeto à seleção, mantendo os índices
+      // Shift + click: adds the object to the selection, keeping the indices
       if (!this.selection.includes(uid)) this.selection = [...this.selection, uid];
       if (!this.matSel.includes(index)) this.matSel = [...this.matSel, index].sort((a, b) => a - b);
     } else {
@@ -1860,7 +1860,7 @@ export class Editor extends EventTarget {
     this.emit('slot');
   }
 
-  // Destaca em âmbar os índices escolhidos, em todos os objetos selecionados
+  // Highlights the chosen indices in amber, on all selected objects
   updateSlotHighlight() {
     for (const o of this.slotOverlays || []) o.parent?.remove(o);
     this.slotOverlays = [];
@@ -1883,8 +1883,8 @@ export class Editor extends EventTarget {
     }
   }
 
-  // Troca os materiais dos índices escolhidos em vários objetos de uma vez.
-  // fn(materialAtual | undefined, índice) devolve o novo material, ou null para restaurar o original.
+  // Swaps the materials of the chosen indices on several objects at once.
+  // fn(currentMaterial | undefined, index) returns the new material, or null to restore the original.
   updateMaterials(label, uids, indices, fn) {
     if (!uids.length || !indices.length) return 0;
     const byProject = new Map();
@@ -1911,7 +1911,7 @@ export class Editor extends EventTarget {
     return count;
   }
 
-  // SetObjectMaterial: troca a textura e mantém a cor que o índice já tinha
+  // SetObjectMaterial: swaps the texture and keeps the color the index already had
   applyTexture(uids, indices, tex) {
     return this.updateMaterials('Trocar textura', uids, indices, (prev) => ({
       model: tex.model, txd: tex.txd, texture: tex.texture,
@@ -1919,7 +1919,7 @@ export class Editor extends EventTarget {
     }));
   }
 
-  // Muda só a cor (materialcolor); sem textura nova, usa modelid -1 / "none"
+  // Changes only the color (materialcolor); with no new texture, uses modelid -1 / "none"
   applyColor(uids, indices, color) {
     return this.updateMaterials('Mudar cor', uids, indices, (prev) => {
       const base = prev && !isText(prev) ? prev : { model: -1, txd: 'none', texture: 'none' };
@@ -2021,7 +2021,7 @@ export class Editor extends EventTarget {
     if (this.worldSelection.length && !this._lastWorldBoxOk) { this.refreshSelectionBoxes(); }
     this._lastWorldBoxOk = !this.worldSelection.length || this.worldSelection.every(w => this.streamer.shown.has(w.index));
 
-    // Atualiza posição na tela e texto do botão flutuante de alternar Mover / Girar
+    // Updates the on-screen position and text of the floating Move / Rotate toggle button
     if (this.gizmoToggleBtn) {
       if (this.selection.length === 0 || !this.gizmo.visible || this.mode === 'texture') {
         this.gizmoToggleBtn.style.display = 'none';
@@ -2077,7 +2077,7 @@ function getAlignmentPoints(obj) {
   const min = b.min, max = b.max;
   const midX = (min.x + max.x) * 0.5, midY = (min.y + max.y) * 0.5, midZ = (min.z + max.z) * 0.5;
   const pts = [
-    // 8 vértices / cantos do modelo
+    // 8 model vertices / corners
     new THREE.Vector3(min.x, min.y, min.z),
     new THREE.Vector3(max.x, min.y, min.z),
     new THREE.Vector3(min.x, max.y, min.z),
@@ -2086,14 +2086,14 @@ function getAlignmentPoints(obj) {
     new THREE.Vector3(max.x, min.y, max.z),
     new THREE.Vector3(min.x, max.y, max.z),
     new THREE.Vector3(max.x, max.y, max.z),
-    // 6 centros de faces para encaixe nivelado
+    // 6 face centers for level snapping
     new THREE.Vector3(min.x, midY, midZ),
     new THREE.Vector3(max.x, midY, midZ),
     new THREE.Vector3(midX, min.y, midZ),
     new THREE.Vector3(midX, max.y, midZ),
     new THREE.Vector3(midX, midY, min.z),
     new THREE.Vector3(midX, midY, max.z),
-    // Centro do objeto
+    // Object center
     new THREE.Vector3(midX, midY, midZ),
   ];
   obj.updateMatrixWorld(true);

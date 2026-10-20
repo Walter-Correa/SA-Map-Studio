@@ -1,6 +1,6 @@
 // Suporte completo a Pickups (CreatePickup e CreateDynamicPickup)
-// Conforme especificação : 
-// e lista oficial de IDs de pickup: 
+// As specified:
+// and official list of pickup IDs:
 import * as THREE from 'three';
 
 export const PICKUP_TYPES = [
@@ -14,7 +14,7 @@ export const PICKUP_TYPES = [
 ];
 
 export const PREDEFINED_PICKUPS = [
-  // Todos os 59 IDs oficiais da tabela ()
+  // All 59 official IDs from the table ()
   { model: 954, name: 'Ferradura da Sorte (Horseshoe)', category: 'Itens' },
   { model: 1210, name: 'Maleta de Dinheiro (Briefcase)', category: 'Geral e Marcadores' },
   { model: 1212, name: 'Pacote de Dinheiro (Money)', category: 'Geral e Marcadores' },
@@ -75,7 +75,7 @@ export const PREDEFINED_PICKUPS = [
   { model: 19607, name: 'Marcador Externo Azul', category: 'Geral e Marcadores' },
   { model: 19832, name: 'Caixa Ammu-Nation', category: 'Geral e Marcadores' },
 
-  // Armas Corpo a Corpo e Objetos Seguráveis
+  // Melee Weapons and Holdable Objects
   { model: 321, name: 'Dildo Padrão (Regular Dildo)', category: 'Armas Brancas' },
   { model: 322, name: 'Dildo Branco (White Dildo)', category: 'Armas Brancas' },
   { model: 323, name: 'Vibrador Médio (Vibrator)', category: 'Armas Brancas' },
@@ -141,12 +141,12 @@ export function getPickupLabel(model) {
   return p ? p.name : `Pickup ID ${model}`;
 }
 
-// Cria malha de fallback estilizada (Diamante flutuante)
+// Creates a stylized fallback mesh (floating Diamond)
 export function createPickupFallbackMesh(model) {
   const group = new THREE.Group();
   const geo = new THREE.OctahedronGeometry(0.38, 0);
-  let color = 0x57b77a; // Verde padrão
-  if (model === 1240) color = 0xee3333; // Vermelho coração
+  let color = 0x57b77a; // Default green
+  if (model === 1240) color = 0xee3333; // Heart red
   else if (model === 1242) color = 0x3388ff; // Azul colete
   else if (model === 1274) color = 0x22cc44; // Verde $
   else if (model === 1239) color = 0xf0a630; // Amarelo info
@@ -167,7 +167,7 @@ export function createPickupFallbackMesh(model) {
   mesh.position.set(0, 0, 0.4);
   group.add(mesh);
 
-  // Anel luminoso na base
+  // Glowing ring at the base
   const ringGeo = new THREE.RingGeometry(0.3, 0.38, 24);
   const ringMat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
   const ring = new THREE.Mesh(ringGeo, ringMat);

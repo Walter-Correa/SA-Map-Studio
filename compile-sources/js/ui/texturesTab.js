@@ -1,6 +1,6 @@
 import { t, uiLocale } from './i18n.js';
-// Aba Texturas: todas as texturas do jogo por categoria, com miniaturas no disco.
-// Clicar numa textura aplica (SetObjectMaterial) nos índices escolhidos dos objetos selecionados.
+// Textures tab: all the game's textures by category, with thumbnails on disk.
+// Clicking a texture applies it (SetObjectMaterial) to the chosen indices of the selected objects.
 import { TEXTURE_CATEGORIES } from '../world/categories.js';
 import { isText } from '../editor/materials.js';
 import { app, $, $$, esc, plural, store, toast, modelLabel, showPrompt } from './common.js';
@@ -44,7 +44,7 @@ export function setupTexturesTab() {
   let t;
   $('#texSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(filterTextures, 150); });
   const list = $('#texList');
-  // Rolagem e redimensionamento: no máximo uma vez por quadro e só quando as linhas visíveis mudam
+  // Scrolling and resizing: at most once per frame and only when the visible rows change
   let rowsRaf = 0;
   const scheduleRows = () => {
     if (rowsRaf) return;
@@ -84,7 +84,7 @@ export function setupTexturesTab() {
   app.editor.addEventListener('selection', updateTarget);
   app.editor.addEventListener('slot', updateTarget);
   app.on('project-change', () => { if (filter === 'No projeto') filterTextures(); else renderTexRows(); });
-  // Abre o índice salvo, se existir (sem precisar clicar). Na primeira vez, já começa sozinho.
+  // Opens the saved index, if it exists (no click needed). The first time, it starts on its own.
   texlib.tryCache().then(ok => {
     renderStatus();
     if (ok) { fillCategories(); filterTextures(); }
@@ -109,7 +109,7 @@ function renderStatus() {
   const texlib = app.texlib;
   const st = texlib.state;
   const loading = st === 'loading';
-  // Durante uma atualização a lista antiga continua usável
+  // During an update the old list stays usable
   const usable = texlib.items.length > 0;
   $('#texBrowser').hidden = !usable;
   $('#texStatus').hidden = st === 'ready' || (usable && !loading);
@@ -168,7 +168,7 @@ function layout() {
   return { rowH: Math.round(tileW + 44), cols: 3 };
 }
 
-// Textura atual do primeiro índice escolhido (para marcar na lista)
+// Current texture of the first chosen index (to mark in the list)
 function activeKey() {
   const o = app.editor.selectedObjects()[0]?.item;
   const i = app.editor.matSel[0];
@@ -179,7 +179,7 @@ function activeKey() {
 
 let texRowsKey = '';
 
-// force = false: não recria os blocos se o trecho visível e o número de colunas continuam iguais
+// force = false: does not recreate the blocks if the visible slice and the number of columns stay the same
 export function renderTexRows(force = true) {
   const texlib = app.texlib;
   const list = $('#texList');
@@ -212,7 +212,7 @@ export function renderTexRows(force = true) {
       tile.dataset.key = item.key;
       const alias = aliases[item.key];
       const isFav = favs.has(item.key);
-      // Várias linhas: cada uma traduzida aqui (o título inteiro não é uma chave)
+      // Multiple lines: each translated here (the whole title is not a key)
       tile.title = [alias ? `[${alias}]` : '', item.name, t('TXD: {0} (modelo {1})', item.txd, item.model),
         item.alpha ? t('{0}×{1}, com transparência', item.w, item.h) : `${item.w}×${item.h}`, t(item.category)].filter(Boolean).join('\n');
       const url = texlib.thumbUrl(item.txd, item.name);

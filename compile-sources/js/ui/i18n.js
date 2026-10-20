@@ -1,38 +1,38 @@
-// Idiomas da interface.
-// O código é escrito em português. Cada arquivo js/lang/<código>.json traz a tradução de cada texto: a
-// chave é o texto em português (sem os espaços das pontas) e as partes variáveis são {0}, {1}, ...
-// A tradução acontece direto na página: todo texto e atributo de texto (title, placeholder, aria-label,
-// alt) que aparece é trocado pela versão do idioma escolhido, inclusive o que é criado depois (janelas,
-// avisos, listas). Ao trocar de idioma tudo volta ao original e é traduzido de novo, sem reiniciar.
-// Não é traduzido o que fica em campos de texto, em <code>/<pre> e dentro de translate="no" ou .no-i18n
-// (código Pawn, nomes digitados pelo usuário). Texto desenhado em canvas usa t().
+// Interface languages.
+// The code is written in Portuguese. Each js/lang/<code>.json file holds the translation of each text: the
+// key is the Portuguese text (without the edge spaces) and the variable parts are {0}, {1}, ...
+// Translation happens right on the page: every text and text attribute (title, placeholder, aria-label,
+// alt) that appears is swapped for the chosen language's version, including what is created later (windows,
+// notices, lists). When switching language everything goes back to the original and is translated again, without restarting.
+// What sits in text fields, in <code>/<pre> and inside translate="no" or .no-i18n is not translated
+// (Pawn code, names typed by the user). Text drawn on canvas uses t().
 import { postJSON } from './common.js';
 
 export const SOURCE_LANG = 'pt';
 const FALLBACK_LANG = 'en';
 const TEXT_ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
-// translate="no" / .no-i18n: nada é traduzido. Nos demais, o conteúdo fica como está, mas atributos
-// (placeholder, title, aria-label) são traduzidos, como o placeholder de um textarea.
+// translate="no" / .no-i18n: nothing is translated. In the rest, the content stays as is, but attributes
+// (placeholder, title, aria-label) are translated, like a textarea's placeholder.
 const NO_TRANSLATE = '[translate="no"], .no-i18n';
 const NO_CONTENT = 'script, style, textarea, code, pre, svg';
 const SKIP_SELECTOR = `${NO_TRANSLATE}, ${NO_CONTENT}`;
 
-let languages = [];          // [{ code, name, windows, script }] de languages.json
+let languages = [];          // [{ code, name, windows, script }] from languages.json
 let current = SOURCE_LANG;
-let tables = [];             // [{ exact: Map, patterns: [] }] do idioma atual e do de reserva
-const cache = new Map();     // código -> Promise<objeto do arquivo>
-const textState = new WeakMap(); // nó de texto -> { orig, shown }
+let tables = [];             // [{ exact: Map, patterns: [] }] of the current language and the fallback
+const cache = new Map();     // code -> Promise<file object>
+const textState = new WeakMap(); // text node -> { orig, shown }
 const attrState = new WeakMap(); // elemento -> { [atributo]: { orig, shown } }
 let observer = null;
 const listeners = new Set();
-export const missing = new Set(); // textos sem tradução vistos na tela (para completar os arquivos)
+export const missing = new Set(); // untranslated texts seen on screen (to complete the files)
 
-// ---------------------------------------------------------------------------- tradução
+// ---------------------------------------------------------------------------- translation
 
-// Formas de plural: a tradução pode ser um objeto { one, few, many, other } (as categorias de
-// Intl.PluralRules do idioma) em vez de texto. A forma é escolhida pelo número da parte variável
-// "count" (padrão {0}). Ex. em ru.json: "{0} objetos": { "one": "{0} объект", "few": "{0} объекта",
-// "many": "{0} объектов", "other": "{0} объекта" }. O português só tem singular e plural (plural()).
+// Plural forms: the translation can be an object { one, few, many, other } (the categories of the language's
+// Intl.PluralRules) instead of text. The form is chosen by the number of the variable part
+// "count" (default {0}). E.g. in ru.json: "{0} objetos": { "one": "{0} объект", "few": "{0} объекта",
+// "many": "{0} объектов", "other": "{0} объекта" }. Portuguese only has singular and plural (plural()).
 const PLURAL_FORMS = ['zero', 'one', 'two', 'few', 'many', 'other'];
 const isForms = (v) => v && typeof v === 'object' && typeof v.other === 'string';
 function pickForm(value, args, rules) {
@@ -60,7 +60,7 @@ function compile(data, code) {
       if (p.length > longest.length) longest = p;
       return p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }).join('');
-    if (!/[A-Za-zÀ-ÿ]/.test(longest)) continue; // só partes variáveis: casaria com qualquer coisa
+    if (!/[A-Za-zÀ-ÿ]/.test(longest)) continue; // only variable parts: would match anything
     patterns.push({ re: new RegExp('^' + src + '$'), order, value, hint: longest, weight: key.replace(/\{\d+\}/g, '').length });
   }
   patterns.sort((a, b) => b.weight - a.weight);
@@ -73,7 +73,7 @@ function fill(value, args, rules) {
   return value.replace(/\{(\d+)\}/g, (all, i) => (args[+i] !== undefined ? args[+i] : all));
 }
 
-// depth: quantos níveis de partes variáveis ainda podem ser traduzidos (0 = só o texto exato)
+// depth: how many levels of variable parts can still be translated (0 = exact text only)
 function lookup(core, depth = 2) {
   for (const table of tables) {
     const hit = table.exact.get(core);
@@ -93,7 +93,7 @@ function lookup(core, depth = 2) {
   return null;
 }
 
-// Parte variável que também é texto da interface: "Desfeito: Mover", "Encontrei 3 objetos, 1 veículo"
+// Variable part that is also interface text: "Desfeito: Mover", "Encontrei 3 objetos, 1 veículo"
 function translatePart(part, depth) {
   const s = part.trim();
   if (!s || !/[A-Za-zÀ-ÿ]/.test(s)) return part;
@@ -107,10 +107,10 @@ function translatePart(part, depth) {
   return part;
 }
 
-// Textos montados com separador ("nome — descrição", "a · b", "a | b" e, por último, "123 - nome"):
-// traduz cada pedaço. null se nenhum pedaço tiver tradução.
+// Texts built with a separator ("name — description", "a · b", "a | b" and, lastly, "123 - name"):
+// translates each piece. null if no piece has a translation.
 const JOINER_LEVELS = [/( (?:—|·|\|) )/, /( - )/];
-// Rótulo com contagem no fim: "Móveis (985)"
+// Label with a count at the end: "Móveis (985)"
 function translateCounted(core) {
   const m = /^(.*\S) (\([\d.,\s  ]+\))$/.exec(core);
   if (!m) return null;
@@ -133,7 +133,7 @@ function translateJoined(core, level = 0) {
   return changed ? out.join('') : null;
 }
 
-// Traduz um texto inteiro (mantém os espaços das pontas)
+// Translates a whole text (keeps the edge spaces)
 export function translateText(text) {
   if (current === SOURCE_LANG || !text) return text;
   const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(text);
@@ -148,7 +148,7 @@ export function translateText(text) {
   return m[1] + out + m[3];
 }
 
-// Para o código: t('Carregando modelo'), t('Som #{0}', id)
+// For code: t('Carregando modelo'), t('Som #{0}', id)
 export function t(key, ...args) {
   if (current === SOURCE_LANG) return args.length ? fill(key, args) : key;
   for (const table of tables) {
@@ -158,14 +158,14 @@ export function t(key, ...args) {
   return fill(key, args);
 }
 
-// Só a tabela de reserva (inglês): para onde o alfabeto do idioma não aparece (chat do SA-MP)
+// Only the fallback table (English): for where the language's alphabet does not appear (SA-MP chat)
 export function tFallback(key) {
   if (current === SOURCE_LANG) return key;
   const hit = tables[tables.length - 1]?.exact.get(key);
   return hit === undefined ? key : fill(hit, []);
 }
 
-// ---------------------------------------------------------------------------- página
+// ---------------------------------------------------------------------------- page
 
 function skipped(el) {
   return !el || !!el.closest?.(SKIP_SELECTOR);
@@ -246,15 +246,15 @@ async function loadFile(code) {
   return cache.get(code);
 }
 
-// Lista do menu sempre em ordem alfabética pelo nome (no próprio idioma); idiomas novos entram no lugar certo
+// Menu list always in alphabetical order by name (in its own language); new languages land in the right place
 const byName = new Intl.Collator('en', { sensitivity: 'base' });
 export function getLanguages() { return languages.slice().sort((a, b) => byName.compare(a.name, b.name)); }
 export function getLanguage() { return current; }
-// Formato de números e datas do idioma (toLocaleString)
+// Language number and date format (toLocaleString)
 export function uiLocale() { return current === 'pt' ? 'pt-BR' : current; }
 export function onLanguageChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
-// Idioma do sistema: só o idioma, sem o país (pt-BR e pt-PT usam o mesmo Português)
+// System language: just the language, without the country (pt-BR and pt-PT use the same Portuguese)
 export function systemLanguage() {
   const codes = languages.map(l => l.code);
   for (const tag of [...(navigator.languages || []), navigator.language]) {
@@ -273,15 +273,15 @@ export async function setLanguage(code, { save = false } = {}) {
   tables = list;
   missing.clear();
   document.documentElement.lang = code;
-  // Escrita do idioma (languages.json "script"): o CSS troca a fonte quando a Barlow não tem as letras
+  // Language script (languages.json "script"): the CSS swaps the font when Barlow lacks the letters
   document.documentElement.dataset.script = languages.find(l => l.code === code)?.script || 'latin';
   walk(document.body);
   translateTitle();
-  if (save) { try { await postJSON('/api/language', { language: code }); } catch { /* fica só nesta sessão */ } }
+  if (save) { try { await postJSON('/api/language', { language: code }); } catch { /* stays only in this session */ } }
   for (const fn of listeners) { try { fn(code); } catch (e) { console.error(e); } }
 }
 
-// Carrega a lista de idiomas e aplica o salvo (ou o do sistema) antes de a interface aparecer
+// Loads the language list and applies the saved one (or the system's) before the interface appears
 export async function initI18n(savedLanguage) {
   try { languages = await (await fetch('js/lang/languages.json', { cache: 'no-cache' })).json(); }
   catch { languages = [{ code: SOURCE_LANG, name: 'Português' }]; }

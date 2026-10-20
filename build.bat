@@ -3,7 +3,7 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 set "SRC=%~dp0"
 
-rem Modo: sem parametro = mantem os dados | "clean"/"limpo" = versao limpa de arquivo unico
+rem Mode: no parameter = keeps the data | "clean"/"limpo" = clean single-file version
 set "MODO=%~1"
 title Compilando o SA Map Studio
 set "OUT=%~dp0compiled\SA Map Studio"
@@ -27,7 +27,7 @@ echo ============================================================
 set "VENV_DIR=%SRC%compile-sources\.venv-build"
 set "VPY=%VENV_DIR%\Scripts\python.exe"
 
-rem Se houver um venv antigo na raiz, move para compile-sources ou remove
+rem If there is an old venv in the root, moves it to compile-sources or removes it
 if exist "%SRC%.venv-build" (
     if not exist "%VENV_DIR%" (
         move "%SRC%.venv-build" "%VENV_DIR%" >nul 2>nul
@@ -36,7 +36,7 @@ if exist "%SRC%.venv-build" (
     )
 )
 
-rem Se o venv existir mas estiver corrompido ou apontando para Python inexistente de outra maquina, recria
+rem If the venv exists but is corrupted or points to a Python missing from another machine, recreates it
 if exist "%VPY%" (
     "%VPY%" -c "import sys" >nul 2>nul
     if errorlevel 1 (
@@ -45,7 +45,7 @@ if exist "%VPY%" (
     )
 )
 
-rem Ambiente separado so para a compilacao (nao mexe no seu Python)
+rem Separate environment just for compiling (does not touch your Python)
 if exist "%VPY%" goto venv_pronto
 echo Procurando instalacao funcional do Python...
 call :procura_python
@@ -78,11 +78,11 @@ taskkill /im "omp-server.exe" /f >nul 2>nul
 taskkill /im "samp-server.exe" /f >nul 2>nul
 ping 127.0.0.1 -n 3 >nul
 
-rem Data e hora desta compilacao (aparece em "Novidades" dentro do programa)
+rem Date and time of this build (shown in "Novidades" inside the program)
 for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'dd/MM/yyyy HH:mm:ss'"`) do set "BUILDTIME=%%T"
 > "build-info.json" echo {"builtAt": "%BUILDTIME%"}
 
-rem Prepara a estrutura temporaria de staging
+rem Prepares the temporary staging structure
 if exist "build" rmdir /s /q "build"
 if not exist "%STAGE%\system" mkdir "%STAGE%\system"
 if not exist "%STAGE%\projects" mkdir "%STAGE%\projects"
@@ -92,13 +92,13 @@ if not exist "%STAGE%\test-server" mkdir "%STAGE%\test-server"
 
 set "ICONFILE=%SRC%icon.ico"
 set "VERFILE=%SRC%compile-sources\version_info.txt"
-rem A versao gravada no .exe sempre segue a VERSION do serve.py
+rem The version stored in the .exe always follows VERSION in serve.py
 "%VPY%" "%SRC%compile-sources\sync_version.py"
 if errorlevel 1 goto erro
-rem Confere se todos os textos da interface tem traducao em todos os idiomas (so avisa, nao para)
+rem Checks that every interface text has a translation in every language (only warns, does not stop)
 "%VPY%" -X utf8 "%SRC%compile-sources\i18n_check.py"
 
-rem ---------------- 1. Compila o Motor do Sistema (sa-map-studio.exe)
+rem ---------------- 1. Compiles the System Engine (sa-map-studio.exe)
 echo Compilando o motor do sistema...
 set "ARGS=--noconfirm --clean --onedir --windowed --noupx"
 set "ARGS=%ARGS% --name "sa-map-studio" --icon "%ICONFILE%""
@@ -129,7 +129,7 @@ if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 
 if exist "omp-server-source\pawno\pawncc.exe" (
     echo Compilando gamemode samapstudio.pwn...
-    rem Caminhos relativos: o .amx sai igual em qualquer pasta/PC
+    rem Relative paths: the .amx comes out the same in any folder/PC
     "omp-server-source\pawno\pawncc.exe" "compile-sources\samapstudio.pwn" -o"compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
 )
 
@@ -185,7 +185,7 @@ if not exist "%ST%\scriptfiles\samapstudio\mapa.txt" (
     echo S^|0.0^|0.0^|3.0^|0.0^|0^|0^|1> "%ST%\scriptfiles\samapstudio\mapa.txt"
 )
 
-rem ---------------- 3. Miniaturas e Dados do Catalogo
+rem ---------------- 3. Thumbnails and Catalog Data
 set "THUMBSRC="
 if exist "%SRC%compile-sources\cache\thumbnails\objects" set "THUMBSRC=%SRC%compile-sources\cache\thumbnails"
 if not defined THUMBSRC if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
@@ -255,7 +255,7 @@ if defined SOUNDSRC (
     robocopy "%SOUNDSRC%" "%STAGE%\data\cache\sounds" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
-rem Remove qualquer arquivo solto indesejado no staging
+rem Removes any unwanted stray file in staging
 del /q /s "%STAGE%\*.pdb" 2>nul
 del /q /s "%STAGE%\*.dmp" 2>nul
 del /q /s "%STAGE%\*LEIA-ME*" 2>nul
@@ -277,13 +277,13 @@ if exist "%SRC%compile-sources\launcher_frames" set "LAUNCHER_ARGS=%LAUNCHER_ARG
 "%VPY%" -m PyInstaller %LAUNCHER_ARGS% "%SRC%compile-sources\launcher.py"
 if errorlevel 1 goto erro
 
-rem ---------------- 6. Tratamento do Modo Limpo vs Normal
+rem ---------------- 6. Clean vs Normal Mode Handling
 if /i "%MODO%"=="clean" (
-    rem Na versao limpa, mantem rigorosamente SOMENTE o executavel unico
+    rem In the clean version, keeps strictly ONLY the single executable
     if exist "%BASE%" rmdir /s /q "%BASE%" 2>nul
     echo Versao limpa configurada: a pasta sa-map-studio sera criada na primeira execucao.
 ) else (
-    rem No modo normal, se a pasta de desenvolvimento ja existir, atualiza o motor
+    rem In normal mode, if the development folder already exists, updates the engine
     if exist "%BASE%\system" robocopy "%STAGE%\system" "%BASE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
     if exist "%BASE%\test-server\gamemodes" copy /y "%STAGE%\test-server\gamemodes\*.*" "%BASE%\test-server\gamemodes\" >nul
 )
@@ -292,7 +292,7 @@ del /q "%OUT%\LEIA-ME.txt" 2>nul
 del /q "%OUT%\*.txt" 2>nul
 if exist "%BASE%\LEIA-ME.txt" del /q "%BASE%\LEIA-ME.txt" 2>nul
 
-rem Limpa pastas temporarias de build
+rem Cleans temporary build folders
 rmdir /s /q "%SRC%build" 2>nul
 del /q "%SRC%build-info.json" 2>nul
 del /q "%SRC%sa-map-studio.spec" 2>nul
@@ -323,7 +323,7 @@ del /q "%SRC%build-info.json" 2>nul
 if not defined NO_PAUSE pause
 exit /b 1
 
-rem Procura um Python que funcione de verdade (o atalho da Microsoft Store nao serve)
+rem Looks for a Python that really works (the Microsoft Store shortcut does not count)
 :procura_python
 set "PY="
 py -3 -c "import sys, venv" >nul 2>nul && set "PY=py -3"

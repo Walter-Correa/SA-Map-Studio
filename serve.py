@@ -44,10 +44,10 @@ from urllib.parse import quote, unquote, urlparse, parse_qs
 
 VERSION = "3.24.0"
 FROZEN = getattr(sys, "frozen", False)
-# Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
+# Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
     exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-    # Se o executável do sistema estiver dentro de sa-map-studio\system\
+    # If the system executable is inside sa-map-studio\system\
     if os.path.basename(exe_dir).lower() == "system" and os.path.basename(os.path.dirname(exe_dir)).lower() == "sa-map-studio":
         BASE_DIR = os.path.dirname(exe_dir)
         ROOT_DIR = os.path.dirname(BASE_DIR)
@@ -85,8 +85,8 @@ def _in_protected_folder(path):
             return True
     return False
 
-# O editor grava tudo em sa-map-studio. Numa pasta protegida (como a do GTA em Arquivos de
-# Programas) ele se abre de novo pedindo administrador; em qualquer outra pasta, não pede nada.
+# The editor writes everything to sa-map-studio. In a protected folder (like GTA's in Program
+# Files) it reopens asking for administrator; in any other folder, it asks for nothing.
 if getattr(sys, "frozen", False) and os.name == "nt" and not _dir_writable(BASE_DIR):
     try:
         import ctypes
@@ -110,8 +110,8 @@ CACHE_DIR = os.path.join(DATA_DIR, "cache")
 COMPILE_SOURCES_DIR = os.path.join(ROOT_DIR, "compile-sources")
 COMPILE_CACHE_DIR = os.path.join(COMPILE_SOURCES_DIR, "cache")
 COMPILE_MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
-# CACHE_DIR é sempre a pasta de dados (gravação). No código-fonte, os arquivos que já vêm prontos em
-# compile-sources/cache são lidos de lá como alternativa, mas nada gerado em execução é gravado no repositório.
+# CACHE_DIR is always the data folder (writing). In the source code, the files that ship ready in
+# compile-sources/cache are read from there as a fallback, but nothing generated at runtime is written to the repository.
 THUMBS_DIR = os.path.join(CACHE_DIR, "thumbnails") if os.path.isdir(os.path.join(CACHE_DIR, "thumbnails")) or not os.path.isdir(os.path.join(CACHE_DIR, "miniaturas")) else os.path.join(CACHE_DIR, "miniaturas")
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.join(CACHE_DIR, "animations")) or not os.path.isdir(os.path.join(CACHE_DIR, "animacoes")) else os.path.join(CACHE_DIR, "animacoes")
 def resolve_webview_dir():
@@ -169,15 +169,15 @@ IS_WINDOWS = os.name == "nt"
 
 def migrate_old_layout():
     """Move pastas e arquivos da raiz para dentro de sa-map-studio e remove pastas legadas e __pycache__."""
-    # O .exe pode estar em qualquer pasta (a do GTA, Downloads, Área de Trabalho...).
-    # Só mexe na raiz quando ela é claramente do programa: nunca dentro do GTA e, no .exe,
-    # só no layout antigo (que tinha a pasta system ao lado do executável).
+    # The .exe can be in any folder (GTA's, Downloads, Desktop...).
+    # Only touches the root when it clearly belongs to the program: never inside GTA and, in the .exe,
+    # only in the old layout (which had the system folder next to the executable).
     if editor_gta_folder() or looks_like_gta_dir(ROOT_DIR):
         return
     if FROZEN and not os.path.isdir(os.path.join(ROOT_DIR, "system")):
         return
 
-    # Remove os __pycache__ do código-fonte (só no modo de desenvolvimento)
+    # Removes the __pycache__ folders from the source code (development mode only)
     if not FROZEN:
         for root, dirs, _ in os.walk(ROOT_DIR):
             if "__pycache__" in dirs:
@@ -211,7 +211,7 @@ def migrate_old_layout():
         except OSError:
             pass
 
-    # Migra pastas que possam estar soltas na raiz para dentro de BASE_DIR
+    # Migrates folders that may be loose in the root into BASE_DIR
     for old_name, target_dir in (
         ("sa-map-studio", BASE_DIR),
         ("projects", PROJECTS_DIR),
@@ -230,14 +230,14 @@ def migrate_old_layout():
     ):
         src = os.path.join(ROOT_DIR, old_name)
         if old_name in ("data", "dados", "Dados"):
-            # Só move a pasta de dados do próprio programa (nunca a data de um GTA)
+            # Only moves the program's own data folder (never a GTA's data)
             if resolve_ci(src, "gta.dat") or not any(
                 os.path.exists(os.path.join(src, marker)) for marker in ("config.json", "cache", "logs", "registros")
             ):
                 continue
         merge_and_remove(src, target_dir)
 
-    # Remove pastas residuais/duplicadas que não devem existir dentro de sa-map-studio
+    # Removes leftover/duplicate folders that must not exist inside sa-map-studio
     for obsolete_dir in (
         os.path.join(BASE_DIR, "models"),
         os.path.join(BASE_DIR, "compile-sources"),
@@ -249,7 +249,7 @@ def migrate_old_layout():
             except OSError:
                 pass
 
-    # Migra arquivos avulsos se ainda existirem soltos
+    # Migrates loose files if they still exist loose
     moves = [
         ("config.json", CONFIG_FILE),
         ("cache", CACHE_DIR),
@@ -550,11 +550,11 @@ def get_other_gta_candidates():
             seen.add(key)
             out.append(p)
 
-    # 1. Registro do Windows (SA-MP, Rockstar Games, Steam e MTA)
+    # 1. Windows registry (SA-MP, Rockstar Games, Steam and MTA)
     for p in registry_candidates():
         add(p)
 
-    # 2. Pastas comuns em todos os discos
+    # 2. Common folders on all drives
     drives = []
     if IS_WINDOWS:
         import string
@@ -573,7 +573,7 @@ def get_other_gta_candidates():
         for cb in common_bases:
             add(os.path.join(drv, cb))
 
-    # 3. Um nível dentro das pastas de jogos de cada disco (nomes com "gta" ou "san andreas")
+    # 3. One level inside each drive's game folders (names with "gta" or "san andreas")
     scan_roots = ("Games", "Jogos", "Rockstar Games", r"SteamLibrary\steamapps\common", r"Steam\steamapps\common")
     for drv in drives:
         for sroot in scan_roots:
@@ -782,7 +782,7 @@ def col_sphere(model_name):
         found = _COL_INDEX["spheres"].get(name)
         if found:
             return found
-    # Veículos: a colisão fica dentro do próprio DFF
+    # Vehicles: the collision lives inside the DFF itself
     for img in imgs[:2] + imgs[3:]:
         full = resolve_ci(gta, img)
         if not full or not os.path.isfile(full):
@@ -854,11 +854,11 @@ class State:
     detected_gta = ""
     window = None
     lock = threading.Lock()
-    last_ping = 0.0   # último sinal de vida da página aberta no navegador
-    stopping = False  # True quando o programa está fechando de propósito
-    test_proc = None  # servidor de teste em execução
-    close_ready = False     # projetos já salvos: a janela pode fechar
-    closing_started = False  # salvamento antes de fechar em andamento
+    last_ping = 0.0   # last heartbeat from the page open in the browser
+    stopping = False  # True when the program is closing on purpose
+    test_proc = None  # test server running
+    close_ready = False     # projects already saved: the window may close
+    closing_started = False  # save before closing in progress
 
 
 def editor_gta_folder():
@@ -906,7 +906,7 @@ def build_info():
         return {"builtAt": str(data.get("builtAt") or ""), "compiled": True}
     except (OSError, ValueError):
         pass
-    # Rodando pelo código-fonte: usa a data do arquivo mais recente do editor
+    # Running from source: uses the date of the editor's most recent file
     newest = 0
     for root, _dirs, files in os.walk(os.path.join(APP_DIR, "js")):
         for n in files:
@@ -919,7 +919,7 @@ def build_info():
 
 
 # ---------------------------------------------------------------------------
-# Índice de texturas: lê só os cabeçalhos dos TXDs (rápido, sem decodificar imagens)
+# Texture index: reads only the TXD headers (fast, without decoding images)
 # ---------------------------------------------------------------------------
 FMT_MASK, FMT_1555, FMT_4444, FMT_8888, FMT_888 = 0x0F00, 0x0100, 0x0300, 0x0500, 0x0600
 FMT_PAL8, FMT_PAL4 = 0x2000, 0x4000
@@ -989,7 +989,7 @@ def texture_index(entries):
             f.seek(int(e.get("offset") or 0))
             size = int(e.get("size") or 0)
             if size <= 0 and img.lower().endswith(".img"):
-                continue  # entrada vazia dentro de um .img: não lê o arquivo inteiro
+                continue  # empty entry inside a .img: does not read the whole file
             data = f.read(size) if size > 0 else f.read(64 << 20)
             tex = txd_textures(data)
             if tex:
@@ -1002,7 +1002,7 @@ def texture_index(entries):
 
 
 # ---------------------------------------------------------------------------
-# Importação de bancos SQLite (mapas salvos pelo Texture Studio e parecidos)
+# SQLite database import (maps saved by Texture Studio and similar)
 # ---------------------------------------------------------------------------
 def read_sqlite(data):
     fd, tmp = tempfile.mkstemp(suffix=".db")
@@ -1033,7 +1033,7 @@ def read_sqlite(data):
 
 
 # ---------------------------------------------------------------------------
-# Teste do mapa no jogo: servidor SA-MP/open.mp isolado + gamemode do editor
+# In-game map test: isolated SA-MP/open.mp server + the editor's gamemode
 # ---------------------------------------------------------------------------
 TEST_PORT = 7777
 SERVER_EXES = ("omp-server.exe", "samp-server.exe", "omp-server", "samp03svr")
@@ -1105,7 +1105,7 @@ def find_samapstudio_amx():
 def test_info():
     cfg = load_config()
     server = cfg.get("server_path") or ""
-    # Servidor que já está dentro da pasta do programa ("test-server") tem prioridade
+    # A server already inside the program folder ("test-server") takes priority
     candidates = [
         TEST_DIR,
         os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server"),
@@ -1196,7 +1196,7 @@ def start_test(body):
         return {"ok": False, "error": "O gamemode de teste não foi encontrado na instalação do editor."}
     stop_test()
     if not port_free(TEST_PORT):
-        time.sleep(1.0)  # o servidor de teste anterior pode estar terminando de fechar
+        time.sleep(1.0)  # the previous test server may still be finishing closing
     if not port_free(TEST_PORT):
         return {"ok": False, "error": "A porta %d está em uso, provavelmente por outro servidor aberto "
                                       "no seu computador. Feche esse servidor e tente de novo." % TEST_PORT}
@@ -1205,7 +1205,7 @@ def start_test(body):
     os.makedirs(TEST_DIR, exist_ok=True)
     same = os.path.normcase(os.path.abspath(src)) == os.path.normcase(os.path.abspath(TEST_DIR))
     if not same:
-        # Copia o servidor para "Servidor de Teste" (o servidor e o gamemode do usuário não são tocados)
+        # Copies the server to "Servidor de Teste" (the user's server and gamemode are not touched)
         copy_if_newer(exe, os.path.join(TEST_DIR, os.path.basename(exe)))
         for n in os.listdir(src):
             full = os.path.join(src, n)
@@ -1292,7 +1292,7 @@ def start_test(body):
                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
     except OSError as err:
         return {"ok": False, "error": "Não consegui iniciar o servidor: %s" % err}
-    # Espera o servidor subir (o registro avisa) antes de abrir o jogo
+    # Waits for the server to come up (the log says so) before opening the game
     started = False
     for _ in range(40):
         time.sleep(0.25)
@@ -1305,9 +1305,9 @@ def start_test(body):
     client = samp_client()
     launched = False
     if body.get("launch", True) and client:
-        # O cliente SA-MP grava na pasta do GTA: numa pasta protegida (Arquivos de Programas) ele
-        # precisa de administrador. Se o editor não for administrador, o Windows abre o cliente
-        # com o próprio pedido (UAC), como acontecia quando o editor inteiro abria como administrador.
+        # The SA-MP client writes to the GTA folder: in a protected folder (Program Files) it
+        # needs administrator. If the editor is not administrator, Windows opens the client
+        # with its own prompt (UAC), as happened when the whole editor opened as administrator.
         needs_admin = False
         if IS_WINDOWS:
             try:
@@ -1328,7 +1328,7 @@ def start_test(body):
             subprocess.Popen([client, "127.0.0.1:%d" % TEST_PORT], cwd=os.path.dirname(client))
             launched = True
         except OSError as err:
-            # samp.exe que exige administrador (erro 740): o Windows abre com o próprio pedido (UAC)
+            # samp.exe that requires administrator (error 740): Windows opens it with its own prompt (UAC)
             launched = False
             if IS_WINDOWS and getattr(err, "winerror", None) == 740:
                 try:
@@ -1342,7 +1342,7 @@ def start_test(body):
 
 
 # ---------------------------------------------------------------------------
-# Gerenciamento de Vídeos e Cache de Animações
+# Video and Animation Cache Management
 # ---------------------------------------------------------------------------
 class AnimCacheManager:
     is_downloading = False
@@ -1588,7 +1588,7 @@ def ensure_radarmap(gta_path, out_png):
 
 
 # ---------------------------------------------------------------------------
-# Extração de Áudio Real do GTA SA para PlayerPlaySound (/api/sound/<id>)
+# Real GTA SA Audio Extraction for PlayerPlaySound (/api/sound/<id>)
 # ---------------------------------------------------------------------------
 _GTA_STREAM_XOR = bytes([
     0xEA, 0x3A, 0xC4, 0xA1, 0x9A, 0xA8, 0x14, 0xF3,
@@ -1752,7 +1752,7 @@ def extract_gta_sound(gta_path, soundid):
     if soundid <= 0:
         return None
 
-    # Verifica cache local/embutido de sons WAV
+    # Checks the local/embedded WAV sound cache
     for base_dir in [
         os.path.join(COMPILE_CACHE_DIR, "sounds"),
         os.path.join(DATA_DIR, "cache", "sounds"),
@@ -1799,7 +1799,7 @@ class Handler(SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
-        pass  # silencioso: só erros do servidor aparecem
+        pass  # quiet: only server errors appear
 
     def log_request(self, code="-", size="-"):
         try:
@@ -1994,7 +1994,7 @@ class Handler(SimpleHTTPRequestHandler):
             res = gdi_font_metrics(qs.get("face", ["Arial"])[0], size, qs.get("bold", ["1"])[0] not in ("0", ""))
             return self.send_json(res)
         if path == "/api/example_project":
-            # Projeto de exemplo: entregue só na primeira abertura do editor
+            # Example project: delivered only on the editor's first launch
             cfg = load_config()
             if cfg.get("example_shown"):
                 return self.send_json({"ok": False})
@@ -2331,11 +2331,11 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.send_file(local_fallback, cache="max-age=86400")
             return self.send_error(HTTPStatus.NOT_FOUND)
         if full.lower().endswith(".img") and not self.headers.get("Range"):
-            # Os .img têm centenas de MB: só pedaços (Range) são enviados
+            # The .img files are hundreds of MB: only pieces (Range) are sent
             return self.send_error(HTTPStatus.BAD_REQUEST, "Use Range para ler arquivos .img")
         self.send_file(full, cache="max-age=3600")
 
-    # ---------- miniaturas em disco ----------
+    # ---------- thumbnails on disk ----------
     def get_thumb(self, rel):
         kind, _, key = rel.partition("/")
         if key.endswith(".webp"):
@@ -2507,7 +2507,7 @@ class StudioServer(ThreadingHTTPServer):
             self.shutdown_request(request)
 
     def handle_error(self, request, client_address):
-        # Conexões que o navegador cancela (ao mover a câmera) são normais: não enche o registro
+        # Connections the browser cancels (when moving the camera) are normal: does not fill the log
         err = sys.exc_info()[1]
         if isinstance(err, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError, TimeoutError)):
             return
@@ -2545,7 +2545,7 @@ def get_initial_window_geometry():
     if IS_WINDOWS:
         try:
             import ctypes
-            # Garante que a leitura de resolução respeite o DPI real do monitor
+            # Ensures the resolution reading respects the monitor's real DPI
             try:
                 ctypes.windll.shcore.SetProcessDpiAwareness(2)
             except Exception:
@@ -2579,7 +2579,7 @@ def get_initial_window_geometry():
         except Exception:
             pass
 
-    # Adapta dinamicamente à resolução da tela (proporcional a 88% da largura e 90% da altura da área útil)
+    # Dynamically adapts to the screen resolution (proportional to 88% of the width and 90% of the height of the work area)
     target_w = max(min_w, min(int(work_w * 0.90), 2200))
     target_h = max(min_h, min(int(work_h * 0.90), 1350))
 
@@ -2648,7 +2648,7 @@ def fix_taskbar_icon():
         shell32.ExtractIconExW.argtypes = [wintypes.LPCWSTR, ctypes.c_int, ctypes.POINTER(wintypes.HICON), ctypes.POINTER(wintypes.HICON), wintypes.UINT]
         shell32.SHGetPropertyStoreForWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
 
-        # De onde vem o ícone: o próprio executável (versão compilada) ou o icon.ico (desenvolvimento)
+        # Where the icon comes from: the executable itself (compiled version) or icon.ico (development)
         frozen = getattr(sys, "frozen", False)
         engine = os.path.abspath(sys.executable)
         icon_file = engine if frozen else os.path.join(APP_DIR, "icon.ico")
@@ -2737,7 +2737,7 @@ def open_window(url, httpd):
             webview.settings["ALLOW_DOWNLOADS"] = True
         except (AttributeError, TypeError):
             pass
-        # Limita o uso de memoria do WebView2 (coleta de lixo do V8 e teto de cache)
+        # Limits WebView2 memory use (V8 garbage collection and cache ceiling)
         if "WEBVIEW2_USER_DATA_FOLDER" not in os.environ and WEBVIEW_DIR:
             os.environ["WEBVIEW2_USER_DATA_FOLDER"] = WEBVIEW_DIR
         if "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS" not in os.environ:
@@ -2758,9 +2758,9 @@ def open_window(url, httpd):
         State.window.events.shown += fix_taskbar_icon
         try:
             webview.start(private_mode=False, storage_path=WEBVIEW_DIR)
-        except TypeError:  # versões antigas do pywebview
+        except TypeError:  # old pywebview versions
             webview.start()
-    except Exception as err:  # sem WebView2 ou outro problema: volta para o navegador
+    except Exception as err:  # no WebView2 or another problem: falls back to the browser
         print("Janela própria indisponível (%s). Abrindo no navegador." % err)
         return False
     State.stopping = True
@@ -2822,7 +2822,7 @@ def ui_text(text, *args):
     code = code if re.fullmatch(r"[a-z]{2,3}", code or "") else "en"
     if code != "pt":
         text = _ui_table(code).get(text) or _ui_table("en").get(text) or text
-        if isinstance(text, dict):  # formas de plural: a janela usa a forma geral
+        if isinstance(text, dict):  # plural forms: the window uses the general form
             text = text.get("other") or ""
     return text.format(*args)
 
@@ -2888,7 +2888,7 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
         except Exception:
             pass
-    # Só a janela do editor conta como instância (o modo --no-browser é o servidor sozinho, para testes)
+    # Only the editor window counts as an instance (the --no-browser mode is the server alone, for tests)
     if "--no-browser" not in sys.argv and not single_instance():
         return
     setup_logging()
@@ -2938,7 +2938,7 @@ def main():
             return
         if not args.no_browser:
             threading.Timer(0.8, lambda: webbrowser.open(url)).start()
-            if FROZEN:  # sem console para apertar Ctrl+C: fecha junto com a aba
+            if FROZEN:  # no console to press Ctrl+C: closes along with the tab
                 threading.Thread(target=watch_browser, args=(httpd,), daemon=True).start()
         print(" Para fechar: Ctrl+C")
         while t.is_alive():

@@ -1,13 +1,13 @@
-// Worker de texturas (segundo plano, sem travar o editor).
-//  - "index": lê todos os TXDs, lista as texturas de cada um e já gera e salva no disco
-//    a miniatura das que ainda não têm (assim a aba Texturas abre rápido depois)
-//  - "thumb": gera a miniatura de uma textura (e, aproveitando, das outras do mesmo TXD)
+// Texture worker (background, without freezing the editor).
+//  - "index": reads all the TXDs, lists each one's textures and already generates and saves to disk
+//    the thumbnail of those that do not have one yet (so the Textures tab opens fast afterwards)
+//  - "thumb": generates a texture's thumbnail (and, while at it, the others in the same TXD)
 import { parseTxd, decodeToRGBA, textureHasAlpha } from '../formats/txd.js';
 
 let base = '/gta/';
 let cancelled = false;
-let have = new Set();          // "txd/nome" com miniatura no disco
-const txdCache = new Map();    // últimos TXDs lidos (para miniaturas)
+let have = new Set();          // "txd/name" with a thumbnail on disk
+const txdCache = new Map();    // last TXDs read (for thumbnails)
 const SIZE = 64;
 
 async function readEntry(e) {
@@ -23,7 +23,7 @@ const canvas = new OffscreenCanvas(SIZE, SIZE);
 const ctx = canvas.getContext('2d');
 
 async function makeThumb(t) {
-  // Menor nível de mip que ainda tenha pelo menos o tamanho da miniatura
+  // Lowest mip level that is still at least the thumbnail size
   let level = 0;
   while (level + 1 < t.mips.length && t.mips[level + 1].width >= SIZE && t.mips[level + 1].height >= SIZE) level++;
   const mip = t.mips[level];
@@ -60,10 +60,10 @@ async function runIndex(entries, withThumbs) {
           for (const t of texs) {
             if (cancelled) break;
             if (have.has(e.name + '/' + t.name)) continue;
-            try { await saveThumb(e.name, t.name, await makeThumb(t)); } catch { /* textura ilegível */ }
+            try { await saveThumb(e.name, t.name, await makeThumb(t)); } catch { /* unreadable texture */ }
           }
         }
-      } catch { /* TXD ilegível: pula */ }
+      } catch { /* unreadable TXD: skips */ }
       done++;
       if (done % 10 === 0 || done === total) postMessage({ type: 'progress', done, total });
     }
@@ -95,16 +95,16 @@ onmessage = async (ev) => {
   if (msg.type === 'index') runIndex(msg.entries, msg.thumbs !== false);
   else if (msg.type === 'cancel') cancelled = true;
   else if (msg.type === 'txdthumbs') {
-    // Gera e salva as miniaturas que faltam de um TXD inteiro
+    // Generates and saves the missing thumbnails of a whole TXD
     const names = [];
     try {
       const skip = new Set(msg.skip || []);
       const texs = parseTxd(await readEntry(msg.entry));
       for (const t of texs) {
         if (skip.has(t.name) || have.has(msg.txd + '/' + t.name)) continue;
-        try { await saveThumb(msg.txd, t.name, await makeThumb(t)); names.push(t.name); } catch { /* textura ilegível */ }
+        try { await saveThumb(msg.txd, t.name, await makeThumb(t)); names.push(t.name); } catch { /* unreadable texture */ }
       }
-    } catch { /* TXD ilegível */ }
+    } catch { /* unreadable TXD */ }
     postMessage({ type: 'txdthumbs', id: msg.id, txd: msg.txd, names });
   }
   else if (msg.type === 'thumb') {

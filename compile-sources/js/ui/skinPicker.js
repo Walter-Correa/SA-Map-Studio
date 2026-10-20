@@ -1,5 +1,5 @@
-// Seletor Modal de Skins para Actors com Prévia Visual e Categorias
-// Suporta todas as 312 skins do jogo (IDs 0 a 311)
+// Skin Picker Modal for Actors with Visual Preview and Categories
+// Supports all 312 game skins (IDs 0 to 311)
 import { $, $$, esc, plural, toast } from './common.js';
 import { ALL_SKINS, POPULAR_SKINS, getSkinLabel } from '../world/actors.js';
 
@@ -70,7 +70,7 @@ export function setupSkinPicker() {
     };
   }
 
-  // Botão aplicar
+  // Apply button
   if (btnApply) {
     btnApply.onclick = () => {
       applySelectedSkin();

@@ -1,4 +1,4 @@
-// Suporte completo para Checkpoints (SetPlayerCheckpoint / CreateDynamicCP)
+// Full support for Checkpoints (SetPlayerCheckpoint / CreateDynamicCP)
 // e Race Checkpoints tipos 0 a 4 (SetPlayerRaceCheckpoint / CreateDynamicRaceCP).
 import * as THREE from 'three';
 
@@ -44,9 +44,9 @@ export function updateRaceCheckpointsChain(checkpoints = []) {
       cp.nexty = nextCp.y;
       cp.nextz = nextCp.z;
     } else {
-      // Último checkpoint da lista
+      // Last checkpoint in the list
       if (i > 0) {
-        // Aponta para a frente, no mesmo sentido que aponta o checkpoint anterior a ele
+        // Points forward, in the same direction as the checkpoint before it
         const prevCp = raceCps[i - 1];
         const fdx = cp.x - prevCp.x;
         const fdy = cp.y - prevCp.y;
@@ -64,7 +64,7 @@ export function updateRaceCheckpointsChain(checkpoints = []) {
         }
         cp.hasNext = true;
       } else {
-        // Primeiro ou único checkpoint criado: aponta para a frente na horizontal, nunca fica sem seta ou direção
+        // First or only checkpoint created: points forward horizontally, never left without an arrow or direction
         if (cp.nextx === undefined || (cp.nextx === cp.x && cp.nexty === cp.y)) {
           cp.nextx = cp.x + 15;
           cp.nexty = cp.y;
@@ -85,7 +85,7 @@ export function createCheckpointNode(cp) {
   const isAirRing = isRace && (rType === 3 || rType === 4);
   const hasNext = Boolean(cp.hasNext);
 
-  // Direção para o próximo ponto (nextx, nexty, nextz)
+  // Direction to the next point (nextx, nexty, nextz)
   const dx = (cp.nextx ?? (cp.x + 15)) - (cp.x || 0);
   const dy = (cp.nexty ?? (cp.y || 0)) - (cp.y || 0);
   const dz = (cp.nextz ?? (cp.z || 0)) - (cp.z || 0);
@@ -94,7 +94,7 @@ export function createCheckpointNode(cp) {
   dir.normalize();
 
   if (isAirRing) {
-    // Argola aérea (Torus) suspensa no ar
+    // Aerial ring (Torus) hanging in the air
     const ringHolder = new THREE.Group();
     const tube = Math.max(0.2, radius * 0.095);
     const torusGeo = new THREE.TorusGeometry(radius, tube, 16, 40);
@@ -107,19 +107,19 @@ export function createCheckpointNode(cp) {
     const torusMesh = new THREE.Mesh(torusGeo, torusMat);
     ringHolder.add(torusMesh);
 
-    // Esfera central para clique e seleção
+    // Central sphere for click and selection
     const pickGeo = new THREE.SphereGeometry(Math.max(1.2, radius * 0.9), 12, 12);
     const pickMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false });
     const pickMesh = new THREE.Mesh(pickGeo, pickMat);
     ringHolder.add(pickMesh);
 
     if (rType === 3) {
-      // Tipo 3: Argola normal com seta 3D apontando na direção do trajeto
+      // Type 3: Normal ring with a 3D arrow pointing in the direction of the route
       const arrow = buildDirectionArrow(radius * 0.65, 0xffbb00);
       arrow.rotation.x = Math.PI / 2;
       ringHolder.add(arrow);
     } else if (rType === 4) {
-      // Tipo 4: Argola de chegada aérea preenchida com bandeira quadriculada
+      // Type 4: Aerial finish ring filled with a checkered flag
       const discGeo = new THREE.CircleGeometry(radius * 0.98, 36);
       const discMat = new THREE.MeshBasicMaterial({
         map: getCheckeredTexture(),
@@ -135,8 +135,8 @@ export function createCheckpointNode(cp) {
     group.userData.ringHolder = ringHolder;
     group.add(ringHolder);
   } else {
-    // Cilindro vertical no solo (Checkpoint comum ou Race Checkpoint 0, 1, 2)
-    // Altura proporcional ao diâmetro do checkpoint
+    // Vertical cylinder on the ground (regular Checkpoint or Race Checkpoint 0, 1, 2)
+    // Height proportional to the checkpoint diameter
     const height = isRace ? Math.max(3.5, radius * 1.5) : Math.max(2.4, Math.min(18.0, radius * 1.6));
     const cylGeo = new THREE.CylinderGeometry(radius, radius, height, 32, 1, true);
     cylGeo.rotateX(Math.PI / 2);
@@ -152,7 +152,7 @@ export function createCheckpointNode(cp) {
     const cylMesh = new THREE.Mesh(cylGeo, cylMat);
     group.add(cylMesh);
 
-    // Anel brilhante na base
+    // Glowing ring at the base
     const ringGeo = new THREE.RingGeometry(Math.max(0.1, radius - 0.22), radius + 0.05, 36);
     ringGeo.translate(0, 0, 0.05);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -164,7 +164,7 @@ export function createCheckpointNode(cp) {
     });
     group.add(new THREE.Mesh(ringGeo, ringMat));
 
-    // Cilindro invisível para raycast
+    // Invisible cylinder for raycast
     const pickGeo = new THREE.CylinderGeometry(radius, radius, height, 16, 1, false);
     pickGeo.rotateX(Math.PI / 2);
     pickGeo.translate(0, 0, height * 0.5);
@@ -172,7 +172,7 @@ export function createCheckpointNode(cp) {
     group.add(new THREE.Mesh(pickGeo, pickMat));
 
     if (isRace && rType === 0) {
-      // Tipo 0: Seta direcional amarela no interior apontando para a direção do trajeto
+      // Type 0: Yellow directional arrow inside pointing in the direction of the route
       const arrow = buildDirectionArrow(Math.min(3.2, Math.max(1.3, radius * 0.68)), 0xffcc00);
       arrow.position.set(0, 0, Math.min(2.4, height * 0.45));
       const yaw = Math.atan2(dir.y, dir.x) - Math.PI / 2;
@@ -180,7 +180,7 @@ export function createCheckpointNode(cp) {
       group.userData.arrow = arrow;
       group.add(arrow);
     } else if (isRace && rType === 1) {
-      // Tipo 1: Cilindro de chegada / Finish com textura de bandeira quadriculada no interior
+      // Type 1: Finish cylinder with a checkered flag texture inside
       const flagCylGeo = new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, height * 0.55, 24, 1, true);
       flagCylGeo.rotateX(Math.PI / 2);
       flagCylGeo.translate(0, 0, height * 0.45);
@@ -190,7 +190,7 @@ export function createCheckpointNode(cp) {
       });
       group.add(new THREE.Mesh(flagCylGeo, flagMat));
 
-      // Disco horizontal com quadriculado no topo do núcleo
+      // Horizontal disc with a checkered pattern on top of the core
       const discGeo = new THREE.CircleGeometry(radius * 0.72, 24);
       discGeo.translate(0, 0, height * 0.72);
       group.add(new THREE.Mesh(discGeo, flagMat));
@@ -231,7 +231,7 @@ function buildDirectionArrow(len = 1.8, colorHex = 0xffcc00) {
   const headRadius = Math.max(0.24, len * 0.26);
   const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.95 });
 
-  // Aponta para +Y por padrão
+  // Points to +Y by default
   const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLen, 12);
   shaftGeo.translate(0, -headLen * 0.5, 0);
   const headGeo = new THREE.ConeGeometry(headRadius, headLen, 14);

@@ -1,5 +1,5 @@
-// Suporte a Actors : skins, animações e presets
-// Documentação: 
+// Actors support: skins, animations and presets
+// Documentation:
 //               
 
 export const POPULAR_ANIMATIONS = [
@@ -48,19 +48,19 @@ export function classifyAnim(a) {
   const notes = (a.notes || '').toLowerCase();
   const full = `${lib} ${nm} ${desc} ${notes}`;
 
-  // 1. Dança & Festas
+  // 1. Dance & Parties
   if (['DANC', 'STRIP', 'WOP', 'SCRATCHING'].some(k => lib.includes(k)) || ['dance', 'strip', 'dancing', 'scratching'].some(k => full.includes(k))) {
     return 'danca';
   }
 
-  // 2. Esportes & Academia (Basquete, Academia, Musculação, Luta/Boxe, Natação, BMX/Bike, Skate, Corrida)
+  // 2. Sports & Gym (Basketball, Gym, Bodybuilding, Fighting/Boxing, Swimming, BMX/Bike, Skate, Running)
   if (['BSKTBALL', 'BENCHPRESS', 'FREEWEIGHTS', 'GYMNASIUM', 'MUSCULAR', 'BASEBALL', 'BOX', 'SKATE', 'SWIM', 'RUNNINGMAN'].some(k => lib.includes(k)) ||
       ['bball', 'gym', 'basket', 'swim', 'skate', 'box', 'run'].some(k => nm.includes(k)) ||
       ['basketball', 'basket', 'gym', 'bench press', 'weights', 'swimming', 'skate', 'exercise', 'punching bag', 'running'].some(k => desc.includes(k))) {
     return 'esportes';
   }
 
-  // 3. Polícia, Crimes & Segurança
+  // 3. Police, Crimes & Security
   if (['COP', 'POLICE', 'SWAT', 'ROB_BANK', 'RIOT', 'HEIST9', 'DEALER'].some(k => lib.includes(k)) ||
       ['cop', 'police', 'swat', 'arrest', 'handcuff', 'handsup', 'robbery', 'heist', 'cuff', 'dealer'].some(k => full.includes(k))) {
     return 'policia';
@@ -90,7 +90,7 @@ export function classifyAnim(a) {
     return 'lazer';
   }
 
-  // 8. Veículos & Direção
+  // 8. Vehicles & Driving
   if (['BIKED', 'BIKEH', 'BIKELEAP', 'BIKES', 'BIKEV', 'BIKE_DBZ', 'BMX', 'MTB', 'WAYFARER', 'QUAD', 'QUAD_DBZ',
        'CAR', 'COACH', 'BUS', 'TRUCK', 'VAN', 'TRAIN', 'KART', 'DOZER', 'LOWRIDER', 'DRIVEBYS', 'PLAYER_DVBYS',
        'COP_DVBYZ', 'GHETTO_DB', 'BF_INJECTION', 'CHOPPA', 'AIRPORT', 'SHAMAL', 'NEVADA', 'RUSTLER', 'VORTEX', 'PARACHUTE', 'TANK'].some(k => lib.includes(k)) ||

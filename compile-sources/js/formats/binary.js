@@ -1,4 +1,4 @@
-// Leitor binário little-endian usado por todos os formatos do GTA SA.
+// Little-endian binary reader used by all GTA SA formats.
 export class BinaryReader {
   constructor(buffer, offset = 0, length) {
     this.buffer = buffer instanceof ArrayBuffer ? buffer : buffer.buffer;
@@ -19,14 +19,14 @@ export class BinaryReader {
   i32() { const v = this.view.getInt32(this.pos, true); this.pos += 4; return v; }
   f32() { const v = this.view.getFloat32(this.pos, true); this.pos += 4; return v; }
   slice(n) { const b = this.bytes.subarray(this.pos, this.pos + n); this.pos += n; return b; }
-  // Copia alinhada (necessária para Float32Array/Uint16Array em offsets ímpares)
+  // Aligned copy (needed for Float32Array/Uint16Array at odd offsets)
   f32array(count) {
     const out = new Float32Array(count);
     for (let i = 0; i < count; i++) out[i] = this.view.getFloat32(this.pos + i * 4, true);
     this.pos += count * 4;
     return out;
   }
-  // String de tamanho fixo terminada em zero
+  // Fixed-size zero-terminated string
   str(n) {
     const b = this.slice(n);
     let end = b.indexOf(0); if (end < 0) end = n;

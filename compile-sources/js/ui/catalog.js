@@ -1,5 +1,5 @@
-// Aba Objetos: catálogo com categorias (Móveis, Praia, Prédios...), origem (SA-MP, Los Santos...),
-// favoritos, recentes e miniaturas guardadas no disco.
+// Objects tab: catalog with categories (Furniture, Beach, Buildings...), origin (SA-MP, Los Santos...),
+// favorites, recents and thumbnails stored on disk.
 import { OBJECT_CATEGORIES, REGIONS } from '../world/categories.js';
 import { getSkinLabel } from '../world/actors.js';
 import { PREDEFINED_PICKUPS } from '../world/pickups.js';
@@ -13,7 +13,7 @@ let category = store.get('catCategory', ''), region = store.get('catRegion', '')
 
 export function setupCatalog() {
   catalog = app.gd.catalog();
-  // Categorias com contagem (LOD fica no fim)
+  // Categories with counts (LOD goes last)
   const count = (key, v) => catalog.filter(c => c[key] === v).length;
   const cats = [...OBJECT_CATEGORIES];
   for (const c of new Set(catalog.map(c => c.category))) if (!cats.includes(c)) cats.push(c);
@@ -43,7 +43,7 @@ export function setupCatalog() {
   let t;
   $('#catalogSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(filterCatalog, 120); });
   const list = $('#catalogList');
-  // Rolagem e redimensionamento: no máximo uma vez por quadro e só quando as linhas visíveis mudam
+  // Scrolling and resizing: at most once per frame and only when the visible rows change
   let rowsRaf = 0;
   const scheduleRows = () => {
     if (rowsRaf) return;
@@ -94,11 +94,11 @@ export function setupCatalog() {
     store.set('recent', rec.slice(0, 60));
   });
 
-  // Miniaturas: prepara todas em segundo plano
+  // Thumbnails: prepares all in the background
   const thumbs = app.thumbs;
   let inUse = null, inUseAt = 0;
   thumbs.releasable = (id) => {
-    // Modelos que o mapa ou o projeto estão usando ficam na memória
+    // Models the map or the project are using stay in memory
     if (!inUse || performance.now() - inUseAt > 1000) {
       inUse = new Set(app.project.objects.map(o => o.model));
       for (const idx of app.streamer.shown.keys()) inUse.add(app.gd.instances[idx]?.id);
@@ -159,7 +159,7 @@ export function filterCatalog() {
 
 let catalogRowsKey = '';
 
-// force = false: não recria as linhas se o trecho visível da lista continua o mesmo
+// force = false: does not recreate the rows if the visible slice of the list is still the same
 export function renderCatalogRows(force = true) {
   const list = $('#catalogList');
   if (!list || list.offsetParent === null) return;

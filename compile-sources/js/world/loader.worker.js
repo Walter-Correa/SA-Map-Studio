@@ -1,6 +1,6 @@
-// Worker de carregamento: lê DFF e TXD dos arquivos IMG e faz todo o trabalho pesado
-// (leitura binária, triângulos por material, luz pré-calculada, decodificação de
-// texturas) fora da thread principal, para a câmera não engasgar enquanto o mapa carrega.
+// Loading worker: reads DFF and TXD from the IMG files and does all the heavy work
+// (binary reading, triangles per material, precomputed light, texture decoding)
+// off the main thread, so the camera does not stutter while the map loads.
 import { prepDff, prepTxd } from './prep.js';
 
 let base = '/gta/';

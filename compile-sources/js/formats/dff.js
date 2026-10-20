@@ -1,6 +1,6 @@
-// Leitor de DFF (RenderWare Clump) do GTA SA.
-// Extrai frames (hierarquia + nomes), geometrias (vértices, normais, UVs,
-// cores pré-iluminadas, triângulos por material) e atomics; nos pedestres, os ossos (HAnim) e o skin.
+// GTA SA DFF (RenderWare Clump) reader.
+// Extracts frames (hierarchy + names), geometries (vertices, normals, UVs,
+// pre-lit colors, triangles per material) and atomics; for pedestrians, the bones (HAnim) and the skin.
 import { BinaryReader } from './binary.js';
 
 const RW = {
@@ -20,7 +20,7 @@ function readString(r, size) {
   return r.str(size).toLowerCase();
 }
 
-// Percorre os filhos de um chunk chamando fn(header, readerDoFilho)
+// Walks a chunk's children calling fn(header, childReader)
 function eachChild(r, end, fn) {
   while (r.pos + 12 <= end) {
     const h = header(r);
@@ -93,7 +93,7 @@ function parseMaterialList(r, end) {
       mats.push(parseMaterial(r2, stop));
     }
   });
-  // Índices >= 0 reutilizam um material anterior
+  // Indices >= 0 reuse a previous material
   const out = [];
   let k = 0;
   for (const ix of indices) out.push(ix < 0 ? mats[k++] : out[ix]);
@@ -153,7 +153,7 @@ function parseGeometry(r, end) {
           }
           g.binMesh = { strip: bflags === 1, meshes };
         } else if (eh.type === RW.SKIN && g.numVerts) {
-          // Ossos que movem cada vértice (até 4, com peso) e a matriz inversa da pose de cada osso
+          // Bones that move each vertex (up to 4, weighted) and the inverse matrix of each bone's pose
           const numBones = r3.u8(), numUsed = r3.u8();
           r3.u8(); r3.u8();
           r3.skip(numUsed);
@@ -178,7 +178,7 @@ function parseGeometry(r, end) {
 export function parseDff(buffer) {
   const r = new BinaryReader(buffer);
   const result = { frames: [], geometries: [], atomics: [] };
-  // Alguns arquivos têm chunks extras antes do clump: procuramos o primeiro CLUMP
+  // Some files have extra chunks before the clump: we look for the first CLUMP
   while (r.pos + 12 <= r.length) {
     const h = header(r);
     const end = Math.min(r.pos + h.size, r.length);
@@ -203,9 +203,9 @@ export function parseDff(buffer) {
   return result;
 }
 
-// Converte uma geometria em listas de índices por material.
-// O jogo desenha pelo BinMesh; muitos modelos do SA-MP têm o material de todos os triângulos
-// zerado e só o BinMesh traz a divisão certa, então ele tem prioridade sobre a lista de triângulos.
+// Converts a geometry into index lists per material.
+// The game draws from the BinMesh; many SA-MP models have the material of all triangles
+// zeroed and only the BinMesh carries the right split, so it takes priority over the triangle list.
 export function geometryGroups(g) {
   const nMat = Math.max(1, g.materials.length);
   const lists = Array.from({ length: nMat }, () => []);

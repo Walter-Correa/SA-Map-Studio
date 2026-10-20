@@ -1,5 +1,5 @@
-// Arquivo IMG versão 2 (GTA SA): cabeçalho "VER2", número de entradas e
-// diretório com 32 bytes por entrada (offset e tamanho em setores de 2048 bytes).
+// IMG file version 2 (GTA SA): "VER2" header, number of entries and
+// directory with 32 bytes per entry (offset and size in 2048-byte sectors).
 import { BinaryReader } from './binary.js';
 
 export const SECTOR = 2048;

@@ -312,10 +312,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="360" height="360"  >
 <title>SA Map Studio - animacao de abertura</title>
 <style>
-/* ===== DURACAO =====
-   --dur = segundos de UM ciclo (papel se desdobra, predios, pin e eixos girando).
-   Exemplos: --dur:1  |  --dur:2.5  |  --dur:6
-   O loop do arquivo .svg tem 2 ciclos (papel claro + papel escuro) = 2 x --dur. */
+/* ===== DURATION =====
+   --dur = seconds of ONE cycle (paper unfolds, buildings, pin and axes spinning).
+   Examples: --dur:1  |  --dur:2.5  |  --dur:6
+   The .svg file loop has 2 cycles (light paper + dark paper) = 2 x --dur. */
 :root{--dur:3}
 .lp0{transform-origin:45px 45px}
 .lbL{transform-origin:0 54px}
@@ -695,7 +695,7 @@
     </header>
 
     <div class="anim-split-view">
-      <!-- Coluna da Esquerda: Busca, Categorias e Grade de Animações -->
+      <!-- Left Column: Search, Categories and Animation Grid -->
       <div class="anim-left-col">
         <div style="display: flex; gap: 8px; align-items: center;">
           <input type="search" id="animPickerSearch" class="input" placeholder="Buscar animação por nome, biblioteca ou descrição (ex: dance, sit, cop, chat)" style="flex: 1; padding: 7px 10px; font-size: 13px; border-radius: var(--radius-s); background: var(--asphalt-700); border: 1px solid var(--line); color: var(--paper);" autocomplete="off">
@@ -704,7 +704,7 @@
         <div id="animPickerList" class="anim-list-scroll"></div>
       </div>
 
-      <!-- Coluna da Direita: Painel de Prévia em Vídeo e Detalhes da Animação -->
+      <!-- Right Column: Video Preview Panel and Animation Details -->
       <div class="anim-preview-col" id="animPreviewCol">
         <div class="anim-video-box" id="animVideoBox">
           <video id="animPreviewVideo" loop muted playsinline preload="auto" style="display:none;"></video>
@@ -752,14 +752,14 @@
     </header>
 
     <div class="picker-split-view" style="display: flex; gap: 14px; flex: 1; min-height: 0; overflow: hidden; padding: 12px 0;">
-      <!-- Esquerda: Busca, Filtros e Grade de Skins -->
+      <!-- Left: Search, Filters and Skin Grid -->
       <div style="flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 10px;">
         <input type="search" id="skinPickerSearch" class="input" placeholder="Buscar skin por nome ou ID (ex: 0, CJ, Truth, Ryder, Cop, Sweet, Ballas)" style="width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 13px;" autocomplete="off">
         <div id="skinPickerCategories" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; flex-wrap: wrap;"></div>
         <div id="skinPickerGrid" class="picker-grid-scroll" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding-right: 4px;"></div>
       </div>
 
-      <!-- Direita: Painel de Prévia e Confirmação -->
+      <!-- Right: Preview and Confirmation Panel -->
       <div style="width: 280px; flex-shrink: 0; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
         <div style="background: #1c2229; border: 1px solid var(--line); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; height: 210px; position: relative; overflow: hidden;">
           <img id="prevSkinImg" src="/cache/skins/0.png" alt="Skin Preview" style="max-height: 195px; max-width: 100%; object-fit: contain;">
@@ -797,14 +797,14 @@
     </header>
 
     <div class="picker-split-view" style="display: flex; gap: 14px; flex: 1; min-height: 0; overflow: hidden; padding: 12px 0;">
-      <!-- Esquerda: Busca, Bibliotecas e Grade de Sprites -->
+      <!-- Left: Search, Libraries and Sprite Grid -->
       <div style="flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 10px;">
         <input type="search" id="spritePickerSearch" class="input" placeholder="Buscar sprite por nome ou biblioteca (ex: arrow, radar, LD_BEAT, card, crosshair)" style="width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 13px;" autocomplete="off">
         <div id="spritePickerCategories" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; flex-wrap: wrap;"></div>
         <div id="spritePickerGrid" class="picker-grid-scroll" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 10px; padding-right: 4px;"></div>
       </div>
 
-      <!-- Direita: Prévia da Sprite e Código Pawn -->
+      <!-- Right: Sprite Preview and Pawn Code -->
       <div style="width: 290px; flex-shrink: 0; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
         <div style="background: repeating-conic-gradient(#1c2229 0% 25%, #232b35 0% 50%) 50% / 16px 16px; border: 1px solid var(--line); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; height: 180px; position: relative; overflow: hidden;">
           <img id="prevSpriteImg" src="/cache/sprites/hud/arrow.png" alt="Sprite Preview" style="max-height: 150px; max-width: 100%; object-fit: contain;">
@@ -1196,7 +1196,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <script>
-// Desativa o aviso nativo "Mostrar o cursor, pressione ESC" do navegador/Chromium
+// Disables the browser/Chromium native "Show cursor, press ESC" notice
 if (typeof Element !== 'undefined') {
   Element.prototype.requestPointerLock = function() {};
 }

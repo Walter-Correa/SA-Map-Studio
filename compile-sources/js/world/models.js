@@ -1,6 +1,6 @@
-// Converte DFF + TXD em objetos Three.js, com cache de modelos, texturas e materiais.
-// A leitura dos arquivos roda num grupo de workers (loader.worker.js); aqui ficam só
-// a montagem das malhas e o envio das texturas para a placa de vídeo.
+// Converts DFF + TXD into Three.js objects, with a cache of models, textures and materials.
+// File reading runs in a worker group (loader.worker.js); here only
+// mesh assembly and sending textures to the graphics card remain.
 import * as THREE from 'three';
 import { prepDff, prepTxd } from './prep.js';
 import { normalizeMaterial, isText, keepsTexture, isNoneTexture, parseColor, argbParts, SIZE_PIXELS, colorSegments, cssColor } from '../editor/materials.js';
@@ -8,14 +8,14 @@ import { normalizeMaterial, isText, keepsTexture, isNoneTexture, parseColor, arg
 const FLAG_ALPHA1 = 4, FLAG_ALPHA2 = 8, FLAG_NO_ZWRITE = 64, FLAG_NO_CULL = 2097152;
 const GENERIC_TXD = { img: 'models/generic/vehicle.txd', offset: 0, size: 0 };
 
-// Cores especiais de pintura de veículos -> cores neutras de exibição
+// Special vehicle paint colors -> neutral display colors
 const PAINT_COLORS = {
   '60,255,0': [235, 235, 235], '255,0,175': [110, 110, 120], '0,255,255': [235, 235, 235],
   '255,0,255': [110, 110, 120], '255,175,0': [255, 140, 0], '0,255,200': [255, 140, 0],
   '185,255,0': [200, 0, 0], '255,60,0': [200, 0, 0],
 };
 
-// ---------------------------------------------------------------- grupo de workers
+// ---------------------------------------------------------------- worker group
 class LoaderPool {
   constructor(gd, s3tc) {
     this.gd = gd;
@@ -38,13 +38,13 @@ class LoaderPool {
         };
         w.postMessage({ type: 'config', base: location.origin + gd.fs.base, s3tc });
         this.workers.push(w);
-      } catch { /* sem workers: tudo roda na thread principal */ }
+      } catch { /* no workers: everything runs on the main thread */ }
     }
   }
 
   async run(type, entry, extra = {}) {
     if (!this.workers.length) {
-      // Sem worker (testes no Node): mesmo trabalho, na thread principal
+      // No worker (Node tests): same work, on the main thread
       const buf = await this.gd.fs.read(entry.img, entry.size ? entry.offset : undefined, entry.size || undefined);
       return type === 'dff' ? prepDff(buf, extra.ambient ?? 56).data : prepTxd(buf, this.s3tc).data;
     }
@@ -65,14 +65,14 @@ export class ModelCache {
     this.renderer = renderer;
     this.s3tc = !!renderer?.extensions?.get('WEBGL_compressed_texture_s3tc');
     this.pool = new LoaderPool(gamedata, this.s3tc);
-    this.txds = new Map();      // nome do txd -> Promise<Map(nomeTextura -> info)>
+    this.txds = new Map();      // txd name -> Promise<Map(textureName -> info)>
     this.models = new Map();    // id -> Promise<template|null>
-    this.ready = new Map();     // id -> template (já carregado)
+    this.ready = new Map();     // id -> template (already loaded)
     this.materials = new Map();
     this.overrides = new Map();
     this.genericTxd = null;
     this.ambient = 56;
-    this.uploads = [];          // texturas esperando envio para a placa de vídeo
+    this.uploads = [];          // textures waiting to be sent to the graphics card
     this.placeholderGeo = new THREE.BoxGeometry(1, 1, 1);
     this.missingEdges = new THREE.EdgesGeometry(this.placeholderGeo);
     this.missingMat = new THREE.LineDashedMaterial({ color: 0xd9534f, dashSize: 0.12, gapSize: 0.08 });
@@ -133,20 +133,20 @@ export class ModelCache {
     return out;
   }
 
-  // TXD do modelo, os pais dele (seção txdp do IDE) e, por último, o vehicle.txd genérico do jogo
+  // The model's TXD, its parents (txdp section of the IDE) and, last, the game's generic vehicle.txd
   async txdChain(txd) {
     const names = this.chainNames(txd);
     const maps = await Promise.all([...names.map(n => this.loadTxd(n)), this.loadGenericTxd()]);
     return maps;
   }
 
-  // Envia algumas texturas por quadro para a placa de vídeo (evita engasgos)
+  // Sends a few textures per frame to the graphics card (avoids stutter)
   pumpUploads(budgetMs = 4) {
     if (!this.uploads.length || !this.renderer?.initTexture) return;
     const t0 = performance.now();
     while (this.uploads.length && performance.now() - t0 < budgetMs) {
       const tex = this.uploads.shift();
-      try { this.renderer.initTexture(tex); } catch { /* textura já liberada */ }
+      try { this.renderer.initTexture(tex); } catch { /* texture already released */ }
     }
   }
 
@@ -225,7 +225,7 @@ export class ModelCache {
       return world[i];
     };
     const hasWheelDummies = isVehicle && dff.frames.some(f => /^wheel_[lr][fbm]_dummy$/i.test(f.name || ''));
-    // Atomics desenhados (sem versões danificadas ou de baixa qualidade)
+    // Drawn atomics (without damaged or low-quality versions)
     let atomics = dff.atomics.filter(a => !/_dam$|_vlo$|_lo$|^col_|_l[1-3]$/.test(dff.frames[a.frame]?.name || ''));
     if (!atomics.length) atomics = dff.atomics.slice(0, 1);
     const used = new Set();
@@ -234,10 +234,10 @@ export class ModelCache {
       const g = dff.geometries[a.geometry];
       if (!g || !g.positions || used.has(a.geometry + ':' + a.frame)) continue;
       const fName = (dff.frames[a.frame]?.name || '').toLowerCase();
-      // Se o veículo usa dummies de roda, o atomic template 'wheel' será instanciado apenas em addWheels
+      // If the vehicle uses wheel dummies, the 'wheel' atomic template will be instantiated only in addWheels
       if (hasWheelDummies && /^wheel$/.test(fName)) continue;
       used.add(a.geometry + ':' + a.frame);
-      // Índices de material (o "materialindex" do SetObjectMaterial) e a textura original de cada um
+      // Material indices (SetObjectMaterial's "materialindex") and the original texture of each
       g.materials.forEach((mt, i) => {
         if (i > 15 || slotInfo[i]) return;
         const t = mt.texture ? findTex(mt.texture) : null;
@@ -264,9 +264,9 @@ export class ModelCache {
       });
       group.userData.dummies = dummies;
     }
-    // Detecção estritamente por estrutura e textura:
-    // Identifica objetos que não carregam malha visível, possuem geometria microscópica/degenerada (< 8cm)
-    // ou materiais 100% invisíveis/transparentes. Nunca filtra por nome.
+    // Detection strictly by structure and texture:
+    // Identifies objects that carry no visible mesh, have microscopic/degenerate geometry (< 8cm)
+    // or 100% invisible/transparent materials. Never filters by name.
     let box = new THREE.Box3().setFromObject(group);
     const boxSize = box.isEmpty() ? new THREE.Vector3(0, 0, 0) : box.getSize(new THREE.Vector3());
     const isDegenerate = box.isEmpty() || boxSize.length() < 0.08;
@@ -319,7 +319,7 @@ export class ModelCache {
       const color = modulate ? mat.color : [255, 255, 255, mat.color[3]];
       mats.push(this.material(tex, color, def.flags, prelit, isVehicle));
     }
-    // Sem luz pré-calculada o material usa iluminação, que precisa de normais
+    // Without precomputed light the material uses lighting, which needs normals
     if (!g.normals && !prelit) geo.computeVertexNormals();
     geo.computeBoundingSphere();
     geo.computeBoundingBox();
@@ -347,7 +347,7 @@ export class ModelCache {
     }
   }
 
-  // Libera os modelos usados há mais tempo quando passa do limite (otimizado para baixo uso de RAM).
+  // Releases the least recently used models when over the limit (optimized for low RAM use).
   evict(keep, budget = 250) {
     const loaded = [...this.ready.entries()].filter(([, t]) => t);
     let removed = 0;
@@ -366,7 +366,7 @@ export class ModelCache {
     return removed;
   }
 
-  // Tira da memória (e da placa de vídeo) os TXDs que nenhum modelo carregado usa mais
+  // Removes from memory (and the graphics card) the TXDs that no loaded model uses anymore
   releaseTxds() {
     const usedTxd = new Set(this.pinnedTxds ? this.pinnedTxds() : []);
     usedTxd.add('*vehicle');
@@ -396,7 +396,7 @@ export class ModelCache {
     return freed;
   }
 
-  // Marcador para modelo que não existe no jogo: contorno tracejado + caixa invisível clicável
+  // Marker for a model that does not exist in the game: dashed outline + clickable invisible box
   missingMarker() {
     const g = new THREE.Group();
     const lines = new THREE.LineSegments(this.missingEdges, this.missingMat);
@@ -408,7 +408,7 @@ export class ModelCache {
     return g;
   }
 
-  // Cópia leve do modelo (compartilha geometria e materiais)
+  // Light copy of the model (shares geometry and materials)
   instantiate(id) {
     const t = this.ready.get(id);
     if (!t) return null;
@@ -423,10 +423,10 @@ export class ModelCache {
       const sz = rawBox ? (rawBox.max.z - rawBox.min.z) : 0;
 
       if (sx > sy && sx > sz) {
-        // Modelos cuja altura original está no eixo X (ex: skins 163-166, 300-311)
+        // Models whose original height is on the X axis (e.g. skins 163-166, 300-311)
         o.rotation.set(0, -Math.PI / 2, 0);
       } else if (sy > sx && sy > sz) {
-        // Modelos padrão cuja altura original está no eixo Y
+        // Standard models whose original height is on the Y axis
         o.rotation.set(Math.PI / 2, Math.PI, 0);
       }
       o.updateMatrixWorld(true);
@@ -437,13 +437,13 @@ export class ModelCache {
     return o;
   }
 
-  // Índices de material e texturas originais de um modelo (carrega se precisar)
+  // A model's material indices and original textures (loads if needed)
   async slots(id) {
     const t = this.ready.get(id) || await this.getModel(id);
     return t?.userData.slotInfo || [];
   }
 
-  // ---------- Trocas de material do SA-MP ----------
+  // ---------- SA-MP material swaps ----------
   async overrideMaterial(orig, raw) {
     const ov = normalizeMaterial(raw);
     const key = orig.uuid + '|' + JSON.stringify(ov);
@@ -451,8 +451,8 @@ export class ModelCache {
     const m = orig.clone();
     m.userData = { override: true };
     if (isText(ov)) {
-      // O jogo só troca a textura: a cor do material e a luz do modelo continuam valendo
-      // (nas placas do SA-MP a cor do material é 127,127,127 e o texto fica acinzentado)
+      // The game only swaps the texture: the material color and the model light still apply
+      // (on SA-MP signs the material color is 127,127,127 and the text looks grayish)
       m.map = materialTextTexture(ov);
       const bc = parseColor(ov.backColor);
       const isOpaque = ((bc >>> 24) & 255) === 255;
@@ -479,15 +479,15 @@ export class ModelCache {
           m.color.setRGB(1, 1, 1);
           m.alphaTest = info.alpha ? 0.5 : 0;
         } else {
-          m.map = null; // textura que não existe: o jogo mostra a face sem textura
+          m.map = null; // texture that does not exist: the game shows the face without a texture
         }
-        // A textura nova cobre a peça inteira por igual: sem as sombras/cores pintadas no
-        // modelo original (luz pré-calculada), que escureciam partes do objeto
+        // The new texture covers the whole piece evenly: without the shadows/colors painted into the
+        // original model (precomputed light), which darkened parts of the object
         if (m.vertexColors) { m.vertexColors = false; m.color.setRGB(0.92, 0.92, 0.92); }
       }
       const c = parseColor(ov.color);
       if (c !== 0) {
-        // No SA-MP a cor multiplica a textura e o alfa controla a transparência
+        // In SA-MP the color multiplies the texture and the alpha controls transparency
         const p = argbParts(c);
         m.color.setRGB(p.r / 255, p.g / 255, p.b / 255);
         if (p.a < 255) { m.transparent = true; m.opacity = p.a / 255; m.depthWrite = p.a > 200; }
@@ -499,7 +499,7 @@ export class ModelCache {
     return m;
   }
 
-  // Aplica as trocas num objeto já instanciado
+  // Applies the swaps to an already instantiated object
   async applyMaterials(obj, materials) {
     if (!materials || !materials.length) return;
     const byIndex = new Map();
@@ -521,15 +521,15 @@ export class ModelCache {
 }
 
 // ---------------------------------------------------------------------------
-// SetObjectMaterialText: desenha o texto numa textura do tamanho escolhido
-// (OBJECT_MATERIAL_SIZE_*), com fundo, negrito, alinhamento e cores {RRGGBB}.
-// Igual ao cliente do SA-MP: a fonte é criada com D3DXCreateFont(altura = fontsize), que é a
-// altura da linha (ascendente + descendente) e não o tamanho da letra. Centro usa
-// DT_CENTER | DT_VCENTER; esquerda e direita ficam no topo da textura. As medidas (altura,
-// ascendente e largura de cada letra) vêm do próprio Windows, com o mesmo arredondamento do jogo.
+// SetObjectMaterialText: draws the text on a texture of the chosen size
+// (OBJECT_MATERIAL_SIZE_*), with background, bold, alignment and {RRGGBB} colors.
+// Same as the SA-MP client: the font is created with D3DXCreateFont(height = fontsize), which is the
+// line height (ascent + descent) and not the letter size. Center uses
+// DT_CENTER | DT_VCENTER; left and right sit at the top of the texture. The measurements (height,
+// ascent and width of each letter) come from Windows itself, with the same rounding as the game.
 // ---------------------------------------------------------------------------
-const gdiFonts = new Map();   // fonte -> medidas | false (sem medidas) | Promise (pedindo)
-const gdiWaiters = new Map(); // fonte -> funções chamadas quando as medidas chegam
+const gdiFonts = new Map();   // font -> measurements | false (no measurements) | Promise (requesting)
+const gdiWaiters = new Map(); // font -> functions called when the measurements arrive
 function gdiFont(font, size, bold, onReady) {
   const key = `${String(font).toLowerCase()}|${size}|${bold ? 1 : 0}`;
   const cur = gdiFonts.get(key);
@@ -544,13 +544,13 @@ function gdiFont(font, size, bold, onReady) {
       gdiFonts.set(key, d && d.ok ? d : false);
       const cbs = gdiWaiters.get(key);
       gdiWaiters.delete(key);
-      if (cbs) for (const cb of cbs) { try { cb(); } catch { /* textura já descartada */ } }
+      if (cbs) for (const cb of cbs) { try { cb(); } catch { /* texture already discarded */ } }
     }));
   }
   return null;
 }
 
-// Sem as medidas do Windows: aproxima pela altura da linha que o navegador informa
+// Without the Windows measurements: approximates from the line height the browser reports
 const cellMetrics = new Map();
 function browserCell(ctx, font, bold, size) {
   const key = (bold ? 'b|' : 'n|') + font;
@@ -565,7 +565,7 @@ function browserCell(ctx, font, bold, size) {
   return { face: font, height: size, ascent: m.asc * size, ppem: m.em * size, widths: null };
 }
 
-// onReady: chamada se as medidas exatas ainda não tinham chegado (para redesenhar)
+// onReady: called if the exact measurements had not arrived yet (to redraw)
 export function drawMaterialText(ctx, t, w, h, onReady) {
   ctx.clearRect(0, 0, w, h);
   if (parseColor(t.backColor)) { ctx.fillStyle = cssColor(t.backColor); ctx.fillRect(0, 0, w, h); }
@@ -610,15 +610,15 @@ export function materialTextTexture(ov) {
 }
 
 // ---------------------------------------------------------------------------
-// Objetos invisíveis, dummies e emissores de partículas:
-// Cria um marcador geométrico 3D visível para permitir visualização, clique,
-// gizmo e destaque vermelho padrão quando selecionado.
+// Invisible objects, dummies and particle emitters:
+// Creates a visible 3D geometric marker to allow display, click,
+// gizmo and the standard red highlight when selected.
 // ---------------------------------------------------------------------------
 export function createInvisibleMarkerMesh(id, def) {
   const g = new THREE.Group();
   g.userData.isInvisibleMarker = true;
 
-  // Marcador octaédrico estilizado
+  // Stylized octahedral marker
   const geo = new THREE.OctahedronGeometry(0.55, 0);
   geo.computeVertexNormals();
 
@@ -632,7 +632,7 @@ export function createInvisibleMarkerMesh(id, def) {
 
   const mesh = new THREE.Mesh(geo, mat);
   mesh.name = 'invisible_marker';
-  mesh.userData.slots = [0]; // Permite destacar e selecionar em vermelho normalmente
+  mesh.userData.slots = [0]; // Allows normal red highlighting and selection
   g.add(mesh);
 
   // Contorno aramado
@@ -642,7 +642,7 @@ export function createInvisibleMarkerMesh(id, def) {
   wire.userData.noPick = true;
   g.add(wire);
 
-  // Núcleo central
+  // Central core
   const coreGeo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
   const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
   const core = new THREE.Mesh(coreGeo, coreMat);
@@ -652,7 +652,7 @@ export function createInvisibleMarkerMesh(id, def) {
   return g;
 }
 
-// Quaternion do IPL (SA guarda o conjugado) -> THREE.Quaternion
+// IPL quaternion (SA stores the conjugate) -> THREE.Quaternion
 export function iplQuaternion(inst, out = new THREE.Quaternion()) {
   return out.set(-inst.qx, -inst.qy, -inst.qz, inst.qw);
 }

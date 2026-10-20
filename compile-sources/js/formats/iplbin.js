@@ -1,5 +1,5 @@
-// IPL binário ("bnry") usado nos *_streamN.ipl dentro do gta3.img.
-// Cada instância tem 40 bytes: posição (3 floats), quaternion (4 floats), id, interior, lod.
+// Binary IPL ("bnry") used in the *_streamN.ipl files inside gta3.img.
+// Each instance is 40 bytes: position (3 floats), quaternion (4 floats), id, interior, lod.
 import { BinaryReader } from './binary.js';
 
 export function isBinaryIpl(buffer) {

@@ -1,4 +1,4 @@
-// Sistema de logs, rastreamento de erros e diagnóstico do SA Map Studio
+// Logging, error tracking and diagnostics system for SA Map Studio
 import { $, $$, esc, toast, copyText } from './common.js';
 import { t } from './i18n.js';
 
@@ -16,17 +16,17 @@ function isServerRelevantError(line) {
   if (/Servidor iniciado/i.test(trimmed)) return false;
   if (/Nenhum erro/i.test(trimmed)) return false;
 
-  // Status HTTP de erro 4xx / 5xx (ex: "-> 501", "-> 404", "-> 500")
+  // HTTP error status 4xx / 5xx (e.g. "-> 501", "-> 404", "-> 500")
   if (/->\s*[45]\d{2}\b/.test(trimmed)) return true;
 
-  // Tags explícitas de erro/aviso
+  // Explicit error/warning tags
   if (/\[(ERROR|ERRO|WARN|WARNING|AVISO|FAIL|FATAL)\]/i.test(trimmed)) return true;
 
-  // Exceções e tracebacks do Python
+  // Python exceptions and tracebacks
   if (/^(Traceback|Exception|Error:|SyntaxError|TypeError|ValueError|IndexError|KeyError|NameError|FileNotFoundError|OSError|RuntimeError)/i.test(trimmed)) return true;
   if (/^\s*File\s+".*",\s*line\s+\d+/i.test(trimmed)) return true;
 
-  // Palavras-chave críticas de falha
+  // Critical failure keywords
   if (/\b(erro|error|falha|failed|crash|exception)\b/i.test(trimmed)) return true;
 
   return false;
@@ -52,7 +52,7 @@ class LoggerSystem {
         }
       }
     } catch {
-      // Falha ao ler localStorage é ignorada
+      // A failure reading localStorage is ignored
     }
   }
 
@@ -61,12 +61,12 @@ class LoggerSystem {
       const toSave = this.logs.slice(-100);
       localStorage.setItem(this.storageKey, JSON.stringify(toSave));
     } catch {
-      // Ignora erro de quota do localStorage
+      // Ignores localStorage quota error
     }
   }
 
   installGlobalHooks() {
-    // Captura erros globais de JS
+    // Captures global JS errors
     window.addEventListener('error', (event) => {
       const err = event.error || {};
       this.record({
@@ -77,7 +77,7 @@ class LoggerSystem {
       });
     });
 
-    // Captura rejeições de Promises não tratadas
+    // Captures unhandled Promise rejections
     window.addEventListener('unhandledrejection', (event) => {
       const reason = event.reason || {};
       const msg = typeof reason === 'string' ? reason : (reason.message || JSON.stringify(reason));
@@ -192,9 +192,9 @@ class LoggerSystem {
       badge.textContent = count > 99 ? '99+' : String(count);
       badge.hidden = false;
       if (this.hasErrors) {
-        badge.style.background = '#e0533c'; // vermelho para erros
+        badge.style.background = '#e0533c'; // red for errors
       } else {
-        badge.style.background = '#f59e0b'; // âmbar para avisos
+        badge.style.background = '#f59e0b'; // amber for warnings
       }
       if (btn) {
         btn.title = this.hasErrors
