@@ -1,3 +1,4 @@
+import { uiLocale } from './i18n.js';
 // Projetos: salvar automático, abrir (salvando e fechando o atual), criar, renomear e apagar.
 import * as THREE from 'three';
 import { Project } from '../editor/project.js';
@@ -252,7 +253,7 @@ async function openProjectsDialog() {
           ${isCurrent ? '<span class="tag" style="background:var(--accent); color:#fff; font-size:10px;">Ativo</span>' : ''}
           ${isCoexisting ? `<span class="tag" style="background:${isReadonly ? '#64748b' : '#3b82f6'}; color:#fff; font-size:10px;">${isReadonly ? 'Coexistindo (Não editável)' : 'Coexistindo (Editável)'}</span>` : ''}
         </div>
-        <span class="pl-date">${new Date(p.modified * 1000).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+        <span class="pl-date">${new Date(p.modified * 1000).toLocaleString(uiLocale(), { dateStyle: 'short', timeStyle: 'short' })}</span>
         <span class="pl-stats" style="font-size:11px; color:var(--paper-dim); margin-top:2px; line-height:1.3;">${statsLine}</span>
       </div>
       <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">

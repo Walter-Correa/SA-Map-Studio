@@ -1,5 +1,5 @@
 // Seletor Modal de Sprites para TextDraws com Galeria Visual Completa
-import { $, $$, esc, toast } from './common.js';
+import { $, $$, esc, plural, toast } from './common.js';
 import { TEXTDRAW_SPRITES } from '../data/sprites.js';
 
 let selectedSprite = 'hud:arrow';
@@ -131,7 +131,7 @@ function renderSpriteGrid() {
 
   const list = filterSprites();
   const countEl = $('#spritePickerCount');
-  if (countEl) countEl.textContent = `${list.length} ${list.length === 1 ? 'sprite' : 'sprites'}`;
+  if (countEl) countEl.textContent = plural(list.length, 'sprite', 'sprites');
 
   if (!list.length) {
     container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: var(--paper-dim);">Nenhuma sprite encontrada com os filtros atuais.</div>';

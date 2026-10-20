@@ -5,6 +5,7 @@ import { getSkinLabel } from '../world/actors.js';
 import { PREDEFINED_PICKUPS } from '../world/pickups.js';
 import { app, $, $$, esc, plural, store, showPrompt } from './common.js';
 
+import { uiLocale } from './i18n.js';
 const ROW_H = 80;
 let catalog = [];
 let filtered = [];
@@ -19,12 +20,12 @@ export function setupCatalog() {
   cats.sort((a, b) => a.localeCompare(b, 'pt-BR'));
   const catSel = $('#catalogCategory');
   catSel.innerHTML = `<option value="">Categorias</option>` +
-    cats.map(c => [c, count('category', c)]).filter(([, n]) => n).map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n.toLocaleString('pt-BR')})</option>`).join('');
+    cats.map(c => [c, count('category', c)]).filter(([, n]) => n).map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n.toLocaleString(uiLocale())})</option>`).join('');
   const regs = [...REGIONS];
   for (const r of new Set(catalog.map(c => c.region))) if (!regs.includes(r)) regs.push(r);
   const regSel = $('#catalogRegion');
   regSel.innerHTML = '<option value="">Origens</option>' +
-    regs.map(r => [r, count('region', r)]).filter(([, n]) => n).map(([r, n]) => `<option value="${esc(r)}">${esc(r)} (${n.toLocaleString('pt-BR')})</option>`).join('');
+    regs.map(r => [r, count('region', r)]).filter(([, n]) => n).map(([r, n]) => `<option value="${esc(r)}">${esc(r)} (${n.toLocaleString(uiLocale())})</option>`).join('');
   if (![...catSel.options].some(o => o.value === category)) category = '';
   if (![...regSel.options].some(o => o.value === region)) region = '';
   catSel.value = category; regSel.value = region;

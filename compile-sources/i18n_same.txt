@@ -97,7 +97,6 @@ Create3DTextLabel({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});{8}
 CreateDynamic3DTextLabel({0}, {1}, {2}, {3}, {4}, {5}, INVALID_PLAYER_ID, INVALID_VEHICLE_ID, {6}, {7}, {8});{9}
 CreatePickup({0}, {1}, {2}, {3}, {4}, {5});{6}
 CreateDynamicPickup({0}, {1}, {2}, {3}, {4}, {5});{6}
-// Extras dos objetos (texturas, movimentação e anexação):
 switch (step)
 Tierra Robada
 Cesar Vialpando
@@ -374,3 +373,5 @@ Savanna
 Broadway
 Remington
 Slamvan
+script, style, textarea, code, pre, svg
+{0}: HTTP {1}

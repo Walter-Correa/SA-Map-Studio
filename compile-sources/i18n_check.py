@@ -49,8 +49,19 @@ EN_SIGNS = re.compile(r"\b(the|you|your|i|i'm|it's|is|are|what|this|that|and|of|
                       r"drowned|razors|shining|children|cover|look|keep|diversion|five|minutes)\b", re.I)
 
 
+# Palavras portuguesas comuns nos catálogos (lugares, skins, sons) que não têm acento
+PT_WORDS = set("""prefeitura delegacia aeroporto torre centro ponte financeiro clube cassino navio pirata cachoeiras
+castelo bairro represa fazenda modelo oficina barbearia academia restaurante mar aberto esportes conversas gestos combate
+armas lazer adulto trabalho cotidiano movimento posturas policial xerife especial agente federal bombeiro esteira rolante
+fliperama iniciar parar apostar ficha roleta marcar desmarcar retirar soco golpe pisotear verde vermelho vermelha agudo
+buzina curta longa disparo morte voz escola pequena urbana autoescolas academias bordel apostas abatedouro""".split())
+
+
 def is_portuguese(key):
     """Nos catálogos: o texto está em português (não é fala ou nome original em inglês)?"""
+    head = re.sub(r"(['\"]).*", " ", key)  # fora das falas originais entre aspas
+    if re.search(r"[ãõçâêôáéíóúà]", head, re.I) or set(re.findall(r"[a-zà-ÿ]+", head.lower())) & PT_WORDS:
+        return True
     text = re.sub(r"\{\d+\}", " ", key)
     pt = len(PT_SIGNS.findall(text))
     en = len(EN_SIGNS.findall(text))
@@ -216,8 +227,11 @@ CSS_LIKE = re.compile(r"^[.#\[][\w-]|[\w\]]\[[\w-]+(=|\])|\b\d*px\b.*\b(sans-ser
 
 
 def is_ui_text(key):
-    if len(key) < 2 or len(key) > 600:
+    if len(key) < 2 or len(key) > 3000:
         return False
+    # Frase em português (novidades, ajuda): vale mesmo com ";", ":" ou nomes do Pawn no meio
+    if len(re.findall(r"[A-Za-zÀ-ÿ]+", key)) >= 6 and len(PT_SIGNS.findall(key)) >= 3 and not key.lstrip().startswith(("//", "#")):
+        return True
     if CSS_LIKE.search(key):
         return False
     if PAWN_LIKE.search(key):
@@ -239,7 +253,7 @@ def is_ui_text(key):
     # Lista de classes CSS ou nomes de código: minúsculas com hífen ou sublinhado
     if re.fullmatch(r"[a-z0-9 _\-]+", letters.strip()) and re.search(r"[_\-]|[a-z]+\d", letters):
         return False
-    if all(re.fullmatch(r"[A-Z0-9_]+", w) for w in words):
+    if all(re.fullmatch(r"[A-Z0-9_]+", w) for w in words) and ("_" in letters or not any(len(w) >= 4 for w in words)):
         return False
     return True
 
@@ -247,6 +261,8 @@ def is_ui_text(key):
 def generalize(key):
     """Catálogos: nomes entre aspas e números viram partes variáveis (uma tradução serve para todos)."""
     k = re.sub(r'"[^"]+"', '"\u0001"', key)
+    # Fala original entre aspas simples depois de "Rótulo: " (ex.: Cassino: 'You win!')
+    k = re.sub(r"^([^:']+: )'.+'$", "\\1'\u0001'", k)
     k = re.sub(r"(?<![A-Za-z])\d+(?![A-Za-z])", "\u0001", k)
     n = [0]
 

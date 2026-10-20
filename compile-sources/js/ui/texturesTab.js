@@ -1,3 +1,4 @@
+import { t, uiLocale } from './i18n.js';
 // Aba Texturas: todas as texturas do jogo por categoria, com miniaturas no disco.
 // Clicar numa textura aplica (SetObjectMaterial) nos índices escolhidos dos objetos selecionados.
 import { TEXTURE_CATEGORIES } from '../world/categories.js';
@@ -97,9 +98,9 @@ function fillCategories() {
   const sel = $('#texCategory');
   const cats = [...TEXTURE_CATEGORIES];
   for (const c of new Set(items.map(i => i.category))) if (!cats.includes(c)) cats.push(c);
-  sel.innerHTML = `<option value="">Todas as categorias (${items.length.toLocaleString('pt-BR')})</option>` +
+  sel.innerHTML = `<option value="">Todas as categorias (${items.length.toLocaleString(uiLocale())})</option>` +
     cats.map(c => [c, items.filter(i => i.category === c).length]).filter(([, n]) => n)
-      .map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n.toLocaleString('pt-BR')})</option>`).join('');
+      .map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n.toLocaleString(uiLocale())})</option>`).join('');
   if (![...sel.options].some(o => o.value === category)) category = '';
   sel.value = category;
 }
@@ -120,7 +121,7 @@ function renderStatus() {
   const text = $('#texStatusText');
   if (loading) {
     $('#texBarFill').style.width = (100 * done / Math.max(1, total)) + '%';
-    text.textContent = `Lendo as texturas do jogo e preparando as miniaturas: ${done.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} arquivos. Pode continuar editando. Só acontece uma vez.`;
+    text.textContent = `Lendo as texturas do jogo e preparando as miniaturas: ${done.toLocaleString(uiLocale())} de ${total.toLocaleString(uiLocale())} arquivos. Pode continuar editando. Só acontece uma vez.`;
   } else if (st === 'error') text.textContent = 'Não consegui ler as texturas. Tente de novo.';
   else text.textContent = 'Para trocar texturas, o editor lista as texturas do jogo e guarda miniaturas no disco. Roda em segundo plano e só é preciso fazer uma vez.';
 }
@@ -211,7 +212,9 @@ export function renderTexRows(force = true) {
       tile.dataset.key = item.key;
       const alias = aliases[item.key];
       const isFav = favs.has(item.key);
-      tile.title = `${alias ? `[${alias}]\n` : ''}${item.name}\nTXD: ${item.txd} (modelo ${item.model})\n${item.w}×${item.h}${item.alpha ? ', com transparência' : ''}\n${item.category}`;
+      // Várias linhas: cada uma traduzida aqui (o título inteiro não é uma chave)
+      tile.title = [alias ? `[${alias}]` : '', item.name, t('TXD: {0} (modelo {1})', item.txd, item.model),
+        item.alpha ? t('{0}×{1}, com transparência', item.w, item.h) : `${item.w}×${item.h}`, t(item.category)].filter(Boolean).join('\n');
       const url = texlib.thumbUrl(item.txd, item.name);
       const displayName = alias || item.name;
       const displaySub = alias ? `${item.name} (${item.txd})` : item.txd;

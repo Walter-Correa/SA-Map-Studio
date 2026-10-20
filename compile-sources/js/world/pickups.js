@@ -34,7 +34,7 @@ export const PREDEFINED_PICKUPS = [
   { model: 1276, name: 'Estátua Tiki', category: 'Itens' },
   { model: 1277, name: 'Disquete de Save Game', category: 'Geral e Marcadores' },
   { model: 1279, name: 'Pacote Craig (Package)', category: 'Itens' },
-  { model: 1310, name: 'Pára-quedas (Parachute)', category: 'Itens' },
+  { model: 1310, name: 'Paraquedas (Parachute)', category: 'Itens' },
   { model: 1313, name: 'Caveira Dupla (Kill frenzy rampage)', category: 'Geral e Marcadores' },
   { model: 1314, name: 'Ícone 2 Jogadores', category: 'Geral e Marcadores' },
   { model: 1318, name: 'Seta Amarela de Entrada', category: 'Geral e Marcadores' },
@@ -130,7 +130,7 @@ export const PREDEFINED_PICKUPS = [
   { model: 368, name: 'Óculos de Visão Noturna', category: 'Itens' },
   { model: 369, name: 'Óculos de Visão Térmica', category: 'Itens' },
   { model: 370, name: 'Jetpack', category: 'Itens' },
-  { model: 371, name: 'Pára-quedas (Equipável)', category: 'Itens' },
+  { model: 371, name: 'Paraquedas (Equipável)', category: 'Itens' },
 ];
 
 export const PICKUP_MODEL_IDS = new Set(PREDEFINED_PICKUPS.map(p => p.model));

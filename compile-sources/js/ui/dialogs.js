@@ -218,8 +218,8 @@ export function setupImport() {
 // para o idioma do editor (linhas MSG|id|texto); em português o gamemode já tem o texto.
 const TEST_MESSAGES = [
   'SA Map Studio: teste do mapa.',
-  'Comandos: /fly (/voar) /map (/mapa) /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos',
-  'Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.',
+  'Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos',
+  'Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly para sair.',
   'Modo de voo desativado. Você retornou à posição onde o voo foi ativado.',
   'Animações dos actors sincronizadas e reaplicadas.',
   'Câmera teleportada para o centro do mapa.',
@@ -237,8 +237,8 @@ const TEST_MESSAGES = [
   'Nenhum checkpoint no mapa atual.',
   'Teleportado para o checkpoint atual.',
   'Comandos do servidor de teste:',
-  '  /fly (/voar) - Alternar voo livre da câmera',
-  '  /map (/mapa) - Teleportar ao centro do mapa em teste',
+  '  /fly - Alternar voo livre da câmera',
+  '  /map - Teleportar ao centro do mapa em teste',
   '  /w [0-45] - Alterar clima (ex: /w 10)',
   '  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)',
   '  /v [modelo] - Criar veículo (ex: /v 411)',
@@ -406,7 +406,7 @@ export function setupTest() {
     if (i.serverExe && i.builtin) notes.push(`Usando o servidor da pasta <b>test-server</b> do programa (<b>${esc(i.serverExe)}</b>).`);
     else if (i.serverExe) notes.push(`Servidor encontrado: <b>${esc(i.serverExe)}</b>. Ao testar, ele é copiado para a pasta <b>test-server</b> do programa (seu servidor não é alterado).`);
     else notes.push('<span class="warn">Não achei um servidor. Coloque os arquivos do servidor na pasta "test-server" do programa, ou escolha aqui a pasta de um servidor.</span>');
-    if (!i.client) notes.push('<span class="warn">Não achei o samp.exe na pasta do GTA. Instale o cliente multiplayer e conecte em 127.0.0.1:' + i.port + '.</span>');
+    if (!i.client) notes.push(`<span class="warn">Não achei o samp.exe na pasta do GTA. Instale o cliente multiplayer e conecte em 127.0.0.1:${i.port}.</span>`);
     if (i.error) notes.push(`<span class="warn">${esc(i.error)}</span>`);
     $('#testServerInfo').innerHTML = notes.join('<br>');
     $('#testStop').hidden = !i.running;

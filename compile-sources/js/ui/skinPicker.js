@@ -1,6 +1,6 @@
 // Seletor Modal de Skins para Actors com Prévia Visual e Categorias
 // Suporta todas as 312 skins do jogo (IDs 0 a 311)
-import { $, $$, esc, toast } from './common.js';
+import { $, $$, esc, plural, toast } from './common.js';
 import { ALL_SKINS, POPULAR_SKINS, getSkinLabel } from '../world/actors.js';
 
 let selectedSkinId = 0;
@@ -136,7 +136,7 @@ function renderSkinGrid() {
 
   const list = filterSkins();
   const countEl = $('#skinPickerCount');
-  if (countEl) countEl.textContent = `${list.length} ${list.length === 1 ? 'skin' : 'skins'}`;
+  if (countEl) countEl.textContent = plural(list.length, 'skin', 'skins');
 
   if (!list.length) {
     container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: var(--paper-dim);">Nenhuma skin encontrada para os filtros atuais.</div>';

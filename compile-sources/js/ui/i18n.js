@@ -11,7 +11,11 @@ import { postJSON } from './common.js';
 export const SOURCE_LANG = 'pt';
 const FALLBACK_LANG = 'en';
 const TEXT_ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
-const SKIP_SELECTOR = '[translate="no"], .no-i18n, script, style, textarea, code, pre, svg';
+// translate="no" / .no-i18n: nada é traduzido. Nos demais, o conteúdo fica como está, mas atributos
+// (placeholder, title, aria-label) são traduzidos, como o placeholder de um textarea.
+const NO_TRANSLATE = '[translate="no"], .no-i18n';
+const NO_CONTENT = 'script, style, textarea, code, pre, svg';
+const SKIP_SELECTOR = `${NO_TRANSLATE}, ${NO_CONTENT}`;
 
 let languages = [];          // [{ code, name }] na ordem do menu
 let current = SOURCE_LANG;
@@ -85,13 +89,40 @@ function translatePart(part, depth) {
   return part;
 }
 
+// Textos montados com separador ("nome — descrição", "a · b", "a | b" e, por último, "123 - nome"):
+// traduz cada pedaço. null se nenhum pedaço tiver tradução.
+const JOINER_LEVELS = [/( (?:—|·|\|) )/, /( - )/];
+// Rótulo com contagem no fim: "Móveis (985)"
+function translateCounted(core) {
+  const m = /^(.*\S) (\([\d.,\s  ]+\))$/.exec(core);
+  if (!m) return null;
+  const hit = lookup(m[1], 2);
+  return hit === null ? null : `${hit} ${m[2]}`;
+}
+function translateJoined(core, level = 0) {
+  const sep = JOINER_LEVELS[level];
+  if (!sep) return translateCounted(core);
+  if (!sep.test(core)) return translateJoined(core, level + 1);
+  const pieces = core.split(sep);
+  let changed = false;
+  const out = pieces.map((p, i) => {
+    if (i % 2) return p;
+    const hit = lookup(p, 2) ?? translateJoined(p, level + 1);
+    if (hit === null) return p;
+    changed = true;
+    return hit;
+  });
+  return changed ? out.join('') : null;
+}
+
 // Traduz um texto inteiro (mantém os espaços das pontas)
 export function translateText(text) {
   if (current === SOURCE_LANG || !text) return text;
   const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(text);
   const core = m[2].replace(/\s+/g, ' ');
   if (!core || !/[A-Za-zÀ-ÿ]/.test(core)) return text;
-  const out = lookup(core);
+  let out = lookup(core);
+  if (out === null) out = translateJoined(core);
   if (out === null) {
     if (missing.size < 5000) missing.add(core);
     return text;
@@ -123,7 +154,7 @@ function doText(node) {
 }
 
 function doAttrs(el) {
-  if (skipped(el)) return;
+  if (!el || el.closest?.(NO_TRANSLATE)) return;
   let st = attrState.get(el);
   for (const attr of TEXT_ATTRS) {
     if (!el.hasAttribute(attr)) continue;
@@ -142,11 +173,15 @@ function walk(root) {
   if (root.nodeType === Node.TEXT_NODE) { doText(root); return; }
   if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return;
   if (root.nodeType === Node.ELEMENT_NODE) {
-    if (skipped(root)) return;
     doAttrs(root);
+    if (skipped(root)) return;
   }
   const tw = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
-    acceptNode: (n) => (n.nodeType === Node.ELEMENT_NODE && n.matches(SKIP_SELECTOR)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    acceptNode: (n) => {
+      if (n.nodeType !== Node.ELEMENT_NODE || !n.matches(SKIP_SELECTOR)) return NodeFilter.FILTER_ACCEPT;
+      doAttrs(n);
+      return NodeFilter.FILTER_REJECT;
+    },
   });
   let n = tw.nextNode();
   while (n) {
@@ -185,6 +220,8 @@ async function loadFile(code) {
 
 export function getLanguages() { return languages.slice(); }
 export function getLanguage() { return current; }
+// Formato de números e datas do idioma (toLocaleString)
+export function uiLocale() { return current === 'pt' ? 'pt-BR' : current; }
 export function onLanguageChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
 // Idioma do sistema: só o idioma, sem o país (pt-BR e pt-PT usam o mesmo Português)

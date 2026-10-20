@@ -1,9 +1,10 @@
+import { uiLocale } from './i18n.js';
 // Utilidades compartilhadas pela interface e o objeto "app" com as peças principais.
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const fmt = (v, d = 4) => { const s = (Number(v) || 0).toFixed(d); return s.includes('.') ? s.replace(/\.?0+$/, '') || '0' : s; };
-export const plural = (n, um, varios) => `${n.toLocaleString('pt-BR')} ${n === 1 ? um : varios}`;
+export const plural = (n, um, varios) => `${n.toLocaleString(uiLocale())} ${n === 1 ? um : varios}`;
 
 export const store = {
   get(k, def) { try { const v = localStorage.getItem('samap.' + k); return v === null ? def : JSON.parse(v); } catch { return def; } },
@@ -56,7 +57,7 @@ export async function copyText(text) {
 
 export function modelLabel(id) {
   const d = app.gd?.models.get(id);
-  if (!d) return 'modelo ' + id;
+  if (!d) return `modelo ${id}`;
   return d.type === 'cars' && d.gameName ? d.gameName : d.model;
 }
 

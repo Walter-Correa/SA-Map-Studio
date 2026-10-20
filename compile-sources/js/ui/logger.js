@@ -1,5 +1,6 @@
 // Sistema de logs, rastreamento de erros e diagnóstico do SA Map Studio
 import { $, $$, esc, toast, copyText } from './common.js';
+import { t } from './i18n.js';
 
 function isServerRelevantError(line) {
   if (!line || typeof line !== 'string') return false;
@@ -226,13 +227,13 @@ class LoggerSystem {
     const backendErrors = this.backendErrors;
 
     if (frontendErrors.length === 0 && backendErrors.length === 0) {
-      return 'Nenhum erro foi detectado e reportado até o momento.';
+      return t('Nenhum erro foi detectado e reportado até o momento.');
     }
 
     const sections = [];
 
     if (frontendErrors.length > 0) {
-      let fText = `=== ERROS E AVISOS DO FRONTEND (${frontendErrors.length}) ===\n`;
+      let fText = `=== ${t('ERROS E AVISOS DO FRONTEND ({0})', frontendErrors.length)} ===\n`;
       for (const l of frontendErrors) {
         fText += `[${l.time}] [${l.level}] ${l.message}`;
         if (l.source) fText += ` (${l.source})`;
@@ -245,7 +246,7 @@ class LoggerSystem {
     }
 
     if (backendErrors.length > 0) {
-      let bText = `=== ERROS DO SERVIDOR LOCAL (${backendErrors.length}) ===\n`;
+      let bText = `=== ${t('ERROS DO SERVIDOR LOCAL ({0})', backendErrors.length)} ===\n`;
       bText += backendErrors.join('\n');
       sections.push(bText.trimEnd());
     }
@@ -272,13 +273,13 @@ export function setupLogsDialog() {
 
   const refreshViewer = async () => {
     if (!viewer) return;
-    viewer.textContent = 'Carregando registros e diagnóstico';
+    viewer.textContent = t('Carregando registros e diagnóstico');
     try {
       const rep = await AppLogger.buildDiagnosticReport();
       viewer.textContent = rep;
       viewer.scrollTop = viewer.scrollHeight;
     } catch (e) {
-      viewer.textContent = `Erro ao carregar diagnóstico: ${e.message}`;
+      viewer.textContent = t('Erro ao carregar diagnóstico: {0}', e.message);
     }
   };
 

@@ -246,7 +246,7 @@ function emptyInspector() {
 const vecInputs = (prefix, labels, values, step) => `<div class="vec">${labels.map((a, i) =>
   `<label data-axis="${a}">
      <span data-scrub="${prefix}${a}" title="Arraste para ajustar (Shift: fino)">${a.toUpperCase()}</span>
-     <input type="number" step="${step}" data-field="${prefix}${a}" value="${fmt(values[i])}" aria-label="${prefix === 'r' ? 'Rotação' : 'Posição'} ${a.toUpperCase()}">
+     <input type="number" step="${step}" data-field="${prefix}${a}" value="${fmt(values[i])}" aria-label="${prefix === 'r' ? `Rotação ${a.toUpperCase()}` : `Posição ${a.toUpperCase()}`}">
      <div class="vec-arrows">
        <button type="button" class="vec-arrow-btn up" data-step-field="${prefix}${a}" data-step-dir="1" data-step-base="${step}" title="Aumentar (Shift: fino, Ctrl: rápido)" aria-label="Aumentar ${a.toUpperCase()}">▲</button>
        <button type="button" class="vec-arrow-btn down" data-step-field="${prefix}${a}" data-step-dir="-1" data-step-base="${step}" title="Diminuir (Shift: fino, Ctrl: rápido)" aria-label="Diminuir ${a.toUpperCase()}">▼</button>
@@ -358,13 +358,13 @@ function objectInspector(o) {
         </label>
         <label style="margin-bottom:6px; display:block;">${attachType === 'vehicle' ? 'Veículo Alvo' : 'Objeto Pai (Parent)'}
           <select id="selAttachParent" style="width:100%;">
-            <option value="">Selecione um ${attachType === 'vehicle' ? 'veículo' : 'objeto'}</option>
+            <option value="">${attachType === 'vehicle' ? 'Selecione um veículo' : 'Selecione um objeto'}</option>
             ${attachType === 'vehicle'
               ? (app.project.vehicles || []).map(v => {
                   const cnt = getVehicleAttachedObjects(v.uid).filter(x => x.uid !== o.uid).length;
                   const isFull = cnt >= MAX_VEHICLE_ATTACHED_OBJECTS && o.attach.to !== v.uid;
                   const curCnt = o.attach.to === v.uid ? cnt + 1 : cnt;
-                  return `<option value="${v.uid}" ${o.attach.to === v.uid ? 'selected' : ''} ${isFull ? 'disabled' : ''}>${esc(modelLabel(v.model))} (ID ${v.model}) [${curCnt}/${MAX_VEHICLE_ATTACHED_OBJECTS}]${isFull ? ' - CHEIO' : ''}</option>`;
+                  return `<option value="${v.uid}" ${o.attach.to === v.uid ? 'selected' : ''} ${isFull ? 'disabled' : ''}>${esc(modelLabel(v.model))} (ID ${v.model}) [${curCnt}/${MAX_VEHICLE_ATTACHED_OBJECTS}]${isFull ? ' — CHEIO' : ''}</option>`;
                 }).join('')
               : (app.project.objects || []).filter(x => x.uid !== o.uid && (!x.attach || x.attach.to !== o.uid)).map(x => `<option value="${x.uid}" ${o.attach.to === x.uid ? 'selected' : ''}>${esc(modelLabel(x.model))} (ID ${x.model}) - ${x.uid.slice(0, 8)}</option>`).join('')
             }
@@ -481,7 +481,7 @@ function vehicleInspector(v) {
             <div class="veh-mod-group" style="background: var(--asphalt-900); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;">
               <div style="font-size: 11px; font-weight: 700; color: var(--paper-mute); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
                 <span>${esc(typeName)}</span>
-                <small style="font-weight: normal; color: var(--paper-dim);">${items.length} opção(ões)</small>
+                <small style="font-weight: normal; color: var(--paper-dim);">${plural(items.length, 'opção', 'opções')}</small>
               </div>
               <div style="display: flex; flex-direction: column; gap: 3px;">
                 ${items.map(([cId, c]) => {
@@ -741,7 +741,7 @@ function bindStringFields(uid) {
     inp.addEventListener('change', () => {
       const field = inp.dataset.fieldStr;
       const val = inp.value.trim();
-      (app.editor.findProjectOf(uid) || app.project).updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      (app.editor.findProjectOf(uid) || app.project).updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
     });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
@@ -789,7 +789,7 @@ function bindVecArrows(targetUids, project, isMulti = false) {
       if (timer) { clearInterval(timer); timer = null; }
       if (before) {
         const after = uids.map(u => (app.editor.findProjectOf(u) || project).snapshot(u)).filter(Boolean);
-        project.record('Editar ' + field, before, after);
+        project.record(`Editar ${field}`, before, after);
         before = null;
       }
       window.removeEventListener('pointerup', stop);
@@ -827,7 +827,7 @@ function bindItem(item) {
       let v = parseFloat(inp.value);
       if (!Number.isFinite(v)) { inp.value = fmt(project.find(uid)?.[field]); return; }
       if (['interior', 'world', 'color1', 'color2', 'respawn', 'skin'].includes(field)) v = Math.trunc(v);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = v; });
+      project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = v; });
     });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
@@ -842,7 +842,7 @@ function bindItem(item) {
       step: (isRot ? 0.5 : 0.02) * speed,
       get: () => project.find(uid)?.[field] || 0,
       set: (v) => { const o = project.find(uid); if (!o) return; o[field] = v; app.editor.syncAll(); updateValues(); },
-      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+      done: () => { if (before) project.record(`Editar ${field}`, before, [project.snapshot(uid)]); before = null; },
     });
   });
 
@@ -900,7 +900,7 @@ function bindItem(item) {
       const f = inp.dataset.move;
       const v = parseFloat(inp.value);
       if (!Number.isFinite(v)) return;
-      project.updateItems('Editar MoveObject ' + f, [uid], (o) => {
+      project.updateItems(`Editar MoveObject ${f}`, [uid], (o) => {
         if (!o.move) return;
         o.move[f] = v;
       });
@@ -1054,7 +1054,7 @@ function bindItem(item) {
       }
 
       if (!bestCand) {
-        toast(`Nenhum ${nextType === 'vehicle' ? 'veículo' : 'objeto'} disponível para acoplar.`, 'warn');
+        toast(nextType === 'vehicle' ? 'Nenhum veículo disponível para acoplar.' : 'Nenhum objeto disponível para acoplar.', 'warn');
         renderInspector();
         return;
       }
@@ -1117,7 +1117,7 @@ function bindItem(item) {
       const f = inp.dataset.attach;
       const v = parseFloat(inp.value);
       if (!Number.isFinite(v)) return;
-      project.updateItems('Editar Attach ' + f, [uid], (o) => {
+      project.updateItems(`Editar Attach ${f}`, [uid], (o) => {
         if (!o.attach) return;
         o.attach[f] = v;
       });
@@ -1210,7 +1210,7 @@ function bindVehicle(v) {
       let val = parseFloat(inp.value);
       if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
       if (['color1', 'color2', 'respawn'].includes(field)) val = Math.trunc(val);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
       app.editor.syncAll();
       renderInspector();
     });
@@ -1227,7 +1227,7 @@ function bindVehicle(v) {
       step: (isRot ? 0.5 : 0.02) * speed,
       get: () => project.find(uid)?.[field] || 0,
       set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
-      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+      done: () => { if (before) project.record(`Editar ${field}`, before, [project.snapshot(uid)]); before = null; },
     });
   });
 
@@ -1391,7 +1391,7 @@ function bindActor(a) {
         return;
       }
       if (['world'].includes(field)) val = Math.trunc(val);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
       app.editor.syncAll();
       renderInspector();
     });
@@ -1408,7 +1408,7 @@ function bindActor(a) {
       step: (isRot ? 0.5 : 0.02) * speed,
       get: () => project.find(uid)?.[field] || 0,
       set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
-      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+      done: () => { if (before) project.record(`Editar ${field}`, before, [project.snapshot(uid)]); before = null; },
     });
   });
 
@@ -1510,7 +1510,7 @@ function bindActor(a) {
     const el = $(id);
     if (!el) return;
     el.addEventListener('change', () => {
-      project.updateItems('Editar ' + prop, [uid], (o) => {
+      project.updateItems(`Editar ${prop}`, [uid], (o) => {
         if (!o.anim) return;
         if (isCheck) o.anim[prop] = el.checked ? 1 : 0;
         else if (isFloat) o.anim[prop] = parseFloat(el.value) || 0;
@@ -1740,7 +1740,7 @@ function materialSection(objs, mixedModels = false) {
     const exists = i < info.length;
     const origName = orig?.texture ? orig.texture : (exists ? '(sem textura)' : '(não existe no modelo)');
     let main = origName, sub = orig?.txd ? orig.txd : '', cls = '';
-    if (m && isText(m)) { main = 'Texto: ' + m.text.replace(/\n/g, ' ').slice(0, 28); sub = `${m.font} ${m.fontSize} · era ${origName}`; cls = ' changed'; }
+    if (m && isText(m)) { main = `Texto: ${m.text.replace(/\n/g, ' ').slice(0, 28)}`; sub = `${m.font} ${m.fontSize} · era ${origName}`; cls = ' changed'; }
     else if (m && isNoneTexture(m)) { main = 'Invisível (textura removida)'; sub = `none · none · era ${origName}`; cls = ' changed'; }
     else if (m && !keepsTexture(m)) { main = m.texture; sub = `${m.txd} · era ${origName}`; cls = ' changed'; }
     else if (m) { sub = (sub ? sub + ' · ' : '') + 'cor alterada'; cls = ' changed'; }
@@ -1798,7 +1798,7 @@ function textureEditor(cur, label, idx, info) {
     </div>
     <div class="mini-actions">
       <button type="button" class="btn primary" data-mat="applytex"><svg><use href="#i-check"/></svg>Aplicar textura</button>
-      <button type="button" class="btn" data-mat="makeInvisible" title="Remover textura tornando este índice invisível: SetObjectMaterial(..., 0, &quot;none&quot;, &quot;none&quot;, 0)"><svg><use href="#i-trash"/></svg>Tornar invisível</button>
+      <button type="button" class="btn" data-mat="makeInvisible" title="Remover textura tornando este índice invisível: SetObjectMaterial(objectid, 0, &quot;none&quot;, &quot;none&quot;, 0)"><svg><use href="#i-trash"/></svg>Tornar invisível</button>
       <button type="button" class="btn" data-mat="clear" title="Volta a textura e a cor originais${orig?.texture ? ' (' + esc(orig.texture) + ')' : ''}"><svg><use href="#i-restore"/></svg>Original</button>
     </div>
     <div class="insp-label">Cor (materialcolor) <span class="tag">multiplica a textura; o alfa deixa transparente</span></div>
@@ -2203,7 +2203,7 @@ function bindLabel(l) {
       if (['world'].includes(field)) val = Math.trunc(val);
       suppress = true;
       try {
-        project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+        project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
         app.editor.syncAll();
         updateLabelCode(project.find(uid));
       } finally {
@@ -2564,7 +2564,7 @@ function bindPickup(p) {
       let val = parseFloat(inEl.value);
       if (!Number.isFinite(val)) { inEl.value = fmt(project.find(uid)?.[field]); return; }
       if (['world'].includes(field)) val = Math.trunc(val);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
       app.editor.syncAll();
       updatePickupCode(project.find(uid));
     });
@@ -2988,7 +2988,7 @@ function bindCheckpoint(cp) {
       let val = parseFloat(inp.value);
       if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
       if (['world', 'interior'].includes(field)) val = Math.trunc(val);
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
       app.editor.syncAll();
       updateCheckpointCode(project.find(uid));
     });
@@ -3004,7 +3004,7 @@ function bindCheckpoint(cp) {
       step: 0.05 * speed,
       get: () => project.find(uid)?.[field] || 0,
       set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
-      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+      done: () => { if (before) project.record(`Editar ${field}`, before, [project.snapshot(uid)]); before = null; },
     });
   });
 
@@ -3170,7 +3170,7 @@ function bindMapIcon(mi) {
       let val = parseFloat(inp.value);
       if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
       if (field === 'type') val = Math.max(0, Math.min(63, Math.trunc(val)));
-      project.updateItems('Editar ' + field, [uid], (o) => { o[field] = val; });
+      project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
       app.editor.syncAll();
       renderInspector();
     });
@@ -3186,7 +3186,7 @@ function bindMapIcon(mi) {
       step: 0.05 * speed,
       get: () => project.find(uid)?.[field] || 0,
       set: (val) => { const o = project.find(uid); if (!o) return; o[field] = val; app.editor.syncAll(); updateValues(); },
-      done: () => { if (before) project.record('Editar ' + field, before, [project.snapshot(uid)]); before = null; },
+      done: () => { if (before) project.record(`Editar ${field}`, before, [project.snapshot(uid)]); before = null; },
     });
   });
 

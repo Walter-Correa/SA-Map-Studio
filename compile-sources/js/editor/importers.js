@@ -321,7 +321,7 @@ async function importZip(u8, opts) {
     out.notes.push(...(r.notes || []));
     used.push(`${f.name} (${r.format || 'itens'})`);
   }
-  if (used.length) out.notes.unshift('Do .zip: ' + used.join(', '));
+  if (used.length) out.notes.unshift(`Do .zip: ${used.join(', ')}`);
   else out.notes.push('Nenhum arquivo de mapa reconhecido dentro do .zip.');
   return out;
 }

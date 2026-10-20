@@ -2,6 +2,7 @@
 import { isVehicleModel } from './pwn.js';
 import { normalizeMaterial } from './materials.js';
 import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
+import { t as tr } from '../ui/i18n.js';
 
 let uidCounter = 1;
 let _globalOpSeq = 0;
@@ -297,9 +298,11 @@ export function progressBarPawn(td, varName, fmt) {
   const hex = hexOf(td.color ?? 0xFF1C1CFF);
   const borderCol = Number(td.pbBorderColor || 0) >>> 0;
   const style = clampPbStyle(td.pbStyle);
-  const styleArgs = style ? `, ${borderCol ? hexOf(borderCol) : 0}, ${PB_STYLE_NAMES[style]}${style === 1 ? ', ' + clampPbSegments(td.pbSegments) : ''}` : (borderCol ? ', ' + hexOf(borderCol) : '');
+  // Ordem da include: ..., direction, style, segments, border, bordercolour (a borda sempre vai escrita,
+  // porque o servidor pode mudar o PB_BORDER_DEFAULT)
+  const segs = style === 1 ? clampPbSegments(td.pbSegments) : 'PB_RING_SEGMENTS';
   const lines = [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${styleArgs});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${PB_STYLE_NAMES[style]}, ${segs}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${borderCol ? ', ' + hexOf(borderCol) : ''});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
@@ -750,10 +753,10 @@ const vec = (v) => ({ x: +v?.x || 0, y: +v?.y || 0, z: +v?.z || 0 });
 export function normalizeCameras(c) {
   const out = emptyCameras();
   if (!c) return out;
-  out.shots = (c.shots || []).map((s, i) => ({ id: s.id || 'c' + Date.now().toString(36) + i, name: String(s.name || 'Câmera ' + (i + 1)), pos: vec(s.pos), look: vec(s.look), cut: s.cut === 'move' ? 'move' : 'cut' }));
+  out.shots = (c.shots || []).map((s, i) => ({ id: s.id || 'c' + Date.now().toString(36) + i, name: String(s.name || tr('Câmera {0}', i + 1)), pos: vec(s.pos), look: vec(s.look), cut: s.cut === 'move' ? 'move' : 'cut' }));
   out.paths = (c.paths || []).map((p, i) => ({
     id: p.id || 'p' + Date.now().toString(36) + i,
-    name: String(p.name || 'Movimento ' + (i + 1)),
+    name: String(p.name || tr('Movimento {0}', i + 1)),
     end: ['behind', 'keep', 'loop'].includes(p.end) ? p.end : 'behind',
     keys: (p.keys || []).map(k => ({ name: k.name ? String(k.name) : '', pos: vec(k.pos), look: vec(k.look), time: Math.max(0, Math.round(+k.time || 0)), hold: Math.max(0, Math.round(+k.hold || 0)), cut: k.cut === 'cut' ? 'cut' : 'move' })),
   }));

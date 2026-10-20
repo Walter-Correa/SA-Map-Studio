@@ -28,7 +28,7 @@ import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
 import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
 import { installColorPicker } from './ui/colorPicker.js';
-import { initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange } from './ui/i18n.js';
+import { t, initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange, uiLocale } from './ui/i18n.js';
 
 let water = null;
 let hintDismissed = false;
@@ -358,7 +358,7 @@ function setupToolbar(cfg) {
   app.on('view-interiors', (on) => { if ($('#showInteriors').checked !== on) { $('#showInteriors').checked = on; applyView(); } });
   vp.fly.onSpeed = (s) => { $('#camSpeed').value = Math.round(Math.min(300, s)); $('#camSpeedOut').textContent = Math.round(s); };
   if ($('#testGtaPath')) $('#testGtaPath').value = cfg.gtaPath || '';
-  if ($('#gtaInfo')) $('#gtaInfo').textContent = `Pasta do GTA: ${cfg.gtaPath} · ${app.gd.instances.length.toLocaleString()} objetos no mapa`;
+  if ($('#gtaInfo')) $('#gtaInfo').textContent = `Pasta do GTA: ${cfg.gtaPath} · ${app.gd.instances.length.toLocaleString(uiLocale())} objetos no mapa`;
   const btnChange = $('#btnChangeGta');
   if (btnChange) btnChange.onclick = () => { closePopovers(); changeGtaFolder(); };
 
@@ -826,8 +826,8 @@ function updateHud() {
   $('#signArea').textContent = streamer.settings.interiors ? 'Interiores' : regionOf(p.x, p.y, p.z);
   $('#signCoords').textContent = `${p.x.toFixed(1)}   ${p.y.toFixed(1)}   ${p.z.toFixed(1)}`;
   const pend = streamer.stats.pending;
-  const texPend = texlib.state === 'loading' ? `<span>texturas <b>${Math.round(100 * texlib.progress.done / Math.max(1, texlib.progress.total))}%</b></span>` : '';
-  $('#hud').innerHTML = `<span><b>${vp.fps}</b> fps</span><span><b>${streamer.stats.shown.toLocaleString('pt-BR')}</b> no mapa</span>${pend ? `<span>carregando <b>${pend}</b></span>` : ''}${texPend}`;
+  const texPend = texlib.state === 'loading' ? `<span>${t('texturas {0}', `<b>${Math.round(100 * texlib.progress.done / Math.max(1, texlib.progress.total))}%</b>`)}</span>` : '';
+  $('#hud').innerHTML = `<span><b>${vp.fps}</b> fps</span><span><b>${streamer.stats.shown.toLocaleString(uiLocale())}</b> no mapa</span>${pend ? `<span>${t('carregando {0}', `<b>${pend}</b>`)}</span>` : ''}${texPend}`;
   const pr = app.project;
   $('#emptyHint').hidden = hintDismissed || !(pr.objects.length + pr.vehicles.length + pr.removed.length === 0 && !app.editor.placing && !app.editor.worldSel);
 }
@@ -1024,7 +1024,7 @@ function setupOutline() {
           if (idx >= 0) {
             arr.splice(idx, 1);
             ed.syncAll();
-            project.saveUndoState?.('Excluir ' + kind);
+            project.saveUndoState?.(`Excluir ${kind}`);
             render();
             return;
           }

@@ -6,6 +6,16 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 
 const CHANGELOG = [
   {
+    version: '3.23.0', date: '20/10/2026', items: [
+      'Tradução completa: listas de opções montadas com separadores, textos de exemplo das caixas de texto, relatório de diagnóstico, textos desenhados no editor de TextDraws, nomes dos catálogos (lugares, skins, categorias de animação e sons) e todo o histórico de novidades.',
+      'Números e datas seguem o formato do idioma escolhido.',
+      'Exportação: os comentários de informação saem no idioma do editor; funções (Map_[nome]_Load, Map_[nome]_Remove, CameraShot_[nome]) e separadores das seções sempre em inglês. Códigos exportados antes continuam sendo importados.',
+      'SA Progress Bar Pro: style e segments vêm logo depois de direction no CreatePlayerProgressBar; editor, exportação e servidor de teste usam a nova ordem, e a importação aceita também a antiga.',
+      'Servidor de teste: os comandos /voar e /mapa foram removidos (ficam /fly e /map).',
+      'Revisão da ortografia de todos os idiomas, inclusive do português.',
+    ],
+  },
+  {
     version: '3.22.0', date: '20/10/2026', items: [
       'O editor está em inglês, espanhol, português, italiano e francês: o botão Idioma no menu superior troca na hora, sem reiniciar, e a escolha fica salva.',
       'Na primeira abertura o idioma segue o do Windows (português de Portugal e do Brasil usam o mesmo português); texto sem tradução aparece em inglês.',
@@ -332,9 +342,9 @@ const CHANGELOG = [
   },
   {
     version: '2.9.0', date: '15/10/2026', items: [
-      'Catálogo Completo de Armas : inclusão de 46 armas e itens especiais (IDs 321 a 372) com miniaturas 3D e categoria dedicada "Armas", com ordenação alfabética completa das categorias.',
+      'Catálogo Completo de Armas: inclusão de 46 armas e itens especiais (IDs 321 a 372) com miniaturas 3D e categoria dedicada "Armas", com ordenação alfabética completa das categorias.',
       'Ajuste Fino com Setas Direcionais nos Eixos (▲ / ▼): botões interativos de passo para Posição (X, Y, Z) e Rotação (RX, RY, RZ) com suporte a clique contínuo (auto-repeat), Shift (passo fino 0.1x), Ctrl (passo rápido 5.0x) e histórico completo de Desfazer/Refazer.',
-      'Recurso Tornar Invisível em Materiais: botão para remover a textura de qualquer índice tornando a respectiva parte da malha 100% invisível no 3D e exportando o formato canônico SetObjectMaterial(..., 0, "none", "none", 0).',
+      'Recurso Tornar Invisível em Materiais: botão para remover a textura de qualquer índice tornando a respectiva parte da malha 100% invisível no 3D e exportando o formato canônico SetObjectMaterial(objectid, 0, "none", "none", 0).',
       'Formatação Rigorosa de Coordenadas Pawn: valores float com valor zero depois do ponto agora são exportados de forma limpa como 180.0 e 0.0, preservando integralmente a representação bruta para dados importados não editados.',
       'Recolhimento Independente das Barras Laterais: novos botões nas bordas internas dos menus para recolher ou expandir a barra esquerda ou direita de forma individual, mantendo atalho F10 para alternância simultânea e memória de estado na câmera.',
       'Teleporte Rápido para Coordenadas de Clique: botão "Ir até o local" no topo do inspetor para navegar a câmera instantaneamente até o ponto do terreno clicado pelo mouse.',
@@ -450,7 +460,7 @@ const CHANGELOG = [
   {
     version: '2.0.0', date: '13/10/2026', items: [
       'Pasta única "SA Map Studio" com Projetos, Exportados, Dados e Sistema organizados dentro dela.',
-      'Objetos e texturas separados por categoria (Móveis, Praia, Prédios e casas, Ruas e estradas, Tijolos e paredes, Madeira...).',
+      'Objetos e texturas separados por categoria (Móveis, Praia, Prédios e casas, Ruas e estradas, Tijolos e paredes, Madeira e outras).',
       'Lista de texturas pronta em segundos e miniaturas guardadas no disco.',
       'Editor de materiais do SA-MP: todos os índices do objeto com a textura original, vários índices de uma vez, painel de cores e texto com prévia.',
       'Duplicar e "Posicionar outro igual" criam a cópia no mesmo lugar, já com o gizmo de mover.',

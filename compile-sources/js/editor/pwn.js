@@ -4,6 +4,7 @@ import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
 import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from './project.js';
 
+import { t as tr, uiLocale } from '../ui/i18n.js';
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
 export const isVehicleModel = (id) => id >= VEHICLE_MIN && id <= VEHICLE_MAX;
 
@@ -113,7 +114,7 @@ function splitNamed(args) {
 export function isStudioSectionComment(str) {
   if (!str) return false;
   const t = String(str).trim();
-  return /^\/\/\s*(textos?\s*3d|3d\s*text(s|label)?|pickups?|gang\s*zones?|checkpoints?|map\s*icons?|text\s*draws?|actors?|ve[íi]culos|vehicles?|sons\s*\(playerplaysound\)|sons?|extras dos objetos|coloque em onplayerconnect|c[âa]meras):?$/i.test(t);
+  return /^\/\/\s*(textos?\s*3d|3d\s*text(s|label)?|pickups?|gang\s*zones?|checkpoints?|map\s*icons?|text\s*draws?|actors?|ve[íi]culos|vehicles?|sons\s*\(playerplaysound\)|sons?|extras dos objetos.*|object extras.*|coloque em onplayerconnect.*|removed objects.*|c[âa]meras):?$/i.test(t);
 }
 
 function extractPreceding(between) {
@@ -171,9 +172,7 @@ export function cleanPwnHeader(headerText) {
     }
 
     // Declarações de função stock/public/forward geradas pelo estúdio ou variáveis de wrapper
-    if (/^stock\s+Mapa_\w+_(Carregar|Remover)\s*\(/i.test(t) ||
-        /^public\s+Mapa_\w+_(Carregar|Remover)\s*\(/i.test(t) ||
-        /^forward\s+Mapa_\w+_(Carregar|Remover)\s*\(/i.test(t) ||
+    if (/^(stock|public|forward)\s+(Mapa_\w+_(Carregar|Remover)|Map_\w+_(Load|Remove))\s*\(/i.test(t) ||
         /^(new\s+(objectid|vehicleid|attachtoid|actorid|gangzoneid);)/i.test(t) ||
         t === '{' || t === '}' || t === 'return 1;' || t === 'return 0;') {
       continue;
@@ -846,13 +845,18 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progressbarpro.inc (e progress2.inc): CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção, borda, cor da borda),
+      // progressbarpro.inc: CreatePlayerProgressBar(playerid, x, y, largura, altura, cor, máximo, direção, estilo, segmentos, borda, cor da borda).
+      // Versões antigas da include (e progress2.inc) tinham borda e cor da borda logo depois da direção, e o estilo no fim:
+      // essa ordem é reconhecida pelo 9º argumento ser um número com casas (a borda) ou pelo 11º ser um PB_STYLE_.
       // também com argumentos nomeados (.colour = ...) e expressões (o número inicial é usado)
       if (a.length >= 3) {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
         const dirArg = String(arg(7, 'direction') ?? '0').trim();
         const dirIdx = PB_DIRECTIONS.indexOf(dirArg.toUpperCase());
         const colArg = arg(5, 'colour', 'color');
+        const a8 = String(a[8] ?? '').trim(), a10 = String(a[10] ?? '').trim();
+        const oldOrder = !/PB_STYLE_|PB_RING_SEGMENTS/i.test(a8) && (/PB_STYLE_/i.test(a10) || /^-?\d*\.\d*$|PB_BORDER/i.test(a8));
+        const [iStyle, iSeg, iBorder, iBorderCol] = oldOrder ? [10, 11, 8, 9] : [8, 9, 10, 11];
         const nameFromVar = (v) => {
           if (!v) return '';
           const idx = [...v.matchAll(/\[\s*([A-Za-z_@][\w@]*)\s*\]/g)].map(m => m[1]).filter(s => !/^(playerid|i|j|id|pid)$/i.test(s));
@@ -866,10 +870,10 @@ export function parsePwn(source) {
           color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xFF1C1CFF,
           pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
           pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
-          pbBorder: fitPbBorder(num(arg(8, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 55.5), num(arg(4, 'height'), 3.2)),
-          pbBorderColor: colorArgOrZero(arg(9, 'bordercolour', 'bordercolor')),
-          pbStyle: (() => { const st = String(arg(10, 'style') ?? '0').trim().toUpperCase(); const i = PB_STYLE_NAMES.indexOf(st); return i >= 0 ? i : clampPbStyle(int(st, 0)); })(),
-          pbSegments: clampPbSegments(int(arg(11, 'segments'), 24)),
+          pbBorder: fitPbBorder(num(arg(iBorder, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 55.5), num(arg(4, 'height'), 3.2)),
+          pbBorderColor: colorArgOrZero(arg(iBorderCol, 'bordercolour', 'bordercolor')),
+          pbStyle: (() => { const st = String(arg(iStyle, 'style') ?? '0').trim().toUpperCase(); const i = PB_STYLE_NAMES.indexOf(st); return i >= 0 ? i : clampPbStyle(int(st, 0)); })(),
+          pbSegments: clampPbSegments(int(arg(iSeg, 'segments'), 24)),
           comment: inlineComment, preComment, blankLinesBefore,
         };
         textDraws.push(td);
@@ -1366,7 +1370,7 @@ export function exportPawn(project, options = {}) {
   // (senão o objeto seria criado duas vezes no jogo)
   const arrayObjs = objs.filter(o => !(o.materials && o.materials.length) && !o.move && !o.attach);
   if (opt.exportArray && arrayObjs.length) {
-    arrayLines.push('// Array de coordenadas dos objetos: Model, X, Y, Z, RX, RY, RZ');
+    arrayLines.push('// Object coordinates array: Model, X, Y, Z, RX, RY, RZ');
     arrayLines.push('new Float:MapObjects[][7] = {');
     for (let idx = 0; idx < arrayObjs.length; idx++) {
       const o = arrayObjs[idx];
@@ -1394,7 +1398,7 @@ export function exportPawn(project, options = {}) {
   if (opt.layout === 'lines') {
     const cleanHeader = cleanPwnHeader(project.pwnHeader);
     if (cleanHeader) lines.push(cleanHeader, '');
-    if (opt.relative) lines.push(`// Posições relativas ao centro (${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)})`);
+    if (opt.relative) lines.push(`// ${tr('Posições relativas ao centro ({0})', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
     if (opt.exportArray && arrayObjs.length) {
       lines.push(...arrayLines);
       lines.push('');
@@ -1403,7 +1407,7 @@ export function exportPawn(project, options = {}) {
       lines.push('}');
       const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach) && !(o.attach && vehUidSet.has(o.attach.to)));
       if (extraObjs.length) {
-        lines.push('', '// Extras dos objetos (texturas, movimentação e anexação):');
+        lines.push('', '// Object extras (textures, movement and attachment):');
         if (needObjId) lines.push('new objectid;');
         if (needAttachToId) lines.push('new attachtoid;');
         for (const o of extraObjs) {
@@ -1420,36 +1424,36 @@ export function exportPawn(project, options = {}) {
     if (needGzId) lines.push('new gangzoneid;');
     if (vehLines.length) lines.push('', ...vehLines);
     if (actorLines.length) lines.push('', '// Actors:', ...actorLines);
-    if (labelLines.length) lines.push('', '// Textos 3D:', ...labelLines);
+    if (labelLines.length) lines.push('', '// 3D Texts:', ...labelLines);
     if (pickupLines.length) lines.push('', '// Pickups:', ...pickupLines);
     if (gangZoneLines.length) lines.push('', '// GangZones:', ...gangZoneLines);
     if (checkpointLines.length) lines.push('', '// Checkpoints:', ...checkpointLines);
     if (mapIconLines.length) lines.push('', '// MapIcons:', ...mapIconLines);
     if (textDrawLines.length) lines.push('', '// TextDraws:', ...textDrawLines);
-    if (remLines.length) lines.push('', '// Coloque em OnPlayerConnect (Objetos removidos):', ...remLines);
+    if (remLines.length) lines.push('', '// Removed objects (put in OnPlayerConnect):', ...remLines);
     if (cams.code) lines.push('', cams.code);
     return lines.join('\n') + '\n';
   }
 
   const id = sanitizeIdent(project.name).slice(0, 17).replace(/_+$/, ''); // nomes do Pawn: até 31 letras
-  const date = new Date().toLocaleDateString('pt-BR');
+  const date = new Date().toLocaleDateString(uiLocale());
   const cleanHeader = cleanPwnHeader(project.pwnHeader);
   if (cleanHeader) lines.push(cleanHeader, '');
   lines.push('// ================================================================');
-  lines.push(`// Mapa: ${project.name}`);
-  lines.push(`// Gerado pelo SA Map Studio em ${date}`);
-  lines.push(`// Objetos: ${objs.length}   Veículos: ${vehs.length}   Actors: ${actors.length}   Objetos removidos: ${rems.length}`);
+  lines.push(`// ${tr('Mapa: {0}', project.name)}`);
+  lines.push(`// ${tr('Gerado pelo SA Map Studio em {0}', date)}`);
+  lines.push(`// ${tr('Objetos: {0}', objs.length)}   ${tr('Veículos: {0}', vehs.length)}   ${tr('Actors: {0}', actors.length)}   ${tr('Objetos removidos: {0}', rems.length)}`);
   if (labels.length || pickups.length || gangZones.length || textDraws.length || checkpoints.length || mapIcons.length) {
-    lines.push(`// Textos 3D: ${labels.length}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   Checkpoints: ${checkpoints.length}   MapIcons: ${mapIcons.length}   TextDraws: ${textDraws.length}`);
+    lines.push(`// ${tr('Textos 3D: {0}', labels.length)}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   Checkpoints: ${checkpoints.length}   MapIcons: ${mapIcons.length}   TextDraws: ${textDraws.length}`);
   }
   lines.push('// ----------------------------------------------------------------');
-  lines.push('// Como usar:');
-  lines.push(`//   OnGameModeInit():   Mapa_${id}_Carregar();`);
-  if (remLines.length) lines.push(`//   OnPlayerConnect():  Mapa_${id}_Remover(playerid);`);
-  if (opt.objectFn === 'CreateDynamicObject') lines.push('//   Requer o plugin streamer (#include <streamer>).');
-  if (textDraws.some(td => td.type === 'progress')) lines.push('//   Requer a include SA Progress Bar Pro (#include <progressbarpro>) por causa das barras de progresso.');
-  if (cams.usage.length) { lines.push('//   Câmeras (chame quando quiser, com o jogador já spawnado):'); for (const u of cams.usage) lines.push('//     ' + u); }
-  if (opt.relative) lines.push(`//   Posições relativas: some (${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}) ou passe a origem.`);
+  lines.push(`// ${tr('Como usar:')}`);
+  lines.push(`//   OnGameModeInit():   Map_${id}_Load();`);
+  if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
+  if (opt.objectFn === 'CreateDynamicObject') lines.push(`//   ${tr('Requer o plugin streamer ({0}).', '#include <streamer>')}`);
+  if (textDraws.some(td => td.type === 'progress')) lines.push(`//   ${tr('Requer a include SA Progress Bar Pro ({0}) por causa das barras de progresso.', '#include <progressbarpro>')}`);
+  if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
+  if (opt.relative) lines.push(`//   ${tr('Posições relativas: some ({0}) ou passe a origem.', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
   lines.push('// ================================================================');
   lines.push('');
 
@@ -1458,7 +1462,7 @@ export function exportPawn(project, options = {}) {
     lines.push('');
   }
 
-  lines.push(`stock Mapa_${id}_Carregar()`);
+  lines.push(`stock Map_${id}_Load()`);
   lines.push('{');
   if (needObjId) lines.push('    new objectid;');
   if (needAttachToId) lines.push('    new attachtoid;');
@@ -1474,7 +1478,7 @@ export function exportPawn(project, options = {}) {
     lines.push('    }');
     const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach) && !(o.attach && vehUidSet.has(o.attach.to)));
     if (extraObjs.length) {
-      lines.push('    // Extras dos objetos (texturas, movimentação e anexação):');
+      lines.push('    // Object extras (textures, movement and attachment):');
       const tmp = [];
       for (const o of extraObjs) {
         emitObjectBlock(tmp, o, parentObjUids.has(o.uid) ? 'attachtoid' : 'objectid');
@@ -1487,7 +1491,7 @@ export function exportPawn(project, options = {}) {
 
   if (vehLines.length) { if (objLines.length || opt.exportArray) lines.push(''); for (const l of vehLines) lines.push(indent(l)); }
   if (actorLines.length) { lines.push(''); for (const l of actorLines) lines.push(indent(l)); }
-  if (labelLines.length) { lines.push('', '    // Textos 3D:'); for (const l of labelLines) lines.push(indent(l)); }
+  if (labelLines.length) { lines.push('', '    // 3D Texts:'); for (const l of labelLines) lines.push(indent(l)); }
   if (pickupLines.length) { lines.push('', '    // Pickups:'); for (const l of pickupLines) lines.push(indent(l)); }
   if (gangZoneLines.length) { lines.push('', '    // GangZones:'); for (const l of gangZoneLines) lines.push(indent(l)); }
   if (checkpointLines.length) { lines.push('', '    // Checkpoints:'); for (const l of checkpointLines) lines.push(indent(l)); }
@@ -1497,7 +1501,7 @@ export function exportPawn(project, options = {}) {
   lines.push('}');
   if (remLines.length) {
     lines.push('');
-    lines.push(`stock Mapa_${id}_Remover(playerid)`);
+    lines.push(`stock Map_${id}_Remove(playerid)`);
     lines.push('{');
     for (const l of remLines) lines.push(indent(l));
     lines.push('    return 1;');
@@ -1509,7 +1513,7 @@ export function exportPawn(project, options = {}) {
 export const exportPwn = exportPawn;
 
 export function exportIpl(project, quatOf, modelName) {
-  const lines = ['# Gerado pelo SA Map Studio', '# Prédios removidos não existem em IPL: apague-os no IPL original do jogo.', 'inst'];
+  const lines = [`# ${tr('Gerado pelo SA Map Studio')}`, `# ${tr('Prédios removidos não existem em IPL: apague-os no IPL original do jogo.')}`, 'inst'];
   for (const o of project.objects) {
     const q = quatOf(o);
     const interior = o.interior > 0 ? o.interior : 0;
@@ -1538,9 +1542,9 @@ export function cameraFunctions(cameras) {
   const used = new Set();
   const out = [], usage = [];
   for (const s of shots) {
-    const fn = camIdent('CamFixa_', s.name, used);
+    const fn = camIdent('CameraShot_', s.name, used);
     usage.push(`${fn}(playerid);  // ${s.name}`);
-    out.push(`// Câmera fixa: ${s.name}`, `stock ${fn}(playerid)`, '{',
+    out.push(`// Camera shot: ${s.name}`, `stock ${fn}(playerid)`, '{',
       `    SetPlayerCameraPos(playerid, ${p3(s.pos)});`,
       `    SetPlayerCameraLookAt(playerid, ${p3(s.look)}, ${cutName(s.cut)});`,
       '    return 1;', '}', '');
@@ -1549,7 +1553,7 @@ export function cameraFunctions(cameras) {
   for (const p of paths) {
     const fn = `CameraMove_${pathIdx++}`;
     used.add(fn.toLowerCase());
-    const setName = (p.name || `Conjunto ${pathIdx - 1}`).trim();
+    const setName = (p.name || tr('Conjunto {0}', pathIdx - 1)).trim();
     usage.push(`${fn}(playerid, 0);  // ${setName}`);
     const k = p.keys;
     out.push(`forward ${fn}(playerid, step);`,
@@ -1560,7 +1564,7 @@ export function cameraFunctions(cameras) {
     for (let s = 0; s < k.length - 1; s++) {
       const a = k[s], b = k[s + 1];
       const time = Math.max(1, b.time | 0);
-      const camName = (b.name || a.name || `Câmera ${s + 1}`).trim();
+      const camName = (b.name || a.name || tr('Câmera {0}', s + 1)).trim();
       out.push(`        case ${s}://${camName}`,
         '        {',
         `            InterpolateCameraPos(playerid, ${p3(a.pos)}, ${p3(b.pos)}, ${time}, ${cutName(b.cut)});`,

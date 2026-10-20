@@ -155,7 +155,7 @@ function setPreview(anim, activeCard = null) {
   if (titleEl) titleEl.textContent = anim.label || anim.name;
   if (libEl) libEl.textContent = anim.lib;
   if (codeEl) codeEl.textContent = `ApplyActorAnimation(actorid, "${anim.lib}", "${anim.name}", 4.1, ${anim.loop ?? 1}, 0, 0, ${anim.freeze ?? 0}, 0);`;
-  if (descEl) descEl.textContent = anim.desc || (anim.label ? `Preset: ${anim.lib}/${anim.name}` : 'Animação padrão do GTA San Andreas / .');
+  if (descEl) descEl.textContent = anim.desc || (anim.label ? `Preset: ${anim.lib}/${anim.name}` : 'Animação padrão do GTA San Andreas.');
   if (loopEl) loopEl.textContent = (anim.loop ?? 1) ? '🔁 Loop contínuo' : '⏹ Executa 1 vez';
   if (btnApply) {
     btnApply.disabled = false;

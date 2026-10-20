@@ -1376,7 +1376,7 @@ function renderModelPreview(td, bounds, isSelected = false) {
     ctx.fillStyle = '#65B5FF';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`MODELO 3D: #${modelId}`, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+    ctx.fillText(t('MODELO 3D: #{0}', modelId), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
   }
 
   // Tag do Modelo no canto superior apenas quando selecionado
@@ -1432,7 +1432,8 @@ function updateSidebarList() {
       dragTdIdx = -1;
     };
     const col = toHexRgba(td.color ?? 0xFFFFFFFF);
-    const label = td.type === 'progress' ? `${['Barra', 'Anel', 'Círculo'][td.pbStyle | 0] || 'Barra'}: ${td.name || 'sem nome'}` : stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
+    const pbName = td.name || 'sem nome';
+    const label = td.type === 'progress' ? ([`Barra: ${pbName}`, `Anel: ${pbName}`, `Círculo: ${pbName}`][td.pbStyle | 0] || `Barra: ${pbName}`) : stripColorTags(td.text || (td.font === 5 ? `Model #${td.previewModel}` : 'Box'));
 
     item.innerHTML = `
       <div class="td-badge" style="background:${col.hex};"></div>

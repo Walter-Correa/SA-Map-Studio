@@ -115,7 +115,7 @@ export class GameData {
     const imgList = ['models/gta3.img', 'models/gta_int.img', 'models/cutscene.img', 'SAMP/SAMP.img', 'SAMP/custom.img'];
     done = 0;
     for (const img of imgList) {
-      onProgress('Indexando ' + img, 0.2 + 0.2 * (done++ / imgList.length));
+      onProgress(`Indexando ${img}`, 0.2 + 0.2 * (done++ / imgList.length));
       try {
         const head = await fs.read(img, 0, 8);
         const count = parseImgHeader(head);

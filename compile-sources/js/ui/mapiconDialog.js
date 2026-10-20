@@ -594,7 +594,7 @@ function updateDefaultPickerButton() {
   const btn = dialogEl?.querySelector('#miBtnPickDefault');
   if (!btn) return;
   const info = getMapIconInfo(defaultMarkerType);
-  btn.innerHTML = `<img src="${getMapIconUrl(defaultMarkerType)}" width="20" height="20" style="image-rendering:pixelated; vertical-align:middle;"> <span>Ícone Padrão: #${defaultMarkerType} (${esc(info.label)})</span>`;
+  btn.innerHTML = `<img src="${getMapIconUrl(defaultMarkerType)}" width="20" height="20" style="image-rendering:pixelated; vertical-align:middle;"> <span>Ícone Padrão: #${defaultMarkerType}${info.label ? ` (${esc(info.label)})` : ''}</span>`;
 }
 
 export function openMapIconDialog() {

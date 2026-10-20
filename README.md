@@ -1,146 +1,161 @@
 # SA Map Studio
 
-**Editor de mapas para GTA San Andreas, SA-MP e open.mp**: substituto renovado do antigo
-*SA-MP Map Construction*, com interface nova e o mapa inteiro de San Andreas em 3D.
+**Map editor for GTA San Andreas, SA-MP and open.mp**: a renewed replacement for the old
+*SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D.
 
-![Versão](https://img.shields.io/badge/versão-3.22.0-f0a630)
-![Plataforma](https://img.shields.io/badge/plataforma-Windows-12603a)
+![Version](https://img.shields.io/badge/version-3.23.0-f0a630)
+![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
-![Licença](https://img.shields.io/badge/licença-todos%20os%20direitos%20reservados-e0645c)
+![License](https://img.shields.io/badge/license-all%20rights%20reserved-e0645c)
 
-O editor lê os arquivos direto da pasta do seu GTA San Andreas, sem alterar nada no jogo, e gera
-o código Pawn pronto para colar no seu gamemode ou filterscript.
-
----
-
-## Sumário
-
-- [Recursos](#recursos)
-- [Como usar](#como-usar)
-- [Compilar o programa](#compilar-o-programa)
-- [A pasta do programa](#a-pasta-do-programa)
-- [Atalhos](#atalhos)
-- [Estrutura do código](#estrutura-do-código)
-- [Idiomas](#idiomas)
-- [Histórico de versões](#histórico-de-versões)
-- [Créditos e licenças](#créditos-e-licenças)
+The editor reads the files straight from your GTA San Andreas folder, without changing anything in the game, and
+generates Pawn code ready to paste into your gamemode or filterscript.
 
 ---
 
-## Recursos
+## Contents
 
-### Mapa
-- San Andreas completo com streaming e LOD, água, interiores e os objetos do SA-MP (`SAMP.img`).
-- Carregamento em segundo plano (Web Workers), priorizando o que está na frente da câmera.
-- Câmera livre estilo editor, placa com a região e as coordenadas, e **teleporte** (`Ctrl+G`) aceitando
-  `x, y, z` ou uma linha `SetPlayerPos(...)`.
+- [Features](#features)
+- [How to use](#how-to-use)
+- [Building the program](#building-the-program)
+- [The program folder](#the-program-folder)
+- [Shortcuts](#shortcuts)
+- [Code structure](#code-structure)
+- [Languages](#languages)
+- [Version history](#version-history)
+- [Credits and licenses](#credits-and-licenses)
 
-### Objetos
-- Catálogo com **categorias** (Móveis, Prédios e casas, Ruas e estradas, Praia, Vegetação, Iluminação,
-  Portas e janelas, Placas, Kit de construção, Veículos...), **origem** (SA-MP, Los Santos, San Fierro,
-  Las Venturas...), busca por nome ou ID, favoritos, recentes e miniaturas guardadas no disco.
-- Posicionar clicando no mapa, gizmo para mover e girar (eixos do mundo ou do objeto), encaixe em grade.
-- **Duplicar** e **Posicionar outro igual** criam a cópia no mesmo lugar, já com o gizmo de mover.
-- Remover prédios do mapa original (`RemoveBuildingForPlayer`, com o LOD junto) ou torná-los editáveis.
-- Veículos (`CreateVehicle` / `AddStaticVehicleEx`), desfazer e refazer, seleção múltipla.
-- **Tuning e Paintjobs Compatíveis**: filtragem rigorosa de componentes de tuning, paintjobs (0 a 2) e cores conforme regras oficiais do SA-MP/open.mp (`IsModValidForVehicle`, `IsPaintjobValidForVehicle`, `IsVehicleValidForModding`, `IsVehicleValidForColor`), exibindo apenas peças compatíveis no inspetor.
+---
 
-### Textos 3D (3D Text Labels)
-- Criação e visualização direta no 3D com efeito billboard voltado para a câmera (`Create3DTextLabel` / `CreateDynamic3DTextLabel`).
-- Suporte a múltiplas linhas (`\n`), códigos de cores embutidos no formato `{RRGGBB}`, paleta rápida SA-MP e seletor hexadecimal.
-- Ajuste de distância de visão (`drawDistance`), teste de linha de visão (`testLOS`), interior e mundo virtual.
+## Features
+
+### Map
+- The whole of San Andreas with streaming and LOD, water, interiors and the SA-MP objects (`SAMP.img`).
+- Background loading (Web Workers), prioritizing what is in front of the camera.
+- Editor-style free camera, a sign with the area and the coordinates, and **teleport** (`Ctrl+G`) accepting
+  `x, y, z` or a `SetPlayerPos(...)` line.
+
+### Objects
+- Catalog with **categories** (Furniture, Buildings and houses, Streets and roads, Beach, Vegetation, Lighting,
+  Doors and windows, Signs, Construction kit, Vehicles and more), **source** (SA-MP, Los Santos, San Fierro,
+  Las Venturas and more), search by name or ID, favorites, recent items and thumbnails stored on disk.
+- Place by clicking on the map, gizmo to move and rotate (world or object axes), grid snapping.
+- **Duplicate** and **Place another one** create the copy in the same spot, already with the move gizmo.
+- Remove buildings from the original map (`RemoveBuildingForPlayer`, together with the LOD) or make them editable.
+- Vehicles (`CreateVehicle` / `AddStaticVehicleEx`), undo and redo, multiple selection.
+- **Compatible tuning and paintjobs**: strict filtering of tuning components, paintjobs (0 to 2) and colors following the
+  official SA-MP/open.mp rules (`IsModValidForVehicle`, `IsPaintjobValidForVehicle`, `IsVehicleValidForModding`,
+  `IsVehicleValidForColor`), showing only compatible parts in the inspector.
+
+### 3D Texts (3D Text Labels)
+- Created and shown directly in 3D, billboarded towards the camera (`Create3DTextLabel` / `CreateDynamic3DTextLabel`).
+- Multiple lines (`\n`), embedded `{RRGGBB}` color codes, quick SA-MP palette and hexadecimal picker.
+- Draw distance (`drawDistance`), line-of-sight test (`testLOS`), interior and virtual world.
 
 ### Pickups
-- Criação e visualização no 3D com malha rotativa animada (`CreatePickup` / `CreateDynamicPickup`).
-- Catálogo categorizado com presets oficiais do open.mp: Vida (1240), Colete (1242), Dinheiro (1274), Casas e Informações (1272, 1273, 1239), Armas (IDs 321 a 372) e Equipamentos.
-- Configuração de tipo de pickup, tempo de respawn, interior e mundo virtual.
+- Created and shown in 3D with an animated rotating mesh (`CreatePickup` / `CreateDynamicPickup`).
+- Categorized catalog with the official open.mp presets: Health (1240), Armour (1242), Money (1274), Houses and
+  Information (1272, 1273, 1239), Weapons (IDs 321 to 372) and Equipment.
+- Pickup type, respawn time, interior and virtual world.
 
-### GangZones (Radar Map Interativo)
-- Diálogo modal com o mapa de radar oficial de San Andreas (-3000 a +3000) em alta resolução, com navegação por pan e zoom.
-- Criação de zonas retangulares por arrasto do mouse (`GangZoneCreate` e `GangZoneShowForAll`).
-- **Encaixe magnético de bordas (Snap)**: alinhamento automático entre zonas adjacentes com guias ciano na tela.
-- Seletor de cores RGBA com opacidade/transparência e projeção plana 3D no chão do mapa.
+### GangZones (interactive radar map)
+- Modal dialog with the official San Andreas radar map (-3000 to +3000) in high resolution, with pan and zoom.
+- Rectangular zones drawn by dragging the mouse (`GangZoneCreate` and `GangZoneShowForAll`).
+- **Magnetic edge snapping**: automatic alignment between neighboring zones with cyan guides on screen.
+- RGBA color picker with opacity and a flat 3D projection on the map ground.
 
-### TextDraws (Editor Visual)
-- Editor visual na tela nativa do SA-MP (640x448, mostrada em 16:9) com margem segura e grade; os textos usam as
-  fontes do próprio GTA SA (`fonts.txd` e `fonts.dat`), então o que aparece no editor é o que aparece no jogo.
-- Criação e edição de textos e caixas (`TextDrawCreate` / `CreatePlayerTextDraw`).
-- Fontes 0 a 5, cores de texto e caixa com transparência, alinhamento (esquerda, centro, direita), tamanho de letras e caixas, contorno (`outline`) e sombra (`shadow`).
-- **Pré-visualização 3D de modelos (Font 5)**: exibe veículos, skins e objetos 3D no TextDraw com ajuste de rotação (RX, RY, RZ) e zoom.
-- Exportação limpa de script Pawn pronto para compilação.
-- **Barras de progresso** (SA Progress Bar Pro, `progressbarpro.inc`, incluída no servidor de teste) nas quatro direções, com o mesmo desenho do jogo.
+### TextDraws (visual editor)
+- Visual editor on the native SA-MP screen (640x448, shown in 16:9) with safe margin and grid; texts use GTA SA's own
+  fonts (`fonts.txd` and `fonts.dat`), so what you see in the editor is what you see in the game.
+- Texts and boxes (`TextDrawCreate` / `CreatePlayerTextDraw`).
+- Fonts 0 to 5, text and box colors with transparency, alignment (left, center, right), letter and box size, `outline`
+  and `shadow`.
+- **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom.
+- Clean export of a Pawn script ready to compile.
+- **Progress bars** (SA Progress Bar Pro, `progressbarpro.inc`, included in the test server) in the four directions,
+  drawn as in the game, as a bar, a ring of segments or a growing circle. Parameter order:
+  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, style, segments, border, bordercolour)`.
 
-### Materiais do SA-MP
-- O inspetor lista **todos os índices de material** do objeto (0 a 15) com a textura original de cada um.
-- Marque um ou vários índices (ou clique na parte do objeto com a ferramenta Textura) e:
-  - troque a textura: **`SetObjectMaterial`** (modelid, txdname, texturename);
-  - escolha a cor (`materialcolor`) num **painel de cores** com transparência, `0xAARRGGBB` e cores recentes;
-  - escreva texto: **`SetObjectMaterialText`** com tamanho do material, fonte, tamanho, negrito,
-    alinhamento, cor da letra e do fundo, códigos `{RRGGBB}` e prévia ao vivo.
-- Biblioteca com **todas as texturas do jogo por categoria** (Tijolos e paredes, Pisos, Madeira, Metal...).
+### SA-MP materials
+- The inspector lists **every material index** of the object (0 to 15) with the original texture of each one.
+- Tick one or more indexes (or click the part of the object with the Texture tool) and:
+  - change the texture: **`SetObjectMaterial`** (modelid, txdname, texturename);
+  - pick the color (`materialcolor`) in a **color panel** with transparency, `0xAARRGGBB` and recent colors;
+  - write text: **`SetObjectMaterialText`** with material size, font, size, bold, alignment, font and background
+    color, `{RRGGBB}` codes and a live preview.
+- Library with **every game texture by category** (Bricks and walls, Floors, Wood, Metal and more).
 
-### Câmeras
-- Câmeras fixas: `SetPlayerCameraPos` + `SetPlayerCameraLookAt` a partir da vista atual.
-- Movimentos completos com `InterpolateCameraPos` + `InterpolateCameraLookAt`: vários pontos, tempo,
-  espera e tipo de cada passo (`CAMERA_MOVE` / `CAMERA_CUT`), caminho desenhado no mapa e prévia no editor.
+### Cameras
+- Fixed cameras: `SetPlayerCameraPos` + `SetPlayerCameraLookAt` from the current view.
+- Full movements with `InterpolateCameraPos` + `InterpolateCameraLookAt`: several points, time, hold and type of each step
+  (`CAMERA_MOVE` / `CAMERA_CUT`), path drawn on the map and a preview in the editor.
 
-### Testar no jogo
-- Sobe um **servidor de teste local** (open.mp ou SA-MP) com o gamemode do editor, carrega o mapa com
-  texturas, textos, veículos com seus tuning/paintjobs reais (`AddVehicleComponent`, `ChangeVehiclePaintjob`), Textos 3D (`Create3DTextLabel`), Pickups (`CreatePickup`) e GangZones (`GangZoneCreate`), abrindo o SA-MP já conectado e nascendo onde a câmera está olhando.
-- No jogo: `/fly`, `/map`, `/w`, `/t`, `/v [modelo]`, `/anim`, `/jetpack`, `/spawn`, `/pos` e `/ajuda`.
+### Test in game
+- Starts a **local test server** (open.mp or SA-MP) with the editor's gamemode and loads the map with textures, texts,
+  vehicles with their real tuning/paintjobs (`AddVehicleComponent`, `ChangeVehiclePaintjob`), 3D Texts
+  (`Create3DTextLabel`), Pickups (`CreatePickup`) and GangZones (`GangZoneCreate`), opening SA-MP already connected and
+  spawning where the camera is looking.
+- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos` and `/help`. The messages
+  follow the editor language.
 
-### Importar e exportar
-- **Importa qualquer arquivo**, descobrindo o formato sozinho: código Pawn (Map Construction,
-  Texture Studio e outros, com texturas, textos e câmeras), bancos SQLite, projetos `.json`,
-  mapas do MTA (`.map`) e IPL (texto e binário) do jogo. Também dá para arrastar o arquivo para a janela.
-- **Exporta** para Pawn (`CreateDynamicObject` ou `CreateObject`, funções prontas ou só as linhas,
-  com as câmeras) e IPL. O `.pwn` sai em ANSI para os acentos aparecerem certos no pawno.
-  O código gerado compila **sem warnings**.
+### Import and export
+- **Imports any file**, detecting the format by itself: Pawn code (Map Construction, Texture Studio and others, with
+  textures, texts and cameras), SQLite databases, `.json` projects, MTA maps (`.map`) and the game's IPL (text and
+  binary). You can also drag the file onto the window.
+- **Exports** to Pawn (`CreateDynamicObject` or `CreateObject`, ready-made functions or just the lines, with the
+  cameras) and IPL. The `.pwn` is saved as ANSI so accents show correctly in pawno. The generated code compiles
+  **without warnings**.
+- In the exported code, the information comments follow the editor language, while functions and section separators
+  are always in English (`stock Map_Example_Map_Load()`, `// 3D Texts:`). Code exported by older versions, with the
+  Portuguese names, is still imported.
 
-### Idiomas
-- English, Español, Português, Italiano e Français, escolhidos no botão **Idioma** do menu superior; a troca é
-  na hora, sem reiniciar, e fica salva. Na primeira abertura segue o idioma do Windows (sem país: português de
-  Portugal e do Brasil usam o mesmo português); sem tradução, fica o inglês.
-- O instalador, as janelas de aviso e as mensagens do servidor de teste no jogo seguem o mesmo idioma.
+### Languages
+- English, Español, Português, Italiano and Français, chosen with the **Language** button in the top menu; the switch is
+  instant, without restarting, and is saved. On first launch the editor follows the Windows language (no country:
+  Portuguese from Portugal and Brazil use the same Portuguese); text without a translation shows in English.
+- Numbers and dates use the format of the chosen language.
+- The installer, the warning windows and the test server messages in the game follow the same language.
 
-### Projetos
-- Salvos sozinhos na pasta `projects`, inclusive ao fechar as janelas de edição e ao fechar o programa; abrir
-  outro projeto salva e fecha o que estava aberto.
+### Projects
+- Saved automatically in the `projects` folder, also when closing the editing windows and the program; opening another
+  project saves and closes the one that was open.
 
 ---
 
-## Como usar
+## How to use
 
-### Requisitos para usar o programa compilado
+### Requirements to use the compiled program
 
-| Item | Detalhe |
+| Item | Detail |
 |---|---|
-| Sistema | Windows 10 ou 11 de 64 bits. |
-| Permissão | Administrador só quando o editor fica numa pasta protegida (como a do GTA em Arquivos de Programas): aí ele pede elevação (UAC) ao abrir. Em outras pastas, abre sem pedir. |
-| Navegador interno | Microsoft Edge WebView2 Runtime (já vem no Windows 11 e no Windows 10 atualizado). Sem ele, o editor abre no navegador padrão. |
-| Placa de vídeo | Compatível com WebGL 2 e com driver atualizado. |
-| Memória | 4 GB de RAM ou mais (8 GB recomendados para mapas grandes). |
-| Disco | Cerca de 200 MB livres: 86 MB do `SA Map Studio.exe` + 115 MB da pasta `sa-map-studio` criada na primeira execução. |
-| Tela | Pelo menos 1050 x 650. |
-| Jogo | GTA San Andreas original para PC (a mesma versão do SA-MP), com `gta_sa.exe`, `data\gta.dat` e `models\gta3.img`. A Definitive Edition não é compatível. O editor só lê os arquivos do jogo. |
-| Testar no jogo | Cliente SA-MP 0.3.7 (ou open.mp) instalado na pasta do GTA. O servidor open.mp de teste já vem junto e usa a porta UDP 7777 (o Firewall do Windows pode pedir permissão). |
-| Internet | Não é necessária. Só é usada para baixar prévias extras de animações. |
+| System | 64-bit Windows 10 or 11. |
+| Permission | Administrator only when the editor is in a protected folder (such as the GTA folder in Program Files): then it asks for elevation (UAC) when opening. In other folders it opens without asking. |
+| Built-in browser | Microsoft Edge WebView2 Runtime (already in Windows 11 and in an updated Windows 10). Without it, the editor opens in the default browser. |
+| Graphics card | WebGL 2 compatible, with an updated driver. |
+| Memory | 4 GB of RAM or more (8 GB recommended for large maps). |
+| Disk | About 200 MB free: 86 MB for `SA Map Studio.exe` + 115 MB for the `sa-map-studio` folder created on the first run. |
+| Screen | At least 1050 x 650. |
+| Game | Original GTA San Andreas for PC (the same version as SA-MP), with `gta_sa.exe`, `data\gta.dat` and `models\gta3.img`. The Definitive Edition is not compatible. The editor only reads the game files. |
+| Test in game | SA-MP 0.3.7 (or open.mp) client installed in the GTA folder. The open.mp test server is included and uses UDP port 7777 (Windows Firewall may ask for permission). |
+| Internet | Not required. Only used to download extra animation previews. |
 
-O programa não precisa de Python, Visual C++ ou outra instalação: tudo vai dentro do `.exe`.
+The program does not need Python, Visual C++ or any other installation: everything is inside the `.exe`.
 
-### Requisitos para continuar o desenvolvimento em outro PC
+### Requirements to keep developing on another PC
 
-- Git e **Python 3.10 ou mais novo** do site oficial (https://www.python.org/downloads/), com o launcher `py`.
-  O atalho "python" da Microsoft Store não serve.
-- Conexão com a internet na primeira compilação (o `build.bat` instala PyInstaller e pywebview num ambiente
-  separado em `compile-sources\.venv-build`).
-- Para rodar pelo código, só a biblioteca padrão do Python; o pywebview é opcional (sem ele, abre no navegador).
-- Tudo o mais (gamemode, compilador Pawn, servidor open.mp, miniaturas, sprites, skins e sons) já está no repositório.
-- Clone numa pasta de caminho curto (por exemplo `C:\Projetos\SA-Map-Studio`): o Windows limita caminhos a 260
-  caracteres e o ambiente de compilação não é criado em pastas muito profundas.
+- Git and **Python 3.10 or newer** from the official site (https://www.python.org/downloads/), with the `py` launcher.
+  The Microsoft Store "python" shortcut does not work.
+- Internet connection on the first build (`build.bat` installs PyInstaller and pywebview in a separate environment in
+  `compile-sources\.venv-build`).
+- To run from the source code, only the Python standard library is needed; pywebview is optional (without it, the editor
+  opens in the browser).
+- Everything else (gamemode, Pawn compiler, open.mp server, thumbnails, sprites, skins and sounds) is already in the
+  repository.
+- Clone into a folder with a short path (for example `C:\Projects\SA-Map-Studio`): Windows limits paths to 260
+  characters and the build environment is not created in very deep folders.
 
-### Rodar pelo código-fonte
+### Running from the source code
 
 ```powershell
 git clone https://github.com/Walter-Correa/SA-Map-Studio.git
@@ -148,495 +163,560 @@ cd SA-Map-Studio
 .\start.bat
 ```
 
-Ou `py -3 serve.py`. O editor procura o GTA sozinho (pasta padrão de instalação, registro do Windows, Steam e
-pastas comuns). Para indicar a pasta:
+Or `py -3 serve.py`. The editor finds GTA by itself (default install folder, Windows registry, Steam and common
+folders). To choose the folder:
 
 ```powershell
-py -3 serve.py --gta "D:\Jogos\GTA San Andreas"
+py -3 serve.py --gta "D:\Games\GTA San Andreas"
 ```
 
-Outras opções: `--port 8777`, `--no-browser` e `--navegador` (abre no navegador mesmo com o pywebview instalado).
+Other options: `--port 8777`, `--no-browser` and `--navegador` (opens in the browser even with pywebview installed).
 
 ---
 
-## Compilar o programa
+## Building the program
 
-| Arquivo | Resultado | Para quê |
+| File | Result | Purpose |
 |---|---|---|
-| `build.bat` | `compiled\SA Map Studio\` | Uso no dia a dia: atualiza o programa **mantendo** projetos, exportações, configuração, cache e miniaturas. |
-| `build-clean.bat` | `compiled\SA Map Studio\` | Cópia **limpa**, sem nenhum dado carregado, pronta para enviar a outra pessoa. |
+| `build.bat` | `compiled\SA Map Studio\` | Day-to-day use: updates the program **keeping** projects, exports, settings, cache and thumbnails. |
+| `build-clean.bat` | `compiled\SA Map Studio\` | **Clean** copy, with no loaded data, ready to send to someone else. |
 
-Os dois criam um ambiente Python separado (`compile-sources\.venv-build`), instalam as versões mais recentes do
-PyInstaller e do pywebview, gravam a data e a hora da compilação (aparecem em *Novidades* dentro do
-programa) e montam a pasta `test-server` com o gamemode e o seu servidor open.mp / SA-MP.
+Both create a separate Python environment (`compile-sources\.venv-build`), install the latest PyInstaller and
+pywebview, record the build date and time (shown in *What's new* inside the program), check that every interface text is
+translated into every language (warning only) and assemble the `test-server` folder with the gamemode and your
+open.mp / SA-MP server.
 
 ```powershell
 Stop-Process -Name "SA Map Studio" -Force -ErrorAction SilentlyContinue
-& ".\build.bat"          # mantém seus dados
-& ".\build-clean.bat"    # cópia limpa
+& ".\build.bat"          # keeps your data
+& ".\build-clean.bat"    # clean copy
 ```
 
-> Na primeira vez, o Windows pode mostrar "O Windows protegeu o computador", porque o programa não tem
-> assinatura digital. Clique em **Mais informações** e em **Executar assim mesmo**.
+> The first time, Windows may show "Windows protected your PC", because the program has no digital signature.
+> Click **More info** and **Run anyway**.
 
 ---
 
-## A pasta do programa
+## The program folder
 
-A compilação gera um executável único. Na primeira vez que é aberto, ele cria ao lado a pasta
-`sa-map-studio` com tudo dentro:
+The build produces a single executable. The first time it is opened, it creates the `sa-map-studio` folder next to
+it with everything inside:
 
 ```
 SA Map Studio\
-├── SA Map Studio.exe      o programa (launcher com o pacote embutido)
+├── SA Map Studio.exe      the program (launcher with the embedded package)
 └── sa-map-studio\
-    ├── projects\              seus mapas (salvos sozinhos)
-    ├── exported\              .pwn / .ipl exportados
-    ├── data\                  configuração, cache de texturas, miniaturas e registros
-    ├── test-server\           servidor usado pelo "Testar no jogo"
-    └── system\                arquivos internos do programa
+    ├── projects\              your maps (saved automatically)
+    ├── exported\              exported .pwn / .ipl
+    ├── data\                  settings, texture cache, thumbnails and logs
+    ├── test-server\           server used by "Test in game"
+    └── system\                internal program files
 ```
 
-Para levar o programa para outro computador, basta copiar o `SA Map Studio.exe` (ou a pasta inteira,
-para manter projetos e configurações).
+To take the program to another computer, just copy `SA Map Studio.exe` (or the whole folder, to keep projects and
+settings). A newer `.exe` updates an existing folder and keeps the user data.
 
 ---
 
-## Atalhos
+## Shortcuts
 
-| Tecla | Ação |
+| Key | Action |
 |---|---|
-| Botão direito + arrastar | Olhar em volta |
-| `W` `A` `S` `D` / `E` `Q` | Andar / subir e descer |
-| `Shift` / `Alt` | Mais rápido / mais devagar |
-| `G` / `R` / `T` | Mover / girar / ferramenta Textura |
-| `L` | Eixos do mundo ou do objeto |
-| `X` | Girar 90° |
-| `Page Up` / `Page Down` | Subir / descer a seleção |
-| `End` | Colocar no chão |
-| `F` ou duplo clique | Focar na seleção |
-| `Ctrl+D` | Duplicar no mesmo lugar |
-| Setas (`Shift` = 0,1) | Mover MapIcon, TextDraw ou GangZone nas janelas de edição |
-| `Ctrl+G` | Teleportar para uma coordenada |
-| `Ctrl+Z` / `Ctrl+Y` | Desfazer / refazer |
-| `Ctrl+S` | Salvar agora |
-| `Delete` | Apagar |
-| `?` | Todos os atalhos |
+| Right button + drag | Look around |
+| `W` `A` `S` `D` / `E` `Q` | Move / go up and down |
+| `Shift` / `Alt` | Faster / slower |
+| `G` / `R` / `T` | Move / rotate / Texture tool |
+| `L` | World or object axes |
+| `X` | Rotate 90° |
+| `Page Up` / `Page Down` | Raise / lower the selection |
+| `End` | Drop to the ground |
+| `F` or double click | Focus on the selection |
+| `Ctrl+D` | Duplicate in the same spot |
+| Arrows (`Shift` = 0.1) | Move a MapIcon, TextDraw or GangZone in the editing windows |
+| `Ctrl+G` | Teleport to a coordinate |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
+| `Ctrl+S` | Save now |
+| `Delete` | Delete |
+| `?` | All shortcuts |
 
 ---
 
-## Estrutura do código
+## Code structure
 
 ```
-serve.py                       servidor local (Python, só biblioteca padrão) + janela própria (pywebview)
-index.html, favicon.svg        página principal da interface
-icon.ico                       ícone do executável
+serve.py                       local server (Python, standard library only) + own window (pywebview)
+index.html, favicon.svg        main interface page
+icon.ico                       executable icon
 compile-sources/
-├── css/                       estilos da interface
-├── js/app.js                  inicialização
-├── js/ui/                     abas, inspetor, paleta de cores, câmeras, diálogos, projetos, editores
-├── js/editor/                 núcleo: editor, projeto, materiais, importação, exportação Pawn/IPL
-├── js/world/                  dados do jogo, streaming do mapa, modelos, categorias, workers
-├── js/formats/                leitores dos formatos do GTA (IMG, IDE, IPL, DFF, TXD)
-├── js/data/                   catálogos estáticos (sprites)
+├── css/                       interface styles
+├── js/app.js                  startup
+├── js/ui/                     tabs, inspector, color palette, cameras, dialogs, projects, editors, translation (i18n.js)
+├── js/lang/                   interface translations (one file per language)
+├── js/editor/                 core: editor, project, materials, import, Pawn/IPL export
+├── js/world/                  game data, map streaming, models, categories, workers
+├── js/formats/                readers for the GTA formats (IMG, IDE, IPL, DFF, TXD)
+├── js/data/                   static catalogs (sprites)
 ├── js/vendor/                 Three.js r186
-├── fonts/                     fonte Barlow (SIL Open Font License)
-├── models/                    modelos usados pelo editor
-├── cache/                     miniaturas, skins, sprites, mapicons, sons, animações e radar
-├── launcher.py                executável único: extrai o programa na primeira execução
-├── launcher_frames/           quadros do ícone animado do launcher
-├── package_bundle.py          empacota o programa no zip do launcher
-├── samapstudio.pwn / .amx     gamemode do servidor de teste
-├── anim-list.json             lista de animações
-└── version_info.txt           metadados de versão do .exe
-omp-server-source/             servidor open.mp base usado no "Testar no jogo"
-testing/                       scripts de teste temporários
-build.bat                      compila mantendo os dados
-build-clean.bat                compila uma versão limpa
-start.bat                      inicia o servidor e o editor via Python
+├── fonts/                     Barlow font (SIL Open Font License)
+├── models/                    models used by the editor
+├── cache/                     thumbnails, skins, sprites, map icons, sounds, animations and radar
+├── launcher.py                single executable: extracts or updates the program
+├── launcher_frames/           frames of the launcher's animated icon
+├── package_bundle.py          packs the program into the launcher zip
+├── i18n_check.py, i18n_same.txt  translation check used by the build
+├── samapstudio.pwn / .amx     test server gamemode
+├── anim-list.json             animation list
+└── version_info.txt           .exe version metadata
+omp-server-source/             base open.mp server used by "Test in game"
+testing/                       temporary test scripts
+build.bat                      builds keeping the data
+build-clean.bat                builds a clean version
+start.bat                      starts the server and the editor with Python
 ```
 
-A rotação segue a convenção do SA-MP (ordem Z, X, Y), então o que aparece no editor é o que aparece no servidor.
+Rotation follows the SA-MP convention (Z, X, Y order), so what you see in the editor is what you see on the server.
 
 ---
 
-## Idiomas
+## Languages
 
-O código e a interface são escritos em português, e o próprio texto em português é a chave da tradução.
-Os arquivos ficam em `compile-sources/js/lang/` e vão sempre junto na compilação:
+The code and the interface are written in Brazilian Portuguese, and the Portuguese text itself is the translation key.
+The files are in `compile-sources/js/lang/` and are always included in the build:
 
-- `languages.json`: a lista do menu, na ordem em que aparece, com o nome de cada idioma escrito nele mesmo.
-- `<sigla>.json` (ex.: `en.json`): `"texto em português": "tradução"`. Partes variáveis usam `{0}`, `{1}`
-  (ex.: `"{0} itens selecionados": "{0} items selected"`); no texto do servidor de teste os `%d`/`%s` ficam
-  como estão. Um texto que falta aparece em inglês.
-- Nomes do jogo e do SA-MP, teclas e o código Pawn exportado não são traduzidos (lista em
-  `compile-sources/i18n_same.txt`). Para um trecho da interface que não deve ser traduzido, use
-  `translate="no"` no HTML.
-- O instalador (`compile-sources/launcher.py`) tem os seus textos na tabela `TEXTS`, porque roda antes de a
-  pasta do programa existir.
+- `languages.json`: the menu list, in the order it appears, with each language name written in that language.
+- `<code>.json` (e.g. `en.json`): `"Portuguese text": "translation"`. Variable parts use `{0}`, `{1}`
+  (e.g. `"{0} itens selecionados": "{0} items selected"`); in the test server texts, `%d`/`%s` stay as they are.
+  A missing text shows in English.
+- Texts joined with ` — `, ` · `, ` | ` or ` - ` and labels with a count at the end (`Móveis (985)`) are translated piece
+  by piece, so each piece needs its own key.
+- Game and SA-MP names, keys and the exported Pawn code are not translated (list in `compile-sources/i18n_same.txt`). For
+  a part of the interface that must not be translated, use `translate="no"` in the HTML.
+- Text that does not go through the page (canvas, textarea content, code generated for the game) uses `t('text')` from
+  `js/ui/i18n.js`.
+- The installer (`compile-sources/launcher.py`) keeps its texts in the `TEXTS` table, because it runs before the program
+  folder exists.
 
-Para adicionar um idioma: copie `en.json` para `<sigla>.json`, traduza os valores, acrescente
-`{"code": "<sigla>", "name": "<nome no próprio idioma>"}` no fim de `languages.json` e a sigla em `LANGS`/`TEXTS`
-do `launcher.py` (e em `WINDOWS_LANGS` do `launcher.py` e do `serve.py`, para a detecção pelo Windows).
+To add a language: copy `en.json` to `<code>.json`, translate the values, add
+`{"code": "<code>", "name": "<name in its own language>"}` at the end of `languages.json`, and add the code to
+`LANGS`/`TEXTS` in `launcher.py` (and to `WINDOWS_LANGS` in `launcher.py` and `serve.py`, for Windows detection).
 
-`python compile-sources/i18n_check.py` mostra quantos textos faltam em cada idioma (o `build.bat` roda e só
-avisa); `--missing en` lista os que faltam em inglês.
+`python compile-sources/i18n_check.py` shows how many texts are missing in each language (`build.bat` runs it and only
+warns); `--missing en` lists the ones missing in English.
 
 ---
 
-## Histórico de versões
+## Version history
+
+### 3.23.0 — 20/10/2026
+- Translation completed: option lists made of joined texts, textarea placeholders, the diagnostic report, canvas texts,
+  catalog names (places, skins, animation categories and sound labels) and the full changelog.
+- Numbers and dates follow the chosen language.
+- Export: information comments in the editor language; functions (`Map_<name>_Load`, `Map_<name>_Remove`,
+  `CameraShot_<name>`) and section separators always in English. Older exports are still imported.
+- SA Progress Bar Pro: `style` and `segments` now come right after `direction` in `CreatePlayerProgressBar`; editor,
+  export and test server use the new order, and the import also accepts the old one.
+- Test server: the `/voar` and `/mapa` aliases were removed (`/fly` and `/map` remain).
+- Spelling review of every language; `readme.md` and `ia-rules.md` in English.
 
 ### 3.22.0 — 20/10/2026
-- O editor fica em inglês, espanhol, português, italiano e francês, trocados no botão Idioma do menu superior
-  na hora e sem reiniciar; a escolha fica salva.
-- Na primeira abertura o idioma segue o do Windows; texto sem tradução aparece em inglês.
-- O instalador, as janelas de aviso e as mensagens do servidor de teste no jogo seguem o idioma escolhido.
-- Nomes do jogo e do SA-MP e o código Pawn exportado continuam iguais em todos os idiomas.
+- The editor is in English, Spanish, Portuguese, Italian and French, switched instantly with the Language button in the
+  top menu, without restarting; the choice is saved.
+- On first launch the language follows Windows; text without a translation shows in English.
+- The installer, the warning windows and the test server messages in the game follow the chosen language.
+- Game and SA-MP names and the exported Pawn code stay the same in every language.
 
 ### 3.21.2 — 20/10/2026
-- A área do manipulador tem prioridade sobre o clicar e arrastar direto, que vale só clicando no item fora dela.
-- O botão Mover/Girar do manipulador fica sem reagir ao mouse durante qualquer arrastar.
+- The manipulator (gizmo) area has priority over direct click and drag, which only works when clicking the item outside it.
+- The manipulator's Move/Rotate button does not react to the mouse during any drag.
 
 ### 3.21.1 — 20/10/2026
-- Clicar e arrastar um item tem prioridade sobre o manipulador, que fica parado até o botão ser solto
-  (sobre GangZones a seta do manipulador continua valendo).
-- Área de detecção das setas do manipulador reduzida pela metade.
+- Clicking and dragging an item has priority over the manipulator, which stays still until the button is released
+  (over GangZones the manipulator arrow still works).
+- Detection area of the manipulator arrows cut in half.
 
 ### 3.21.0 — 20/10/2026
-- Clicar e arrastar move o item na hora, selecionando-o ao começar a arrastar.
-- Importar abre sempre com Substituir e Mesclar desmarcados.
-- Sons (PlayerPlaySound) removidos do projeto, da importação, do salvamento, do mapa 3D, do inspetor e do
-  servidor de testes. O catálogo de sons fica só para prévia e cópia do código.
-- Bloqueio de versão antiga em pasta de versão mais nova (launcher pelo manifesto e editor pelo config.json).
+- Click and drag moves the item at once, selecting it when the drag starts.
+- Import always opens with Replace and Merge unticked.
+- Sounds (PlayerPlaySound) removed from the project, import, saving, 3D map, inspector and test server. The sound catalog
+  is only for preview and copying the code.
+- An old version is blocked in a folder of a newer version (launcher by the manifest and editor by config.json).
 
 ### 3.20.0 — 20/10/2026
-- O .exe novo atualiza a pasta instalada: compara o manifesto do pacote (system/bundle.json) com o instalado e
-  deixa a pasta igual à versão nova. system e test-server são trocados inteiros; em data só mexe nos arquivos que
-  vieram no pacote. Projetos, exportados, configurações, logs e o que o usuário criou ficam.
-- Atualização com diário e cópia de segurança: erro ou queda de energia no meio desfazem a troca na próxima abertura.
-- Aviso para fechar o editor e o servidor de testes antes de atualizar; uma instância do editor por vez.
-- Servidor de testes: spawn único do jogador.
+- The new .exe updates the installed folder: it compares the package manifest (system/bundle.json) with the installed one
+  and leaves the folder exactly like the new version. system and test-server are replaced whole; in data only the files
+  that came in the package are touched. Projects, exports, settings, logs and whatever the user created are kept.
+- Update with a journal and a backup copy: an error or a power cut in the middle undoes the swap on the next launch.
+- Warning to close the editor and the test server before updating; one editor instance at a time.
+- Test server: the player spawns only once.
 
 ### 3.19.0 — 20/10/2026
-- Importação mantém os acoplamentos: cada item ganha um uid novo e os acoplados passam a apontar para a cópia
-  do pai que veio junto (substituir, mesclar o mesmo projeto ou importar como projeto novo).
-- Acoplamentos de projetos já salvos com o pai perdido são recuperados pela posição ao abrir ou importar.
-- Importar, substituir e mesclar entram no desfazer/refazer num passo só (itens, cabeçalho, código e câmeras).
-- Servidor de testes: TextDraws e barras mostradas uma vez por conexão, sem as piscadas no spawn.
-- SA Progress Bar Pro: anéis só reenviam os segmentos que mudam de cor ou visibilidade (fim do aviso ackslimit).
-- Mapa de exemplo com as TextDraws e barras novas.
+- Import keeps the attachments: each item gets a new uid and the attached ones point to the copy of the parent that came
+  along (replace, merge the same project or import as a new project).
+- Attachments of saved projects whose parent was lost are recovered by position when opening or importing.
+- Import, replace and merge go into undo/redo as a single step (items, header, code and cameras).
+- Test server: TextDraws and bars shown once per connection, without blinking on spawn.
+- SA Progress Bar Pro: rings only resend the segments that change color or visibility (no more ackslimit warning).
+- Example map with the new TextDraws and bars.
 
 ### 3.18.2 — 20/10/2026
-- Prévia de modelo 3D de skins na pose parada do jogo: o leitor de DFF passa a ler os ossos (HAnim) e o skin,
-  e a prévia aplica o primeiro quadro da animação IDLE_stance do anim/ped.ifp. Iluminação igual à prévia do SA-MP.
+- 3D model preview of skins in the game's idle pose: the DFF reader now reads the bones (HAnim) and the skin, and the
+  preview applies the first frame of the IDLE_stance animation from anim/ped.ifp. Lighting like the SA-MP preview.
 
 ### 3.18.1 — 20/10/2026
-- Prévia de modelo 3D de skins igual ao jogo: esfera de colisão de pedestre do GTA (raio 1,0, centro 0)
-  e o pedestre na altura da pose do jogo, com o mesmo tamanho e posição na caixa.
+- 3D model preview of skins like the game: GTA pedestrian collision sphere (radius 1.0, center 0) and the pedestrian at
+  the height of the game pose, with the same size and position in the box.
 
 ### 3.18.0 — 20/10/2026
-- Prévia de modelo 3D (font 5) renderizada com o modelo real e a câmera do cliente SA-MP: 256 x 256 esticado para a caixa,
-  câmera em (0,0,50) olhando para -Y com 53,13° de campo de visão, distância (-0,1 - 2,25 x raio da colisão) x zoom e rotação
-  Z, Y, X em volta da origem do modelo. O servidor do editor lê as esferas de colisão (COL e DFF de veículos).
-- Modelo 0 na prévia de modelo 3D.
-- GangZones vão para o espaço vazio mais próximo, reduzidas para caber.
+- 3D model preview (font 5) rendered with the real model and the SA-MP client camera: 256 x 256 stretched to the box,
+  camera at (0,0,50) looking at -Y with a 53.13° field of view, distance (-0.1 - 2.25 x collision radius) x zoom and
+  Z, Y, X rotation around the model origin. The editor server reads the collision spheres (COL and vehicle DFF).
+- Model 0 in the 3D model preview.
+- GangZones go to the nearest empty space, shrunk to fit.
 
 ### 3.17.0 — 20/10/2026
-- SA Progress Bar Pro: `AutoFillPlayerProgressBar(playerid, barid, maxvalue)`, `StopAutoFillPlayerProgressBar` e
-  `IsPlayerProgressBarAutoFilling`; array de dados renomeado para `ProgressBar`.
-- Editor: Auto preencher salvo na barra (com "Preencher até" limitado ao máximo da barra), exportado e importado; prévia com o
-  mesmo tempo da include.
-- Importar: opção "Mesclar com o projeto atual".
-- Importador: zip (mapas de dentro), carros de IPL em texto, peds/pickups/markers/blips/radar areas do MTA e objetos em array.
-- Corrige objetos com extras criados duas vezes na exportação em array.
+- SA Progress Bar Pro: `AutoFillPlayerProgressBar(playerid, barid, maxvalue)`, `StopAutoFillPlayerProgressBar` and
+  `IsPlayerProgressBarAutoFilling`; data array renamed to `ProgressBar`.
+- Editor: Auto fill saved in the bar (with "Fill up to" limited to the bar maximum), exported and imported; preview with
+  the same timing as the include.
+- Import: "Merge with the current project" option.
+- Importer: zip (maps inside it), cars from text IPL, MTA peds/pickups/markers/blips/radar areas and objects in arrays.
+- Fixes objects with extras created twice in the array export.
 
 ### 3.16.0 — 20/10/2026
-- Seletor de cor próprio para todos os campos de cor (o WebView2 não abre o seletor nativo).
-- Campos com limites aceitam digitação livre e só aplicam o limite ao sair do campo.
-- Cópia de TextDraw/barra logo abaixo (ou acima) da original, na mesma coluna.
-- GangZones: cópia encostada num lado livre da original ou no espaço livre mais próximo, reduzida se precisar; adicionar segue a
-  mesma regra; sem espaço no mapa, aviso e nada é criado.
-- Barras de progresso: Testar movimento na prévia.
-- Servidor de teste renomeado para "SA Map Studio - Testing server"; `progress2.inc` removida.
+- Own color picker for every color field (WebView2 does not open the native picker).
+- Fields with limits accept free typing and only apply the limit when leaving the field.
+- A TextDraw/bar copy goes right below (or above) the original, in the same column.
+- GangZones: the copy snaps to a free side of the original or to the nearest free space, shrunk if needed; adding follows
+  the same rule; with no room on the map, a warning appears and nothing is created.
+- Progress bars: Test movement in the preview.
+- Test server renamed to "SA Map Studio - Testing server"; `progress2.inc` removed.
 
 ### 3.15.1 — 19/10/2026
-- Administrador só quando preciso: o editor deixa de pedir elevação (UAC) sempre e só a pede quando a própria pasta não pode
-  ser gravada (por exemplo, dentro da pasta do GTA em Arquivos de Programas). Com o GTA numa pasta protegida, o cliente
-  SA-MP do teste abre como administrador (com o pedido do Windows) ao clicar em Testar.
+- Administrator only when needed: the editor no longer always asks for elevation (UAC) and only asks when its own folder
+  cannot be written (for example, inside the GTA folder in Program Files). With GTA in a protected folder, the test SA-MP
+  client opens as administrator (with the Windows prompt) when clicking Test.
 
 ### 3.15.0 — 19/10/2026
-- Editor de TextDraws: ordem de criação (camadas) com Fundo, Recuar, Avançar, Frente e arrastar na lista; prévia, exportação e
-  servidor de teste seguem a ordem. Globais e de jogador (com as barras) ficam em grupos, como o SA-MP desenha.
+- TextDraw editor: creation order (layers) with Back, Backward, Forward, Front and dragging in the list; preview, export
+  and test server follow the order. Global and player ones (with the bars) are grouped, as SA-MP draws them.
 
 ### 3.14.0 — 19/10/2026
-- SA Progress Bar Pro: modelos `PB_STYLE_BAR`, `PB_STYLE_RING` (anel de 4 a 60 segmentos, 2 PlayerTextDraws por segmento) e
-  `PB_STYLE_CIRCLE` (círculo que cresce do centro, 3 PlayerTextDraws), escolhidos nos parâmetros `style` e `segments` de
-  `CreatePlayerProgressBar` ou com `SetPlayerProgressBarStyle`. Documentação dos recursos e limitações na include.
-- Editor de TextDraws: campo Modelo e Segmentos, prévia dos três modelos, exportação, importação e servidor de teste.
+- SA Progress Bar Pro: `PB_STYLE_BAR`, `PB_STYLE_RING` (ring of 4 to 60 segments, 2 PlayerTextDraws per segment) and
+  `PB_STYLE_CIRCLE` (circle growing from the center, 3 PlayerTextDraws), chosen with the `style` and `segments`
+  parameters of `CreatePlayerProgressBar` or with `SetPlayerProgressBarStyle`. Features and limitations documented in
+  the include.
+- TextDraw editor: Model and Segments fields, preview of the three models, export, import and test server.
 
 ### 3.13.0 — 19/10/2026
-- SA Progress Bar Pro reescrita em inglês, com documentação de cada função e a lista completa no topo da include.
-- `SetPlayerProgressBarSize` / `GetPlayerProgressBarSize`; valores padrão em `BlinkPlayerProgressBar` (intervalo, duração e
-  cores), `SetPlayerProgressBarColour`, `SetPlayerProgressBarBorder`, `SetPlayerProgressBarBorderColour`,
-  `SetPlayerProgressBarMaxValue` e `SetPlayerProgressBarDirection`.
-- Troca de cor da barra e da borda sem recriar as TextDraws.
+- SA Progress Bar Pro rewritten in English, with documentation of each function and the full list at the top of the include.
+- `SetPlayerProgressBarSize` / `GetPlayerProgressBarSize`; default values in `BlinkPlayerProgressBar` (interval, duration and
+  colors), `SetPlayerProgressBarColour`, `SetPlayerProgressBarBorder`, `SetPlayerProgressBarBorderColour`,
+  `SetPlayerProgressBarMaxValue` and `SetPlayerProgressBarDirection`.
+- Bar and border color change without recreating the TextDraws.
 
 ### 3.12.0 — 19/10/2026
-- SA Progress Bar Pro: borda de `PB_BORDER_MIN` 0,5 a `PB_BORDER_MAX` 5,0 (toda barra tem borda) e cor da borda no último
-  parâmetro de `CreatePlayerProgressBar` ou com `SetPlayerProgressBarBorderColour` (0 = preta com o alfa da barra).
-- `BlinkPlayerProgressBar(..., cor, cor da borda)`: a borda pisca na cor escolhida; sem ela, a borda não muda.
-- Editor: campos de borda com decimais, cor da borda, borda na piscada e tamanho mínimo da barra.
-- Velocidade de movimento e rotação dos objetos em campos decimais de 0,001 a 10,0 (padrão 1,0).
+- SA Progress Bar Pro: border from `PB_BORDER_MIN` 0.5 to `PB_BORDER_MAX` 5.0 (every bar has a border) and border color in
+  `CreatePlayerProgressBar` or with `SetPlayerProgressBarBorderColour` (0 = black with the alpha of the bar).
+- `BlinkPlayerProgressBar(playerid, barid, interval, duration, colour, bordercolour)`: the border blinks in the chosen
+  color; without it, the border does not change.
+- Editor: border fields with decimals, border color, border in the blink and minimum bar size.
+- Object movement and rotation speed in decimal fields from 0.001 to 10.0 (default 1.0).
 
 ### 3.11.1 — 19/10/2026
-- Borda das barras limitada ao que cabe na barra (`PB_FitBorder` na include e o mesmo cálculo no editor): sobra sempre
-  `PB_MIN_INNER` (1 unidade) de interior. O campo Borda mostra o máximo para a largura e a altura atuais.
-- Cor da piscada só aparece quando "Piscar na cor da barra" está desmarcado.
+- Bar border limited to what fits in the bar (`PB_FitBorder` in the include and the same calculation in the editor):
+  `PB_MIN_INNER` (1 unit) of inside is always left. The Border field shows the maximum for the current width and height.
+- The blink color only shows when "Blink in the bar color" is unticked.
 
 ### 3.11.0 — 19/10/2026
-- A include de barras passa a se chamar **SA Progress Bar Pro** (`progressbarpro.inc`), com o enumerador `ProgressBar_Data`
-  e os campos `pb_valid`, `pb_x`...
-- `BlinkPlayerProgressBar(playerid, barra, intervalo = 250, duração = 0, cor = 0)`: pisca o interior da barra; intervalo de
-  50 a 60000 ms, duração 0 = até `StopPlayerProgressBarBlink`, sem cor pisca na cor da própria barra. Prévia no editor.
-- Borda no último parâmetro de `CreatePlayerProgressBar` (`PB_BORDER_MIN` 0 a `PB_BORDER_MAX` 4); o editor limita o campo
-  e a include usa o limite quando o valor passa dele. `SetPlayerProgressBarBorder` / `GetPlayerProgressBarBorder`.
-- Ícone do editor na barra de tarefas: gravado na janela, na classe e nas propriedades de relançamento.
+- The bar include is now called **SA Progress Bar Pro** (`progressbarpro.inc`), with the `ProgressBar_Data` enumerator
+  and the `pb_valid`, `pb_x` (and other) fields.
+- `BlinkPlayerProgressBar(playerid, barid, interval = 250, duration = 0, colour = 0)`: blinks the inside of the bar;
+  interval from 50 to 60000 ms, duration 0 = until `StopPlayerProgressBarBlink`, without a color it blinks in the bar's
+  own color. Preview in the editor.
+- Border as a parameter of `CreatePlayerProgressBar` (`PB_BORDER_MIN` 0 to `PB_BORDER_MAX` 4); the editor limits the field
+  and the include uses the limit when the value goes past it. `SetPlayerProgressBarBorder` / `GetPlayerProgressBarBorder`.
+- Editor icon in the taskbar: set on the window, the class and the relaunch properties.
 
 ### 3.10.1 — 19/10/2026
-- `progress3.inc`: borda vertical `PB3_BORDER_Y` = 1,25 x `PB3_BORDER_X`, porque a unidade de TextDraw tem 3,00 x 2,41 px em
-  1920x1080; as bordas ficam com 3 px nos quatro lados em 16:9 (antes eram 3 nos lados e 2 ou 3 em cima e embaixo).
-- Prévia das barras com a regra de pixel do Direct3D 9 do jogo (de `ceil(início)` a `ceil(fim)`), igual ao que aparece no jogo.
+- `progress3.inc`: vertical border `PB3_BORDER_Y` = 1.25 x `PB3_BORDER_X`, because a TextDraw unit is 3.00 x 2.41 px at
+  1920x1080; borders are 3 px on all four sides in 16:9 (before they were 3 on the sides and 2 or 3 at the top and bottom).
+- Bar preview with the game's Direct3D 9 pixel rule (from `ceil(start)` to `ceil(end)`), as it shows in the game.
 
 ### 3.10.0 — 19/10/2026
-- Nova include `progress3.inc` (em `omp-server-source/pawno/include`): barras com sprites `LD_SPAC:white`, posição e tamanho
-  exatos em unidades 640x448 (iguais em qualquer resolução) e borda interna uniforme (`PB3_BORDER`, padrão 1.0). Mesmas
-  funções da `progress2`; corrige a barra escondida que reaparecia ao mudar o valor e trata a falta de TextDraws livres.
-- Editor de TextDraws, exportação e servidor de teste passam a usar a `progress3`.
+- New `progress3.inc` include (in `omp-server-source/pawno/include`): bars with `LD_SPAC:white` sprites, exact position and
+  size in 640x448 units (the same at any resolution) and a uniform inner border (`PB3_BORDER`, default 1.0). Same
+  functions as `progress2`; fixes the hidden bar that showed up again when the value changed and handles running out of
+  free TextDraws.
+- TextDraw editor, export and test server now use `progress3`.
 
 ### 3.9.3 — 19/10/2026
-- Textos em objetos (SetObjectMaterialText) iguais ao jogo: o `fontsize` é a altura da linha (como no `D3DXCreateFont` do
-  cliente), com altura, ascendente e largura de cada letra medidas pelo Windows; esquerda e direita ficam no topo do material,
-  centro fica no meio; o texto recebe a cor do material e a luz do objeto.
-- Abrir a aba Texto ou trocar de índice não sobrescreve mais um texto que já existe.
-- Cabeçalho do código exportado avisa quando é preciso a include `progress2`.
+- Texts on objects (SetObjectMaterialText) like the game: `fontsize` is the line height (as in the client's
+  `D3DXCreateFont`), with the height, ascent and width of each letter measured by Windows; left and right sit at the top
+  of the material, center sits in the middle; the text gets the material color and the object lighting.
+- Opening the Text tab or changing the index no longer overwrites an existing text.
+- The exported code header warns when the `progress2` include is needed.
 
 ### 3.9.2 — 19/10/2026
-- Texturas dos objetos do SA-MP corrigidas: cerca de 450 modelos usavam só a primeira textura porque o editor lia o material
-  de cada triângulo, que nesses arquivos vem zerado; agora a divisão vem do BinMesh, como no jogo. Miniaturas refeitas.
-- Importar sem "Substituir o projeto atual" cria um projeto novo com o nome do arquivo em vez de mesclar no projeto aberto.
-- Campo "Nome" das Barras de Progresso sem o texto "(variável no código)".
+- SA-MP object textures fixed: about 450 models used only the first texture because the editor read the material of each
+  triangle, which comes zeroed in those files; now the split comes from the BinMesh, as in the game. Thumbnails redone.
+- Importing without "Replace the current project" creates a new project named after the file instead of merging into the
+  open project.
+- "Name" field of the progress bars without the "(variable in the code)" text.
 
 ### 3.9.1 — 19/10/2026
-- TextDraws exportadas como `textdraw_0`, `textdraw_1`... e barras de progresso como `progress_0`, `progress_1`... com o nome dado no editor em `// comentário`
-  no fim da linha de criação (lido de volta na importação).
+- TextDraws exported as `textdraw_0`, `textdraw_1` and so on, and progress bars as `progress_0`, `progress_1` and so on,
+  with the name given in the editor as a `// comment` at the end of the creation line (read back on import).
 
 ### 3.9.0 — 19/10/2026
-- Barras de progresso com nome (vira o nome da variável no código exportado).
-- Importação de barras reconhece argumentos nomeados, cores decimais negativas, expressões e variáveis em arrays/enums.
-- Botões de tipos de TextDraw em grade e botão Concluir das janelas de edição afastado da borda.
-- Mapa de exemplo com uma barra de progresso.
+- Progress bars with a name (it becomes the variable name in the exported code).
+- Bar import recognizes named arguments, negative decimal colors, expressions and variables in arrays/enums.
+- TextDraw type buttons in a grid and the Done button of the editing windows moved away from the edge.
+- Example map with a progress bar.
 
 ### 3.8.0 — 19/10/2026
-- Novo tipo **Barra de progresso** no editor de TextDraws (`progress2.inc`): largura, altura, cor, máximo, valor e
-  direção, desenhada como a include monta no jogo; exporta e importa `CreatePlayerProgressBar`,
-  `SetPlayerProgressBarValue` e `ShowPlayerProgressBar`.
-- Gamemode de teste compilado com a `progress2.inc`.
+- New **Progress bar** type in the TextDraw editor (`progress2.inc`): width, height, color, maximum, value and direction,
+  drawn as the include builds it in the game; exports and imports `CreatePlayerProgressBar`,
+  `SetPlayerProgressBarValue` and `ShowPlayerProgressBar`.
+- Test gamemode compiled with `progress2.inc`.
 
 ### 3.7.0 — 19/10/2026
-- Retomar de onde parou: o projeto guarda a seleção do último salvamento e, ao abrir, seleciona os itens,
-  ativa o gizmo e foca nele. Sem seleção de itens do projeto, abre focando no item mais próximo do centro.
+- Resume where you left off: the project stores the selection of the last save and, when opened, selects the items,
+  activates the gizmo and focuses on it. Without a selection of project items, it opens focusing on the item closest to
+  the center.
 
 ### 3.6.2 — 19/10/2026
-- Botão "3DTexts" na barra superior.
+- "3DTexts" button in the top bar.
 
 ### 3.6.1 — 19/10/2026
-- Nova vista de câmera do mapa de exemplo (Example Map) na primeira abertura.
+- New camera view of the example map (Example Map) on first launch.
 
 ### 3.6.0 — 19/10/2026
-- Na primeira abertura, o editor carrega o projeto **Example Map** na câmera salva nele.
-- Setas movem o item selecionado nas janelas de MapIcons, TextDraws e GangZones (1 unidade, 0,1 com Shift),
-  sem afetar o editor principal enquanto a janela está aberta.
-- Contorno e sombra das TextDraws são caixas de ligar/desligar (desligadas por padrão).
-- O nome da GangZone atualiza na hora, enquanto é digitado.
+- On first launch, the editor loads the **Example Map** project at the camera saved in it.
+- Arrow keys move the selected item in the MapIcons, TextDraws and GangZones windows (1 unit, 0.1 with Shift), without
+  affecting the main editor while the window is open.
+- TextDraw outline and shadow are on/off checkboxes (off by default).
+- The GangZone name updates instantly while it is typed.
 
 ### 3.5.5 — 19/10/2026
-- Nova vista inicial da câmera ao abrir um projeto vazio pela primeira vez.
+- New initial camera view when opening an empty project for the first time.
 
 ### 3.5.4 — 19/10/2026
-- Retirado o registro temporário de desempenho usado para investigar o travamento ao redimensionar
-  (a causa estava no Windows do PC, não no editor).
+- Removed the temporary performance log used to investigate the freeze when resizing (the cause was in the PC's Windows,
+  not in the editor).
 
 ### 3.5.3 — 19/10/2026
-- O mapa 3D volta a acompanhar a janela durante o redimensionamento (a pausa da 3.5.2 foi desfeita).
-- Registro de desempenho nos Registros: duração, quadros e maior pausa de cada redimensionamento e paradas da página.
+- The 3D map follows the window again while resizing (the 3.5.2 pause was undone).
+- Performance log in the Logs: duration, frames and longest pause of each resize, and page stalls.
 
 ### 3.5.2 — 19/10/2026
-- O botão "Projeto" do inspetor também leva a câmera até as setas de edição.
-- Rodando pelo código-fonte, o cache gerado em execução vai para a pasta de dados, não para `compile-sources\cache`.
+- The inspector's "Project" button also takes the camera to the editing arrows.
+- When running from the source code, the cache generated at runtime goes to the data folder, not to
+  `compile-sources\cache`.
 
 ### 3.5.1 — 19/10/2026
-- Barra superior mostra todos os rótulos que cabem e esconde um a um só quando falta espaço.
-- Redimensionar a janela não trava mais: as listas de objetos e texturas só são redesenhadas quando necessário.
-- Ao abrir ou importar, a câmera foca no item mais próximo do centro do projeto.
-- "Mover todo o projeto" leva a câmera até as setas de edição.
+- The top bar shows every label that fits and hides them one by one only when there is no room.
+- Resizing the window no longer freezes: the object and texture lists are only redrawn when needed.
+- When opening or importing, the camera focuses on the item closest to the project center.
+- "Move the whole project" takes the camera to the editing arrows.
 
 ### 3.5.0 — 19/10/2026
-- Ao fechar o programa, todos os projetos abertos são salvos antes de encerrar.
-- Alterações nas janelas de TextDraws, MapIcons e GangZones são salvas ao fechar pelo X, Concluir ou Esc.
-- Depois de importar, nenhum item fica selecionado automaticamente.
-- Ícone do programa nas caixas de confirmação e maior na barra superior.
+- When closing the program, every open project is saved before exiting.
+- Changes in the TextDraws, MapIcons and GangZones windows are saved when closing with X, Done or Esc.
+- After importing, no item is selected automatically.
+- Program icon in the confirmation boxes and bigger in the top bar.
 
 ### 3.4.1 — 19/10/2026
-- TextDraws iguais ao jogo: o editor desenha com as fontes do GTA SA e reproduz as contas do jogo para tamanho das
-  letras, quebra de linha, alinhamento e caixa, na tela 640x448 do SA-MP em 16:9.
-- Editor, código Pawn exportado e servidor de teste usam os mesmos parâmetros de `TextDrawLetterSize` e
-  `TextDrawTextSize`; TextDraws de projetos antigos são convertidas ao abrir.
-- Caixa alinhada à direita igual ao cliente SA-MP 0.3.7: vai da borda esquerda da tela até o texto.
-- Clicar em qualquer ponto de uma TextDraw seleciona e permite arrastar, inclusive no alto da tela.
-- A compilação não abre mais a pasta do programa ao terminar.
+- TextDraws like the game: the editor draws with the GTA SA fonts and reproduces the game's math for letter size, line
+  breaks, alignment and box, on the SA-MP 640x448 screen in 16:9.
+- The editor, the exported Pawn code and the test server use the same `TextDrawLetterSize` and `TextDrawTextSize`
+  parameters; TextDraws of old projects are converted when opened.
+- Right-aligned box like the SA-MP 0.3.7 client: it goes from the left edge of the screen to the text.
+- Clicking anywhere on a TextDraw selects it and allows dragging, including at the top of the screen.
+- The build no longer opens the program folder when it finishes.
 
 ### 3.4.0 — 18/10/2026
-- **Executável único**: o programa inteiro vem compactado em `SA Map Studio.exe`, que na primeira execução
-  cria a pasta `sa-map-studio` (com barra de progresso e ícone animado) e nas seguintes abre o editor direto.
-- **Configuração automática do GTA**: com o executável dentro da pasta de instalação do jogo, a pasta é reconhecida
-  e configurada sozinha, sem pedir a instalação ao abrir.
-- Detecção do GTA mais confiável e em qualquer máquina: pasta padrão
-  (`C:\Program Files (x86)\Rockstar Games\GTA San Andreas`) em primeiro lugar, depois registro do Windows e outros
-  discos; sem instalação válida, a pasta padrão fica sugerida e o aviso aparece só ao avançar. A detecção apenas lê
-  as pastas do jogo.
-- Falha ao ler os arquivos do jogo volta para a escolha da pasta em vez de travar a abertura.
-- Funcionamento em `Program Files`: dados do WebView2 vão para a pasta do usuário quando o programa está numa pasta protegida.
-- Ícones oficiais com animação sincronizada ao carregamento e metadados de versão no `.exe`.
-- TextDraws com alinhamento e caixas iguais ao editor no servidor open.mp; duplicação sequencial e encaixe de
-  GangZones e MapIcons; nomes de câmeras preservados; desfazer corrigido ao arrastar.
+- **Single executable**: the whole program comes compressed in `SA Map Studio.exe`, which on the first run creates the
+  `sa-map-studio` folder (with a progress bar and an animated icon) and on the following ones opens the editor
+  directly.
+- **Automatic GTA setup**: with the executable inside the game's install folder, the folder is recognized and set up by
+  itself, without asking for the installation when opening.
+- More reliable GTA detection on any machine: default folder
+  (`C:\Program Files (x86)\Rockstar Games\GTA San Andreas`) first, then the Windows registry and other drives; with no
+  valid installation, the default folder is suggested and the warning only appears when moving on. Detection only reads
+  the game folders.
+- A failure reading the game files goes back to choosing the folder instead of freezing the startup.
+- Works in `Program Files`: WebView2 data goes to the user folder when the program is in a protected folder.
+- Official icons with animation synced to the loading and version metadata in the `.exe`.
+- TextDraws with alignment and boxes like the editor on the open.mp server; sequential duplication and snapping of
+  GangZones and MapIcons; camera names preserved; undo fixed when dragging.
 
 ### 3.3.0 — 18/10/2026
-- Caixas de TextDraw proporcionais ao texto e `TextDrawTextSize` exato para cada alinhamento no servidor de teste.
-- Desfazer/refazer isolado nas janelas de MapIcons, GangZones e TextDraws.
-- Importação de câmeras Pawn (`SetPlayerCameraPos`, `SetPlayerCameraLookAt`, `InterpolateCameraPos`, `InterpolateCameraLookAt`).
-- Sons ficam só como ferramenta de prévia e teste, fora do código Pawn exportado.
-- Nomes de GangZones salvos e exportados; exportação Pawn sem seções duplicadas.
+- TextDraw boxes proportional to the text and exact `TextDrawTextSize` for each alignment on the test server.
+- Isolated undo/redo in the MapIcons, GangZones and TextDraws windows.
+- Pawn camera import (`SetPlayerCameraPos`, `SetPlayerCameraLookAt`, `InterpolateCameraPos`, `InterpolateCameraLookAt`).
+- Sounds are only a preview and test tool, outside the exported Pawn code.
+- GangZone names saved and exported; Pawn export without duplicated sections.
 
 ### 3.2.0 — 18/10/2026
-- Editor de TextDraws com cores do GTA SA (`~r~`, `~g~`, `~b~`...) e símbolos direcionais, alinhamentos fiéis e caixa sem texto.
-- Duplicar GangZones e MapIcons (`Ctrl+C` / `Ctrl+D`).
-- Arrastar o objeto direto pelo terreno, mantendo a altura.
-- Bloqueio de acoplamento em objetos que já são pais; eixo padrão "Objeto".
-- Texto em objetos atualizado em tempo real e totais de cada categoria na lista de projetos.
+- TextDraw editor with GTA SA colors (`~r~`, `~g~`, `~b~` and others) and direction symbols, faithful alignments and a box
+  without text.
+- Duplicate GangZones and MapIcons (`Ctrl+C` / `Ctrl+D`).
+- Drag the object straight over the terrain, keeping the height.
+- Attaching blocked on objects that are already parents; "Object" as the default axis.
+- Text on objects updated in real time and totals of each category in the project list.
 
 ### 3.1.0 — 17/10/2026
-- Catálogo de sons (`PlayerPlaySound`) com 2.620 áudios, prévia e categorias.
-- Checkpoints e Race Checkpoints (tipos 0 a 4) com setas encadeadas e modelos fiéis.
-- Editor de MapIcons (`SetPlayerMapIcon`) com mapa de radar, 64 ícones e estilos.
-- Tuning com saias laterais e aerofólios corretos, também no servidor de teste.
-- Botão flutuante para alternar mover/girar e barra superior responsiva.
+- Sound catalog (`PlayerPlaySound`) with 2,620 sounds, preview and categories.
+- Checkpoints and Race Checkpoints (types 0 to 4) with chained arrows and faithful models.
+- MapIcons editor (`SetPlayerMapIcon`) with a radar map, 64 icons and styles.
+- Tuning with correct side skirts and spoilers, also on the test server.
+- Floating button to switch move/rotate and a responsive top bar.
 
 ### 3.0.0 — 15/10/2026
-- Filtragem inteligente de tuning, paintjobs e cores de veículos: compatibilidade rigorosa com o modelo do veículo baseada nas regras oficiais do SA-MP/open.mp (`IsVehicleValidForColor`, `IsVehicleValidForModding`, `IsPaintjobValidForVehicle` e `IsModValidForVehicle`). O inspetor de veículos agora exibe exclusivamente os componentes de modding (spoilers, capôs, tetos, saias, escapamentos, nitro, rodas, som estéreo, hidráulica), paintjobs (0 a 2) e seletores de cor compatíveis com o modelo selecionado.
-- Aplicação real de tuning e paintjobs no servidor de teste: integração completa de `AddVehicleComponent` e `ChangeVehiclePaintjob` no gamemode de teste (`samapstudio.pwn` e `samapstudio.amx`), exibindo veículos com suas peças e pinturas aplicadas diretamente dentro do jogo.
-- Suporte completo a Textos 3D (3D Text Labels): criação visual na viewport 3D com efeito billboard voltado para a câmera (`Create3DTextLabel` / `CreateDynamic3DTextLabel`), suporte a múltiplas linhas (`\n`), tags de cores embutidas (`{RRGGBB}`), paleta rápida SA-MP e seletor hexadecimal, ajuste de distância de visão (`drawDistance`), teste de linha de visão (`testLOS`), interior e mundo virtual, importação/exportação Pawn e sincronização automática no servidor de teste.
-- Suporte completo a Pickups (`CreatePickup` / `CreateDynamicPickup`): catálogo categorizado de pickups pré-definidos do open.mp e SA-MP (vida, colete, dinheiro, propriedades, armas IDs 321 a 372 e itens), malha 3D animada com rotação contínua na viewport, inspetor com seleção de tipo de pickup, tempo de respawn, mundo e interior, salvamento/carregamento no projeto, importação/exportação Pawn e sincronização no servidor de teste.
-- Novo editor interativo de GangZones com Radar Map: diálogo modal exibindo o mapa de radar oficial do GTA San Andreas (-3000 a +3000), navegação por pan/zoom, desenho de zonas arrastando o mouse, sistema magnético inteligente de encaixe/alinhamento de bordas (snap) entre zonas adjacentes com guias visuais ciano, seletor de cores RGBA com opacidade/transparência, projeção plana 3D da zona no chão do mundo, salvamento/carregamento no projeto, exportação Pawn (`GangZoneCreate` / `GangZoneShowForAll`) e renderização no servidor de teste.
-- Novo editor visual de TextDraws (TextDraw Editor): ambiente de edição na resolução nativa 640x480 do SA-MP com guias de margem segura, suporte a textos e caixas com cores e opacidade personalizadas, seleção de fontes (0 a 5), sombra (`shadow`), contorno (`outline`), alinhamento (left, center, right), espaçamento de letras (`letter size`), tamanho de texto/caixa (`text size`), pré-visualização de modelos 3D para Font 5 (veículos, skins e objetos com rotação e zoom configuráveis), arrastar e redimensionar interativo e exportação limpa de scripts Pawn prontos para uso (`TextDrawCreate` ou `CreatePlayerTextDraw`).
+- Smart filtering of vehicle tuning, paintjobs and colors: strict compatibility with the vehicle model based on the
+  official SA-MP/open.mp rules (`IsVehicleValidForColor`, `IsVehicleValidForModding`, `IsPaintjobValidForVehicle` and
+  `IsModValidForVehicle`). The vehicle inspector now shows only the modding components (spoilers, hoods, roofs, skirts,
+  exhausts, nitro, wheels, stereo, hydraulics), paintjobs (0 to 2) and color pickers compatible with the selected model.
+- Real tuning and paintjobs on the test server: full `AddVehicleComponent` and `ChangeVehiclePaintjob` support in the test
+  gamemode (`samapstudio.pwn` and `samapstudio.amx`), showing vehicles with their parts and paint applied in the game.
+- Full 3D Text (3D Text Labels) support: visual creation in the 3D viewport billboarded towards the camera
+  (`Create3DTextLabel` / `CreateDynamic3DTextLabel`), multiple lines (`\n`), embedded color tags (`{RRGGBB}`), quick SA-MP
+  palette and hexadecimal picker, draw distance (`drawDistance`), line-of-sight test (`testLOS`), interior and virtual
+  world, Pawn import/export and automatic sync on the test server.
+- Full Pickup support (`CreatePickup` / `CreateDynamicPickup`): categorized catalog of predefined open.mp and SA-MP pickups
+  (health, armour, money, properties, weapons IDs 321 to 372 and items), animated 3D mesh with continuous rotation in the
+  viewport, inspector with pickup type, respawn time, world and interior, saving/loading in the project, Pawn
+  import/export and sync on the test server.
+- New interactive GangZone editor with a radar map: modal dialog showing the official GTA San Andreas radar map (-3000 to
+  +3000), pan/zoom navigation, zones drawn by dragging the mouse, smart magnetic edge snapping between neighboring zones
+  with cyan visual guides, RGBA color picker with opacity, flat 3D projection of the zone on the world ground,
+  saving/loading in the project, Pawn export (`GangZoneCreate` / `GangZoneShowForAll`) and rendering on the test server.
+- New visual TextDraw editor (TextDraw Editor): editing at SA-MP's native 640x480 resolution with safe-margin guides,
+  texts and boxes with custom colors and opacity, font selection (0 to 5), `shadow`, `outline`, alignment (left, center,
+  right), `letter size`, text/box size (`text size`), 3D model preview for Font 5 (vehicles, skins and objects with
+  configurable rotation and zoom), interactive dragging and resizing and clean export of ready-to-use Pawn scripts
+  (`TextDrawCreate` or `CreatePlayerTextDraw`).
 
 ### 2.9.1 — 15/10/2026
-- Correção crítica de renderização de texturas (Three.js WebGL): eliminação do erro `TypeError: Cannot read properties of undefined (reading 'width')` em `uploadTexture`, preservando a integridade das estruturas de mipmaps das texturas DXT/RGBA em memória e evitando travamentos e falhas visuais na renderização dos modelos do mapa.
-- Correção dos submenus da barra superior e do menu "Ir para": remoção de restrições de overflow na topbar e prevenção de rolagem acidental no foco do campo de coordenadas (Ctrl+G), garantindo que todos os menus suspensos ("Encaixe", "Ir para", "Visão") abram e flutuem perfeitamente sobre a viewport 3D sem deslocar botões.
-- Ocultação automática do cursor do mouse durante movimentação da câmera: o cursor agora é completamente ocultado ao rotacionar a visão (botão direito), arrastar a tela (botão do meio) ou movimentar-se pelo mapa, reaparecendo instantaneamente ao cessar o movimento.
-- Remoção da função e botão redundantes "Preparar miniaturas" no catálogo de objetos, uma vez que 100% das 15.956 miniaturas já se encontram pré-geradas e armazenadas localmente no disco (`data/cache/thumbnails/objects`).
+- Critical texture rendering fix (Three.js WebGL): removed the `TypeError: Cannot read properties of undefined (reading
+  'width')` error in `uploadTexture`, keeping the mipmap structures of DXT/RGBA textures intact in memory and avoiding
+  freezes and visual glitches when rendering the map models.
+- Fixed the top bar submenus and the "Go to" menu: removed overflow restrictions in the top bar and prevented accidental
+  scrolling when focusing the coordinate field (Ctrl+G), so every dropdown ("Snap", "Go to", "View") opens and floats
+  over the 3D viewport without moving buttons.
+- The mouse cursor is hidden while moving the camera: it disappears when rotating the view (right button), panning
+  (middle button) or moving around the map, and comes back as soon as the movement stops.
+- Removed the redundant "Prepare thumbnails" function and button from the object catalog, since all 15,956 thumbnails
+  are already pre-generated and stored locally (`data/cache/thumbnails/objects`).
 
 ### 2.9.0 — 15/10/2026
-- Catálogo completo de armas do open.mp e GTA SA: 46 armas e itens especiais (IDs 321 a 372) com categoria dedicada "Armas" e ordenação alfabética de categorias em português.
-- Ajuste fino com setas direcionais nos eixos (▲ / ▼): botões de passo interativos em Posição (X, Y, Z) e Rotação (RX, RY, RZ) com auto-repeat contínuo, Shift (0.1x), Ctrl (5.0x) e histórico Undo/Redo.
-- Recurso "Tornar invisível" em materiais: remoção de textura de índices de objetos com ocultação da malha no 3D e exportação canônica `SetObjectMaterial(..., 0, "none", "none", 0)`.
-- Formatação rigorosa de coordenadas Pawn: valores float com valor zero depois do ponto formatados de forma limpa (ex: `180.0`, `0.0`), preservando representação exata do arquivo importado.
-- Recolhimento independente das barras laterais esquerda e direita com botões de borda e restauração inteligente no modo auto-collapse da câmera.
-- Teleporte rápido para coordenadas de clique do mouse através de botão dedicado no inspetor.
-- Arquitetura de miniaturas em disco local e otimização total de VRAM: pré-empacotamento de 15.956 miniaturas WebP (~15 MB) na pasta local `data/cache/thumbnails`, leitura 100% direta do disco sem carregar malhas 3D no boot, preservação de texturas compartilhadas do mundo (evitando asfalto/terreno pretos), pixel ratio 1.0 e descarte estrito de geometrias, reduzindo o consumo de memória de >3,1 GB para níveis mínimos e estáveis.
-- Compilação limpa e autônoma do executável (.exe): script de compilação aprimorado com auto-recuperação do ambiente virtual (`compile-sources\.venv-build`), detecção inteligente de executáveis Python no sistema (evitando stubs inválidos da Microsoft Store) e empacotamento limpo verificado em `compiled\SA Map Studio`.
-- Elevação automática de privilégios (Admin / UAC): compilação com `--uac-admin`, gravando a diretiva `requireAdministrator` no manifesto PE do `.exe` para garantir permissões de acesso ao GTA San Andreas, controle de processos e portas de rede automaticamente.
+- Full open.mp and GTA SA weapon catalog: 46 weapons and special items (IDs 321 to 372) with a dedicated "Weapons"
+  category and alphabetical sorting of the categories.
+- Fine adjustment with arrow buttons on the axes (▲ / ▼): step buttons in Position (X, Y, Z) and Rotation (RX, RY, RZ)
+  with continuous auto-repeat, Shift (0.1x), Ctrl (5.0x) and Undo/Redo history.
+- "Make invisible" feature in materials: removes the texture of object indexes, hiding the mesh in 3D and exporting the
+  canonical `SetObjectMaterial(objectid, 0, "none", "none", 0)`.
+- Strict Pawn coordinate formatting: float values with zero after the point formatted cleanly (e.g. `180.0`, `0.0`),
+  keeping the exact representation of the imported file.
+- Independent collapsing of the left and right sidebars with edge buttons and smart restoring in the camera
+  auto-collapse mode.
+- Quick teleport to the mouse click coordinates through a dedicated button in the inspector.
+- Local disk thumbnails and full VRAM optimization: 15,956 WebP thumbnails (~15 MB) pre-packed in the local
+  `data/cache/thumbnails` folder, read directly from disk without loading 3D meshes at startup, shared world textures
+  preserved (avoiding black asphalt/terrain), pixel ratio 1.0 and strict geometry disposal, reducing memory use from more
+  than 3.1 GB to minimal, stable levels.
+- Clean, self-contained build of the executable (.exe): improved build script with self-recovery of the virtual
+  environment (`compile-sources\.venv-build`), smart detection of Python executables (avoiding invalid Microsoft Store
+  stubs) and verified clean packaging in `compiled\SA Map Studio`.
+- Automatic privilege elevation (Admin / UAC): build with `--uac-admin`, writing the `requireAdministrator` directive in
+  the `.exe` PE manifest to guarantee access to GTA San Andreas, process control and network ports.
 
 ### 2.8.0 — 14/10/2026
-- Novo seletor de animações com painel dividido (Split View) e player de vídeo dinâmico integrado para demonstração ao vivo da animação.
-- Sistema de cache local e streaming WebM de alto desempenho em `data/cache/animations/`.
-- Download do pacote offline completo (~320 MB) em segundo plano com acompanhamento de progresso e opção de pausa.
-- Seleção estável e fixada exclusivamente no clique do mouse sem alteração indesejada por movimento do cursor.
-- Novos comandos `/w [clima]` (0-45) e `/t [horário]` (0-23 horas e minutos) no servidor de teste com sincronização global entre todos os jogadores.
-- Novo comando `/ajuda` no servidor de teste listando todos os atalhos e comandos disponíveis.
+- New animation picker with a split panel (Split View) and a built-in video player to demonstrate the animation live.
+- Local cache and high-performance WebM streaming in `data/cache/animations/`.
+- Background download of the full offline package (~320 MB) with progress and a pause option.
+- Stable selection, fixed only by the mouse click, without unwanted changes from moving the cursor.
+- New `/w [weather]` (0-45) and `/t [time]` (0-23 hours and minutes) commands on the test server, synced for every player.
+- New `/help` command on the test server listing every available shortcut and command.
 
 ### 2.7.0 — 14/10/2026
-- Catálogo completo de animações do open.mp: 1.872 presets organizados por biblioteca com campo de busca em tempo real.
-- Posicionamento e centralização inteligente da janela na tela, adaptando-se à área útil do monitor.
-- Esclarecimento da orientação dos eixos do manipulador ("Eixos: Mundo" vs "Eixos: Objeto").
-- Opção "Trocar pasta do GTA" integrada ao diálogo "Testar no jogo".
-- Novo Sistema de Logs e Diagnóstico: captura automática de erros JS/console e diálogo com botão de cópia rápida.
+- Full open.mp animation catalog: 1,872 presets organized by library with a real-time search field.
+- Smart window positioning and centering on the screen, adapting to the monitor's usable area.
+- Clearer manipulator axis orientation ("Axes: World" vs "Axes: Object").
+- "Change GTA folder" option in the "Test in game" dialog.
+- New Logs and Diagnostics system: automatic capture of JS/console errors and a dialog with a quick copy button.
 
 ### 2.6.0 — 14/10/2026
-- Menu "Ir para" reestruturado em abas: "Locais no mundo" e "Interiores", com lista de mais de 140 interiores do GTA SA e SA-MP/open.mp.
-- Configuração de clima (0 a 45) e horário com minutos no "Testar no jogo" e no menu Visão, sincronizados em tempo real no 3D do editor (céu dinâmico, ciclo dia/noite e iluminação).
-- Comandos `/fly` e `/voar` no servidor de teste para alternar o voo livre da câmera com retorno suave ao ponto de origem.
-- Comandos `/map` e `/mapa` para teleporte imediato ao centro do mapa em teste.
-- Catálogo unificado de Actors: troca e pré-visualização de skins em tempo real no menu direito, com apoio sobre superfícies e correção de orientação.
+- "Go to" menu restructured in tabs: "World places" and "Interiors", with a list of more than 140 GTA SA and SA-MP/open.mp
+  interiors.
+- Weather (0 to 45) and time with minutes in "Test in game" and in the View menu, synced in real time in the editor's 3D
+  (dynamic sky, day/night cycle and lighting).
+- `/fly` and `/voar` commands on the test server to toggle the free camera flight with a smooth return to the starting
+  point.
+- `/map` and `/mapa` commands to teleport straight to the center of the map under test.
+- Unified Actors catalog: real-time skin change and preview in the right menu, standing on surfaces and with fixed
+  orientation.
 
 ### 2.5.0 — 14/10/2026
-- Limite de distância de visão expandido até 2500 metros no menu Visão.
-- Atalho F10 e botão na barra superior para recolher e restaurar menus laterais em tela cheia.
-- Modo opcional de recolhimento automático dos menus durante movimentação da câmera.
-- Campo de coordenadas do clique do mouse no topo do menu lateral com cópia em um clique.
-- Desfazer e Refazer (Undo/Redo) com suporte global inteligente.
-- Novo ícone oficial estilizado com o forno clássico `mkwalloven1` (ID 19933).
+- View distance limit expanded up to 2500 meters in the View menu.
+- F10 shortcut and a top bar button to collapse and restore the side menus in full screen.
+- Optional automatic collapsing of the menus while moving the camera.
+- Mouse click coordinate field at the top of the side menu with one-click copy.
+- Undo and Redo with smart global support.
+- New stylized official icon with the classic `mkwalloven1` oven (ID 19933).
 
 ### 2.4.1 — 14/10/2026
-- Coexistência de múltiplos projetos com modo Editável ou Não editável.
-- Importação fiel de mapas Pawn (`.pwn`) preservando 100% de comentários, anotações, includes e cores hexadecimais.
-- Servidor de teste open.mp com omp-server.exe, DLLs e componentes empacotados na raiz da distribuição.
+- Several projects coexisting, in Editable or Not editable mode.
+- Faithful import of Pawn maps (`.pwn`) keeping 100% of comments, notes, includes and hexadecimal colors.
+- open.mp test server with omp-server.exe, DLLs and components packed at the root of the distribution.
 
 ### 2.4.0 — 14/10/2026
-- Redução e otimização profunda do consumo de memória RAM do WebView2.
-- Paleta completa de cores de veículos do SA-MP (0 a 255) e visualização de tuning/paintjobs em tempo real no 3D.
-- Categorias de texturizações e textos separadas no painel Projeto.
-- Inversão da ordem de objetos e botão de segurança "Apagar tudo".
-- Suporte a MoveObject com teste de movimentação no mundo e AttachObjectToObject com edição visual.
-- Exportação de coordenadas em formato de Array e edição manual do script Pawn.
+- Deep reduction and optimization of WebView2 RAM use.
+- Full SA-MP vehicle color palette (0 to 255) and real-time tuning/paintjob view in 3D.
+- Separate texture and text categories in the Project panel.
+- Reversed object order and an "Erase everything" safety button.
+- MoveObject support with a movement test in the world and AttachObjectToObject with visual editing.
+- Coordinate export as an array and manual editing of the Pawn script.
 
 ### 2.3.0 — 13/10/2026
-- Velocidades de movimento e rotação configuráveis no menu lateral (0.001x a 10.0x).
-- Rotação em grupo com múltiplos objetos selecionados.
+- Configurable movement and rotation speeds in the side menu (0.001x to 10.0x).
+- Group rotation with several selected objects.
 
 ### 2.2.0 — 13/10/2026
-- Destaque visual em tons de vermelho nos objetos do mundo selecionados para remoção.
-- Remoção simultânea com RemoveBuildingForPlayer e miniaturas ampliadas no catálogo.
-- Apelidos personalizados para favoritos e renomeação padronizada de propriedades de stream.
+- Red highlight on the world objects selected for removal.
+- Simultaneous removal with RemoveBuildingForPlayer and bigger thumbnails in the catalog.
+- Custom aliases for favorites and standardized renaming of stream properties.
 
 ### 2.1.0 — 13/10/2026
-- Textura trocada cobre a parte do objeto por igual no editor, sem as sombras pintadas no modelo original (igual ao jogo).
-- Servidor interno mais resistente: não fecha por falta de memória num pedido e se recupera sozinho de erros.
-- Menos memória ao navegar pelo mapa e ao preparar miniaturas.
-- Botão *Novidades e documentação*, com a data e a hora da compilação.
-- Pasta `Servidor de Teste` dentro do programa e novo `Compilar EXE limpo.bat`.
+- A changed texture covers the object part evenly in the editor, without the shadows painted on the original model
+  (like the game).
+- More resilient internal server: it does not close for lack of memory on a request and recovers from errors by itself.
+- Less memory when browsing the map and preparing thumbnails.
+- *What's new and documentation* button, with the build date and time.
+- `Servidor de Teste` folder inside the program and a new `Compilar EXE limpo.bat`.
 
 ### 2.0.0 — 13/10/2026
-- Pasta única do programa com subpastas organizadas.
-- Categorias de objetos e texturas; miniaturas guardadas no disco.
-- Editor de materiais do SA-MP com todos os índices, painel de cores e texto.
-- Duplicar no mesmo lugar, teleporte, câmeras, "Testar no jogo" e importação de qualquer arquivo.
-- Mapa completo (objetos e LODs que faltavam) e carregamento mais suave.
+- A single program folder with organized subfolders.
+- Object and texture categories; thumbnails stored on disk.
+- SA-MP material editor with every index, color panel and text.
+- Duplicate in the same spot, teleport, cameras, "Test in game" and import of any file.
+- Complete map (missing objects and LODs) and smoother loading.
 
 ### 1.0.0 — 12/10/2026
-- Primeira versão: mapa com streaming e LOD, catálogo, gizmo, remoção de prédios, veículos,
-  exportação Pawn/IPL, importação de `.pwn` e compilação em `.exe`.
+- First version: map with streaming and LOD, catalog, gizmo, building removal, vehicles, Pawn/IPL export, `.pwn` import
+  and build into an `.exe`.
 
 ---
 
-## Créditos e licenças
+## Credits and licenses
 
-- [Three.js](https://threejs.org/) (MIT) para a renderização 3D.
-- Fonte [Barlow](https://github.com/jpt/barlow) (SIL Open Font License, ver `compile-sources/fonts/OFL.txt`).
-- GTA San Andreas é marca da Rockstar Games. Os arquivos do jogo não fazem parte deste repositório:
-  o editor usa a cópia instalada no computador de quem o abre.
+- [Three.js](https://threejs.org/) (MIT) for 3D rendering.
+- [Barlow](https://github.com/jpt/barlow) font (SIL Open Font License, see `compile-sources/fonts/OFL.txt`).
+- GTA San Andreas is a trademark of Rockstar Games. The game files are not part of this repository: the editor uses the
+  copy installed on the computer of whoever opens it.
 
 ---
 
-**© 2026 Rafael_Hurley e Walter_Correa. Todos os direitos reservados.**
+**© 2026 Rafael_Hurley and Walter_Correa. All rights reserved.**
 
-Este é um repositório privado. Não é permitido copiar, distribuir ou modificar este código sem autorização dos autores.
+This is a private repository. Copying, distributing or modifying this code without the authors' permission is not allowed.

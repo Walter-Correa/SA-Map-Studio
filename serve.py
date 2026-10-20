@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.22.0"
+VERSION = "3.23.0"
 FROZEN = getattr(sys, "frozen", False)
 # Pasta raiz onde fica o .exe (ou raiz do repositório em desenvolvimento)
 if FROZEN:
@@ -237,7 +237,7 @@ def migrate_old_layout():
                 continue
         merge_and_remove(src, target_dir)
 
-    # Remove pastas residuais/duplicadas que nao devem existir dentro de sa-map-studio
+    # Remove pastas residuais/duplicadas que não devem existir dentro de sa-map-studio
     for obsolete_dir in (
         os.path.join(BASE_DIR, "models"),
         os.path.join(BASE_DIR, "compile-sources"),
@@ -1928,7 +1928,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_error(400, "Sound ID invalido")
             res = extract_gta_sound(State.gta_path, sid)
             if not res:
-                return self.send_error(404, "Audio nao encontrado")
+                return self.send_error(404, "Áudio não encontrado")
             audio_bytes, ctype = res
             self.send_response(200)
             self.send_header("Content-Type", ctype)
@@ -1978,7 +1978,7 @@ class Handler(SimpleHTTPRequestHandler):
                         alt_cand = os.path.join(cdir, "sprites", cf, base_name)
                         if os.path.isfile(alt_cand):
                             return self.send_file(alt_cand, cache="public, max-age=86400")
-            return self.send_error(404, "Arquivo de cache nao encontrado")
+            return self.send_error(404, "Arquivo de cache não encontrado")
         if path == "/api/ping":
             State.last_ping = time.time()
             return self.send_json({"ok": True})
@@ -2073,7 +2073,7 @@ class Handler(SimpleHTTPRequestHandler):
                     png_path = target_path
             if png_path and os.path.isfile(png_path):
                 return self.send_file(png_path, cache="public, max-age=86400")
-            return self.send_json({"error": "Mapa do radar nao disponivel"}, 404)
+            return self.send_json({"error": "Mapa do radar não disponível"}, 404)
         if path.startswith("/api/cache/"):
             name = safe_name(path[len("/api/cache/"):])
             alt_name = "textures" if name == "texturas" else ("texturas" if name == "textures" else name)
@@ -2105,11 +2105,11 @@ class Handler(SimpleHTTPRequestHandler):
             lib = qs.get("lib", [""])[0]
             name = qs.get("name", [""])[0]
             if not lib or not name:
-                return self.send_json({"error": "Parametros lib e name obrigatorios"}, 400)
+                return self.send_json({"error": "Parâmetros lib e name obrigatórios"}, 400)
             file_path = AnimCacheManager.get_or_download(lib, name)
             if file_path and os.path.isfile(file_path):
                 return self.send_file(file_path, cache="public, max-age=86400")
-            return self.send_json({"error": "Video nao encontrado"}, 404)
+            return self.send_json({"error": "Vídeo não encontrado"}, 404)
         if path == "/api/anim_cache/status":
             cached_count = AnimCacheManager.count_cached()
             anims = AnimCacheManager.get_anim_list()

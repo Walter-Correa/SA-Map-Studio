@@ -1,38 +1,40 @@
-# Diretrizes do Projeto SA Map Studio
+# SA Map Studio Project Guidelines
 
-Este arquivo define diretrizes e regras contínuas que devem ser rigorosamente seguidas em todas as sessões e tarefas:
+This file defines ongoing guidelines and rules that must be strictly followed in every session and task:
 
-## 1. Compilação da Versão Final (Obrigatório)
-- **Sempre compile a versão final** executando `build-clean.bat` ao final de cada tarefa/ciclo de alterações.
-- **Versão do executável**: a versão gravada no `.exe` vem sempre da `VERSION` do `serve.py` (o `build.bat` roda `compile-sources/sync_version.py` antes do PyInstaller). Ao mudar a versão, altere só o `serve.py`, o `about.js` e o `readme.md`; nunca edite o `version_info.txt` à mão.
-- A distribuição limpa gerada em `compiled\SA Map Studio\` deve sempre refletir com exatidão todos os arquivos atualizados (código-fonte, assets, modelos e scripts).
+## 1. Building the Final Version (Mandatory)
+- **Always build the final version** by running `build-clean.bat` at the end of each task or round of changes.
+- **Executable version**: the version written into the `.exe` always comes from `VERSION` in `serve.py` (`build.bat` runs `compile-sources/sync_version.py` before PyInstaller). When changing the version, only change `serve.py`, `about.js` and `readme.md` (badge and "Version history"); never edit `version_info.txt` by hand.
+- The clean distribution generated in `compiled\SA Map Studio\` must always reflect exactly every updated file (source code, assets, models and scripts).
 
-## 2. Controle de Versão (Git)
-- **Sempre realizar commit e push ao final de cada tarefa**.
-- Mensagens de commit devem ser claras, objetivas e em português, seguindo um padrão único:
-  - Título começando com verbo no presente, 3ª pessoa do singular (`Adiciona`, `Corrige`, `Remove`, `Atualiza`, `Ajusta`), com acentuação correta.
-  - Sem prefixos em inglês (`feat:`, `fix:`, `docs:`) e sem ponto final no título.
-  - Várias mudanças no mesmo commit: listar no título separadas por vírgula ou detalhar no corpo da mensagem.
+## 2. Version Control (Git)
+- **Always commit and push at the end of each task**.
+- Commit messages must be clear, objective and in Portuguese, following a single pattern:
+  - Title starting with a present-tense verb in the 3rd person singular (`Adiciona`, `Corrige`, `Remove`, `Atualiza`, `Ajusta`), with correct accents.
+  - No English prefixes (`feat:`, `fix:`, `docs:`) and no period at the end of the title.
+  - Several changes in the same commit: list them in the title separated by commas or detail them in the message body.
 
-## 3. Padrões de Nomenclatura, Interface e Conteúdo
-- **Nome do Projeto e Nomenclatura**: O nome oficial do projeto é `SA Map Studio`, gerando o executável `SA Map Studio.exe` e a pasta de distribuição `compiled\SA Map Studio\`. Todas as pastas e arquivos internos de dados e sistema do projeto devem ser nomeados estritamente em inglês e letras minúsculas (sem português e sem letras maiúsculas), como `data`, `test-server`, `system`, `projects`, `exported`, `compile-sources`, `models`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `ia-rules.md`. Exceções: módulos JavaScript (`.js`) podem usar letras maiúsculas em camelCase (ex.: `animPicker.js`, `textdrawEditor.js`), e arquivos de terceiros ou com nomes oficiais do jogo (fontes, bibliotecas em `vendor/`, bibliotecas de animação do GTA) mantêm o nome original.
-- **Nomes curtos e objetivos**: Títulos, botões, labels, placeholders, mensagens de status e avisos que aparecem dentro do editor compilado não devem estourar o espaço visual nem exibir reticências ("..."). A regra vale apenas para textos exibidos no programa compilado; documentação (`readme.md`, `ia-rules.md`), comentários de código e mensagens de console/log podem usar reticências.
-- **Fontes e citações**: Nunca citar fontes externas dentro do editor compilado (interface, textos de ajuda, novidades). A regra não se aplica à documentação do repositório (`readme.md`), onde créditos e licenças podem ser citados.
-- **Janela inicial**: O editor deve abrir por padrão maximizado.
-- **Formatação de Cores**: Cores de Textos 3D (Create3DTextLabel) devem usar alpha total (`0x...FF`, não `0x...AA`).
-- **Codificação**: Os scripts pawn e arquivos de mapa do servidor de teste (como `samapstudio.pwn` e `mapa.txt`) devem ser escritos e salvos estritamente em ANSI (Windows-1252), padrão nativo do SA-MP/GTA SA para acentuação e caracteres sem corrupção. Os demais arquivos de código-fonte web/sistema (HTML, JS, CSS, Python) permanecem em UTF-8.
+## 3. Naming, Interface and Content Standards
+- **Project name and naming**: The official project name is `SA Map Studio`, producing the executable `SA Map Studio.exe` and the distribution folder `compiled\SA Map Studio\`. Every internal data and system folder and file of the project must be named strictly in English and in lowercase (no Portuguese and no uppercase letters), such as `data`, `test-server`, `system`, `projects`, `exported`, `compile-sources`, `models`, `build.bat`, `build-clean.bat`, `start.bat`, `readme.md`, `ia-rules.md`. Exceptions: JavaScript modules (`.js`) may use camelCase uppercase letters (e.g. `animPicker.js`, `textdrawEditor.js`), and third-party files or files with official game names (fonts, libraries in `vendor/`, GTA animation libraries) keep their original names.
+- **Documentation in English**: `readme.md` and `ia-rules.md` are always written in English. Commit messages stay in Portuguese (section 2).
+- **Short, objective names**: Titles, buttons, labels, placeholders, status messages and warnings shown inside the compiled editor must not overflow their space or show an ellipsis ("..."). The rule only applies to texts shown in the compiled program; documentation (`readme.md`, `ia-rules.md`), code comments and console/log messages may use an ellipsis.
+- **Sources and citations**: Never cite external sources inside the compiled editor (interface, help texts, what's new). The rule does not apply to the repository documentation (`readme.md`), where credits and licenses may be cited.
+- **Initial window**: The editor must open maximized by default.
+- **Color formatting**: 3D Text colors (Create3DTextLabel) must use full alpha (`0x...FF`, not `0x...AA`).
+- **Encoding**: The Pawn scripts and the test server map files (such as `samapstudio.pwn` and `mapa.txt`) must be written and saved strictly in ANSI (Windows-1252), the native SA-MP/GTA SA standard for accents and characters without corruption. The other web/system source files (HTML, JS, CSS, Python) stay in UTF-8.
+- **Exported code**: In the exported Pawn code, functions, callbacks and section separators are always in English (`stock Map_<name>_Load()`, `// 3D Texts:`); only the information comments follow the editor language.
 
-## 4. Arquivos e Compilação
-- **Sem LEIA-ME.txt**: Nunca incluir o arquivo `LEIA-ME.txt` em lugar algum ao compilar o projeto (`build.bat` / `build-clean.bat`).
-- **Organização e Pasta testing**: A pasta raiz do projeto deve permanecer sempre limpa e organizada, contendo apenas os arquivos e pastas estruturais do projeto. Todos os testes, scripts temporários e arquivos de verificação devem ser criados e executados exclusivamente dentro da pasta `testing/`.
-- **Limpeza de Testes**: Ao finalizar cada tarefa, todos os arquivos e pastas criados para testes dentro de `testing/` devem ser rigorosamente apagados, mantendo apenas arquivos essenciais que serão utilizados em testes futuros (e o `.gitkeep`).
+## 4. Files and Build
+- **No LEIA-ME.txt**: Never include a `LEIA-ME.txt` file anywhere when building the project (`build.bat` / `build-clean.bat`).
+- **Organization and the testing folder**: The project root must always stay clean and organized, holding only the structural files and folders of the project. Every test, temporary script and verification file must be created and run only inside the `testing/` folder.
+- **Test cleanup**: When finishing each task, every file and folder created for tests inside `testing/` must be deleted, keeping only essential files that will be used in future tests (and `.gitkeep`).
 
-## 5. Idiomas
-- **Todo texto novo em todos os idiomas**: o editor sai sempre em todos os idiomas de `compile-sources/js/lang/languages.json`. Todo texto novo ou alterado da interface, das novidades (changelog do `about.js`), das janelas do `serve.py` e das mensagens do servidor de teste precisa ter tradução em todos os arquivos `js/lang/<sigla>.json`; os textos do instalador ficam na tabela `TEXTS` do `launcher.py`. Rodar `python compile-sources/i18n_check.py` antes de compilar: deve mostrar 0 faltando em todos.
-- **Frases inteiras**: não montar frases em pedaços (`"Aplicar no" + "s índices"`); use templates com a frase inteira ou `plural(n, 'item', 'itens')`.
-- **Sem tradução**: nomes do jogo e do SA-MP, teclas e código Pawn exportado ficam iguais (`compile-sources/i18n_same.txt`, `translate="no"` no HTML).
-- **Idiomas novos** entram sempre no fim de `languages.json`, com o nome escrito no próprio idioma e sem país.
+## 5. Languages
+- **Every new text in every language**: the editor always ships in every language of `compile-sources/js/lang/languages.json`. Every new or changed text of the interface, of what's new (the `about.js` changelog), of the `serve.py` windows and of the test server messages needs a translation in every `js/lang/<code>.json` file; the installer texts live in the `TEXTS` table of `launcher.py`. Run `python compile-sources/i18n_check.py` before building: it must show 0 missing in every language.
+- **Correct spelling**: every language, including the Brazilian Portuguese base, must have correct spelling, accents and punctuation (for example `¿`/`¡` in Spanish and the space before `: ; ! ?` in French).
+- **Whole sentences**: do not build sentences from pieces (`"Aplicar no" + "s índices"`, `` `Selecione um ${tipo}` ``); use templates with the whole sentence or `plural(n, 'item', 'itens')`. Text drawn on a canvas, placed in a textarea value or generated for the game goes through `t()`.
+- **Not translated**: game and SA-MP names, keys and the exported Pawn code stay the same (`compile-sources/i18n_same.txt`, `translate="no"` in the HTML).
+- **New languages** always go at the end of `languages.json`, with the name written in the language itself and without a country.
 
-## 6. Demonstração Visual (Prints de Novas Funcionalidades)
-- **Sempre exibir prints ao final da tarefa**: Sempre que uma nova funcionalidade ou melhoria visual for adicionada ao editor, é obrigatório capturar e mostrar na resposta final uma ou mais prints demonstrando a funcionalidade em ação.
-
+## 6. Visual Demonstration (Screenshots of New Features)
+- **Always show screenshots at the end of the task**: Whenever a new feature or visual improvement is added to the editor, it is mandatory to capture and show one or more screenshots of the feature in action in the final answer.

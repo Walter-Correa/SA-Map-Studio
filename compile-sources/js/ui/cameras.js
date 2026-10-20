@@ -2,7 +2,8 @@
 // (InterpolateCameraPos + InterpolateCameraLookAt) com prévia no editor e código Pawn pronto.
 import * as THREE from 'three';
 import { cameraFunctions } from '../editor/pwn.js';
-import { app, $, $$, esc, fmt, toast, copyText, showConfirm } from './common.js';
+import { app, $, $$, esc, fmt, plural, toast, copyText, showConfirm } from './common.js';
+import { t as tr } from './i18n.js';
 
 let openPath = null;      // id do movimento aberto
 let helper = null;        // desenho do caminho na cena
@@ -59,7 +60,7 @@ export function render() {
     const total = p.keys.slice(1).reduce((s, k) => s + k.time + k.hold, 0);
     const keys = open ? p.keys.map((k, i) => `<div class="cam-key" data-key="${i}">
         <div class="cam-row">
-          <input class="cam-name" data-kfield="name" value="${esc(k.name || (i === 0 ? 'Início' : 'Câmera ' + i))}" placeholder="Nome da câmera" aria-label="Nome da câmera" style="flex:1; max-width:150px; font-weight:600; padding:2px 6px;">
+          <input class="cam-name" data-kfield="name" value="${esc(k.name || (i === 0 ? tr('Início') : tr('Câmera {0}', i)))}" placeholder="Nome da câmera" aria-label="Nome da câmera" style="flex:1; max-width:150px; font-weight:600; padding:2px 6px;">
           <button type="button" class="btn icon" data-act="key-view" title="Ver no editor"><svg><use href="#i-eye"/></svg></button>
           <button type="button" class="btn icon" data-act="key-set" title="Usar a vista atual"><svg><use href="#i-camera"/></svg></button>
           <button type="button" class="btn icon" data-act="key-up" title="Subir" ${i === 0 ? 'disabled' : ''}><svg><use href="#i-up"/></svg></button>
@@ -77,7 +78,7 @@ export function render() {
         <button type="button" class="btn icon" data-act="path-play" title="Prévia no editor" ${p.keys.length < 2 ? 'disabled' : ''}><svg><use href="#i-play"/></svg></button>
         <button type="button" class="btn icon" data-act="path-code" title="Copiar o código"><svg><use href="#i-copy"/></svg></button>
         <button type="button" class="btn icon danger" data-act="path-del" title="Apagar"><svg><use href="#i-trash"/></svg></button></div>
-      <div class="cam-coords">${p.keys.length} ${p.keys.length === 1 ? 'ponto' : 'pontos'} · ${(total / 1000).toFixed(1)} s</div>
+      <div class="cam-coords">${plural(p.keys.length, 'ponto', 'pontos')} · ${(total / 1000).toFixed(1)} s</div>
       ${open ? `${keys}
         <button type="button" class="btn block" data-act="key-add"><svg><use href="#i-plus"/></svg>Adicionar ponto com a vista atual</button>
         <label class="cam-opt">No fim <select data-field="end">
@@ -111,13 +112,13 @@ async function onClick(e) {
   const a = b.dataset.act, c = cams();
   const shot = findShot(b), path = findPath(b);
   const ki = +(b.closest('[data-key]')?.dataset.key ?? -1);
-  if (a === 'shot-add') { c.shots.push({ id: uid('c'), name: 'Câmera ' + (c.shots.length + 1), ...currentView(), cut: 'cut' }); changed(); toast('Câmera adicionada'); }
+  if (a === 'shot-add') { c.shots.push({ id: uid('c'), name: tr('Câmera {0}', c.shots.length + 1), ...currentView(), cut: 'cut' }); changed(); toast('Câmera adicionada'); }
   else if (a === 'shot-view') viewFrom(shot.pos, shot.look);
   else if (a === 'shot-set') { Object.assign(shot, currentView()); changed(); toast('Câmera atualizada com a vista atual'); }
   else if (a === 'shot-del') { if (await showConfirm(`Apagar a câmera "${shot.name}"?`, { danger: true, confirmText: 'Apagar' })) { c.shots.splice(c.shots.indexOf(shot), 1); changed(); } }
   else if (a === 'shot-code') { await copyText(cameraFunctions({ shots: [shot], paths: [] }).code); toast('Código da câmera copiado'); }
   else if (a === 'path-add') {
-    const p = { id: uid('p'), name: 'Movimento ' + (c.paths.length + 1), end: 'behind', keys: [{ ...currentView(), name: 'Início', time: 0, hold: 0, cut: 'cut' }] };
+    const p = { id: uid('p'), name: tr('Movimento {0}', c.paths.length + 1), end: 'behind', keys: [{ ...currentView(), name: tr('Início'), time: 0, hold: 0, cut: 'cut' }] };
     c.paths.push(p); openPath = p.id; changed();
     toast('Agora mova a vista e clique em "Adicionar ponto"', 'ok', 4000);
   }
@@ -264,5 +265,5 @@ function tickPreview(dt) {
   cam.up.set(0, 0, 1);
   cam.lookAt(look);
   cam.updateMatrixWorld();
-  $('#camPreviewText').textContent = `Prévia: ${p.name} · ${i === 0 ? 'Início' : 'ponto ' + i} de ${k.length - 1} · ${(preview.t / 1000).toFixed(1)} s${p.end === 'keep' && preview.t > k.slice(1).reduce((s, x) => s + x.time + x.hold, 0) ? ' (parada no fim)' : ''}`;
+  $('#camPreviewText').textContent = `Prévia: ${p.name} · ${i === 0 ? 'Início' : `Ponto ${i} de ${k.length - 1}`} · ${p.end === 'keep' && preview.t > k.slice(1).reduce((s, x) => s + x.time + x.hold, 0) ? `${(preview.t / 1000).toFixed(1)} s (parada no fim)` : `${(preview.t / 1000).toFixed(1)} s`}`;
 }

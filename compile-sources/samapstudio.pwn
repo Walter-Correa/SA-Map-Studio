@@ -62,8 +62,8 @@ new bool:gReturningFromFly[MAX_PLAYERS];
 new gMsg[SAMSP_MAX_MSGS][192] =
 {
     "SA Map Studio: teste do mapa.",
-    "Comandos: /fly (/voar) /map (/mapa) /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos",
-    "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly ou /voar para sair.",
+    "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos",
+    "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly para sair.",
     "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.",
     "Animações dos actors sincronizadas e reaplicadas.",
     "Câmera teleportada para o centro do mapa.",
@@ -81,8 +81,8 @@ new gMsg[SAMSP_MAX_MSGS][192] =
     "Nenhum checkpoint no mapa atual.",
     "Teleportado para o checkpoint atual.",
     "Comandos do servidor de teste:",
-    "  /fly (/voar) - Alternar voo livre da câmera",
-    "  /map (/mapa) - Teleportar ao centro do mapa em teste",
+    "  /fly - Alternar voo livre da câmera",
+    "  /map - Teleportar ao centro do mapa em teste",
     "  /w [0-45] - Alterar clima (ex: /w 10)",
     "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)",
     "  /v [modelo] - Criar veículo (ex: /v 411)",
@@ -1362,8 +1362,8 @@ stock SAMSP_ShowProgressBars(playerid)
     for (new i = 0; i < gTotalPBars; i++)
     {
         new bar = CreatePlayerProgressBar(playerid, gPBars[i][bar_x], gPBars[i][bar_y], gPBars[i][bar_width], gPBars[i][bar_height],
-            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border], gPBars[i][bar_borderColor],
-            gPBars[i][bar_style], gPBars[i][bar_segments]);
+            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_style], gPBars[i][bar_segments],
+            gPBars[i][bar_border], gPBars[i][bar_borderColor]);
         if (bar == INVALID_PLAYER_BAR_ID) continue;
         SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);
@@ -1427,7 +1427,7 @@ public OnPlayerSpawn(playerid)
 }
 
 // ---------------------------------------------------------------------------
-// Sistema de voo livre da camera (/fly e /voar)
+// Sistema de voo livre da camera (/fly)
 // ---------------------------------------------------------------------------
 stock GetMoveDirectionFromKeys(ud, lr)
 {
@@ -1568,7 +1568,7 @@ public SAMSP_RestaurarPosVoo(playerid)
 public OnPlayerCommandText(playerid, cmdtext[])
 {
     // Ativa / Desativa o modo voo da câmera
-    if (!strcmp(cmdtext, "/fly", true) || !strcmp(cmdtext, "/voar", true))
+    if (!strcmp(cmdtext, "/fly", true))
     {
         if (gNoClip[playerid][noclip_cameramode] == CAMERA_MODE_FLY)
         {
@@ -1590,7 +1590,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
     }
 
     // Teleporta para o centro do mapa
-    if (!strcmp(cmdtext, "/map", true) || !strcmp(cmdtext, "/mapa", true))
+    if (!strcmp(cmdtext, "/map", true))
     {
         if (gNoClip[playerid][noclip_cameramode] == CAMERA_MODE_FLY)
         {
