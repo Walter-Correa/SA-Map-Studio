@@ -32,6 +32,26 @@
   color-scheme: dark;
 }
 
+/* Light theme: the same tokens with the surfaces inverted (the orange gets darker to stay readable on white) */
+:root[data-theme="light"] {
+  --asphalt-900: #ffffff;
+  --asphalt-800: #e6ebf0;
+  --asphalt-700: #f3f5f8;
+  --asphalt-600: #ffffff;
+  --asphalt-500: #dde4ea;
+  --line: #c0cad4;
+  --line-soft: #d9e0e7;
+  --paper: #1b2229;
+  --paper-dim: #47535e;
+  --paper-mute: #66727d;
+  --sodium: #d98a12;
+  --sodium-deep: #a86b0d;
+  --sky: #1e78d0;
+  --danger: #c43d35;
+  --ok: #2b8a4f;
+  color-scheme: light;
+}
+
 /* Barlow has no Cyrillic glyphs: bg/ru/uk ("script": "cyrillic" in languages.json) use Segoe UI. */
 :root[data-script="cyrillic"] {
   --font: 'Segoe UI', system-ui, sans-serif;

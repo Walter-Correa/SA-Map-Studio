@@ -31,6 +31,9 @@ import { initColorDialog, openColorDialog } from './ui/colorDialog.js';
 import { installColorPicker } from './ui/colorPicker.js';
 import { t, initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange, uiLocale } from './ui/i18n.js';
 
+// Theme (dark by default): applied before the interface appears
+document.documentElement.dataset.theme = store.get('theme', 'dark') === 'light' ? 'light' : 'dark';
+
 let water = null;
 let hintDismissed = false;
 
@@ -74,6 +77,27 @@ function setupTopbarFit() {
   schedule();
 }
 
+// Top bar button that switches between the dark and the light theme
+function setupTheme() {
+  const btn = $('#btnTheme');
+  if (!btn) return;
+  const paint = () => {
+    const light = document.documentElement.dataset.theme === 'light';
+    const text = t(light ? 'Mudar para o tema escuro' : 'Mudar para o tema claro');
+    btn.title = text;
+    btn.setAttribute('aria-label', text);
+    btn.querySelector('use').setAttribute('href', light ? '#i-moon' : '#i-sun');
+  };
+  btn.onclick = () => {
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    store.set('theme', next);
+    paint();
+  };
+  onLanguageChange(paint);
+  paint();
+}
+
 // =====================================================================  abertura
 async function boot() {
   const status = $('#bootStatus');
@@ -86,6 +110,7 @@ async function boot() {
   // Language before the interface appears: the one chosen by the user or the system's
   await initI18n(cfg.language);
   setupLanguageMenu();
+  setupTheme();
   if (cfg.needsSetup || !cfg.ok) {
     showSetup(cfg.detectedPath || cfg.gtaPath || '', cfg.problem, cfg.needsSetup);
     return;

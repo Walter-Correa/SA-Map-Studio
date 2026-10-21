@@ -341,6 +341,7 @@ Tools (in `compile-sources/`, run with Python 3):
 ## Version history
 
 ### 3.24.0 — 20/10/2026
+- Theme button in the top bar: switches between the dark theme (default) and a new light theme, and remembers the choice.
 - Colors button between Sounds and Import: a color picker and converter that shows the selected color as RGBA, ARGB, {RRGGBB}, decimal, HTML, RGB and HSL codes, ready-to-use Pawn lines and the closest text code and vehicle color ID, all to copy on the spot.
 - Cameras tab: a Stop button next to Play, the only movement of a project opens by itself, and the open/close button of a movement is highlighted like the top bar buttons.
 - SA Progress Bar Pro: the order of `CreatePlayerProgressBar` is now `..., direction, border, bordercolour, style, segments`; the editor export, the import and the test server follow it, and the import still reads the previous order.
