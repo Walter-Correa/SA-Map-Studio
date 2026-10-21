@@ -380,3 +380,9 @@ SetObjectMaterial, SetObjectMaterialText
 SendClientMessage, ShowPlayerDialog, Create3DTextLabel
 Decimal (int)
 HTML / CSS
+Update History
+Close
+Rafael_Hurley and Walter_Correa
+Built on
+Version history
+© {0} {1}. All rights reserved.

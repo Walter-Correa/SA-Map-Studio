@@ -2,12 +2,13 @@
 // date and time of the last build and the rights reserved.
 import { app, $, esc } from './common.js';
 
-export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
+export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 
-// Version history: always written in English and never translated (no keys in the language files)
+// Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'The dialog that listed the news and the features is now called Update History: it shows only the version history, written in English and never translated, and the feature list and its translations were removed.',
       'Thumbnails are now transparent and take the background of the theme (dark or light), so they fit both. The thumbnail background is 50% lighter in the dark theme; the skin gallery keeps its own.',
       'Theme button in the top bar: switches between the dark theme (default) and a new light theme, and remembers the choice.',
       'Colors button between Sounds and Import: a color picker and converter that shows the selected color as RGBA, ARGB, {RRGGBB}, decimal, HTML, RGB and HSL codes, ready-to-use Pawn lines and the closest text code and vehicle color ID, all to copy on the spot.',
@@ -500,66 +501,6 @@ const CHANGELOG = [
   },
 ];
 
-const FEATURES = [
-  ['Navegação e Câmera', [
-    'Distância de visão ampliada para até 2500 metros (Visão → Distância de visão).',
-    'Botão na barra superior e atalho (F10) para recolher os menus laterais até as bordas da tela e restaurá-los.',
-    'Opção para recolher os menus laterais automaticamente durante a movimentação da câmera e restaurá-los ao parar.',
-    'Controle do mouse com Pointer Lock e recentralização automática do cursor ao soltar o botão de navegação.',
-    'Campo copiável "Coordenadas do clique do mouse" no topo do menu lateral direito, com cópia em 1 clique.',
-    'Câmera livre: botão direito + arrastar para olhar, WASD para andar, E/Q para subir e descer, Shift para acelerar.',
-    'Centralização automática da câmera olhando para baixo sobre o centro do mapa ao carregar qualquer projeto.',
-    'Placa verde com região e coordenadas; clique para teleportar (Ctrl+G), botão direito copia a posição.',
-  ]],
-  ['Objetos e Transformações', [
-    'Aba Objetos com categorias corrigidas, favoritos, apelidos personalizados e miniaturas grandes.',
-    'Velocidades de movimento e rotação configuráveis no menu lateral direito (0.001x até 10.0x).',
-    'Gizmo de movimentação (G) e rotação (R); eixos do mundo ou locais (L); encaixe em grade e magnético.',
-    'Seleção múltipla com rotação em grupo pelo mesmo eixo geométrico comum.',
-    'Duplicar (Ctrl+D), colocar no chão (End), girar 90° (X), desfazer (Ctrl+Z) e refazer (Ctrl+Y).',
-  ]],
-  ['Veículos, Tuning e Cores', [
-    'Tuning completo de veículos em tempo real no 3D com salvamento dos componentes (AddVehicleComponent).',
-    'Paleta de cores com todos os 256 IDs de cores  (incluindo as novas cores a partir do ID 128).',
-    'Pré-visualização e seleção de paintjobs em tempo real diretamente no veículo.',
-  ]],
-  ['Actors e Dinâmicos', [
-    'Inserção de Actors diretamente pelo catálogo com seleção de skins e biblioteca de animações.',
-    'Actors posicionados perfeitamente eretos e apoiados com os pés na superfície.',
-    'MoveObject completo: teste de movimentação no mundo executando 1 ciclo e salvamento dos parâmetros.',
-    'AttachObjectToObject: acoplamento de objetos com edição direta da posição do objeto filho no mundo.',
-  ]],
-  ['Projetos e Coexistência', [
-    'Coexistência de múltiplos projetos abertos simultaneamente com opção Editável ou Não editável.',
-    'Projetos não-editáveis são protegidos contra seleção e alteração acidental; editáveis salvam isoladamente.',
-    'Mesclagem de projetos (merge) e botão vermelho "Apagar tudo" com confirmação de segurança.',
-    'Inversão da ordem da lista de objetos na aba Projeto.',
-  ]],
-  ['Importação e Exportação Pawn', [
-    'Preservação 100% integral do arquivo original: anotações (//), comentários em bloco (/* */), comentários de fim de linha, linhas em branco, cabeçalhos, materiais 0xAARRGGBB e material text.',
-    'Edição manual do script Pawn antes de concluir a exportação.',
-    'Opção selecionável de exportação de coordenadas em formato de Array.',
-  ]],
-  ['Materiais (SetObjectMaterial / SetObjectMaterialText)', [
-    'O inspetor lista todos os índices do objeto (0 a 15) com a textura original de cada um.',
-    'Marque um ou vários índices, ou use a ferramenta Textura (T) e clique na parte do objeto (Ctrl + clique soma índices).',
-    'Troque a textura clicando na aba Texturas ou digitando modelid, txdname e texturename.',
-    'Painel de cores (materialcolor) com transparência, 0xAARRGGBB e cores recentes.',
-    'Texto com tamanho do material, fonte, tamanho, negrito, alinhamento, cor da letra e do fundo, códigos {RRGGBB} e prévia.',
-    'Copiar e colar materiais entre objetos; código Pawn de cada objeto no inspetor.',
-  ]],
-  ['Câmeras', [
-    'Câmeras fixas: SetPlayerCameraPos + SetPlayerCameraLookAt a partir da vista atual.',
-    'Movimentos: vários pontos com tempo, espera e tipo (CAMERA_MOVE ou CAMERA_CUT), caminho desenhado e prévia.',
-    'O código das câmeras vai na exportação, sem warnings.',
-  ]],
-  ['Testar no jogo', [
-    'Sobe um servidor de teste local integrado ( omp-server com DLLs e componentes) e abre o SA-MP já conectado.',
-    'Sincronização em tempo real das alterações do mapa com o servidor de teste.',
-    'Comandos no jogo: /jetpack, /v [modelo], /spawn e /pos.',
-  ]],
-];
-
 export function setupAbout() {
   const dlg = $('#dlgAbout');
   $('#btnAbout').onclick = async () => {
@@ -574,20 +515,17 @@ function render() {
   const build = cfg.build || {};
   const compileTime = build.builtAt || '14/10/2026 09:30:00';
   if (CHANGELOG[0]) CHANGELOG[0].date = compileTime;
-  const when = `Compilado em <b>${esc(compileTime)}</b>`;
+  const when = `Built on <b>${esc(compileTime)}</b>`;
   const year = new Date().getFullYear();
   $('#aboutBody').innerHTML = `
     <div class="about-head">
       <svg class="brand-mark big" viewBox="0 0 120 120" aria-hidden="true"><use href="#i-brand-logo"/></svg>
-      <div><div class="about-title">SA Map Studio <span class="tag">versão ${esc(cfg.version || CHANGELOG[0].version)}</span></div>
+      <div><div class="about-title">SA Map Studio <span class="tag">version ${esc(cfg.version || CHANGELOG[0].version)}</span></div>
         <div class="about-sub">${when}</div></div>
     </div>
-    <section><h3>Novidades</h3>
-      ${CHANGELOG.map(v => `<div class="cl-version" translate="no" lang="en"><div class="cl-head"><b>${esc(v.version)}</b><span>${esc(v.date)}</span></div>
+    <section><h3>Version history</h3>
+      ${CHANGELOG.map(v => `<div class="cl-version"><div class="cl-head"><b>${esc(v.version)}</b><span>${esc(v.date)}</span></div>
         <ul>${v.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}
-    </section>
-    <section><h3>Recursos</h3>
-      ${FEATURES.map(([t, list]) => `<div class="feat"><h4>${esc(t)}</h4><ul>${list.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}
     </section>`;
-  $('#aboutFoot').textContent = `© ${year} ${AUTHORS}. Todos os direitos reservados.`;
+  $('#aboutFoot').textContent = `© ${year} ${AUTHORS}. All rights reserved.`;
 }

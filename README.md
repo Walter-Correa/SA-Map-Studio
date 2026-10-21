@@ -186,7 +186,7 @@ Other options: `--port 8777`, `--no-browser` and `--navegador` (opens in the bro
 | `build-clean.bat` | `compiled\SA Map Studio\` | **Clean** copy, with no loaded data, ready to send to someone else. |
 
 Both create a separate Python environment (`compile-sources\.venv-build`), install the latest PyInstaller and
-pywebview, record the build date and time (shown in *What's new* inside the program), check that every interface text is
+pywebview, record the build date and time (shown in *Update History* inside the program), check that every interface text is
 translated into every language (a missing translation stops the build) and assemble the `test-server` folder with the gamemode and your
 open.mp / SA-MP server.
 
@@ -341,6 +341,7 @@ Tools (in `compile-sources/`, run with Python 3):
 ## Version history
 
 ### 3.24.0 — 20/10/2026
+- The *What's new and documentation* dialog is now *Update History*: only the version history, written in English and never translated; the feature list and its translations were removed.
 - Thumbnails are now transparent and take the background of the theme (dark or light), so they fit both. The thumbnail background is 50% lighter in the dark theme; the skin gallery keeps its own.
 - Theme button in the top bar: switches between the dark theme (default) and a new light theme, and remembers the choice.
 - Colors button between Sounds and Import: a color picker and converter that shows the selected color as RGBA, ARGB, {RRGGBB}, decimal, HTML, RGB and HSL codes, ready-to-use Pawn lines and the closest text code and vehicle color ID, all to copy on the spot.
@@ -738,7 +739,7 @@ Tools (in `compile-sources/`, run with Python 3):
   (like the game).
 - More resilient internal server: it does not close for lack of memory on a request and recovers from errors by itself.
 - Less memory when browsing the map and preparing thumbnails.
-- *What's new and documentation* button, with the build date and time.
+- *Update History* button (always in English, never translated), with the version history and the build date and time.
 - `Servidor de Teste` folder inside the program and a new `Compilar EXE limpo.bat`.
 
 ### 2.0.0 — 13/10/2026

@@ -202,7 +202,7 @@
       </div>
       <button id="btnTheme" class="btn icon" title="Mudar para o tema claro" aria-label="Mudar para o tema claro"><svg><use href="#i-sun"/></svg></button>
       <button id="btnHelp" class="btn icon" title="Atalhos (?)" aria-label="Atalhos de teclado"><svg><use href="#i-help"/></svg></button>
-      <button id="btnAbout" class="btn icon" title="Novidades e documentação" aria-label="Novidades e documentação"><svg><use href="#i-doc"/></svg></button>
+      <button id="btnAbout" class="btn icon" title="Update History" aria-label="Update History" translate="no"><svg><use href="#i-doc"/></svg></button>
       <button id="btnLogs" class="btn ghost icon" title="Registros de erros e diagnóstico do sistema" aria-label="Registros e diagnóstico" style="position:relative;"><svg><use href="#i-terminal"/></svg><span class="log-badge" id="logBadge" hidden>0</span></button>
     </div>
   </header>
@@ -661,9 +661,9 @@
   </form>
 </dialog>
 
-<dialog class="dialog narrow about" id="dlgAbout">
+<dialog class="dialog narrow about" id="dlgAbout" translate="no" lang="en">
   <form method="dialog" class="dialog-body">
-    <header class="dialog-head"><h2>Novidades e documentação</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <header class="dialog-head"><h2>Update History</h2><button class="btn icon" value="close" aria-label="Close"><svg><use href="#i-x"/></svg></button></header>
     <div class="about-body" id="aboutBody"></div>
     <footer class="about-foot" id="aboutFoot"></footer>
   </form>
