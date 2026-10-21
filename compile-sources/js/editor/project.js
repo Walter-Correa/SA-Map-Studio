@@ -298,11 +298,11 @@ export function progressBarPawn(td, varName, fmt) {
   const hex = hexOf(td.color ?? 0xFF1C1CFF);
   const borderCol = Number(td.pbBorderColor || 0) >>> 0;
   const style = clampPbStyle(td.pbStyle);
-  // Include order: ..., direction, style, segments, border, bordercolour (the border is always written,
-  // because the server may change PB_BORDER_DEFAULT)
+  // Include order: ..., direction, border, bordercolour, style, segments (everything is written, the border
+  // included, because the server may change PB_BORDER_DEFAULT)
   const segs = style === 1 ? clampPbSegments(td.pbSegments) : 'PB_RING_SEGMENTS';
   const lines = [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${PB_STYLE_NAMES[style]}, ${segs}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}${borderCol ? ', ' + hexOf(borderCol) : ''});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}, ${borderCol ? hexOf(borderCol) : '0'}, ${PB_STYLE_NAMES[style]}, ${segs});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];

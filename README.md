@@ -75,7 +75,7 @@ generates Pawn code ready to paste into your gamemode or filterscript.
 - Clean export of a Pawn script ready to compile.
 - **Progress bars** (SA Progress Bar Pro, `progressbarpro.inc`, included in the test server) in the four directions,
   drawn as in the game, as a bar, a ring of segments or a growing circle. Parameter order:
-  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, style, segments, border, bordercolour)`.
+  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments)`.
 
 ### SA-MP materials
 - The inspector lists **every material index** of the object (0 to 15) with the original texture of each one.
@@ -341,6 +341,7 @@ Tools (in `compile-sources/`, run with Python 3):
 ## Version history
 
 ### 3.24.0 — 20/10/2026
+- SA Progress Bar Pro: the order of `CreatePlayerProgressBar` is now `..., direction, border, bordercolour, style, segments`; the editor export, the import and the test server follow it, and the import still reads the previous order.
 - Setting a bar value shows a hidden bar again, so code written for older progress bar includes keeps working.
 - 10 new languages: Deutsch, Polski, Română, Magyar, Türkçe, Bahasa Indonesia, Tiếng Việt, Русский, Українська and Български (15 in all).
 - The Language menu lists the languages in alphabetical order and scrolls when they do not fit.

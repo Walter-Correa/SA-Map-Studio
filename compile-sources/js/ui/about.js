@@ -8,6 +8,7 @@ export const AUTHORS = 'Rafael_Hurley e Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'SA Progress Bar Pro: the order of CreatePlayerProgressBar is now ..., direction, border, bordercolour, style, segments; the editor export, the import and the test server follow it, and the import still reads the previous order.',
       'Setting a bar value shows a hidden bar again, so code written for older progress bar includes keeps working.',
       '10 new languages: Deutsch, Polski, Română, Magyar, Türkçe, Bahasa Indonesia, Tiếng Việt, Русский, Українська and Български (15 in all).',
       'The Language menu lists the languages in alphabetical order and scrolls when they do not fit.',

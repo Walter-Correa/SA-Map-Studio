@@ -1362,8 +1362,8 @@ stock SAMSP_ShowProgressBars(playerid)
     for (new i = 0; i < gTotalPBars; i++)
     {
         new bar = CreatePlayerProgressBar(playerid, gPBars[i][bar_x], gPBars[i][bar_y], gPBars[i][bar_width], gPBars[i][bar_height],
-            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_style], gPBars[i][bar_segments],
-            gPBars[i][bar_border], gPBars[i][bar_borderColor]);
+            gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border], gPBars[i][bar_borderColor],
+            gPBars[i][bar_style], gPBars[i][bar_segments]);
         if (bar == INVALID_PLAYER_BAR_ID) continue;
         SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);

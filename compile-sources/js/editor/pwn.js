@@ -845,9 +845,9 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progressbarpro.inc: CreatePlayerProgressBar(playerid, x, y, width, height, color, maximum, direction, style, segments, border, border color).
-      // Old versions of the include (and progress2.inc) had border and border color right after the direction, and the style at the end:
-      // that order is recognized by the 9th argument being a number with decimals (the border) or the 11th being a PB_STYLE_.
+      // progressbarpro.inc: CreatePlayerProgressBar(playerid, x, y, width, height, color, maximum, direction, border, border color, style, segments).
+      // The previous order of the include had the style and segments right after the direction (border and border color at the end):
+      // it is recognized by the 9th argument being a PB_STYLE_/PB_RING_SEGMENTS or by the 11th being a number with decimals (the border).
       // also with named arguments (.colour = ...) and expressions (the leading number is used)
       if (a.length >= 3) {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
@@ -855,8 +855,9 @@ export function parsePwn(source) {
         const dirIdx = PB_DIRECTIONS.indexOf(dirArg.toUpperCase());
         const colArg = arg(5, 'colour', 'color');
         const a8 = String(a[8] ?? '').trim(), a10 = String(a[10] ?? '').trim();
-        const oldOrder = !/PB_STYLE_|PB_RING_SEGMENTS/i.test(a8) && (/PB_STYLE_/i.test(a10) || /^-?\d*\.\d*$|PB_BORDER/i.test(a8));
-        const [iStyle, iSeg, iBorder, iBorderCol] = oldOrder ? [10, 11, 8, 9] : [8, 9, 10, 11];
+        const isBorder = (s) => /^-?\d*\.\d*$|PB_BORDER/i.test(s);
+        const styleFirst = /PB_STYLE_|PB_RING_SEGMENTS/i.test(a8) || (a8 !== '' && !isBorder(a8) && isBorder(a10));
+        const [iStyle, iSeg, iBorder, iBorderCol] = styleFirst ? [8, 9, 10, 11] : [10, 11, 8, 9];
         const nameFromVar = (v) => {
           if (!v) return '';
           const idx = [...v.matchAll(/\[\s*([A-Za-z_@][\w@]*)\s*\]/g)].map(m => m[1]).filter(s => !/^(playerid|i|j|id|pid)$/i.test(s));

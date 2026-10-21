@@ -101,9 +101,9 @@
 	  StopPlayerProgressBarBlink(playerid, health);
 
 	  new ring = CreatePlayerProgressBar(playerid, 300.0, 200.0, 40.0, 50.0, 0x2E9E3AFF, 100.0,
-	      BAR_DIRECTION_RIGHT, PB_STYLE_RING, 20);                       // ring with 20 segments
+	      BAR_DIRECTION_RIGHT, 1.0, 0, PB_STYLE_RING, 20);               // ring with 20 segments
 	  new gauge = CreatePlayerProgressBar(playerid, 350.0, 200.0, 40.0, 50.0, 0x3A6EE0FF, 100.0,
-	      BAR_DIRECTION_RIGHT, PB_STYLE_CIRCLE);                         // growing circle
+	      BAR_DIRECTION_RIGHT, 1.0, 0, PB_STYLE_CIRCLE);                 // growing circle
 
 	-------------------------------------------------------------------------------- functions
 
@@ -113,7 +113,7 @@
 	Creation and life cycle
 	  CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0,
 	      colour = 0xFF1C1CFF, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT,
-	      style = PB_STYLE_BAR, segments = 24, Float:border = 1.0, bordercolour = 0)
+	      Float:border = 1.0, bordercolour = 0, style = PB_STYLE_BAR, segments = 24)
 	      Creates a hidden bar and returns its id (INVALID_PLAYER_BAR_ID on failure).
 	      bordercolour 0 = black with the alpha of the bar colour.
 	      style: PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE; segments: only for PB_STYLE_RING.
@@ -703,22 +703,22 @@ stock bool:IsValidPlayerProgressBar(playerid, barid)
 /*
 	CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0,
 	    colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT,
-	    style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS, Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
+	    Float:border = PB_BORDER_DEFAULT, bordercolour = 0, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS)
 	Creates a bar for the player (hidden until ShowPlayerProgressBar) with value 0.
 	  x, y          top-left corner in TextDraw units (640x448)
 	  width, height size of the whole bar, border included
 	  colour        bar colour (RRGGBBAA)
 	  max           value that fills the bar
 	  direction     BAR_DIRECTION_RIGHT, BAR_DIRECTION_LEFT, BAR_DIRECTION_UP or BAR_DIRECTION_DOWN
-	  style         PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE
-	  segments      ring segments (PB_RING_MIN to PB_RING_MAX), used only by PB_STYLE_RING
 	  border        side border (PB_BORDER_MIN to PB_BORDER_MAX; out of range uses the limit;
 	                reduced to fit when the bar is too small)
 	  bordercolour  border colour (0 = black with the alpha of the bar colour)
+	  style         PB_STYLE_BAR, PB_STYLE_RING or PB_STYLE_CIRCLE
+	  segments      ring segments (PB_RING_MIN to PB_RING_MAX), used only by PB_STYLE_RING
 	Returns the bar id, or INVALID_PLAYER_BAR_ID if the player is not connected, the player
 	already has MAX_PLAYER_BARS bars or there are no free PlayerTextDraws.
 */
-stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS, Float:border = PB_BORDER_DEFAULT, bordercolour = 0)
+stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 55.5, Float:height = 6.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = BAR_DIRECTION_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS)
 {
 	if (!(0 <= playerid < MAX_PLAYERS) || !IsPlayerConnected(playerid)) return INVALID_PLAYER_BAR_ID;
 	new barid = INVALID_PLAYER_BAR_ID;
