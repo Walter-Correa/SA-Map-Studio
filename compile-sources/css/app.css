@@ -386,6 +386,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--sodium); width
 .cam-row { display: flex; align-items: center; gap: 2px; }
 .cam-row .btn.icon { width: 28px; height: 28px; }
 .cam-row .btn.icon svg { width: 16px; height: 16px; }
+/* Open/close of a movement: filled and bordered like the top bar buttons, so it reads as a button */
+.cam-row .btn.icon[data-act="path-toggle"] { background: var(--asphalt-600); border-color: var(--line); color: var(--paper); }
+.cam-row .btn.icon[data-act="path-toggle"]:hover { background: var(--asphalt-500); }
+.cam-row .btn.icon[data-act="path-toggle"][aria-expanded="true"] { color: var(--sodium); background: rgba(240, 166, 48, .1); border-color: rgba(240, 166, 48, .45); }
 .cam-name { flex: 1; min-width: 0; height: 28px; font-weight: 600; background: transparent !important; border-color: transparent !important; }
 .cam-name:focus { border-color: var(--sodium) !important; background: var(--asphalt-900) !important; }
 .cam-coords { color: var(--paper-mute); font-size: 11.5px; }

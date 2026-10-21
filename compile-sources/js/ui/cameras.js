@@ -6,6 +6,7 @@ import { app, $, $$, esc, fmt, plural, toast, copyText, showConfirm } from './co
 import { t as tr } from './i18n.js';
 
 let openPath = null;      // id of the open movement
+let closedByUser = false; // the user closed the movement: the tab does not reopen it by itself
 let helper = null;        // path drawing in the scene
 let preview = null;       // preview playing
 
@@ -35,12 +36,21 @@ export function setupCameras() {
   const panel = $('#camPanel');
   panel.addEventListener('click', onClick);
   panel.addEventListener('change', onChange);
-  app.on('project', () => { openPath = null; render(); drawHelper(); });
+  app.on('project', () => { closedByUser = false; openPath = null; autoOpenSingle(); render(); drawHelper(); });
+  app.on('cameras-tab', () => { if (autoOpenSingle()) { render(); drawHelper(); } });
   app.on('project-closing', stopPreview);
   app.vp.onFrame((dt) => tickPreview(dt));
   window.addEventListener('keydown', (e) => { if (preview && e.key === 'Escape') { e.stopImmediatePropagation(); stopPreview(); } }, true);
   $('#camPreviewStop').onclick = stopPreview;
   render();
+}
+
+// With a single movement in the project, the Cameras tab shows it open
+function autoOpenSingle() {
+  const list = cams().paths;
+  if (openPath !== null || closedByUser || list.length !== 1) return false;
+  openPath = list[0].id;
+  return true;
 }
 
 export function render() {
@@ -76,6 +86,7 @@ export function render() {
       <div class="cam-row"><button type="button" class="btn icon" data-act="path-toggle" title="${open ? 'Fechar' : 'Abrir'}" aria-expanded="${open}"><svg><use href="#i-path"/></svg></button>
         <input class="cam-name" data-field="name" value="${esc(p.name)}" aria-label="Nome do movimento">
         <button type="button" class="btn icon" data-act="path-play" title="Prévia no editor" ${p.keys.length < 2 ? 'disabled' : ''}><svg><use href="#i-play"/></svg></button>
+        <button type="button" class="btn icon" data-act="path-stop" title="Parar a prévia" ${preview && preview.path.id === p.id ? '' : 'disabled'}><svg><use href="#i-stop"/></svg></button>
         <button type="button" class="btn icon" data-act="path-code" title="Copiar o código"><svg><use href="#i-copy"/></svg></button>
         <button type="button" class="btn icon danger" data-act="path-del" title="Apagar"><svg><use href="#i-trash"/></svg></button></div>
       <div class="cam-coords">${plural(p.keys.length, 'ponto', 'pontos')} · ${(total / 1000).toFixed(1)} s</div>
@@ -122,9 +133,10 @@ async function onClick(e) {
     c.paths.push(p); openPath = p.id; changed();
     toast('Agora mova a vista e clique em "Adicionar ponto"', 'ok', 4000);
   }
-  else if (a === 'path-toggle') { openPath = openPath === path.id ? null : path.id; render(); drawHelper(); }
+  else if (a === 'path-toggle') { openPath = openPath === path.id ? null : path.id; closedByUser = openPath === null; render(); drawHelper(); }
   else if (a === 'path-del') { if (await showConfirm(`Apagar o movimento "${path.name}"?`, { danger: true, confirmText: 'Apagar' })) { c.paths.splice(c.paths.indexOf(path), 1); if (openPath === path.id) openPath = null; changed(); } }
   else if (a === 'path-play') startPreview(path);
+  else if (a === 'path-stop') stopPreview();
   else if (a === 'path-code') { await copyText(cameraFunctions({ shots: [], paths: [path] }).code); toast('Código do movimento copiado'); }
   else if (a === 'key-add') {
     const idx = path.keys.length;
@@ -225,6 +237,7 @@ function startPreview(path) {
   app.editor.selBoxes.visible = false;
   if (helper) helper.visible = false;
   $('#camPreviewBar').hidden = false;
+  render();
 }
 
 export function stopPreview() {
@@ -237,6 +250,7 @@ export function stopPreview() {
   app.editor.selBoxes.visible = true;
   if (helper) helper.visible = true;
   $('#camPreviewBar').hidden = true;
+  render();
   app.streamer.invalidate();
 }
 

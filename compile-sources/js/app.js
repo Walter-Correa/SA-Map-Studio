@@ -841,6 +841,7 @@ function setupTabs() {
     for (const n of ['catalog', 'textures', 'cameras', 'outline']) $('#tab-' + n).hidden = n !== name;
     if (name === 'catalog') renderCatalogRows();
     if (name === 'textures') { renderTexRows(); updateTarget(); }
+    if (name === 'cameras') app.emit('cameras-tab');
     store.set('tab', name);
   };
   $$('.tab').forEach(t => t.onclick = () => show(t.dataset.tab));
