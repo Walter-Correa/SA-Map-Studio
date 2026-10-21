@@ -21,7 +21,7 @@ export class Thumbnails extends EventTarget {
     this.busy = false;
     this.target = new THREE.WebGLRenderTarget(SIZE * COLS, SIZE * ROWS, { samples: 0, depthBuffer: true });
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x404c58);
+    this.scene.background = null;   // transparent: the page paints the (themed) thumbnail background
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.5));
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.05, 5000);
     this.pixels = new Uint8Array(SIZE * COLS * SIZE * ROWS * 4);
@@ -129,6 +129,9 @@ export class Thumbnails extends EventTarget {
     const tg = this.target;
     tg.scissorTest = true;
     const drawn = [];
+    const prevClear = new THREE.Color();
+    r.getClearColor(prevClear);
+    const prevAlpha = r.getClearAlpha();
     ids.forEach((id, i) => {
       const t = templates[i];
       const col = i % COLS, row = Math.floor(i / COLS);
@@ -136,7 +139,8 @@ export class Thumbnails extends EventTarget {
       tg.viewport.set(col * SIZE, row * SIZE, SIZE, SIZE);
       tg.scissor.set(col * SIZE, row * SIZE, SIZE, SIZE);
       r.setRenderTarget(tg);
-      if (!t) { r.setClearColor(0x404c58, 1); r.clear(); drawn.push(false); return; }
+      r.setClearColor(0x000000, 0);
+      if (!t) { r.clear(); drawn.push(false); return; }
       const obj = this.models.instantiate(id);
       this.scene.add(obj);
       const box = obj.userData.box || new THREE.Box3().setFromObject(obj);
@@ -164,6 +168,7 @@ export class Thumbnails extends EventTarget {
       drawn.push(true);
     });
     r.setRenderTarget(prev);
+    r.setClearColor(prevClear, prevAlpha);
     try { await r.readRenderTargetPixelsAsync(tg, 0, 0, SIZE * COLS, SIZE * ROWS, this.pixels); }
     catch { r.readRenderTargetPixels(tg, 0, 0, SIZE * COLS, SIZE * ROWS, this.pixels); }
     const W = SIZE * COLS;
@@ -176,6 +181,12 @@ export class Thumbnails extends EventTarget {
         const srcRow = row * SIZE + (SIZE - 1 - y);
         const src = (srcRow * W + col * SIZE) * 4;
         img.data.set(this.pixels.subarray(src, src + SIZE * 4), y * SIZE * 4);
+      }
+      // Blended (translucent) pixels come out premultiplied by alpha: undo it before encoding
+      const d = img.data;
+      for (let k = 0; k < d.length; k += 4) {
+        const a = d[k + 3];
+        if (a > 0 && a < 255) { const f = 255 / a; d[k] = Math.min(255, d[k] * f); d[k + 1] = Math.min(255, d[k + 1] * f); d[k + 2] = Math.min(255, d[k + 2] * f); }
       }
       this.ctx.putImageData(img, 0, 0);
       return this.canvas.convertToBlob
