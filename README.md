@@ -341,6 +341,7 @@ Tools (in `compile-sources/`, run with Python 3):
 ## Version history
 
 ### 3.24.0 — 20/10/2026
+- Setting a bar value shows a hidden bar again, so code written for older progress bar includes keeps working.
 - 10 new languages: Deutsch, Polski, Română, Magyar, Türkçe, Bahasa Indonesia, Tiếng Việt, Русский, Українська and Български (15 in all).
 - The Language menu lists the languages in alphabetical order and scrolls when they do not fit.
 - The installer and the Windows language detection cover the 15 languages.

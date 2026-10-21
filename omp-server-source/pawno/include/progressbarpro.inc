@@ -12,8 +12,9 @@
 	- the border goes from PB_BORDER_MIN (0.5) to PB_BORDER_MAX (5.0). Values outside that range
 	  are replaced by the limit, and the border never grows past what fits in the bar (at least
 	  PB_MIN_INNER of inner area is kept);
-	- the filled part never goes past the border, disappears when the value is zero, and changing
-	  the value never shows a hidden bar;
+	- the filled part never goes past the border and disappears when the value is zero;
+	- SetPlayerProgressBarValue shows a hidden bar, so code written for older progress bar includes
+	  keeps working (ShowPlayerProgressBar is still the way to show it first);
 	- bars can blink, with their own colour for the inner area and for the border;
 	- three styles, chosen when the bar is created (or later with SetPlayerProgressBarStyle):
 
@@ -126,7 +127,7 @@
 	  IsPlayerProgressBarVisible(playerid, barid)                  -> bool
 
 	Value
-	  SetPlayerProgressBarValue(playerid, barid, Float:value)       (clamped to 0..max)
+	  SetPlayerProgressBarValue(playerid, barid, Float:value)       (clamped to 0..max; shows a hidden bar)
 	  GetPlayerProgressBarValue(playerid, barid)                   -> Float
 	  SetPlayerProgressBarMaxValue(playerid, barid, Float:max = 100.0)
 	  GetPlayerProgressBarMaxValue(playerid, barid)                -> Float
@@ -850,7 +851,8 @@ stock bool:IsPlayerProgressBarVisible(playerid, barid)
 
 /*
 	SetPlayerProgressBarValue(playerid, barid, Float:value)
-	Sets the current value (clamped to 0..max). It never shows a hidden bar.
+	Sets the current value (clamped to 0..max) and shows the bar if it is hidden, so code written
+	for older progress bar includes keeps working. HidePlayerProgressBar keeps it hidden until the next call.
 */
 stock SetPlayerProgressBarValue(playerid, barid, Float:value)
 {
@@ -859,6 +861,7 @@ stock SetPlayerProgressBarValue(playerid, barid, Float:value)
 	if (value > ProgressBar[playerid][barid][pb_max]) value = ProgressBar[playerid][barid][pb_max];
 	ProgressBar[playerid][barid][pb_value] = value;
 	PB_RenderMain(playerid, barid);
+	if (!ProgressBar[playerid][barid][pb_show]) ShowPlayerProgressBar(playerid, barid);
 	return 1;
 }
 
