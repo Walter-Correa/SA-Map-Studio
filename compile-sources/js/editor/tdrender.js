@@ -8,7 +8,7 @@ export const TD_WIDTH = 640, TD_HEIGHT = 448;   // TextDraw coordinate space in 
 const UX = TD_SCREEN.w / TD_WIDTH, UY = TD_SCREEN.h / TD_HEIGHT;
 
 // Colors of the ~x~ tags (the game's HudColours)
-const TAG_COLORS = {
+export const TAG_COLORS = {
   r: [180, 25, 29], g: [54, 104, 44], b: [50, 60, 127], w: [225, 225, 225], s: [225, 225, 225],
   y: [226, 192, 99], p: [168, 110, 252], l: [0, 0, 0],
 };

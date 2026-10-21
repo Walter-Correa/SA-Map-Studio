@@ -591,6 +591,28 @@ legend.sub { margin-top: 8px; }
 .toast.error { border-left-color: var(--danger); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
+/* Color picker and converter dialog */
+.clr-top { display: flex; align-items: center; gap: 8px; }
+.clr-preview { width: 44px; height: 32px; border-radius: var(--radius-s); border: 1px solid var(--line); flex-shrink: 0;
+  background: linear-gradient(var(--c, transparent), var(--c, transparent)), repeating-conic-gradient(#666 0 25%, #999 0 50%) 0 0 / 12px 12px; }
+.clr-pick input { width: 40px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-s); background: transparent; cursor: pointer; }
+.clr-input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; font-family: var(--font-mono, monospace); background: var(--asphalt-900); color: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-s); }
+.clr-input.invalid { border-color: var(--danger); }
+.clr-rgba { display: flex; gap: 8px; }
+.clr-rgba label { display: flex; align-items: center; gap: 6px; color: var(--paper-dim); font-weight: 600; }
+.clr-rgba input { width: 64px; height: 28px; padding: 0 6px; background: var(--asphalt-900); color: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-s); }
+.clr-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.clr-swatches .sw { width: 26px; height: 26px; border-radius: var(--radius-s); border: 1px solid var(--line); background: var(--c); cursor: pointer; padding: 0; }
+.clr-swatches .sw:hover { outline: 2px solid var(--sodium); }
+.clr-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.clr-sec { margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--paper-dim); }
+.clr-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 5px 8px; background: var(--asphalt-900); border: 1px solid var(--line); border-radius: var(--radius-s); }
+.clr-lab { font-weight: 600; }
+.clr-code { grid-column: 2; font-family: var(--font-mono, monospace); overflow-wrap: anywhere; color: var(--sodium); }
+.clr-note { grid-column: 2; font-size: 11px; color: var(--paper-dim); }
+.clr-note:empty { display: none; }
+.clr-row .btn { grid-column: 3; grid-row: 1 / span 2; }
+
 /* ---------------------------------------------------------------- telas menores / responsividade */
 /* The top bar labels disappear one by one only when they do not fit (fitTopbar in app.js) */
 .lbl, .lbl2, .lbl-seg, .lbl-keep, .lbl-export, .lbl-test { display: inline; }

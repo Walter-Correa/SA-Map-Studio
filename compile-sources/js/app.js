@@ -27,6 +27,7 @@ import { initGangZoneDialog, openGangZoneDialog } from './ui/gangzoneDialog.js';
 import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
 import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
+import { initColorDialog, openColorDialog } from './ui/colorDialog.js';
 import { installColorPicker } from './ui/colorPicker.js';
 import { t, initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange, uiLocale } from './ui/i18n.js';
 
@@ -37,7 +38,7 @@ let hintDismissed = false;
 // spacing and then hides the least important labels, one at a time (the icons stay)
 const TOPBAR_HIDE_ORDER = [
   '#saveState', '.brand', '.seg-btn[data-mode="texture"]', '.seg-btn[data-mode="rotate"]', '.seg-btn[data-mode="translate"]',
-  '#btnSpace', '#btnSnap', '#btnProjects', '#btnSounds', '#btn3DText', '#btnGangZones', '#btnTextDraws',
+  '#btnSpace', '#btnSnap', '#btnProjects', '#btnSounds', '#btnColors', '#btn3DText', '#btnGangZones', '#btnTextDraws',
   '#btnMapIcons', '#btnCheckpoints', '#btnImport', '#btnView', '#btnGoto', '#btnExport', '#btnTest',
 ];
 
@@ -227,6 +228,7 @@ async function start(cfg) {
   initTextDrawEditor(app);
   initMapIconDialog();
   initSoundDialog();
+  initColorDialog();
   autosaveOnClose($('#dlgTextDraw'), 'textDraws');
   autosaveOnClose($('#dlgMapIcons'), 'mapIcons');
   autosaveOnClose($('#dlgGangZones'), 'gangZones');
@@ -281,6 +283,7 @@ function setupToolbar(cfg) {
   if ($('#btnCheckpoints')) $('#btnCheckpoints').onclick = () => openCreateCheckpointPanel();
   if ($('#btnMapIcons')) $('#btnMapIcons').onclick = () => openMapIconDialog();
   if ($('#btnSounds')) $('#btnSounds').onclick = () => openSoundDialog();
+  if ($('#btnColors')) $('#btnColors').onclick = () => openColorDialog();
   if ($('#btnGangZones')) $('#btnGangZones').onclick = () => openGangZoneDialog();
   if ($('#btnTextDraws')) $('#btnTextDraws').onclick = () => openTextDrawEditor();
   app.on('project-change', updateUndoButtons);
