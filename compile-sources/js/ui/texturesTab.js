@@ -1,4 +1,5 @@
 import { t, uiLocale } from './i18n.js';
+import { attachHoverPreview } from './hoverPreview.js';
 // Textures tab: all the game's textures by category, with thumbnails on disk.
 // Clicking a texture applies it (SetObjectMaterial) to the chosen indices of the selected objects.
 import { TEXTURE_CATEGORIES } from '../world/categories.js';
@@ -52,6 +53,17 @@ export function setupTexturesTab() {
   };
   list.addEventListener('scroll', scheduleRows);
   new ResizeObserver(scheduleRows).observe(list);
+  attachHoverPreview(list, '.tile', (tile) => {
+    const item = texlib.byKey.get(tile.dataset.key);
+    if (!item) return null;
+    const img = tile.querySelector('img');
+    return {
+      src: img && img.getAttribute('src') ? img.getAttribute('src') : '',
+      title: tile.querySelector('.tile-name')?.textContent || item.name,
+      sub: tile.querySelector('.tile-sub')?.textContent || item.txd,
+      large: () => texlib.large(item.txd, item.name),
+    };
+  });
   list.addEventListener('click', async (e) => {
     const tile = e.target.closest('.tile'); if (!tile) return;
     const item = texlib.byKey.get(tile.dataset.key); if (!item) return;

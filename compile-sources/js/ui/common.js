@@ -1,6 +1,8 @@
 import { uiLocale } from './i18n.js';
 // Utilities shared by the interface and the "app" object with the main pieces.
 export const $ = (s, r = document) => r.querySelector(s);
+// Value of a CSS variable of the current theme (canvases cannot use var()), with a fallback
+export const themeVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const fmt = (v, d = 4) => { const s = (Number(v) || 0).toFixed(d); return s.includes('.') ? s.replace(/\.?0+$/, '') || '0' : s; };

@@ -5,7 +5,7 @@
 // - "Preparar todas" generates the missing ones in the background, little by little.
 import * as THREE from 'three';
 
-const SIZE = 96;
+const SIZE = 192;                    // drawn big and anti-aliased: shown at 72 px they stay sharp
 const COLS = 4, ROWS = 4;            // batch of up to 16 thumbnails per read
 const BATCH = COLS * ROWS;
 
@@ -14,12 +14,14 @@ export class Thumbnails extends EventTarget {
     super();
     this.renderer = renderer;
     this.models = models;
-    this.have = new Set();      // ids with a thumbnail on disk
+    this.have = new Set();      // ids with a (current resolution) thumbnail on disk
+    this.stale = new Set();     // ids with an old low resolution thumbnail: shown meanwhile and drawn again
+    this.failed = new Set();    // ids that could not be drawn again in this session
     this.urls = new Map();      // id -> url (disk or generated now) | null
     this.waiting = new Map();   // id -> [callbacks]
     this.queue = [];
     this.busy = false;
-    this.target = new THREE.WebGLRenderTarget(SIZE * COLS, SIZE * ROWS, { samples: 0, depthBuffer: true });
+    this.target = new THREE.WebGLRenderTarget(SIZE * COLS, SIZE * ROWS, { samples: 4, depthBuffer: true });
     this.scene = new THREE.Scene();
     this.scene.background = null;   // transparent: the page paints the (themed) thumbnail background
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.5));
@@ -35,18 +37,21 @@ export class Thumbnails extends EventTarget {
     try {
       const data = await (await fetch('/api/thumbs/index')).json();
       for (const id of data.obj || []) this.have.add(id);
+      for (const id of data.stale || []) this.stale.add(id);
       return data;
     } catch { return { obj: [], tex: [] }; }
   }
 
   url(id) {
     if (id === 0 || id === '0') return '/thumbs/obj/0.webp?v=4';
-    return this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
+    if (this.have.has(id)) return `/thumbs/obj/${id}.webp?v=5`;
+    return this.stale.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
   }
 
   request(id, cb) {
     if (id === 0 || id === '0') { cb('/thumbs/obj/0.webp?v=4'); return; }
-    if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=3`); return; }
+    if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=5`); return; }
+    if (this.failed.has(id)) { cb(null); return; }
     if (this.waiting.has(id)) { this.waiting.get(id).push(cb); return; }
     this.waiting.set(id, [cb]);
     this.queue.push(id);
@@ -86,10 +91,11 @@ export class Thumbnails extends EventTarget {
           if (blob) {
             try {
               const res = await fetch(`/api/thumbs/obj/${id}`, { method: 'POST', body: blob });
-              if (res.ok) this.have.add(id);
+              if (res.ok) { this.have.add(id); this.stale.delete(id); }
             } catch (_) {}
           }
-          const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
+          if (!this.have.has(id)) this.failed.add(id);
+          const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp?v=5` : null;
           if (this.background.ids?.delete(id)) { this.background.done++; this.dispatchEvent(new Event('progress')); }
           this.finish(id, diskUrl);
           // Models loaded only for the thumbnail leave memory immediately
@@ -253,8 +259,8 @@ export class Thumbnails extends EventTarget {
       }
       this.ctx.putImageData(img, 0, 0);
       return this.canvas.convertToBlob
-        ? this.canvas.convertToBlob({ type: 'image/webp', quality: 0.85 })
-        : new Promise(res => this.canvas.toBlob(res, 'image/webp', 0.85));
+        ? this.canvas.convertToBlob({ type: 'image/webp', quality: 0.92 })
+        : new Promise(res => this.canvas.toBlob(res, 'image/webp', 0.92));
     });
   }
 

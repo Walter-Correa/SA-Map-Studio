@@ -8,6 +8,9 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'Light theme: blue buttons keep their color on hover (a lighter blue) and the map and TextDraw editors have a light background; the material list of a map object scrolls and shows 5 rows; the Update History text sits on a darker background.',
+      'Hovering a texture in the Textures tab also opens the big preview.',
+      'Object thumbnails are drawn bigger and anti-aliased (192 px instead of 96 px, sharp like the hover preview); the old low resolution ones are shown until each one is drawn again as you browse, or all at once with the button that prepares every thumbnail.',
       'Light theme reworked: its own blue highlight color instead of the dark theme orange, clearer contrast between wells, lists and buttons, and the TextDraw, MapIcon and GangZone editors, the confirmation dialog, previews and galleries (skins, sprites, map icons) now follow it.',
       'Clicking a map object lists its material indices in the right panel, each with the texture and the texture name it uses.',
       'Selecting an item of the project list that exists in the world also takes the camera to it, besides turning on the gizmo.',

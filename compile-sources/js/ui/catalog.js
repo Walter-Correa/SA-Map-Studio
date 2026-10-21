@@ -1,5 +1,6 @@
 // Objects tab: catalog with categories (Furniture, Beach, Buildings...), origin (SA-MP, Los Santos...),
 // favorites, recents and thumbnails stored on disk.
+import { attachHoverPreview } from './hoverPreview.js';
 import { OBJECT_CATEGORIES, REGIONS } from '../world/categories.js';
 import { getSkinLabel } from '../world/actors.js';
 import { PREDEFINED_PICKUPS } from '../world/pickups.js';
@@ -111,58 +112,17 @@ export function setupCatalog() {
   filterCatalog();
 }
 
-// Hover preview: a big thumbnail in the middle of the screen while the mouse is over an item of the list.
-// It closes when the mouse leaves the item, on click, on scroll and when the list is rebuilt.
-let hoverPop = null, hoverRow = null, hoverTimer = 0, hoverToken = 0, hoverUrl = '';
-
-function hidePreview() {
-  clearTimeout(hoverTimer);
-  hoverRow = null;
-  hoverToken++;
-  if (hoverPop) hoverPop.hidden = true;
-  if (hoverUrl) { URL.revokeObjectURL(hoverUrl); hoverUrl = ''; }
-}
-
-function showPreview(row) {
-  if (!hoverPop) {
-    hoverPop = document.createElement('div');
-    hoverPop.className = 'thumb-pop';
-    hoverPop.hidden = true;
-    hoverPop.innerHTML = '<img alt=""><div class="thumb-pop-title"></div><div class="thumb-pop-sub"></div>';
-    document.body.appendChild(hoverPop);
-  }
-  const id = +row.dataset.id;
-  const token = ++hoverToken;
-  const img = hoverPop.querySelector('img');
-  const small = row.querySelector('img.thumb');
-  img.src = small && small.getAttribute('src') ? small.getAttribute('src') : '';
-  hoverPop.querySelector('.thumb-pop-title').textContent = row.querySelector('.row-name')?.textContent || '';
-  hoverPop.querySelector('.thumb-pop-sub').textContent = row.querySelector('.row-sub')?.textContent || '';
-  hoverPop.hidden = false;
-  // The saved thumbnail is small: draw the model again, bigger, and swap it in when ready
-  app.thumbs.renderLarge(id).then((url) => {
-    if (!url) return;
-    if (token !== hoverToken) { URL.revokeObjectURL(url); return; }
-    if (hoverUrl) URL.revokeObjectURL(hoverUrl);
-    hoverUrl = url;
-    img.src = url;
-  });
-}
-
+// Hover preview of an item of the list (see hoverPreview.js)
 function setupHoverPreview(list) {
-  list.addEventListener('mouseover', (e) => {
-    const row = e.target.closest('.row');
-    if (row === hoverRow) return;
-    hidePreview();
-    if (!row) return;
-    hoverRow = row;
-    hoverTimer = setTimeout(() => { if (hoverRow === row && row.isConnected) showPreview(row); }, 180);
+  attachHoverPreview(list, '.row', (row) => {
+    const small = row.querySelector('img.thumb');
+    return {
+      src: small && small.getAttribute('src') ? small.getAttribute('src') : '',
+      title: row.querySelector('.row-name')?.textContent || '',
+      sub: row.querySelector('.row-sub')?.textContent || '',
+      large: () => app.thumbs.renderLarge(+row.dataset.id),
+    };
   });
-  list.addEventListener('mouseleave', hidePreview);
-  list.addEventListener('mousedown', hidePreview);
-  list.addEventListener('click', hidePreview);
-  list.addEventListener('wheel', hidePreview, { passive: true });
-  list.addEventListener('scroll', hidePreview, { passive: true });
 }
 
 function toggleFav(id) {
@@ -252,7 +212,8 @@ export function renderCatalogRows(force = true) {
         <button type="button" class="btn-alias${alias ? ' has-alias' : ''}" data-act="alias" title="${alias ? 'Apelido: ' + esc(alias) : 'Definir apelido'}" aria-label="Definir apelido"><svg><use href="#i-edit"/></svg></button>
         <button type="button" class="fav${favs.has(c.id) ? ' on' : ''}" title="Favoritar" aria-label="Favoritar ${esc(c.name)}"><svg><use href="#i-star"/></svg></button>
       </div>`;
-    if (!known) {
+    if (!known || app.thumbs.stale.has(c.id)) {
+      // No thumbnail yet, or only an old low resolution one: draws it (again) and swaps it in when ready
       const img = row.firstElementChild;
       app.thumbs.request(c.id, (url) => { if (url && img.isConnected) { img.src = url; img.classList.remove('empty'); } });
     }

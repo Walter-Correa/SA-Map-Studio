@@ -3,7 +3,7 @@
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
 import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbAutoFillMax, pbAutoFillValue } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
-import { toast, arrowStep } from './common.js';
+import { toast, arrowStep, themeVar } from './common.js';
 import { modelPreviewImage } from '../editor/modelPreview.js';
 import { t, onLanguageChange } from './i18n.js';
 
@@ -1169,7 +1169,7 @@ function redrawCanvas() {
   if (showGameBg && gameBgImg && gameBgImg.complete && gameBgImg.naturalWidth > 0) {
     ctx.drawImage(gameBgImg, 0, 0, TD_WIDTH, TD_HEIGHT);
   } else {
-    ctx.fillStyle = '#0a0d14';
+    ctx.fillStyle = themeVar('--td-bg', '#0a0d14');
     ctx.fillRect(0, 0, TD_WIDTH, TD_HEIGHT);
   }
 

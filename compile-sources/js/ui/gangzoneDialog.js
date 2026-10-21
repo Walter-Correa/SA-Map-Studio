@@ -2,7 +2,7 @@
 // Modal with the GTA SA radar map (-3000 to +3000), zoom, pan,
 import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName, findFreeGangZoneSpot } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
-import { toast, arrowStep, showAlert } from './common.js';
+import { toast, arrowStep, showAlert, themeVar } from './common.js';
 
 export function parseAndNormalizeHexColor(input, currentAlpha = 0.56) {
   if (!input) return null;
@@ -854,7 +854,7 @@ function redrawCanvas() {
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
   // Fundo escuro
-  ctx.fillStyle = '#161922';
+  ctx.fillStyle = themeVar('--map-bg', '#161922');
   ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
 
   // Draws the radar map image

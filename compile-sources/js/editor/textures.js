@@ -201,6 +201,20 @@ export class TextureLibrary extends EventTarget {
     this.pumpThumbs();
   }
 
+  // A texture at its best resolution, for the hover preview: Promise of an object URL (revoked by the caller) or null
+  large(txd, name) {
+    txd = String(txd || '').toLowerCase(); name = String(name || '').toLowerCase();
+    const entry = this.gd.entry(txd + '.txd');
+    if (!entry) return Promise.resolve(null);
+    this.ensureThumbWorker();
+    this.largePending = this.largePending || new Map();
+    const id = ++this.thumbId;
+    return new Promise((resolve) => {
+      this.largePending.set(id, resolve);
+      this.thumbWorker.postMessage({ type: 'large', id, entry: { img: entry.img, offset: entry.offset, size: entry.size }, txd, tex: name });
+    });
+  }
+
   keepThumbs(keys) {
     const keep = new Set(keys);
     this.thumbQueue = this.thumbQueue.filter(q => {
@@ -217,6 +231,12 @@ export class TextureLibrary extends EventTarget {
       this.thumbWorker.onmessage = (ev) => {
         const m = ev.data;
         if (m.type === 'txdthumbs') { this.onBgDone(m); return; }
+        if (m.type === 'large') {
+          const done = this.largePending?.get(m.id);
+          this.largePending?.delete(m.id);
+          if (done) done(m.blob ? URL.createObjectURL(m.blob) : null);
+          return;
+        }
         if (m.type !== 'thumb') return;
         const key = this.thumbPending.get(m.id);
         this.thumbPending.delete(m.id);

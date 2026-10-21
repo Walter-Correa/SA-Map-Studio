@@ -677,7 +677,7 @@ function worldMaterials(id) {
       <span></span><span class="slot-idx">${i}</span><span class="slot-ph" data-wslot-thumb="${i}"></span>
       <span class="slot-name">${esc(s?.texture || '(sem textura)')}${s?.txd ? `<small>${esc(s.txd)}</small>` : ''}</span><span></span></div>`);
   return `<div class="insp-section"><div class="insp-label">Materiais <span class="tag">${plural(info.length, 'índice', 'índices')}</span></div>
-    <div class="slots">${rows.join('')}</div></div>`;
+    <div class="slots w-slots">${rows.join('')}</div></div>`;
 }
 
 function worldInspector(inst) {

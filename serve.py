@@ -806,6 +806,28 @@ def col_sphere(model_name):
     return None
 
 
+THUMB_CURRENT_WIDTH = 160   # object thumbnails narrower than this are the old low resolution ones and get drawn again
+
+
+def webp_width(path):
+    """Largura em pixels de um arquivo WebP lendo só o cabeçalho (0 se não der)."""
+    try:
+        with open(path, "rb") as f:
+            b = f.read(32)
+    except OSError:
+        return 0
+    if len(b) < 30 or b[:4] != b"RIFF" or b[8:12] != b"WEBP":
+        return 0
+    kind = b[12:16]
+    if kind == b"VP8X":
+        return 1 + int.from_bytes(b[24:27], "little")
+    if kind == b"VP8 ":
+        return int.from_bytes(b[26:28], "little") & 0x3FFF
+    if kind == b"VP8L":
+        return 1 + (int.from_bytes(b[21:25], "little") & 0x3FFF)
+    return 0
+
+
 def thumb_file(kind, key):
     """Caminho da miniatura em disco. kind = obj | tex; key = id do modelo ou "txd/textura"."""
     key = str(key).lower()
@@ -2384,11 +2406,16 @@ class Handler(SimpleHTTPRequestHandler):
             os.path.join(APP_DIR, "data", "cache", "miniaturas", "objetos"),
             os.path.join(APP_DIR, "Dados", "cache", "miniaturas", "objetos")
         ]
+        # Every folder counts (the first one that has the file wins); the old low resolution ones go to "stale"
+        by_id = {}
         for d in d_candidates:
             if os.path.isdir(d):
-                objs = [int(n[:-5]) for n in os.listdir(d) if n.endswith(".webp") and n[:-5].isdigit()]
-                if objs:
-                    break
+                for n in os.listdir(d):
+                    if n.endswith(".webp") and n[:-5].isdigit():
+                        by_id.setdefault(int(n[:-5]), os.path.join(d, n))
+        stale = []
+        for oid, path in by_id.items():
+            (objs if webp_width(path) >= THUMB_CURRENT_WIDTH else stale).append(oid)
         skin_candidates = [
             os.path.join(DATA_DIR, "cache", "skins"),
             os.path.join(COMPILE_CACHE_DIR, "skins"),
@@ -2405,6 +2432,7 @@ class Handler(SimpleHTTPRequestHandler):
         for sid in skin_ids:
             if sid not in objs:
                 objs.append(sid)
+        stale = [i for i in stale if i not in skin_ids]
         if 0 not in objs:
             objs.append(0)
         d_candidates_tex = [
@@ -2427,7 +2455,7 @@ class Handler(SimpleHTTPRequestHandler):
                         texs += [t + "/" + unquote(n[:-5]) for n in os.listdir(sub) if n.endswith(".webp")]
                 if texs:
                     break
-        self.send_json({"obj": objs, "tex": texs})
+        self.send_json({"obj": objs, "stale": stale, "tex": texs})
 
     # ---------- projetos ----------
     def list_projects(self):

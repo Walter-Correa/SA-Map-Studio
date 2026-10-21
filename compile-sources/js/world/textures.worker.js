@@ -88,6 +88,26 @@ async function thumbFor(msg) {
   return blob;
 }
 
+// The texture at its best resolution (up to 512 px) as PNG, for the hover preview of the Textures tab
+async function largeFor(msg) {
+  const key = msg.entry.img + ':' + msg.entry.offset;
+  let texs = txdCache.get(key);
+  if (!texs) {
+    texs = parseTxd(await readEntry(msg.entry));
+    txdCache.set(key, texs);
+    if (txdCache.size > 24) txdCache.delete(txdCache.keys().next().value);
+  }
+  const t = texs.find(x => x.name === msg.tex);
+  if (!t) return null;
+  let level = 0;
+  while (level + 1 < t.mips.length && t.mips[level].width > 512) level++;
+  const mip = t.mips[level];
+  const rgba = decodeToRGBA(t, level);
+  const c = new OffscreenCanvas(mip.width, mip.height);
+  c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer, rgba.byteOffset, mip.width * mip.height * 4), mip.width, mip.height), 0, 0);
+  return c.convertToBlob({ type: 'image/png' });
+}
+
 onmessage = async (ev) => {
   const msg = ev.data;
   if (msg.base) base = msg.base;
@@ -106,6 +126,11 @@ onmessage = async (ev) => {
       }
     } catch { /* unreadable TXD */ }
     postMessage({ type: 'txdthumbs', id: msg.id, txd: msg.txd, names });
+  }
+  else if (msg.type === 'large') {
+    let blob = null;
+    try { blob = await largeFor(msg); } catch { blob = null; }
+    postMessage({ type: 'large', id: msg.id, blob });
   }
   else if (msg.type === 'thumb') {
     let blob = null;

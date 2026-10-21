@@ -1,7 +1,7 @@
 // 2D visual MapIcon editor (similar to the GangZone one) + Visual MapIcon List Window (IDs 0 to 63)
 import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl, getNextMapIconName } from '../world/mapicons.js';
 import { makeMapIcon } from '../editor/project.js';
-import { app, $, $$, esc, toast, copyText, arrowStep } from './common.js';
+import { app, $, $$, esc, toast, copyText, arrowStep, themeVar } from './common.js';
 
 let dialogEl = null;
 let canvasEl = null;
@@ -660,7 +660,7 @@ function loadRadarMap() {
 function redrawCanvas() {
   if (!ctx || !canvasEl) return;
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-  ctx.fillStyle = '#161922';
+  ctx.fillStyle = themeVar('--map-bg', '#161922');
   ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
 
   if (imgLoaded && radarImg) {
