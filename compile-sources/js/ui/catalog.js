@@ -215,7 +215,8 @@ export function renderCatalogRows(force = true) {
     if (!known || app.thumbs.stale.has(c.id)) {
       // No thumbnail yet, or only an old low resolution one: draws it (again) and swaps it in when ready
       const img = row.firstElementChild;
-      app.thumbs.request(c.id, (url) => { if (url && img.isConnected) { img.src = url; img.classList.remove('empty'); } });
+      const swap = (url) => { if (url && img.isConnected) { img.src = url; img.classList.remove('empty'); } };
+      if (known) app.thumbs.upgrade(c.id, swap); else app.thumbs.request(c.id, swap);
     }
     frag.appendChild(row);
   }

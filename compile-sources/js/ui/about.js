@@ -8,6 +8,8 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'Opening the editor is faster: the thumbnail index no longer reads every thumbnail file on each start (it is cached), and old low resolution thumbnails are redrawn only after the editor has finished starting.',
+      'Each texture in the material list of a map object has a button that copies its SetObjectMaterial line, with the model of its TXD.',
       'Light theme: blue buttons keep their color on hover (a lighter blue) and the map and TextDraw editors have a light background; the material list of a map object scrolls and shows 5 rows; the Update History text sits on a darker background.',
       'Hovering a texture in the Textures tab also opens the big preview.',
       'Object thumbnails are drawn bigger and anti-aliased (192 px instead of 96 px, sharp like the hover preview); the old low resolution ones are shown until each one is drawn again as you browse, or all at once with the button that prepares every thumbnail.',
@@ -120,7 +122,7 @@ const CHANGELOG = [
       'Duplicating a TextDraw or bar places the copy right below the original (or above, if it doesn\'t fit), in the same column.',
       'GangZones: the copy snaps to a free side of the original; with no free side, it goes to the nearest free space, shrunk if needed. Adding a zone follows the same rule, and a warning appears when there is no room on the map.',
       'Progress bars: Test movement option, which shows the bar filling and going back to the current value in the preview.',
-      'The test server is called SA Map Studio - Testing server. The progress2 include was removed from the test server.',
+      'The test server is called SA Map Studio - Testing server.',
     ],
   },
   {
@@ -166,7 +168,6 @@ const CHANGELOG = [
   },
   {
     version: '3.11.0', date: '19/10/2026', items: [
-      'The bars include is now called SA Progress Bar Pro (progressbarpro.inc).',
       'Blinking bars: BlinkPlayerProgressBar(playerid, bar, interval, duration, color), with interval and duration in milliseconds; without a color, the bar blinks in its own color, turning off and on. The TextDraw editor shows the blink in the preview and exports, imports and tests it on the server.',
       'Border chosen when creating the bar (last parameter of CreatePlayerProgressBar, from 0 to 4). The editor doesn\'t accept values outside the limits and the include itself uses the limit if the code asks for more or less.',
       'The editor icon shows on the Windows taskbar again.',
@@ -174,22 +175,22 @@ const CHANGELOG = [
   },
   {
     version: '3.10.1', date: '19/10/2026', items: [
-      'Progress bar borders equal on all four sides in game: a TextDraw unit is 3.00 px wide and 2.41 px tall at 1920x1080, so progress3 uses a vertical border 1.25 times the horizontal one (3 px on every side in 16:9).',
+      'Progress bar borders equal on all four sides in game: a TextDraw unit is 3.00 px wide and 2.41 px tall at 1920x1080, so progressbarpro.inc uses a vertical border 1.25 times the horizontal one (3 px on every side in 16:9).',
       'The TextDraw editor preview paints bars with the same pixel rule as the game, showing the real thickness of each border.',
     ],
   },
   {
     version: '3.10.0', date: '19/10/2026', items: [
-      'New progress3.inc include: progress bars use sprites with exact position, width and height, the same at any resolution, and an inner border of the same thickness on all four sides. The functions are the same as progress2, so old code keeps working.',
-      'Fixes compared to progress2: changing the value no longer shows a hidden bar, the filled part disappears when the value is zero and never goes past the border, and running out of free TextDraws is handled.',
-      'The TextDraw editor draws the bars exactly as progress3 builds them in game, and the exported code and the test server now use progress3.',
+      'New progressbarpro.inc include (SA Progress Bar Pro) for player progress bars: they use sprites with exact position, width and height, the same at any resolution, and an inner border of the same thickness on all four sides.',
+      'The filled part of a bar disappears when the value is zero and never goes past the border, and running out of free TextDraws is handled.',
+      'The TextDraw editor draws the bars exactly as progressbarpro.inc builds them in game, and the exported code and the test server use progressbarpro.inc.',
     ],
   },
   {
     version: '3.9.3', date: '19/10/2026', items: [
       'Object texts like in the game: the font size follows the SA-MP rule (the size is the line height, not the letter height), with each letter\'s measurements taken from Windows itself, as the game does; left- or right-aligned texts sit at the top of the material, and the text gets the object\'s color and lighting (on SA-MP signs it looks grayish, as in the game).',
       'Editing an object\'s text no longer erases what was already written: opening the Text tab or changing index only loads the text, and nothing is written until you change something.',
-      'The exported code notes in its header when the project has progress bars and needs the progress2 include.',
+      'The exported code notes in its header when the project has progress bars and needs the progressbarpro include.',
     ],
   },
   {
@@ -216,9 +217,9 @@ const CHANGELOG = [
   },
   {
     version: '3.8.0', date: '19/10/2026', items: [
-      'Progress Bar (progress2.inc): new type in the TextDraw editor with width, height, color, maximum value, current value and direction (right, left, up and down), drawn exactly as the include builds it in game.',
+      'Progress Bar (progressbarpro.inc): new type in the TextDraw editor with width, height, color, maximum value, current value and direction (right, left, up and down), drawn exactly as the include builds it in game.',
       'Export and import of CreatePlayerProgressBar, SetPlayerProgressBarValue and ShowPlayerProgressBar.',
-      'Test server with progress2.inc: the bars appear for the player on spawn.',
+      'Test server with progressbarpro.inc: the bars appear for the player on spawn.',
     ],
   },
   {

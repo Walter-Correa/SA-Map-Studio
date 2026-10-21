@@ -663,6 +663,12 @@ function multiInspector(items, objs) {
   ${objs.length === items.length ? materialSection(objs, !sameModel) : ''}`;
 }
 
+// Model that carries a texture's TXD (SetObjectMaterial needs it), or undefined when the slot has no texture
+function materialModel(s) {
+  if (!s || !s.texture || !s.txd) return undefined;
+  return app.texlib?.txdModel?.get(String(s.txd).toLowerCase());
+}
+
 // Material indices of a map object, with the original texture of each one (read only)
 function worldMaterials(id) {
   const info = app.editor.slotInfo(id);
@@ -675,7 +681,8 @@ function worldMaterials(id) {
   }
   const rows = info.map((s, i) => `<div class="slot ro">
       <span></span><span class="slot-idx">${i}</span><span class="slot-ph" data-wslot-thumb="${i}"></span>
-      <span class="slot-name">${esc(s?.texture || '(sem textura)')}${s?.txd ? `<small>${esc(s.txd)}</small>` : ''}</span><span></span></div>`);
+      <span class="slot-name">${esc(s?.texture || '(sem textura)')}${s?.txd ? `<small>${esc(s.txd)}</small>` : ''}</span>
+      ${materialModel(s) !== undefined ? `<button type="button" class="btn icon" data-wcopy="${i}" title="Copiar SetObjectMaterial" aria-label="Copiar SetObjectMaterial"><svg><use href="#i-copy"/></svg></button>` : '<span></span>'}</div>`);
   return `<div class="insp-section"><div class="insp-label">Materiais <span class="tag">${plural(info.length, 'índice', 'índices')}</span></div>
     <div class="slots w-slots">${rows.join('')}</div></div>`;
 }
@@ -1704,6 +1711,12 @@ function bindWorld() {
   const inst = app.editor.worldSel;
   titleThumb(inst.id);
   const info = app.editor.slotInfo(inst.id);
+  $$('#inspector [data-wcopy]').forEach(b => b.onclick = async () => {
+    const i = +b.dataset.wcopy, s = info[i], model = materialModel(s);
+    if (model === undefined) return;
+    await copyText(`SetObjectMaterial(objectid, ${i}, ${model}, "${s.txd}", "${s.texture}", 0);`);
+    toast('Código copiado');
+  });
   $$('#inspector [data-wslot-thumb]').forEach(ph => {
     const s = info[+ph.dataset.wslotThumb];
     if (!s || !s.txd || !s.texture) return;

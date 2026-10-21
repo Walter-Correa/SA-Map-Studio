@@ -48,6 +48,13 @@ export class Thumbnails extends EventTarget {
     return this.stale.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
   }
 
+  // An old low resolution thumbnail is drawn again only after the editor has had time to start (about 8 s)
+  upgrade(id, cb) {
+    const wait = Math.max(0, 8000 - performance.now());
+    if (wait <= 0) { this.request(id, cb); return; }
+    setTimeout(() => this.request(id, cb), wait);
+  }
+
   request(id, cb) {
     if (id === 0 || id === '0') { cb('/thumbs/obj/0.webp?v=4'); return; }
     if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=5`); return; }

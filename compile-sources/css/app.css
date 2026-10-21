@@ -350,6 +350,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--sodium); width
 .slot:hover { background: var(--asphalt-600); }
 .slot.active { border-color: var(--sodium); background: color-mix(in srgb, var(--sodium) 10%, transparent); }
 .slot.ro { cursor: default; }
+.slot.ro .btn.icon { width: 26px; height: 26px; }
+.slot.ro .btn.icon svg { width: 14px; height: 14px; }
 .slot.ro:hover { background: transparent; }
 .slot-idx { color: var(--paper-mute); font-size: 12px; text-align: center; }
 .slot img, .slot .slot-ph { width: 34px; height: 34px; border-radius: 3px; display: block; background: var(--asphalt-600); object-fit: cover; }

@@ -828,6 +828,36 @@ def webp_width(path):
     return 0
 
 
+def thumb_widths(files):
+    """files: {id: (caminho, tamanho, mtime_ns)} -> {id: largura}. Um arquivo de cache guarda a largura de cada
+    miniatura pelo tamanho e pela data, então só os arquivos novos ou alterados têm o cabeçalho lido."""
+    cache_file = os.path.join(DATA_DIR, "cache", "thumb-widths.json")
+    try:
+        with open(cache_file, "r", encoding="utf-8") as f:
+            cache = json.load(f)
+    except (OSError, ValueError):
+        cache = {}
+    out, fresh, changed = {}, {}, False
+    for oid, (path, size, mtime) in files.items():
+        hit = cache.get(path)
+        if hit and hit[0] == size and hit[1] == mtime:
+            width = hit[2]
+        else:
+            width = webp_width(path)
+            changed = True
+        fresh[path] = [size, mtime, width]
+        out[oid] = width
+    if changed or len(fresh) != len(cache):
+        try:
+            os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+            with open(cache_file + ".tmp", "w", encoding="utf-8") as f:
+                json.dump(fresh, f)
+            os.replace(cache_file + ".tmp", cache_file)
+        except OSError:
+            pass
+    return out
+
+
 def thumb_file(kind, key):
     """Caminho da miniatura em disco. kind = obj | tex; key = id do modelo ou "txd/textura"."""
     key = str(key).lower()
@@ -2410,12 +2440,15 @@ class Handler(SimpleHTTPRequestHandler):
         by_id = {}
         for d in d_candidates:
             if os.path.isdir(d):
-                for n in os.listdir(d):
-                    if n.endswith(".webp") and n[:-5].isdigit():
-                        by_id.setdefault(int(n[:-5]), os.path.join(d, n))
+                with os.scandir(d) as it:
+                    for e in it:
+                        n = e.name
+                        if n.endswith(".webp") and n[:-5].isdigit() and int(n[:-5]) not in by_id:
+                            st = e.stat()
+                            by_id[int(n[:-5])] = (e.path, st.st_size, st.st_mtime_ns)
         stale = []
-        for oid, path in by_id.items():
-            (objs if webp_width(path) >= THUMB_CURRENT_WIDTH else stale).append(oid)
+        for oid, width in thumb_widths(by_id).items():
+            (objs if width >= THUMB_CURRENT_WIDTH else stale).append(oid)
         skin_candidates = [
             os.path.join(DATA_DIR, "cache", "skins"),
             os.path.join(COMPILE_CACHE_DIR, "skins"),
