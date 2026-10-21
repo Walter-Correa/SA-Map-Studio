@@ -5,9 +5,8 @@
 
 ![Version](https://img.shields.io/badge/version-3.24.0-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
-![Python](https://img.shields.io/badge/Python-3.8%2B-36414b)
+![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
-![License](https://img.shields.io/badge/license-all%20rights%20reserved-e0645c)
 
 The editor reads the files straight from your GTA San Andreas folder, without changing anything in the game, and
 generates Pawn code ready to paste into your gamemode or filterscript.
@@ -30,23 +29,57 @@ generates Pawn code ready to paste into your gamemode or filterscript.
 
 ## Features
 
-### Map
-- The whole of San Andreas with streaming and LOD, water, interiors and the SA-MP objects (`SAMP.img`).
-- Background loading (Web Workers), prioritizing what is in front of the camera.
-- Editor-style free camera, a sign with the area and the coordinates, and **teleport** (`Ctrl+G`) accepting
-  `x, y, z` or a `SetPlayerPos(...)` line.
+### Map and navigation
+- The whole of San Andreas with streaming and LOD, water, interiors and the SA-MP objects (`SAMP.img`), loaded in the
+  background (Web Workers) and prioritizing what is in front of the camera.
+- Editor-style **free camera**: right button + drag to look, `W` `A` `S` `D` to move, `E` / `Q` to go up and down,
+  `Shift` / `Alt` for faster / slower, middle button to slide, mouse wheel to go forward and back.
+- A green sign with the area name and the coordinates; click it to teleport, right click to copy the position.
+- **Teleport** (`Ctrl+G`): places and interiors with search, or any coordinate (`x, y, z`, `x y z` or a `SetPlayerPos(...)`
+  line); without `z` the camera lands on the ground.
+- **View** menu: view distance (up to 2500 m), camera speed, weather (0 to 45) and time of day shown in the editor, LOD
+  in the distance, water, interiors only, selection box and removing the LOD together with a building.
+- The "Click coordinates" field at the top of the right panel shows where the mouse is pointing, with a button to copy
+  it and another to go there.
 
-### Objects
+### Objects and transformations
 - Catalog with **categories** (Furniture, Buildings and houses, Streets and roads, Beach, Vegetation, Lighting,
   Doors and windows, Signs, Construction kit, Vehicles and more), **source** (SA-MP, Los Santos, San Fierro,
-  Las Venturas and more), search by name or ID, favorites, recent items and thumbnails stored on disk.
-- Place by clicking on the map, gizmo to move and rotate (world or object axes), grid snapping.
-- **Duplicate** and **Place another one** create the copy in the same spot, already with the move gizmo.
-- Remove buildings from the original map (`RemoveBuildingForPlayer`, together with the LOD) or make them editable.
-- Vehicles (`CreateVehicle` / `AddStaticVehicleEx`), undo and redo, multiple selection.
+  Las Venturas and more), search by name or ID, favorites, nicknames, recent items and thumbnails stored on disk.
+- **Sharp thumbnails**: drawn at 192 px with anti-aliasing and transparent, so they take the background of the theme.
+  Old low resolution ones are shown until each one is drawn again while you browse (or all at once with the button that
+  prepares every thumbnail).
+- **Hover preview**: pointing at an item of the Objects list (objects, vehicles, pickups, actors...) or of the Textures
+  list opens a big picture in the middle of the screen; it closes when the mouse leaves or on click.
+- Place by clicking on the map (`R` / `X` rotate 15° / 90° before dropping, `Shift` + click keeps placing), gizmo to move
+  and rotate (world or object axes), movement and rotation speeds from 0.001x to 10x, **grid snapping** and **magnetic
+  snapping** to the edges of nearby objects.
+- Multiple selection with joint movement and rotation around the common center; `Ctrl+A` selects everything.
+- **Duplicate** (`Ctrl+D`) and **Place another one** create the copy in the same spot, already with the move gizmo;
+  `End` drops the selection on the surface, `X` rotates 90°, `Page Up` / `Page Down` raise and lower.
+- Undo and redo for every change.
+- **Project list**: selecting an item that exists in the world turns on the gizmo and takes the camera to it.
+- Remove buildings from the original map (`RemoveBuildingForPlayer`, together with the LOD) or **make them editable**.
+- Click a **map object** and the right panel shows its position, rotation, file and LOD, plus the list of its **material
+  indexes with the texture and the texture name of each one** (5 rows visible, the rest scrolls).
+
+### Vehicles, tuning and colors
+- Vehicles (`CreateVehicle` / `AddStaticVehicleEx`) with tuning shown live in 3D (`AddVehicleComponent`) and paintjobs
+  previewed on the vehicle.
 - **Compatible tuning and paintjobs**: strict filtering of tuning components, paintjobs (0 to 2) and colors following the
   official SA-MP/open.mp rules (`IsModValidForVehicle`, `IsPaintjobValidForVehicle`, `IsVehicleValidForModding`,
   `IsVehicleValidForColor`), showing only compatible parts in the inspector.
+- Palette with the 256 vehicle color IDs (including the new ones from ID 128).
+
+### Actors
+- Created from the catalog with a **skin gallery** (all 312 skins, with categories and search) and an **animation picker**
+  (the game's 135 animation libraries, with a video preview and an offline package to download).
+- Actors stand upright with their feet on the surface (`CreateActor`).
+
+### Dynamic objects
+- **`MoveObject` / `MoveDynamicObject`**: test the movement in the world (one cycle) and save its parameters.
+- **`AttachObjectToObject` / `AttachObjectToVehicle`**: attach objects with direct editing of the child object's
+  position in the world; objects attached to project vehicles are exported next to the vehicle.
 
 ### 3D Texts (3D Text Labels)
 - Created and shown directly in 3D, billboarded towards the camera (`Create3DTextLabel` / `CreateDynamic3DTextLabel`).
@@ -59,9 +92,19 @@ generates Pawn code ready to paste into your gamemode or filterscript.
   Information (1272, 1273, 1239), Weapons (IDs 321 to 372) and Equipment.
 - Pickup type, respawn time, interior and virtual world.
 
+### Checkpoints
+- Normal checkpoints and race checkpoints (types 0 to 4) with the real 3D shapes and the arrow towards the next point
+  (`SetPlayerCheckpoint` / `CreateDynamicCP` and `SetPlayerRaceCheckpoint` / `CreateDynamicRaceCP`), placed by clicking the map or in front of the
+  camera, with size and comment.
+
+### MapIcons
+- Visual editor on the radar map to create and move MapIcons (`SetPlayerMapIcon` / `CreateDynamicMapIcon`), with the 64
+  official icons (IDs 0 to 63), a picker with the icon images, the four styles and the color.
+
 ### GangZones (interactive radar map)
 - Modal dialog with the official San Andreas radar map (-3000 to +3000) in high resolution, with pan and zoom.
-- Rectangular zones drawn by dragging the mouse (`GangZoneCreate` and `GangZoneShowForAll`).
+- Rectangular zones drawn by dragging the mouse (`GangZoneCreate` and `GangZoneShowForAll`); duplicate and add place the
+  new zone in the nearest free space.
 - **Magnetic edge snapping**: automatic alignment between neighboring zones with cyan guides on screen.
 - RGBA color picker with opacity and a flat 3D projection on the map ground.
 
@@ -70,60 +113,86 @@ generates Pawn code ready to paste into your gamemode or filterscript.
   fonts (`fonts.txd` and `fonts.dat`), so what you see in the editor is what you see in the game.
 - Texts and boxes (`TextDrawCreate` / `CreatePlayerTextDraw`).
 - Fonts 0 to 5, text and box colors with transparency, alignment (left, center, right), letter and box size, `outline`
-  and `shadow`.
-- **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom.
-- Clean export of a Pawn script ready to compile.
+  and `shadow`; layers (creation order) with buttons to move an element forward or back.
+- **Sprites** (Font 4) from a gallery of 567 game sprites, with the Pawn line of each one.
+- **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom, drawn
+  as the SA-MP client does.
 - **Progress bars** (SA Progress Bar Pro, `progressbarpro.inc`, included in the test server) in the four directions,
-  drawn as in the game, as a bar, a ring of segments or a growing circle. Parameter order:
-  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments)`.
+  drawn as in the game, as a bar, a ring of segments or a growing circle, with border, blinking and auto fill. Parameter
+  order: `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments)`.
+- Clean export of a Pawn script ready to compile.
 
 ### SA-MP materials
 - The inspector lists **every material index** of the object (0 to 15) with the original texture of each one.
-- Tick one or more indexes (or click the part of the object with the Texture tool) and:
+- Tick one or more indexes (or click the part of the object with the Texture tool; `Ctrl` + click adds indexes) and:
   - change the texture: **`SetObjectMaterial`** (modelid, txdname, texturename);
   - pick the color (`materialcolor`) in a **color panel** with transparency, `0xAARRGGBB` and recent colors;
   - write text: **`SetObjectMaterialText`** with material size, font, size, bold, alignment, font and background
     color, `{RRGGBB}` codes and a live preview.
-- Library with **every game texture by category** (Bricks and walls, Floors, Wood, Metal and more).
+- Copy the materials of an object and paste them on others; the Pawn code of each object is in the inspector.
+- Library with **every game texture by category** (Bricks and walls, Floors, Wood, Metal and more), with thumbnails and
+  a big preview of the texture when the mouse is over it.
+
+### Sounds
+- Catalog of 525 sounds for `PlayerPlaySound` with **real audio preview** extracted from the game, search by ID, name
+  or description, categories and a button to copy the code.
+
+### Colors
+- Color picker and **converter** (button between Sounds and Import): choose a color, type or paste a code and copy it in
+  the formats SA-MP and open.mp use: `0xRRGGBBAA`, `0xAARRGGBB` (materials), `{RRGGBB}`, decimal, HTML/CSS, `R, G, B, A` and
+  HSL, ready-to-use `SetPlayerColor`, `SendClientMessage` and `SetObjectMaterial` lines, and the closest text code (`~r~`)
+  and vehicle color ID. Only codes to copy: nothing is saved, exported or imported.
 
 ### Cameras
 - Fixed cameras: `SetPlayerCameraPos` + `SetPlayerCameraLookAt` from the current view.
 - Full movements with `InterpolateCameraPos` + `InterpolateCameraLookAt`: several points, time, hold and type of each step
-  (`CAMERA_MOVE` / `CAMERA_CUT`), path drawn on the map and a preview in the editor.
+  (`CAMERA_MOVE` / `CAMERA_CUT`), path drawn on the map and a preview in the editor (Play and Stop buttons, `Esc` stops).
+- The only movement of a project opens by itself; the code of the cameras goes with the export, without warnings.
 
 ### Test in game
 - Starts a **local test server** (open.mp or SA-MP) with the editor's gamemode and loads the map with textures, texts,
   vehicles with their real tuning/paintjobs (`AddVehicleComponent`, `ChangeVehiclePaintjob`), 3D Texts
-  (`Create3DTextLabel`), Pickups (`CreatePickup`) and GangZones (`GangZoneCreate`), opening SA-MP already connected and
-  spawning where the camera is looking.
-- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos` and `/help`. The messages
-  follow the editor language.
+  (`Create3DTextLabel`), Pickups (`CreatePickup`), GangZones (`GangZoneCreate`), TextDraws and progress bars, opening
+  SA-MP already connected and spawning where the camera is looking. Changes in the map are synchronized with the server.
+- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos`, `/som [id]`, `/cp` and `/help`.
+  The messages follow the editor language.
 
 ### Import and export
 - **Imports any file**, detecting the format by itself: Pawn code (Map Construction, Texture Studio and others, with
   textures, texts and cameras), SQLite databases, `.json` projects, MTA maps (`.map`) and the game's IPL (text and
-  binary). You can also drag the file onto the window.
+  binary), including `.zip` files. You can also drag the file onto the window.
+- The import can **replace** the open project, **merge** into it or create a new project, and it is a single step in
+  undo/redo.
 - **Exports** to Pawn (`CreateDynamicObject` or `CreateObject`, ready-made functions or just the lines, with the
-  cameras) and IPL. The `.pwn` is saved as ANSI so accents show correctly in pawno. The generated code compiles
-  **without warnings**.
+  cameras), optionally with the coordinates as an array, and to IPL. The Pawn script can be edited by hand before it is
+  saved. The `.pwn` is saved as ANSI so accents show correctly in pawno. The generated code compiles **without warnings**.
+- The original file is preserved on import: comments (`//` and `/* */`), blank lines, headers, `0xAARRGGBB` materials
+  and material text.
 - In the exported code, the information comments follow the editor language, while functions and section separators
   are always in English (`stock Map_Example_Map_Load()`, `// 3D Texts:`). Code exported by older versions, with the
   Portuguese names, is still imported.
 
-### Languages
-- 15 languages: Bahasa Indonesia, Deutsch, English, Español, Français, Italiano, Magyar, Polski, Português, Română,
-  Tiếng Việt, Türkçe, Български, Русский and Українська, chosen with the **Language** button in the top menu (listed in
-  alphabetical order); the switch is instant, without restarting, and is saved. On first launch the editor follows the Windows language (no country:
-  Portuguese from Portugal and Brazil use the same Portuguese); text without a translation shows in English.
-- Numbers and dates use the format of the chosen language.
-- The installer, the warning windows and the test server messages in the game follow the same language. The SA-MP chat
-  only shows Windows-1252 text, so letters outside it lose their accent (ł → l) and the Cyrillic languages use English
-  there.
-- The version history is always in English and is not translated.
-
 ### Projects
 - Saved automatically in the `projects` folder, also when closing the editing windows and the program; opening another
-  project saves and closes the one that was open.
+  project saves and closes the one that was open. Create, rename and delete from the Projects button.
+- **Several projects open at the same time**, each one editable or not editable (the non-editable ones cannot be selected
+  or changed by accident); merge projects; list order that can be inverted; "Delete everything" with a confirmation.
+
+### Interface
+- Top bar where the labels shrink first and then hide one by one when space runs out, always keeping the minimum gap
+  between buttons.
+- **Dark and light themes** (button in the top bar, remembered); the light theme has its own blue highlight color.
+- **Languages**: 15, chosen with the Language button (listed in alphabetical order); the switch is instant, without
+  restarting, and is saved. On first launch the editor follows the Windows language (no country: Portuguese from
+  Portugal and Brazil use the same Portuguese); text without a translation shows in English.
+- Numbers and dates use the format of the chosen language. The installer, the warning windows and the test server
+  messages in the game follow the same language. The SA-MP chat only shows Windows-1252 text, so letters outside it lose
+  their accent (ł → l) and the Cyrillic languages use English there.
+- Side menus collapse independently from the buttons on their inner edges (or with `F10`) and can collapse by themselves
+  while the camera moves.
+- **Update History** button: the version history and the build date and time, always in English and never translated.
+- **Diagnostics and logs** window with the errors found, a button to copy the report and another to open the log folder.
+- Shortcuts window (`?`).
 
 ---
 
@@ -138,7 +207,7 @@ generates Pawn code ready to paste into your gamemode or filterscript.
 | Built-in browser | Microsoft Edge WebView2 Runtime (already in Windows 11 and in an updated Windows 10). Without it, the editor opens in the default browser. |
 | Graphics card | WebGL 2 compatible, with an updated driver. |
 | Memory | 4 GB of RAM or more (8 GB recommended for large maps). |
-| Disk | About 200 MB free: 86 MB for `SA Map Studio.exe` + 115 MB for the `sa-map-studio` folder created on the first run. |
+| Disk | About 250 MB free: 98 MB for `SA Map Studio.exe` + 125 MB for the `sa-map-studio` folder created on the first run (the built-in browser cache grows a little with use). |
 | Screen | At least 1050 x 650. |
 | Game | Original GTA San Andreas for PC (the same version as SA-MP), with `gta_sa.exe`, `data\gta.dat` and `models\gta3.img`. The Definitive Edition is not compatible. The editor only reads the game files. |
 | Test in game | SA-MP 0.3.7 (or open.mp) client installed in the GTA folder. The open.mp test server is included and uses UDP port 7777 (Windows Firewall may ask for permission). |
@@ -229,18 +298,27 @@ settings). A newer `.exe` updates an existing folder and keeps the user data.
 | Right button + drag | Look around |
 | `W` `A` `S` `D` / `E` `Q` | Move / go up and down |
 | `Shift` / `Alt` | Faster / slower |
+| Mouse wheel | Forward and back (with the right button: camera speed) |
+| Middle button + drag | Slide the camera |
+| Click (`Shift` adds) | Select an object or a map building |
 | `G` / `R` / `T` | Move / rotate / Texture tool |
+| Texture tool + click (`Ctrl` adds an index, `Shift` adds an object) | Choose the material index that gets the texture |
 | `L` | World or object axes |
 | `X` | Rotate 90° |
+| `Ctrl+A` | Select every object of the project |
 | `Page Up` / `Page Down` | Raise / lower the selection |
-| `End` | Drop to the ground |
+| `End` | Drop to the surface |
 | `F` or double click | Focus on the selection |
 | `Ctrl+D` | Duplicate in the same spot |
+| While placing: `R` / `X` | Rotate 15° / 90° before dropping |
+| While placing: `Shift` + click / right button | Drop and keep placing / cancel |
 | Arrows (`Shift` = 0.1) | Move a MapIcon, TextDraw or GangZone in the editing windows |
 | `Ctrl+G` | Teleport to a coordinate |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
 | `Ctrl+S` | Save now |
-| `Delete` | Delete |
+| `Delete` | Delete (or remove the map object) |
+| `F10` | Collapse / restore the side menus |
+| `Esc` | Cancel / clear the selection / stop a camera preview |
 | `?` | All shortcuts |
 
 ---
@@ -254,7 +332,7 @@ icon.ico                       executable icon
 compile-sources/
 ├── css/                       interface styles
 ├── js/app.js                  startup
-├── js/ui/                     tabs, inspector, color palette, cameras, dialogs, projects, editors, translation (i18n.js)
+├── js/ui/                     tabs, inspector, color palette and converter, cameras, dialogs, hover preview, projects, editors, translation (i18n.js)
 ├── js/lang/                   interface translations (one file per language)
 ├── js/editor/                 core: editor, project, materials, import, Pawn/IPL export
 ├── js/world/                  game data, map streaming, models, categories, workers
@@ -764,13 +842,7 @@ Tools (in `compile-sources/`, run with Python 3):
 
 ## Credits and licenses
 
-- [Three.js](https://threejs.org/) (MIT) for 3D rendering.
-- [Barlow](https://github.com/jpt/barlow) font (SIL Open Font License, see `compile-sources/fonts/OFL.txt`).
-- GTA San Andreas is a trademark of Rockstar Games. The game files are not part of this repository: the editor uses the
-  copy installed on the computer of whoever opens it.
-
----
-
-**© 2026 Rafael_Hurley and Walter_Correa. All rights reserved.**
-
-This is a private repository. Copying, distributing or modifying this code without the authors' permission is not allowed.
+- [@rafaelnepomucenno-lgtm](https://github.com/rafaelnepomucenno-lgtm) - Idea and initial development of the project.
+- [@Walter-Correa](https://github.com/Walter-Correa) - Continuation and finalization of the project.
+- [Antigravity](https://antigravity.google) - Execution of the main creation, development and adjustment prompts.
+- [Claude Code](https://claude.com/product/claude-code) - Creation of new features, fixes and final adjustments.
