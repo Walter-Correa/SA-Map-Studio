@@ -21,7 +21,7 @@ export class Thumbnails extends EventTarget {
     this.busy = false;
     this.target = new THREE.WebGLRenderTarget(SIZE * COLS, SIZE * ROWS, { samples: 0, depthBuffer: true });
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x2b333b);
+    this.scene.background = new THREE.Color(0x404c58);
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.5));
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.05, 5000);
     this.pixels = new Uint8Array(SIZE * COLS * SIZE * ROWS * 4);
@@ -136,7 +136,7 @@ export class Thumbnails extends EventTarget {
       tg.viewport.set(col * SIZE, row * SIZE, SIZE, SIZE);
       tg.scissor.set(col * SIZE, row * SIZE, SIZE, SIZE);
       r.setRenderTarget(tg);
-      if (!t) { r.setClearColor(0x2b333b, 1); r.clear(); drawn.push(false); return; }
+      if (!t) { r.setClearColor(0x404c58, 1); r.clear(); drawn.push(false); return; }
       const obj = this.models.instantiate(id);
       this.scene.add(obj);
       const box = obj.userData.box || new THREE.Box3().setFromObject(obj);
