@@ -642,17 +642,17 @@
   </form>
 </dialog>
 
-<dialog class="dialog narrow" id="dlgConfirm" style="max-width: 440px; border-radius: 12px; background: #1a1e24; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 24px 60px rgba(0,0,0,0.65); padding: 0; overflow: hidden;">
+<dialog class="dialog narrow" id="dlgConfirm" style="max-width: 440px; border-radius: 12px; background: var(--confirm-bg, #1a1e24); border: 1px solid var(--confirm-line, rgba(255,255,255,0.14)); box-shadow: 0 24px 60px rgba(0,0,0,0.65); padding: 0; overflow: hidden;">
   <form method="dialog" class="dialog-body" id="confirmForm" style="display: flex; flex-direction: column; margin: 0;">
-    <header class="dialog-head" style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: #15181d; display: flex; align-items: center; justify-content: space-between;">
+    <header class="dialog-head" style="padding: 12px 16px; border-bottom: 1px solid var(--confirm-line, rgba(255,255,255,0.08)); background: var(--confirm-head, #15181d); display: flex; align-items: center; justify-content: space-between;">
       <div style="display: flex; align-items: center; gap: 8px;">
         <svg class="brand-mark" viewBox="0 0 120 120" style="width: 26px; height: 26px;" aria-hidden="true"><use href="#i-brand-logo"/></svg>
-        <h2 id="confirmTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.3px;">SA Map Studio</h2>
+        <h2 id="confirmTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: var(--confirm-title, #fff); letter-spacing: 0.3px;">SA Map Studio</h2>
       </div>
       <button class="btn icon" type="button" id="confirmCloseBtn" aria-label="Fechar" style="width: 28px; height: 28px;"><svg><use href="#i-x"/></svg></button>
     </header>
     <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
-      <p id="confirmMsg" style="margin: 0; font-size: 13.5px; color: #e2e8f0; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"></p>
+      <p id="confirmMsg" style="margin: 0; font-size: 13.5px; color: var(--confirm-text, #e2e8f0); line-height: 1.5; white-space: pre-wrap; word-break: break-word;"></p>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
         <button type="button" class="btn ghost" id="confirmCancelBtn" style="padding: 7px 16px; font-weight: 600;">Cancelar</button>
         <button type="submit" class="btn primary" id="confirmOkBtn" style="padding: 7px 20px; font-weight: 600;">OK</button>
@@ -765,7 +765,7 @@
 
       <!-- Right: Preview and Confirmation Panel -->
       <div style="width: 280px; flex-shrink: 0; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
-        <div style="background: #1c2229; border: 1px solid var(--line); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; height: 210px; position: relative; overflow: hidden;">
+        <div style="background: var(--prev-bg, #1c2229); border: 1px solid var(--line); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; height: 210px; position: relative; overflow: hidden;">
           <img id="prevSkinImg" src="/cache/skins/0.png" alt="Skin Preview" style="max-height: 195px; max-width: 100%; object-fit: contain;">
           <span id="prevSkinBadge" style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); font-family: monospace; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; color: var(--gold-400);">ID 0</span>
         </div>
@@ -810,7 +810,7 @@
 
       <!-- Right: Sprite Preview and Pawn Code -->
       <div style="width: 290px; flex-shrink: 0; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
-        <div style="background: repeating-conic-gradient(#1c2229 0% 25%, #232b35 0% 50%) 50% / 16px 16px; border: 1px solid var(--line); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; height: 180px; position: relative; overflow: hidden;">
+        <div style="background: repeating-conic-gradient(var(--prev-bg, #1c2229) 0% 25%, var(--prev-bg2, #232b35) 0% 50%) 50% / 16px 16px; border: 1px solid var(--line); border-radius: var(--radius-s); display: flex; align-items: center; justify-content: center; height: 180px; position: relative; overflow: hidden;">
           <img id="prevSpriteImg" src="/cache/sprites/hud/arrow.png" alt="Sprite Preview" style="max-height: 150px; max-width: 100%; object-fit: contain;">
         </div>
         <div>
@@ -839,7 +839,7 @@
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="gz-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
-    <div class="gz-canvas-container" style="flex: 1; display: flex; flex-direction: column; background: #11141c; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
+    <div class="gz-canvas-container" style="flex: 1; display: flex; flex-direction: column; background: var(--stage-gz, #11141c); border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
       <div class="gz-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px;">
         <button type="button" class="btn small ghost" id="gzZoomIn" title="Aproximar">+</button>
         <button type="button" class="btn small ghost" id="gzZoomOut" title="Afastar">-</button>
@@ -912,7 +912,7 @@
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="td-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
-    <div class="td-canvas-container" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: #07090e; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
+    <div class="td-canvas-container" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--stage-td, #07090e); border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
       <div class="td-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px; flex-shrink: 0;">
         <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGameBg" checked> HUD / Tela GTA SA</label>
         <label class="check" style="margin: 0; font-size: 11px;"><input type="checkbox" id="tdChkGrid" checked> Grade & Safe Zone</label>
@@ -1009,7 +1009,7 @@
           <label class="check"><input type="checkbox" id="tdIsPlayer"> PlayerTextDraw</label>
         </div>
 
-        <div id="tdProgressPanel" style="display: none; background: rgba(240,166,48,0.08); border: 1px solid rgba(240,166,48,0.3); border-radius: 4px; padding: 6px; flex-direction: column; gap: 6px;">
+        <div id="tdProgressPanel" style="display: none; background: color-mix(in srgb, var(--sodium) 8%, transparent); border: 1px solid color-mix(in srgb, var(--sodium) 30%, transparent); border-radius: 4px; padding: 6px; flex-direction: column; gap: 6px;">
           <div class="pop-title" style="margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-hi);">Barra de progresso</div>
           <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Nome<input type="text" id="tdPbName" spellcheck="false" placeholder="BarraFome"></label>
           <div class="pair">
@@ -1095,7 +1095,7 @@
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="gz-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
-    <div class="gz-canvas-container" style="flex: 1; display: flex; flex-direction: column; background: #11141c; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
+    <div class="gz-canvas-container" style="flex: 1; display: flex; flex-direction: column; background: var(--stage-gz, #11141c); border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
       <div class="gz-toolbar" style="display: flex; gap: 8px; padding: 6px 10px; background: var(--bg-soft); border-bottom: 1px solid var(--line); align-items: center; font-size: 12px;">
         <button type="button" class="btn small ghost" id="miZoomIn" title="Aproximar">+</button>
         <button type="button" class="btn small ghost" id="miZoomOut" title="Afastar">-</button>

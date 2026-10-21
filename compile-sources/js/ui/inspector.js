@@ -663,6 +663,23 @@ function multiInspector(items, objs) {
   ${objs.length === items.length ? materialSection(objs, !sameModel) : ''}`;
 }
 
+// Material indices of a map object, with the original texture of each one (read only)
+function worldMaterials(id) {
+  const info = app.editor.slotInfo(id);
+  if (!info.length) {
+    if (app.gd.models.has(id) && !pendingSlots.has(id)) {
+      pendingSlots.add(id);
+      app.models.slots(id).then(() => { pendingSlots.delete(id); if (app.editor.worldSel?.id === id) renderInspector(); });
+    }
+    return '<div class="insp-note">Carregando modelo</div>';
+  }
+  const rows = info.map((s, i) => `<div class="slot ro">
+      <span></span><span class="slot-idx">${i}</span><span class="slot-ph" data-wslot-thumb="${i}"></span>
+      <span class="slot-name">${esc(s?.texture || '(sem textura)')}${s?.txd ? `<small>${esc(s.txd)}</small>` : ''}</span><span></span></div>`);
+  return `<div class="insp-section"><div class="insp-label">Materiais <span class="tag">${plural(info.length, 'índice', 'índices')}</span></div>
+    <div class="slots">${rows.join('')}</div></div>`;
+}
+
 function worldInspector(inst) {
   const q = new THREE.Quaternion(-inst.qx, -inst.qy, -inst.qz, inst.qw);
   const e = new THREE.Euler().setFromQuaternion(q, 'ZXY');
@@ -677,6 +694,7 @@ function worldInspector(inst) {
       ${inst.interior ? `<div class="stat-line"><span>Interior</span><b>${inst.interior}</b></div>` : ''}
       ${lod}
     </div>
+    ${worldMaterials(inst.id)}
     <button type="button" class="btn primary block" data-act="wadd" title="Cria uma cópia em cima do original, já com o gizmo de mover"><svg><use href="#i-plus"/></svg>Posicionar cópia</button>
     <button type="button" class="btn block" data-act="wconvert"><svg><use href="#i-edit"/></svg>Tornar editável</button>
     <button type="button" class="btn block" data-act="wcopy"><svg><use href="#i-copy"/></svg>Copiar código</button>
@@ -1685,6 +1703,15 @@ function updateValues() {
 function bindWorld() {
   const inst = app.editor.worldSel;
   titleThumb(inst.id);
+  const info = app.editor.slotInfo(inst.id);
+  $$('#inspector [data-wslot-thumb]').forEach(ph => {
+    const s = info[+ph.dataset.wslotThumb];
+    if (!s || !s.txd || !s.texture) return;
+    app.texlib.thumb(String(s.txd).toLowerCase(), String(s.texture).toLowerCase(), (url) => {
+      if (!url || !ph.isConnected) return;
+      const img = document.createElement('img'); img.src = url; img.alt = ''; ph.replaceWith(img);
+    });
+  });
   $$('#inspector [data-act]').forEach(b => b.onclick = async () => {
     const a = b.dataset.act, ed = app.editor;
     if (a === 'wremove') { ed.removeWorldSelection(); toast('Prédio removido. Para desfazer, use Ctrl+Z.'); }

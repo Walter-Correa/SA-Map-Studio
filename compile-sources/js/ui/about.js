@@ -8,6 +8,10 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'Light theme reworked: its own blue highlight color instead of the dark theme orange, clearer contrast between wells, lists and buttons, and the TextDraw, MapIcon and GangZone editors, the confirmation dialog, previews and galleries (skins, sprites, map icons) now follow it.',
+      'Clicking a map object lists its material indices in the right panel, each with the texture and the texture name it uses.',
+      'Selecting an item of the project list that exists in the world also takes the camera to it, besides turning on the gizmo.',
+      'Hovering an item of the Objects list shows a big preview of its thumbnail in the middle of the screen; it closes when the mouse leaves or on click.',
       'The dialog that listed the news and the features is now called Update History: it shows only the version history, written in English and never translated, and the feature list and its translations were removed.',
       'Thumbnails are now transparent and take the background of the theme (dark or light), so they fit both. The thumbnail background is 50% lighter in the dark theme; the skin gallery keeps its own.',
       'Theme button in the top bar: switches between the dark theme (default) and a new light theme, and remembers the choice.',

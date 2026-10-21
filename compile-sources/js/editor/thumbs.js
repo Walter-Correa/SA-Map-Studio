@@ -107,6 +107,69 @@ export class Thumbnails extends EventTarget {
     if (this.background.running && !this.background.ids.size) this.stopBackground(true);
   }
 
+  // One model drawn alone at a larger size, for the hover preview of the catalog (not saved on disk).
+  // Returns an object URL (revoked by the caller) or null.
+  async renderLarge(id, size = 384) {
+    for (let i = 0; this.busy && i < 100; i++) await new Promise(r => setTimeout(r, 30));
+    if (this.busy) return null;
+    this.busy = true;
+    const wasReady = this.models.ready.has(id);
+    let tg = null, obj = null;
+    try {
+      const timeout = new Promise(r => setTimeout(() => r(null), 8000));
+      const t = await Promise.race([this.models.getModel(id).catch(() => null), timeout]);
+      if (!t) return null;
+      const r = this.renderer;
+      const prev = r.getRenderTarget();
+      const prevClear = new THREE.Color();
+      r.getClearColor(prevClear);
+      const prevAlpha = r.getClearAlpha();
+      tg = new THREE.WebGLRenderTarget(size, size, { samples: 4, depthBuffer: true });
+      obj = this.models.instantiate(id);
+      this.scene.add(obj);
+      const box = obj.userData.box || new THREE.Box3().setFromObject(obj);
+      const center = box.getCenter(new THREE.Vector3());
+      const radius = Math.max(0.3, box.getBoundingSphere(new THREE.Sphere()).radius);
+      const dist = radius / Math.sin((this.camera.fov / 2) * Math.PI / 180) * 1.05;
+      const def = this.models?.gd?.models?.get(id);
+      const isCarOrPed = def?.type === 'cars' || def?.type === 'peds' || (id >= 0 && id <= 311) || (id >= 400 && id <= 611);
+      const dir = isCarOrPed ? new THREE.Vector3(0.75, 1.0, 0.65).normalize() : new THREE.Vector3(0.75, -1.0, 0.65).normalize();
+      this.camera.position.copy(center).addScaledVector(dir, dist);
+      this.camera.near = dist / 100; this.camera.far = dist * 4;
+      this.camera.up.set(0, 0, 1);
+      this.camera.lookAt(center);
+      this.camera.updateProjectionMatrix();
+      r.setRenderTarget(tg);
+      r.setClearColor(0x000000, 0);
+      r.clear();
+      r.render(this.scene, this.camera);
+      this.scene.remove(obj);
+      r.setRenderTarget(prev);
+      r.setClearColor(prevClear, prevAlpha);
+      const px = new Uint8Array(size * size * 4);
+      r.readRenderTargetPixels(tg, 0, 0, size, size, px);
+      const canvas = Object.assign(document.createElement('canvas'), { width: size, height: size });
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(size, size);
+      for (let y = 0; y < size; y++) img.data.set(px.subarray((size - 1 - y) * size * 4, (size - y) * size * 4), y * size * 4);
+      const d = img.data;
+      for (let k = 0; k < d.length; k += 4) {
+        const a = d[k + 3];
+        if (a > 0 && a < 255) { const f = 255 / a; d[k] = Math.min(255, d[k] * f); d[k + 1] = Math.min(255, d[k + 1] * f); d[k + 2] = Math.min(255, d[k + 2] * f); }
+      }
+      ctx.putImageData(img, 0, 0);
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      return blob ? URL.createObjectURL(blob) : null;
+    } catch { return null; }
+    finally {
+      if (obj) obj.traverse(o => { if (o.isMesh) { o.geometry = null; o.material = null; } });
+      if (tg) tg.dispose();
+      if (!wasReady && (this.releasable ? this.releasable(id) : true)) this.releaseModel(id);
+      this.busy = false;
+      if (this.queue.length) this.pump();
+    }
+  }
+
   finish(id, url) {
     const cbs = this.waiting.get(id) || [];
     this.waiting.delete(id);

@@ -1080,6 +1080,8 @@ function setupOutline() {
       return;
     }
     ed.select([it.dataset.uid], e.shiftKey || e.ctrlKey);
+    // An item that exists in the world: besides the gizmo, the camera goes to it
+    if (ed.nodes.has(it.dataset.uid)) ed.focusSelection();
   });
   $('#outline').addEventListener('dblclick', (e) => { if (e.target.closest('.ol-item')) app.editor.focusSelection(); });
 }

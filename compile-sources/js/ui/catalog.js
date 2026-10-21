@@ -51,6 +51,7 @@ export function setupCatalog() {
   };
   list.addEventListener('scroll', scheduleRows);
   new ResizeObserver(scheduleRows).observe(list);
+  setupHoverPreview(list);
   list.addEventListener('click', async (e) => {
     const row = e.target.closest('.row');
     if (!row) return;
@@ -108,6 +109,60 @@ export function setupCatalog() {
     return !inUse.has(id) && app.editor.placing?.model !== id;
   };
   filterCatalog();
+}
+
+// Hover preview: a big thumbnail in the middle of the screen while the mouse is over an item of the list.
+// It closes when the mouse leaves the item, on click, on scroll and when the list is rebuilt.
+let hoverPop = null, hoverRow = null, hoverTimer = 0, hoverToken = 0, hoverUrl = '';
+
+function hidePreview() {
+  clearTimeout(hoverTimer);
+  hoverRow = null;
+  hoverToken++;
+  if (hoverPop) hoverPop.hidden = true;
+  if (hoverUrl) { URL.revokeObjectURL(hoverUrl); hoverUrl = ''; }
+}
+
+function showPreview(row) {
+  if (!hoverPop) {
+    hoverPop = document.createElement('div');
+    hoverPop.className = 'thumb-pop';
+    hoverPop.hidden = true;
+    hoverPop.innerHTML = '<img alt=""><div class="thumb-pop-title"></div><div class="thumb-pop-sub"></div>';
+    document.body.appendChild(hoverPop);
+  }
+  const id = +row.dataset.id;
+  const token = ++hoverToken;
+  const img = hoverPop.querySelector('img');
+  const small = row.querySelector('img.thumb');
+  img.src = small && small.getAttribute('src') ? small.getAttribute('src') : '';
+  hoverPop.querySelector('.thumb-pop-title').textContent = row.querySelector('.row-name')?.textContent || '';
+  hoverPop.querySelector('.thumb-pop-sub').textContent = row.querySelector('.row-sub')?.textContent || '';
+  hoverPop.hidden = false;
+  // The saved thumbnail is small: draw the model again, bigger, and swap it in when ready
+  app.thumbs.renderLarge(id).then((url) => {
+    if (!url) return;
+    if (token !== hoverToken) { URL.revokeObjectURL(url); return; }
+    if (hoverUrl) URL.revokeObjectURL(hoverUrl);
+    hoverUrl = url;
+    img.src = url;
+  });
+}
+
+function setupHoverPreview(list) {
+  list.addEventListener('mouseover', (e) => {
+    const row = e.target.closest('.row');
+    if (row === hoverRow) return;
+    hidePreview();
+    if (!row) return;
+    hoverRow = row;
+    hoverTimer = setTimeout(() => { if (hoverRow === row && row.isConnected) showPreview(row); }, 180);
+  });
+  list.addEventListener('mouseleave', hidePreview);
+  list.addEventListener('mousedown', hidePreview);
+  list.addEventListener('click', hidePreview);
+  list.addEventListener('wheel', hidePreview, { passive: true });
+  list.addEventListener('scroll', hidePreview, { passive: true });
 }
 
 function toggleFav(id) {
