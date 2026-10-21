@@ -666,7 +666,8 @@ function multiInspector(items, objs) {
 // Model that carries a texture's TXD (SetObjectMaterial needs it), or undefined when the slot has no texture
 function materialModel(s) {
   if (!s || !s.texture || !s.txd) return undefined;
-  return app.texlib?.txdModel?.get(String(s.txd).toLowerCase());
+  const map = app.texlib?.txdModel;
+  return map?.get(String(s.txd).toLowerCase()) ?? map?.get(s.txd);
 }
 
 // Material indices of a map object, with the original texture of each one (read only)
