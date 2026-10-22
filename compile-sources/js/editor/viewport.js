@@ -271,13 +271,18 @@ export class FlyCamera {
     const appH = window.outerHeight || window.innerHeight || 800;
     const sx = Math.round(appLeft + appW / 2);
     const sy = Math.round(appTop + appH / 2);
+    // One request at a time and at most ~8 per second: each one is a round trip to the Python server
+    const now = performance.now();
+    if (this._centerBusy || now - (this._centerLast || 0) < 120) return;
+    this._centerBusy = true;
+    this._centerLast = now;
     try {
       fetch('/api/center_mouse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ x: sx, y: sy }),
-      }).catch(() => {});
-    } catch (_) {}
+      }).catch(() => {}).finally(() => { this._centerBusy = false; });
+    } catch (_) { this._centerBusy = false; }
   }
 
   direction(out = new THREE.Vector3()) {
