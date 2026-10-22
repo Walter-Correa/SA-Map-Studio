@@ -68,14 +68,9 @@ if errorlevel 1 goto erro
 if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no navegador.
 
 echo Fechando o SA Map Studio, se estiver aberto...
-taskkill /im "SA Map Studio.exe" /f >nul 2>nul
-taskkill /im "sa-map-studio.exe" /f >nul 2>nul
-taskkill /im "SA Map Studio.exe" /f >nul 2>nul
-taskkill /im "sa-map-studio.exe" /f >nul 2>nul
-powershell -NoProfile -Command "Stop-Process -Name 'SA Map Studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
-powershell -NoProfile -Command "Stop-Process -Name 'sa-map-studio' -Force -ErrorAction SilentlyContinue" >nul 2>nul
-taskkill /im "omp-server.exe" /f >nul 2>nul
-taskkill /im "samp-server.exe" /f >nul 2>nul
+rem Only closes what runs from this repository (the program and its test server): a game server or another copy
+rem of the editor running from somewhere else is left alone
+powershell -NoProfile -Command "Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith('%SRC%', [StringComparison]::OrdinalIgnoreCase) -and ($_.Name -in 'SA Map Studio','sa-map-studio','SA Map Studio','sa-map-studio','omp-server','samp-server') } | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>nul
 ping 127.0.0.1 -n 3 >nul
 
 rem Date and time of this build (shown in "Novidades" inside the program)
