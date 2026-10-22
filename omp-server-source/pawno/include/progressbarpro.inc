@@ -615,12 +615,25 @@ static stock PB_RenderMain(playerid, barid)
 		PB_ApplyRingColours(playerid, barid);
 		return;
 	}
-	PB_Kill(playerid, ProgressBar[playerid][barid][pb_main]);
 	new Float:x, Float:y, Float:width, Float:height;
-	if (!PB_MainRect(playerid, barid, x, y, width, height)) return;
-	ProgressBar[playerid][barid][pb_main] = PB_ShapeSprite(playerid, barid, x, y, width, height, PB_CurrentColour(playerid, barid));
-	if (ProgressBar[playerid][barid][pb_show] && ProgressBar[playerid][barid][pb_main] != PB_NO_TD && !PB_InnerHidden(playerid, barid))
-		PlayerTextDrawShow(playerid, ProgressBar[playerid][barid][pb_main]);
+	if (!PB_MainRect(playerid, barid, x, y, width, height))
+	{
+		// Nothing to fill (value 0): the filled part goes away
+		PB_Kill(playerid, ProgressBar[playerid][barid][pb_main]);
+		return;
+	}
+	new PlayerText:old = ProgressBar[playerid][barid][pb_main];
+	new PlayerText:fresh = PB_ShapeSprite(playerid, barid, x, y, width, height, PB_CurrentColour(playerid, barid));
+	if (fresh == PB_NO_TD && old != PB_NO_TD)
+	{
+		// No free PlayerTextDraw for a second one: free the old one and try again
+		PB_Kill(playerid, old);
+		fresh = PB_ShapeSprite(playerid, barid, x, y, width, height, PB_CurrentColour(playerid, barid));
+	}
+	ProgressBar[playerid][barid][pb_main] = fresh;
+	if (ProgressBar[playerid][barid][pb_show] && fresh != PB_NO_TD && !PB_InnerHidden(playerid, barid))
+		PlayerTextDrawShow(playerid, fresh);
+	PB_Kill(playerid, old);
 }
 
 // Ring: all border dots first, then the segments (TextDraws are drawn in creation order).
@@ -859,8 +872,11 @@ stock SetPlayerProgressBarValue(playerid, barid, Float:value)
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
 	if (value < 0.0) value = 0.0;
 	if (value > ProgressBar[playerid][barid][pb_max]) value = ProgressBar[playerid][barid][pb_max];
-	ProgressBar[playerid][barid][pb_value] = value;
-	PB_RenderMain(playerid, barid);
+	if (value != ProgressBar[playerid][barid][pb_value])
+	{
+		ProgressBar[playerid][barid][pb_value] = value;
+		PB_RenderMain(playerid, barid);
+	}
 	if (!ProgressBar[playerid][barid][pb_show]) ShowPlayerProgressBar(playerid, barid);
 	return 1;
 }
