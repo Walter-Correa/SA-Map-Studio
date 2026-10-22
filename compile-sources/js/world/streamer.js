@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { iplQuaternion } from './models.js';
 
 const CELL = 200;
+const MAX_ADD_PER_PASS = 60;   // objects created in a single update (the rest comes in the next frames)
 
 export class WorldStreamer {
   constructor(gamedata, models, scene) {
@@ -117,9 +118,12 @@ export class WorldStreamer {
     for (const [idx, obj] of this.shown) {
       if (!wanted.has(idx)) { this.root.remove(obj); this.shown.delete(idx); }
     }
-    // Adds what entered
+    // Adds what entered, a few dozen per pass: creating hundreds of objects in one frame made the view stutter
+    let added = 0;
     for (const [idx, inst] of wanted) {
       if (this.shown.has(idx)) continue;
+      if (added >= MAX_ADD_PER_PASS) { this.dirty = true; this.lastUpdate = 0; break; }
+      added++;
       const obj = this.models.instantiate(inst.id);
       if (!obj) continue;
       obj.position.set(inst.x, inst.y, inst.z);

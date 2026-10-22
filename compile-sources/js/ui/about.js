@@ -8,6 +8,7 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'Smoother 3D view while moving: new map objects are created a few dozen per frame instead of hundreds at once.',
       'The default view distance is now 500 m, and reducing it (or turning the LODs off) frees the memory of the models that are no longer needed.',
       'Progress bars (progressbarpro.inc): setting the same value again no longer redraws the bar, and the filled part is created before the old one is destroyed, so it does not blink while it fills.',
       'Map loading: the view distance now sets how far the LODs reach, so changing it has a real effect; the detailed models load the way they always did.',
