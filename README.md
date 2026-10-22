@@ -420,7 +420,7 @@ Tools (in `compile-sources/`, run with Python 3):
 
 ### 3.24.0 — 20/10/2026
 - Progress bars (progressbarpro.inc): setting the same value again no longer redraws the bar, and the filled part is created before the old one is destroyed, so it does not blink while it fills.
-- Map loading: the view distance now sets how far the detailed models appear (their own distance grows with it, up to 3 times) and the LODs reach at least that distance, so changing it has a real effect; at most 6,000 detailed objects are shown at once, the nearest ones.
+- Map loading: the view distance now sets how far the LODs reach, so changing it has a real effect; the detailed models load the way they always did.
 - GangZones no longer appear in the 3D map: they exist only in the GangZone editor.
 - Opening the editor is faster: the thumbnail index no longer reads every thumbnail file on each start (it is cached),
   and old low resolution thumbnails are redrawn only after the editor has finished starting.

@@ -14,6 +14,7 @@ export class Thumbnails extends EventTarget {
     super();
     this.renderer = renderer;
     this.models = models;
+    this.isIdle = null;         // set by the app: true while the camera is not moving
     this.have = new Set();      // ids with a (current resolution) thumbnail on disk
     this.stale = new Set();     // ids with an old low resolution thumbnail: shown meanwhile and drawn again
     this.failed = new Set();    // ids that could not be drawn again in this session
@@ -48,11 +49,14 @@ export class Thumbnails extends EventTarget {
     return this.stale.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
   }
 
-  // An old low resolution thumbnail is drawn again only after the editor has had time to start (about 8 s)
+  // An old low resolution thumbnail is drawn again only after the editor has started (about 8 s) and while the camera
+  // is still: drawing it uses the graphics card and made the 3D view stutter when it happened while moving
   upgrade(id, cb) {
-    const wait = Math.max(0, 8000 - performance.now());
-    if (wait <= 0) { this.request(id, cb); return; }
-    setTimeout(() => this.request(id, cb), wait);
+    const attempt = () => {
+      if (performance.now() < 8000 || (this.isIdle && !this.isIdle())) { setTimeout(attempt, 1000); return; }
+      this.request(id, cb);
+    };
+    setTimeout(attempt, 1000);
   }
 
   request(id, cb) {

@@ -212,6 +212,7 @@ async function start(cfg) {
   const models = new ModelCache(gd, vp.renderer);
   const streamer = new WorldStreamer(gd, models, vp.scene);
   const thumbs = new Thumbnails(vp.renderer, models);
+  thumbs.isIdle = () => !(vp.fly.looking || vp.fly.panning || vp.fly.keys.size > 0);
   Object.assign(app, { gd, vp, models, streamer, thumbs, cfg });
   try {
     water = buildWater(await gd.fs.text('data/water.dat'));
