@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { iplQuaternion } from './models.js';
 
 const CELL = 200;
+const MAX_DETAILED = 6000;   // detailed instances on screen at once (the nearest ones win), so a large view distance never overloads the editor
 
 export class WorldStreamer {
   constructor(gamedata, models, scene) {
@@ -47,9 +48,14 @@ export class WorldStreamer {
     return this.settings.interiors ? isInt : !isInt;
   }
 
+  // The view distance setting grows the detail range: 1x up to 400 m, then in proportion, up to 3x
+  detailScale() { return Math.min(3, Math.max(1, this.settings.maxDistance / 400)); }
+
   drawDistance(inst) {
     const d = inst.def.drawDist * this.settings.drawScale;
-    return inst.isLod ? d : Math.min(d, this.settings.maxDistance);
+    // LODs reach at least the chosen view distance; detailed models reach their own distance (scaled) but never beyond it
+    if (inst.isLod) return Math.max(d, this.settings.maxDistance);
+    return Math.min(d * this.detailScale(), this.settings.maxDistance);
   }
 
   // camera: the viewport camera (position and direction decide the loading order)
@@ -69,6 +75,7 @@ export class WorldStreamer {
     const r = Math.ceil(range / CELL);
     const needModel = new Map(); // id -> priority (lower = sooner)
     const lodCandidates = [];
+    const detailList = [];       // [instance index, distance] of the detailed models to show
     // What is in front of the camera loads first
     camera.updateMatrixWorld();
     this._frustum.setFromProjectionMatrix(this._m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -92,10 +99,15 @@ export class WorldStreamer {
           if (inst.isLod) { if (this.settings.showLod) lodCandidates.push([inst, dist]); continue; }
           // Modelo detalhado
           const inRange = dist <= dd;
-          if (this.models.ready.has(inst.id)) { if (inRange && this.models.ready.get(inst.id)) wanted.set(inst.index, inst); }
+          if (this.models.ready.has(inst.id)) { if (inRange && this.models.ready.get(inst.id)) { wanted.set(inst.index, inst); detailList.push([inst.index, dist]); } }
           else needModel.set(inst.id, Math.min(needModel.get(inst.id) ?? 1e9, prio(inst, dist) + (inRange ? 0 : 400)));
         }
       }
+    }
+    // Too many detailed instances: only the nearest ones stay (the LOD takes over the rest)
+    if (detailList.length > MAX_DETAILED) {
+      detailList.sort((a, b) => a[1] - b[1]);
+      for (let i = MAX_DETAILED; i < detailList.length; i++) wanted.delete(detailList[i][0]);
     }
     // LOD: appears while some nearby child is not ready yet or is out of range
     for (const [lod, dist] of lodCandidates) {

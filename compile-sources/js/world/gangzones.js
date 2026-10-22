@@ -1,6 +1,5 @@
-// Suporte completo a GangZones (GangZoneCreate)
+// Full support for GangZones (GangZoneCreate)
 // As specified:
-import * as THREE from 'three';
 
 export const DEFAULT_GANGZONE_COLORS = [
   { name: 'Grove Street (Verde)', hex: '#33AA33', val: 0x33AA3390 },
@@ -212,45 +211,4 @@ export function snapGangZoneEdges(candidate, existingZones, threshold = 25.0, is
     snapped: (bestDiffX <= threshold) || (bestDiffY <= threshold),
     snapLines,
   };
-}
-
-// Creates a 3D node to project the GangZone onto the Three.js scene floor
-export function createGangZoneNode(gz) {
-  const group = new THREE.Group();
-  group.userData = { uid: gz.uid, kind: 'gangZones' };
-
-  const w = Math.max(1, gz.maxx - gz.minx);
-  const h = Math.max(1, gz.maxy - gz.miny);
-  const cx = (gz.minx + gz.maxx) / 2;
-  const cy = (gz.miny + gz.maxy) / 2;
-  const cz = 5.0; // Height in the world
-
-  const { hex, alpha } = gzColorToHexAndAlpha(gz.color);
-  const colorInt = parseInt(hex.replace('#', ''), 16) || 0xFF0000;
-
-  // Plano semi-transparente
-  const planeGeo = new THREE.PlaneGeometry(w, h);
-  const planeMat = new THREE.MeshBasicMaterial({
-    color: colorInt,
-    transparent: true,
-    opacity: Math.max(0.15, alpha * 0.75),
-    side: THREE.DoubleSide,
-    depthWrite: false,
-  });
-  const plane = new THREE.Mesh(planeGeo, planeMat);
-  group.add(plane);
-
-  // Edge lines (vibrant outline)
-  const edgesGeo = new THREE.EdgesGeometry(planeGeo);
-  const edgesMat = new THREE.LineBasicMaterial({
-    color: colorInt,
-    linewidth: 2,
-    transparent: true,
-    opacity: 0.9,
-  });
-  const edges = new THREE.LineSegments(edgesGeo, edgesMat);
-  group.add(edges);
-
-  group.position.set(cx, cy, cz);
-  return group;
 }

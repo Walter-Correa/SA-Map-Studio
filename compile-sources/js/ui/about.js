@@ -8,6 +8,8 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 const CHANGELOG = [
   {
     version: '3.24.0', date: '20/10/2026', items: [
+      'Map loading: the view distance now sets how far the detailed models appear (their own distance grows with it, up to 3 times) and the LODs reach at least that distance, so changing it has a real effect; at most 6,000 detailed objects are shown at once, the nearest ones.',
+      'GangZones no longer appear in the 3D map: they exist only in the GangZone editor.',
       'Opening the editor is faster: the thumbnail index no longer reads every thumbnail file on each start (it is cached), and old low resolution thumbnails are redrawn only after the editor has finished starting.',
       'Each texture in the material list of a map object has a button that copies its SetObjectMaterial line, with the model of its TXD.',
       'Light theme: blue buttons keep their color on hover (a lighter blue) and the map and TextDraw editors have a light background; the material list of a map object scrolls and shows 5 rows; the Update History text sits on a darker background.',

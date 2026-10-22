@@ -7,7 +7,7 @@ import { normalizeMaterial, isText, keepsTexture, parseColor, MAX_MATERIAL_INDEX
 import { CAR_COLORS } from '../world/vehicleMods.js';
 import { createLabelNode } from '../world/labels.js';
 import { createPickupFallbackMesh } from '../world/pickups.js';
-import { createGangZoneNode, getNextGangZoneName } from '../world/gangzones.js';
+import { getNextGangZoneName } from '../world/gangzones.js';
 import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
 import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
 
@@ -242,7 +242,7 @@ export class Editor extends EventTarget {
     const alive = new Set();
     for (const p of projects) {
       if (p.checkpoints) updateRaceCheckpointsChain(p.checkpoints);
-      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons']) {
+      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons']) {   // GangZones live only in their own editor, not in the 3D map
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
           let node = this.nodes.get(o.uid);
@@ -253,7 +253,6 @@ export class Editor extends EventTarget {
           else if (kind === 'actors') sig = JSON.stringify([o.skin, o.anim]);
           else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
           else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
-          else if (kind === 'gangZones') sig = JSON.stringify([o.minx, o.miny, o.maxx, o.maxy, o.color]);
           else if (kind === 'checkpoints') sig = JSON.stringify([o.isRace, o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
           else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
 
@@ -265,14 +264,8 @@ export class Editor extends EventTarget {
             this.nodes.set(o.uid, node);
             this.root.add(node);
           }
-          if (kind === 'gangZones') {
-            const cx = (o.minx + o.maxx) / 2;
-            const cy = (o.miny + o.maxy) / 2;
-            node.position.set(cx, cy, 5.0);
-          } else {
-            node.position.set(o.x, o.y, o.z);
-            node.rotation.copy(eulerFromItem(o, kind));
-          }
+          node.position.set(o.x, o.y, o.z);
+          node.rotation.copy(eulerFromItem(o, kind));
           node.updateMatrixWorld(true);
         }
       }
@@ -289,11 +282,6 @@ export class Editor extends EventTarget {
   createNode(o, kind) {
     if (kind === 'labels') {
       const node = createLabelNode(o);
-      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
-      return node;
-    }
-    if (kind === 'gangZones') {
-      const node = createGangZoneNode(o);
       node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
       return node;
     }
