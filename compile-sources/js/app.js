@@ -318,7 +318,8 @@ function setupToolbar(cfg) {
   ed.on('selection', updateUndoButtons);
 
   // View
-  const view = store.get('view', { dist: 600, speed: 25, lod: true, water: true, interiors: false, showSelectionBox: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
+  const view = store.get('view', { dist: 500, speed: 25, lod: true, water: true, interiors: false, showSelectionBox: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
+  if (view.dist === 600 && !store.get('viewDist500', false)) { view.dist = 500; store.set('viewDist500', true); }
   const applyView = () => {
     const v = {
       dist: +$('#viewDist').value,
@@ -334,6 +335,7 @@ function setupToolbar(cfg) {
     };
     $('#viewDistOut').textContent = v.dist + ' m';
     $('#camSpeedOut').textContent = v.speed;
+    if (v.dist < streamer.settings.maxDistance || (!v.lod && streamer.settings.showLod)) streamer.trimNext = true;
     streamer.settings.maxDistance = v.dist;
     streamer.settings.showLod = v.lod;
     streamer.settings.interiors = v.interiors;

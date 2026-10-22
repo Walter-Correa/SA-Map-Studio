@@ -22,7 +22,7 @@ export class WorldStreamer {
     this._m = new THREE.Matrix4();
     this._sphere = new THREE.Sphere();
     this.hidden = new Set();    // hidden instances (the project's RemoveBuilding)
-    this.settings = { drawScale: 1.0, maxDistance: 600, showLod: true, interiors: false, enabled: true };
+    this.settings = { drawScale: 1.0, maxDistance: 500, showLod: true, interiors: false, enabled: true };
     this.lastPos = new THREE.Vector3(1e9, 0, 0);
     this.dirty = true;
     this.stats = { shown: 0, pending: 0 };
@@ -138,13 +138,15 @@ export class WorldStreamer {
     this.pump();
     this.stats.shown = this.shown.size;
     this.stats.pending = order.length;
-    // From time to time releases models that were left behind
-    if (now - (this.lastEvict || 0) > 5000) {
+    // From time to time releases models that were left behind; right away (down to what is still needed) when the view
+    // distance was reduced or the LODs were turned off, so the memory goes back down
+    if (this.trimNext || now - (this.lastEvict || 0) > 5000) {
       this.lastEvict = now;
       const keep = new Set(this.keepModels ? this.keepModels() : []);
       for (const inst of wanted.values()) keep.add(inst.id);
       for (const id of this.queue) keep.add(id);
-      this.models.evict(keep, this.modelBudget || 300);
+      this.models.evict(keep, this.trimNext ? 0 : (this.modelBudget || 300));
+      this.trimNext = false;
     }
   }
 
