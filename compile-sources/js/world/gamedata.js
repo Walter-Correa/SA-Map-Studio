@@ -48,14 +48,16 @@ export class GameData {
     this.warnings = [];
   }
 
-  async load(onProgress = () => {}) {
+  // singleplayer: only what the original game has (no SAMP/ folder, which only exists for SA-MP)
+  async load(onProgress = () => {}, { singleplayer = false } = {}) {
+    this.singleplayer = singleplayer;
     const fs = this.fs;
     onProgress('Lendo gta.dat', 0.02);
     const gtaDat = parseDat(await fs.text('data/gta.dat'));
     const defDat = parseDat((await fs.tryText('data/default.dat')) || '');
 
     // ---- IDE ----
-    const ideList = [...defDat.ide, ...gtaDat.ide, 'SAMP/SAMP.ide', 'SAMP/CUSTOM.ide'];
+    const ideList = [...defDat.ide, ...gtaDat.ide, ...(singleplayer ? [] : ['SAMP/SAMP.ide', 'SAMP/CUSTOM.ide'])];
     let done = 0;
     const ideTexts = new Array(ideList.length);
     await pool(ideList, 8, async (p, k) => {
@@ -112,7 +114,7 @@ export class GameData {
     }
 
     // ---- IMG ----
-    const imgList = ['models/gta3.img', 'models/gta_int.img', 'models/cutscene.img', 'SAMP/SAMP.img', 'SAMP/custom.img'];
+    const imgList = ['models/gta3.img', 'models/gta_int.img', 'models/cutscene.img', ...(singleplayer ? [] : ['SAMP/SAMP.img', 'SAMP/custom.img'])];
     done = 0;
     for (const img of imgList) {
       onProgress(`Indexando ${img}`, 0.2 + 0.2 * (done++ / imgList.length));
@@ -136,7 +138,7 @@ export class GameData {
     this.entries.set('cj.txd', { img: 'models/cj.txd', offset: 0, size: 0 });
 
     // ---- IPL texto ----
-    const iplList = [...gtaDat.ipl.filter(p => !SKIP_IPL.test(p)), 'SAMP/SAMP.ipl'];
+    const iplList = [...gtaDat.ipl.filter(p => !SKIP_IPL.test(p)), ...(singleplayer ? [] : ['SAMP/SAMP.ipl'])];
     const textIpl = new Map(); // nome-base -> {start, count}
     done = 0;
     const iplTexts = new Array(iplList.length);
@@ -149,7 +151,7 @@ export class GameData {
       const base = p.replace(/\\/g, '/').split('/').pop().replace(/\.ipl$/i, '').toLowerCase();
       const { inst } = parseIplText(iplTexts[k]);
       // map: position in the file -> global index (the IPL's "lod" points to the position in the file)
-      const map = inst.map(it => this.addInstance(it, base));
+      const map = inst.map((it, n) => this.addInstance(it, base, { file: p.replace(/\\/g, '/'), idx: n, bin: false }));
       textIpl.set(base, map);
     });
 
@@ -171,10 +173,10 @@ export class GameData {
     streams.forEach((s, k) => {
       if (!results[k]) return;
       const map = textIpl.get(s.base) || [];
-      for (const it of results[k]) {
-        const idx = this.addInstance(it, s.base);
+      results[k].forEach((it, n) => {
+        const idx = this.addInstance(it, s.base, { file: s.name, idx: n, bin: true });
         if (idx >= 0) this.instances[idx].lodIndex = it.lod >= 0 && it.lod < map.length ? map[it.lod] : -1;
-      }
+      });
     });
 
     // Instances of text IPLs point to the LOD by position in the same file
@@ -200,7 +202,7 @@ export class GameData {
   }
 
   // Returns the instance's global index (or -1 if the model has no definition)
-  addInstance(it, base) {
+  addInstance(it, base, src = null) {
     const def = this.models.get(it.id);
     if (!def) { this.skipped = (this.skipped || 0) + 1; return -1; }
     const flags = it.interior | 0;
@@ -215,6 +217,7 @@ export class GameData {
       rawLod: it.lod,
       lodIndex: -1,
       ipl: base,
+      src,                // where it comes from: { file, idx (position in the file), bin }
       isLod: def.model.startsWith('lod'),
       children: null, lodRef: null,
     };
@@ -227,7 +230,7 @@ export class GameData {
   async readEntry(name) {
     const e = this.entry(name);
     if (!e) return null;
-    return this.fs.read(e.img, e.offset, e.size);
+    return this.fs.read(e.img, e.size ? e.offset : undefined, e.size || undefined); // size 0: the whole file
   }
 
   catalog() {
@@ -246,6 +249,7 @@ export class GameData {
       } else if (isPickupModel(d.id)) {
         category = 'Pickups';
       }
+      if (d.source === 'samsp-custom') category = 'Modelos próprios';
       out.push({
         id: d.id,
         name: d.type === 'peds' ? 'Actor (Personagem)' : (d.name || d.model),

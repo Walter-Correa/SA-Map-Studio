@@ -7,6 +7,7 @@
 #include <open.mp>
 #include <streamer>
 #include <progressbarpro>
+#include <textdrawblink>
 
 #define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
 #define SAMSP_MAX_OBJETOS    5000
@@ -116,7 +117,39 @@ new gTotalPickups;
 new gGangZones[SAMSP_MAX_GANGZONES];
 new gGangZoneColors[SAMSP_MAX_GANGZONES];
 new gTotalGangZones;
-new Text:gTextDraws[SAMSP_MAX_TEXTDRAWS];
+// TextDraws of the map: the definitions are kept and each player gets his own PlayerTextDraws when he spawns (so they can blink)
+enum E_SAMSP_TD
+{
+    Float:td_x,
+    Float:td_y,
+    td_font,
+    Float:td_letterX,
+    Float:td_letterY,
+    Float:td_sizeX,
+    Float:td_sizeY,
+    td_color,
+    td_boxColor,
+    td_bgColor,
+    td_outline,
+    td_shadow,
+    td_align,
+    td_useBox,
+    td_proportional,
+    td_selectable,
+    td_model,
+    Float:td_rotX,
+    Float:td_rotY,
+    Float:td_rotZ,
+    Float:td_zoom,
+    td_blink,
+    td_blinkInterval,
+    td_blinkDuration,
+    td_blinkPerChar,
+    td_blinkColor,
+    td_text[128]
+}
+new gTd[SAMSP_MAX_TEXTDRAWS][E_SAMSP_TD];
+new PlayerText:gPlayerTds[MAX_PLAYERS][SAMSP_MAX_TEXTDRAWS];
 new gTotalTextDraws;
 
 enum E_SAMSP_CP
@@ -170,7 +203,8 @@ enum E_SAMSP_PBAR
     bar_style,
     bar_segments,
     bar_autoFill,
-    Float:bar_autoFillMax
+    Float:bar_autoFillMax,
+    Float:bar_segmentScale
 }
 new gPBars[SAMSP_MAX_PBARS][E_SAMSP_PBAR];
 new gTotalPBars;
@@ -854,112 +888,53 @@ stock SAMSP_CarregarMapa()
                 gPBars[gTotalPBars][bar_segments] = SAMSP_Int(linha, 17);
                 gPBars[gTotalPBars][bar_autoFill] = SAMSP_Int(linha, 18);
                 gPBars[gTotalPBars][bar_autoFillMax] = SAMSP_Float(linha, 19);
+                gPBars[gTotalPBars][bar_segmentScale] = SAMSP_Float(linha, 20); // 0 (an old map file) is the default size
                 gTotalPBars++;
             }
             case 'D':
             {
+                if (tipo[1] == 'B')
+                {
+                    // Blink of a TextDraw: DB|number of the TextDraw|interval|duration|character by character|colour (0 = it vanishes)
+                    new bidx = SAMSP_Int(linha, 1);
+                    if (bidx >= 0 && bidx < gTotalTextDraws)
+                    {
+                        gTd[bidx][td_blink] = 1;
+                        gTd[bidx][td_blinkInterval] = SAMSP_Int(linha, 2);
+                        gTd[bidx][td_blinkDuration] = SAMSP_Int(linha, 3);
+                        gTd[bidx][td_blinkPerChar] = SAMSP_Int(linha, 4);
+                        gTd[bidx][td_blinkColor] = SAMSP_HexOrInt(linha, 5);
+                    }
+                    continue;
+                }
                 if (gTotalTextDraws >= SAMSP_MAX_TEXTDRAWS) continue;
-                new Float:tdx = SAMSP_Float(linha, 1);
-                new Float:tdy = SAMSP_Float(linha, 2);
-                new tdfont = SAMSP_Int(linha, 3);
-                new Float:tdletx = SAMSP_Float(linha, 4);
-                new Float:tdlety = SAMSP_Float(linha, 5);
-                new Float:tdsizex = SAMSP_Float(linha, 6);
-                new Float:tdsizey = SAMSP_Float(linha, 7);
-                new tdcol = SAMSP_HexOrInt(linha, 8);
-                new tdboxcol = SAMSP_HexOrInt(linha, 9);
-                new tdbgcol = SAMSP_HexOrInt(linha, 10);
-                new tdoutline = SAMSP_Int(linha, 11);
-                new tdshadow = SAMSP_Int(linha, 12);
-                new tdalign = SAMSP_Int(linha, 13);
-                new tdusebox = SAMSP_Int(linha, 14);
-                new tdprop = SAMSP_Int(linha, 15);
-                new tdselect = SAMSP_Int(linha, 16);
-                new tdmodel = SAMSP_Int(linha, 17);
-                new Float:tdrotx = SAMSP_Float(linha, 18);
-                new Float:tdroty = SAMSP_Float(linha, 19);
-                new Float:tdrotz = SAMSP_Float(linha, 20);
-                new Float:tdzoom = SAMSP_Float(linha, 21);
+                new tdi = gTotalTextDraws;
+                gTd[tdi][td_x] = SAMSP_Float(linha, 1);
+                gTd[tdi][td_y] = SAMSP_Float(linha, 2);
+                gTd[tdi][td_font] = SAMSP_Int(linha, 3);
+                gTd[tdi][td_letterX] = SAMSP_Float(linha, 4);
+                gTd[tdi][td_letterY] = SAMSP_Float(linha, 5);
+                gTd[tdi][td_sizeX] = SAMSP_Float(linha, 6);
+                gTd[tdi][td_sizeY] = SAMSP_Float(linha, 7);
+                gTd[tdi][td_color] = SAMSP_HexOrInt(linha, 8);
+                gTd[tdi][td_boxColor] = SAMSP_HexOrInt(linha, 9);
+                gTd[tdi][td_bgColor] = SAMSP_HexOrInt(linha, 10);
+                gTd[tdi][td_outline] = SAMSP_Int(linha, 11);
+                gTd[tdi][td_shadow] = SAMSP_Int(linha, 12);
+                gTd[tdi][td_align] = SAMSP_Int(linha, 13);
+                gTd[tdi][td_useBox] = SAMSP_Int(linha, 14);
+                gTd[tdi][td_proportional] = SAMSP_Int(linha, 15);
+                gTd[tdi][td_selectable] = SAMSP_Int(linha, 16);
+                gTd[tdi][td_model] = SAMSP_Int(linha, 17);
+                gTd[tdi][td_rotX] = SAMSP_Float(linha, 18);
+                gTd[tdi][td_rotY] = SAMSP_Float(linha, 19);
+                gTd[tdi][td_rotZ] = SAMSP_Float(linha, 20);
+                gTd[tdi][td_zoom] = SAMSP_Float(linha, 21);
+                gTd[tdi][td_blink] = 0;
                 SAMSP_Resto(linha, 22, texto, sizeof(texto));
-
-                if (tdfont == 4)
-                {
-                    SAMSP_NormalizeSprite(texto, sizeof(texto));
-                    new Text:td = TextDrawCreate(tdx, tdy, texto);
-                    if (td != Text:INVALID_TEXT_DRAW)
-                    {
-                        TextDrawFont(td, 4);
-                        TextDrawLetterSize(td, 0.0, 0.0);
-                        TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 64.0), (tdsizey > 0.0 ? tdsizey : 64.0));
-                        if (tdcol == 0 || tdcol == 0xFF) tdcol = 0xFFFFFFFF;
-                        if ((tdcol & 0xFF) == 0) tdcol |= 0xFF;
-                        TextDrawColor(td, tdcol);
-                        TextDrawBackgroundColor(td, (tdbgcol & 0xFF) == 0 ? 0x000000FF : tdbgcol);
-                        TextDrawAlignment(td, 1);
-                        TextDrawSetOutline(td, 0);
-                        TextDrawSetShadow(td, 0);
-                        TextDrawSetProportional(td, true);
-                        TextDrawUseBox(td, false);
-                        if (tdselect) TextDrawSetSelectable(td, true);
-                        gTextDraws[gTotalTextDraws] = td;
-                        gTotalTextDraws++;
-                    }
-                }
-                else if (tdfont == 5)
-                {
-                    new Text:td = TextDrawCreate(tdx, tdy, "_");
-                    if (td != Text:INVALID_TEXT_DRAW)
-                    {
-                        TextDrawFont(td, 5);
-                        TextDrawLetterSize(td, 0.0, 0.0);
-                        TextDrawTextSize(td, (tdsizex > 0.0 ? tdsizex : 80.0), (tdsizey > 0.0 ? tdsizey : 80.0));
-                        TextDrawColor(td, tdcol);
-                        TextDrawSetOutline(td, 0);
-                        TextDrawSetShadow(td, 0);
-                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
-                        if (tdusebox)
-                        {
-                            TextDrawUseBox(td, true);
-                            TextDrawBoxColor(td, tdboxcol);
-                        }
-                        TextDrawBackgroundColor(td, tdbgcol);
-                        TextDrawSetProportional(td, bool:tdprop);
-                        if (tdselect) TextDrawSetSelectable(td, true);
-                        if (tdmodel > 0)
-                        {
-                            TextDrawSetPreviewModel(td, tdmodel);
-                            TextDrawSetPreviewRot(td, tdrotx, tdroty, tdrotz, (tdzoom > 0.0 ? tdzoom : 1.0));
-                            TextDrawSetPreviewVehCol(td, 1, 1);
-                        }
-                        gTextDraws[gTotalTextDraws] = td;
-                        gTotalTextDraws++;
-                    }
-                }
-                else
-                {
-                    new Text:td = TextDrawCreate(tdx, tdy, texto[0] != EOS ? texto : "_");
-                    if (td != Text:INVALID_TEXT_DRAW)
-                    {
-                        TextDrawFont(td, tdfont);
-                        TextDrawLetterSize(td, (tdletx >= 0.0 ? tdletx : 0.35), (tdlety > 0.0 ? tdlety : 1.40));
-                        TextDrawAlignment(td, (tdalign > 0 ? tdalign : 1));
-                        TextDrawColor(td, tdcol);
-                        TextDrawSetOutline(td, tdoutline);
-                        TextDrawSetShadow(td, tdshadow);
-                        TextDrawSetProportional(td, bool:tdprop);
-                        // Same values as the editor and the exported code, no adjustments
-                        if (tdusebox)
-                        {
-                            TextDrawUseBox(td, true);
-                            TextDrawBoxColor(td, tdboxcol);
-                        }
-                        TextDrawTextSize(td, tdsizex, tdsizey);
-                        TextDrawBackgroundColor(td, tdbgcol);
-                        if (tdselect) TextDrawSetSelectable(td, true);
-                        gTextDraws[gTotalTextDraws] = td;
-                        gTotalTextDraws++;
-                    }
-                }
+                if (gTd[tdi][td_font] == 4) SAMSP_NormalizeSprite(texto, sizeof(texto));
+                strmid(gTd[tdi][td_text], texto, 0, strlen(texto), 128);
+                gTotalTextDraws++;
             }
         }
     }
@@ -1363,7 +1338,7 @@ stock SAMSP_ShowProgressBars(playerid)
     {
         new bar = CreatePlayerProgressBar(playerid, gPBars[i][bar_x], gPBars[i][bar_y], gPBars[i][bar_width], gPBars[i][bar_height],
             gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border], gPBars[i][bar_borderColor],
-            gPBars[i][bar_style], gPBars[i][bar_segments]);
+            gPBars[i][bar_style], gPBars[i][bar_segments], gPBars[i][bar_segmentScale]);
         if (bar == INVALID_PLAYER_BAR_ID) continue;
         SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);
@@ -1378,13 +1353,100 @@ stock SAMSP_ShowProgressBars(playerid)
 
 // Map TextDraws and progress bars: shown only once per connection, on the first spawn.
 // They stay on screen on death, respawn and /fly; showing again would make sprites and previews flicker.
+// Creates the PlayerTextDraw of a TextDraw of the map for the player (same values as the editor and the exported code)
+stock SAMSP_CreatePlayerTd(playerid, i)
+{
+    new font = gTd[i][td_font];
+    new PlayerText:td;
+    if (font == 4)
+    {
+        td = CreatePlayerTextDraw(playerid, gTd[i][td_x], gTd[i][td_y], gTd[i][td_text]);
+        if (td == PlayerText:INVALID_PLAYER_TEXT_DRAW) return 0;
+        new tdcol = gTd[i][td_color];
+        PlayerTextDrawFont(playerid, td, 4);
+        PlayerTextDrawLetterSize(playerid, td, 0.0, 0.0);
+        PlayerTextDrawTextSize(playerid, td, (gTd[i][td_sizeX] > 0.0 ? gTd[i][td_sizeX] : 64.0), (gTd[i][td_sizeY] > 0.0 ? gTd[i][td_sizeY] : 64.0));
+        if (tdcol == 0 || tdcol == 0xFF) tdcol = 0xFFFFFFFF;
+        if ((tdcol & 0xFF) == 0) tdcol |= 0xFF;
+        PlayerTextDrawColor(playerid, td, tdcol);
+        PlayerTextDrawBackgroundColor(playerid, td, (gTd[i][td_bgColor] & 0xFF) == 0 ? 0x000000FF : gTd[i][td_bgColor]);
+        PlayerTextDrawAlignment(playerid, td, 1);
+        PlayerTextDrawSetOutline(playerid, td, 0);
+        PlayerTextDrawSetShadow(playerid, td, 0);
+        PlayerTextDrawSetProportional(playerid, td, true);
+        PlayerTextDrawUseBox(playerid, td, false);
+        if (gTd[i][td_selectable]) PlayerTextDrawSetSelectable(playerid, td, true);
+    }
+    else if (font == 5)
+    {
+        td = CreatePlayerTextDraw(playerid, gTd[i][td_x], gTd[i][td_y], "_");
+        if (td == PlayerText:INVALID_PLAYER_TEXT_DRAW) return 0;
+        PlayerTextDrawFont(playerid, td, 5);
+        PlayerTextDrawLetterSize(playerid, td, 0.0, 0.0);
+        PlayerTextDrawTextSize(playerid, td, (gTd[i][td_sizeX] > 0.0 ? gTd[i][td_sizeX] : 80.0), (gTd[i][td_sizeY] > 0.0 ? gTd[i][td_sizeY] : 80.0));
+        PlayerTextDrawColor(playerid, td, gTd[i][td_color]);
+        PlayerTextDrawSetOutline(playerid, td, 0);
+        PlayerTextDrawSetShadow(playerid, td, 0);
+        PlayerTextDrawAlignment(playerid, td, (gTd[i][td_align] > 0 ? gTd[i][td_align] : 1));
+        if (gTd[i][td_useBox])
+        {
+            PlayerTextDrawUseBox(playerid, td, true);
+            PlayerTextDrawBoxColor(playerid, td, gTd[i][td_boxColor]);
+        }
+        PlayerTextDrawBackgroundColor(playerid, td, gTd[i][td_bgColor]);
+        PlayerTextDrawSetProportional(playerid, td, bool:gTd[i][td_proportional]);
+        if (gTd[i][td_selectable]) PlayerTextDrawSetSelectable(playerid, td, true);
+        if (gTd[i][td_model] > 0)
+        {
+            PlayerTextDrawSetPreviewModel(playerid, td, gTd[i][td_model]);
+            PlayerTextDrawSetPreviewRot(playerid, td, gTd[i][td_rotX], gTd[i][td_rotY], gTd[i][td_rotZ], (gTd[i][td_zoom] > 0.0 ? gTd[i][td_zoom] : 1.0));
+            PlayerTextDrawSetPreviewVehCol(playerid, td, 1, 1);
+        }
+    }
+    else
+    {
+        new tdtext[128];
+        strmid(tdtext, gTd[i][td_text], 0, 127, sizeof(tdtext));
+        if (tdtext[0] == EOS) tdtext = "_";
+        td = CreatePlayerTextDraw(playerid, gTd[i][td_x], gTd[i][td_y], tdtext);
+        if (td == PlayerText:INVALID_PLAYER_TEXT_DRAW) return 0;
+        PlayerTextDrawFont(playerid, td, font);
+        PlayerTextDrawLetterSize(playerid, td, (gTd[i][td_letterX] >= 0.0 ? gTd[i][td_letterX] : 0.35), (gTd[i][td_letterY] > 0.0 ? gTd[i][td_letterY] : 1.40));
+        PlayerTextDrawAlignment(playerid, td, (gTd[i][td_align] > 0 ? gTd[i][td_align] : 1));
+        PlayerTextDrawColor(playerid, td, gTd[i][td_color]);
+        PlayerTextDrawSetOutline(playerid, td, gTd[i][td_outline]);
+        PlayerTextDrawSetShadow(playerid, td, gTd[i][td_shadow]);
+        PlayerTextDrawSetProportional(playerid, td, bool:gTd[i][td_proportional]);
+        if (gTd[i][td_useBox])
+        {
+            PlayerTextDrawUseBox(playerid, td, true);
+            PlayerTextDrawBoxColor(playerid, td, gTd[i][td_boxColor]);
+        }
+        PlayerTextDrawTextSize(playerid, td, gTd[i][td_sizeX], gTd[i][td_sizeY]);
+        PlayerTextDrawBackgroundColor(playerid, td, gTd[i][td_bgColor]);
+        if (gTd[i][td_selectable]) PlayerTextDrawSetSelectable(playerid, td, true);
+    }
+    gPlayerTds[playerid][i] = td;
+    return 1;
+}
+
 stock SAMSP_ShowHud(playerid)
 {
     if (gHudShown[playerid]) return 0;
     gHudShown[playerid] = true;
     for (new i = 0; i < gTotalTextDraws; i++)
     {
-        TextDrawShowForPlayer(playerid, gTextDraws[i]);
+        gPlayerTds[playerid][i] = PlayerText:INVALID_PLAYER_TEXT_DRAW;
+        if (!SAMSP_CreatePlayerTd(playerid, i)) continue;
+        if (gTd[i][td_blink])
+        {
+            // BlinkPlayerTextDraw (textdrawblink.inc) shows it and makes it blink; the original colour is given because the colours were set above
+            new bool:perChar = (gTd[i][td_blinkPerChar] != 0 && gTd[i][td_font] != 4 && gTd[i][td_font] != 5);
+            new base = (gTd[i][td_font] == 5) ? gTd[i][td_bgColor] : gTd[i][td_color];
+            if (gTd[i][td_font] == 4 && (base == 0 || base == 0xFF)) base = 0xFFFFFFFF;
+            BlinkPlayerTextDraw(playerid, gPlayerTds[playerid][i], gTd[i][td_blinkInterval], gTd[i][td_blinkDuration], perChar, gTd[i][td_blinkColor], gTd[i][td_text], base);
+        }
+        else PlayerTextDrawShow(playerid, gPlayerTds[playerid][i]);
     }
     SAMSP_ShowProgressBars(playerid);
     return 1;

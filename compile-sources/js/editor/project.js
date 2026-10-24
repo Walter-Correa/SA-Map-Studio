@@ -67,6 +67,8 @@ export function makeObject(data) {
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
     raw: data.raw ? { ...data.raw } : null,
+    // Singleplayer: the game's own object this one came from (IPL file and position in it, where it was), so the mod can move it there
+    origin: data.origin && typeof data.origin.file === 'string' ? { file: data.origin.file, idx: data.origin.idx | 0, x: +data.origin.x || 0, y: +data.origin.y || 0, z: +data.origin.z || 0 } : null,
     materials: (data.materials || []).map(normalizeMaterial).filter(Boolean)
       .filter((m, i, all) => all.findLastIndex(x => x.index === m.index) === i) // one per index (the last one wins)
       .sort((a, b) => a.index - b.index),
@@ -103,6 +105,9 @@ export function makeVehicle(data) {
     projectId: data.projectId || '',
     raw: data.raw ? { ...data.raw } : null,
     components: Array.isArray(data.components) ? [...data.components] : [],
+    // Singleplayer (they need the CLEO in the game): cannot be destroyed / only the player can get in
+    indestructible: !!data.indestructible, npcLock: !!data.npcLock,
+    spRespawn: Math.max(1, Math.min(3600, +data.spRespawn || 30)), // seconds to come back at its place after being destroyed
   };
 }
 
@@ -114,12 +119,19 @@ export function makeActor(data) {
     world: data.world ?? -1,
     invulnerable: data.invulnerable ?? true,
     health: data.health !== undefined ? +data.health : 100,
+    // Singleplayer: the weapon it carries (0 = none; with one, no animation), what it is (neutral, guard of the player or enemy)
+    // and whether it follows the player (a guard) or chases him (an enemy) instead of staying where it appeared
+    weapon: data.weapon | 0,
+    role: ['guard', 'enemy'].includes(data.role) ? data.role : 'neutral',
+    follow: !!data.follow,
+    runFast: data.runFast !== false, // how it runs to the player: fast (sprint) or normal (not for the neutral ones)
+    respawn: Math.max(0, Math.min(36000, +data.respawn || 0)), // when it is not invulnerable and dies: seconds to come back (0 = stays dead)
     comment: data.comment ? String(data.comment) : '',
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
     raw: data.raw ? { ...data.raw } : null,
-    anim: data.anim ? {
+    anim: data.anim && !(data.weapon | 0) ? {
       lib: String(data.anim.lib || 'PED'),
       name: String(data.anim.name || 'IDLE_chat'),
       delta: +data.anim.delta || 4.1,
@@ -129,6 +141,46 @@ export function makeActor(data) {
       freeze: data.anim.freeze ?? 0,
       time: +data.anim.time || 0,
     } : null,
+  };
+}
+
+// Singleplayer door (enex): an outside marker and an inside marker joined by the name. "rot" is the way the player faces after coming through (degrees, 0 = north)
+export function newDoorName(doors, wanted = '') {
+  const clean = String(wanted).toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 8);
+  const used = new Set(doors.map(d => d.name));
+  if (clean && !used.has(clean)) return clean;
+  for (let i = 1; ; i++) { const n = 'ENT_' + String(i).padStart(2, '0'); if (!used.has(n)) return n; }
+}
+
+export function makeDoor(data) {
+  const n = (v, d = 0) => (Number.isFinite(+v) ? +v : d);
+  return {
+    uid: data.uid || newUid(),
+    name: String(data.name || 'ENT_01').toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 8) || 'ENT_01',
+    out: { x: n(data.out?.x), y: n(data.out?.y), z: n(data.out?.z), rot: n(data.out?.rot) },
+    in: { x: n(data.in?.x), y: n(data.in?.y), z: n(data.in?.z), rot: n(data.in?.rot) },
+    interior: Math.max(1, n(data.interior, 1) | 0),
+    size: Math.max(0.5, n(data.size, 1.5)),
+    flagsOut: n(data.flagsOut, 4) | 0, flagsIn: n(data.flagsIn, 0) | 0,
+    skyOut: n(data.skyOut, 0) | 0, skyIn: n(data.skyIn, 4) | 0, peds: n(data.peds, 2) | 0,
+    timeOn: n(data.timeOn, 0) | 0, timeOff: n(data.timeOff, 24) | 0,
+  };
+}
+
+// Singleplayer world settings: where the player appears whatever the saved game (null = where the save was), fixed weather and time (-1 = free), fixed weather and time (-1 = free)
+export function makeWorld(data) {
+  const d = data || {};
+  const n = (v, f) => (Number.isFinite(+v) ? +v : f);
+  return { spawn: null, weather: Math.max(-1, Math.min(45, n(d.weather, -1) | 0)), hour: Math.max(-1, Math.min(23, n(d.hour, -1) | 0)), minute: Math.max(0, Math.min(59, n(d.minute, 0) | 0)) };
+}
+
+// A model imported from files (Singleplayer): its id in the game's range, the folder of its files on the server and their names
+export function makeCustomModel(data) {
+  return {
+    uid: data.uid || newUid(),
+    id: data.id | 0, asset: String(data.asset || ''), label: String(data.label || 'Modelo'),
+    dff: String(data.dff || ''), txd: String(data.txd || ''), col: String(data.col || ''),
+    drawDist: Math.max(20, +data.drawDist || 300),
   };
 }
 
@@ -163,6 +215,28 @@ export function makeLabel(data) {
   };
 }
 
+// What happens when the player enters a checkpoint or takes a pickup (Singleplayer): a type and its settings, a price and a message
+export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion'];
+export function makeAction(data) {
+  const d = data || {};
+  const n = (v, f) => (Number.isFinite(+v) ? +v : f);
+  return {
+    type: ACTION_TYPES.includes(d.type) ? d.type : 'none',
+    price: Math.max(0, Math.min(99999999, n(d.price, 0) | 0)),
+    once: !!d.once,
+    text: String(d.text || '').slice(0, 200),
+    msgStyle: d.msgStyle === 'box' ? 'box' : 'text', // on the screen, or in the game's black help box
+    amount: Math.max(0, Math.min(99999999, n(d.amount, 100) | 0)),
+    weapon: n(d.weapon, 22) | 0, ammo: Math.max(1, Math.min(99999, n(d.ammo, 200) | 0)),
+    stars: Math.max(0, Math.min(6, n(d.stars, 0) | 0)),
+    x: n(d.x, 0), y: n(d.y, 0), z: n(d.z, 0), rot: n(d.rot, 0),
+    model: n(d.model, 411) | 0,
+    weather: Math.max(0, Math.min(45, n(d.weather, 0) | 0)),
+    hour: Math.max(0, Math.min(23, n(d.hour, 12) | 0)), minute: Math.max(0, Math.min(59, n(d.minute, 0) | 0)),
+    explosion: [0, 1, 2, 4].includes(n(d.explosion, 0) | 0) ? n(d.explosion, 0) | 0 : 0,
+  };
+}
+
 export function makePickup(data) {
   return {
     uid: data.uid || newUid(),
@@ -170,11 +244,22 @@ export function makePickup(data) {
     type: data.type !== undefined ? (data.type | 0) : 1,
     x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
     world: data.world !== undefined ? (data.world | 0) : 0,
+    action: data.action ? makeAction(data.action) : null,
     comment: data.comment ? String(data.comment) : '',
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
     projectId: data.projectId || '',
     raw: data.raw ? { ...data.raw } : null,
+  };
+}
+
+// The player's spawn point (Singleplayer): at most one. Wherever the saved game was, the player appears here facing rz
+export function makeSpawn(data) {
+  return {
+    uid: data.uid || newUid(),
+    kind: 'spawns',
+    x: +data.x || 0, y: +data.y || 0, z: +data.z || 0, rz: +data.rz || 0,
+    comment: '', preComment: '', blankLinesBefore: 0, projectId: data.projectId || '', raw: null,
   };
 }
 
@@ -262,6 +347,8 @@ export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0
 export const PB_STYLE_NAMES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE'];
 export const clampPbStyle = (v) => { const n = Number(v) | 0; return n >= 0 && n <= 2 ? n : 0; };
 export const clampPbSegments = (v) => Math.round(clampNum(v, 4, 60, 24));
+// Size of each ring segment, 1 = the default (SetPlayerProgressBarRingScale in the include)
+export const clampPbSegmentScale = (v) => Math.round(clampNum(v, 0.2, 3, 1) * 100) / 100;
 // Auto fill (AutoFillPlayerProgressBar): how far it fills, from 0 to the bar's maximum value
 export const clampPbAutoFillMax = (v, max) => clampNum(v, 0, Math.max(0, Number(max) || 0), Math.max(0, Number(max) || 0));
 // Cycle time, same as PB_AUTOFILL_RISE / HOLD_TOP / FALL / HOLD_BASE in the include
@@ -298,11 +385,12 @@ export function progressBarPawn(td, varName, fmt) {
   const hex = hexOf(td.color ?? 0xFF1C1CFF);
   const borderCol = Number(td.pbBorderColor || 0) >>> 0;
   const style = clampPbStyle(td.pbStyle);
-  // Include order: ..., direction, border, bordercolour, style, segments (everything is written, the border
+  // Include order: ..., direction, border, bordercolour, style, segments, segmentscale (everything is written, the border
   // included, because the server may change PB_BORDER_DEFAULT)
   const segs = style === 1 ? clampPbSegments(td.pbSegments) : 'PB_RING_SEGMENTS';
+  const segScale = style === 1 ? f(clampPbSegmentScale(td.pbSegmentScale)) : 'PB_RING_SEGMENT_SCALE';
   const lines = [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}, ${borderCol ? hexOf(borderCol) : '0'}, ${PB_STYLE_NAMES[style]}, ${segs});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}, ${borderCol ? hexOf(borderCol) : '0'}, ${PB_STYLE_NAMES[style]}, ${segs}, ${segScale});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
     `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
     `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
@@ -343,6 +431,68 @@ export function textDrawNative(td) {
   };
 }
 
+// Blink of a TextDraw (BlinkPlayerTextDraw, textdrawblink.inc): only for PlayerTextDraws
+export const TD_BLINK_DEFAULT = 500;
+export const clampTdBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, TD_BLINK_DEFAULT));
+export const tdBlinkActive = (td) => td.type !== 'progress' && Boolean(td.isPlayer) && Boolean(td.blink);
+// A sprite (font 4) and a preview model (font 5) blink as a whole: the character by character mode is only for texts
+// The blink colour only counts in the "colour" mode: vanishing and typing character by character are modes of their own
+export const tdBlinkColour = (td) => (tdBlinkPerChar(td) ? 0 : Number(td.blinkColor || 0) >>> 0);
+export const tdBlinkPerChar = (td) => Boolean(td.blinkPerChar) && ![4, 5].includes(td.font ?? 1);
+
+// The BlinkPlayerTextDraw call (with only the arguments that are not the default of the include); n = textDrawNative(td)
+export function textDrawBlinkPawn(td, varName, n) {
+  const hexOf = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  const perChar = tdBlinkPerChar(td);
+  const colour = tdBlinkColour(td);
+  const args = [`playerid`, varName, String(clampTdBlinkInterval(td.blinkInterval)), String(clampPbBlinkDuration(td.blinkDuration))];
+  if (perChar || colour) {
+    args.push(perChar ? 'true' : 'false');
+    if (colour) {
+      args.push(hexOf(colour));
+      // the text (needed to type it) and the original colour that comes back (a preview model blinks its background)
+      args.push(perChar ? JSON.stringify(n.text) : '""');
+      args.push(hexOf(n.font === 5 ? n.backgroundColor : n.color));
+    } else {
+      args.push('0', JSON.stringify(n.text));
+    }
+  }
+  return `BlinkPlayerTextDraw(${args.join(', ')});`;
+}
+
+// The lines that create and style a TextDraw (PlayerTextDraw* with playerid for the ones of a player, TextDraw* for the global ones),
+// and the blink when it has one
+export function textDrawPawn(td, varName, fmt, createText, comment = '') {
+  const n = textDrawNative(td);
+  const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  const player = Boolean(td.isPlayer);
+  const prefix = player ? 'PlayerText:' : 'Text:';
+  const call = (name, ...args) => `${player ? 'PlayerTextDraw' : 'TextDraw'}${name[0].toUpperCase()}${name.slice(1)}(${player ? 'playerid, ' : ''}${varName}${args.length ? ', ' + args.join(', ') : ''});`;
+  const lines = [`new ${prefix}${varName} = ${player ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${fmt(td.x)}, ${fmt(td.y)}, ${JSON.stringify(createText ?? n.text)});${comment}`];
+  lines.push(call('font', n.font));
+  lines.push(call('letterSize', fmt(n.letterSizeX), fmt(n.letterSizeY)));
+  lines.push(call('alignment', n.align));
+  lines.push(call('color', hex(n.color)));
+  lines.push(call('setOutline', n.outline));
+  lines.push(call('setShadow', n.shadow));
+  lines.push(call('setProportional', n.proportional));
+  if (n.useBox) {
+    lines.push(call('useBox', 1));
+    lines.push(call('boxColor', hex(n.boxColor)));
+  }
+  lines.push(call('textSize', fmt(n.textSizeX), fmt(n.textSizeY)));
+  lines.push(call('backgroundColor', hex(n.backgroundColor)));
+  if (td.selectable) lines.push(call('setSelectable', 1));
+  if (n.font === 5 && td.previewModel) {
+    lines.push(call('setPreviewModel', td.previewModel));
+    lines.push(call('setPreviewRot', fmt(td.previewRotX ?? -16), fmt(td.previewRotY ?? 0), fmt(td.previewRotZ ?? -55), fmt(td.previewZoom || 1)));
+    lines.push(call('setPreviewVehCol', td.previewColor1 ?? 1, td.previewColor2 ?? 1));
+  }
+  if (tdBlinkActive(td)) lines.push(textDrawBlinkPawn(td, varName, n));
+  else if (player) lines.push(`PlayerTextDrawShow(playerid, ${varName});`);
+  return lines;
+}
+
 export function makeTextDraw(data) {
   if (data.tdv === undefined && data.uid) data = migrateLegacyTextDraw(data);
   const alignVal = data.align !== undefined ? (data.align | 0) : (data.alignment !== undefined ? (data.alignment | 0) : 1);
@@ -350,7 +500,7 @@ export function makeTextDraw(data) {
     tdv: TD_VERSION,
     uid: data.uid || newUid(),
     name: data.name ? String(data.name) : 'Textdraw0',
-    isPlayer: Boolean(data.isPlayer),
+    isPlayer: data.isPlayer !== undefined ? Boolean(data.isPlayer) : true, // a new TextDraw is a PlayerTextDraw
     text: data.text !== undefined ? String(data.text) : 'SA Map Studio',
     x: data.x !== undefined ? +data.x : 320.0,
     y: data.y !== undefined ? +data.y : 240.0,
@@ -376,6 +526,11 @@ export function makeTextDraw(data) {
     previewZoom: data.previewZoom !== undefined ? +data.previewZoom : 1.0,
     previewColor1: data.previewColor1 !== undefined ? (data.previewColor1 | 0) : 1,
     previewColor2: data.previewColor2 !== undefined ? (data.previewColor2 | 0) : 1,
+    blink: Boolean(data.blink),
+    blinkInterval: clampTdBlinkInterval(data.blinkInterval ?? TD_BLINK_DEFAULT),
+    blinkDuration: clampPbBlinkDuration(data.blinkDuration ?? 0),
+    blinkPerChar: Boolean(data.blinkPerChar),
+    blinkColor: Number(data.blinkColor || 0) >>> 0,
     comment: data.comment ? String(data.comment) : '',
     ...(data.type === 'progress' ? {
       type: 'progress', isPlayer: true,
@@ -395,6 +550,7 @@ export function makeTextDraw(data) {
       pbAutoFill: Boolean(data.pbAutoFill),
       pbAutoFillMax: clampPbAutoFillMax(data.pbAutoFillMax ?? (data.pbMax ?? 100), data.pbMax ?? 100),
       pbSegments: clampPbSegments(data.pbSegments ?? 24),
+      pbSegmentScale: clampPbSegmentScale(data.pbSegmentScale ?? 1),
       pbBlinkBorderColor: Number(data.pbBlinkBorderColor || 0) >>> 0,
     } : {}),
   };
@@ -414,6 +570,7 @@ export function makeCheckpoint(data) {
     nexty: data.nexty !== undefined ? +data.nexty : y,
     nextz: data.nextz !== undefined ? +data.nextz : z,
     size: Math.max(0.5, +data.size || (isRace ? 6.0 : 4.0)),
+    action: data.action ? makeAction(data.action) : null,
     world: data.world ?? -1,
     interior: data.interior ?? -1,
     streamDist: +data.streamDist || 200.0,
@@ -448,7 +605,12 @@ export function makeMapIcon(data) {
   };
 }
 
-const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws', 'checkpoints', 'mapIcons'];
+const EXTRAS = ['doors', 'world', 'retex', 'handling', 'weapons', 'drawDist', 'customModels'];
+const EXTRA_LABELS = {
+  doors: 'Alterar entradas e saídas', world: 'Alterar o mundo', retex: 'Alterar texturas trocadas', handling: 'Alterar o handling',
+  weapons: 'Alterar armas', drawDist: 'Alterar distância de visão', customModels: 'Alterar modelos próprios',
+};
+const KINDS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'textDraws', 'checkpoints', 'mapIcons', 'spawns'];
 const MAKERS = {
   objects: makeObject,
   vehicles: makeVehicle,
@@ -460,11 +622,15 @@ const MAKERS = {
   textDraws: makeTextDraw,
   checkpoints: makeCheckpoint,
   mapIcons: makeMapIcon,
+  spawns: makeSpawn,
 };
 
 export class Project {
+  // 'mp' (SA-MP / open.mp) or 'sp' (Singleplayer, exported as a Modloader folder); new projects follow the mode chosen at startup
+  static defaultMode = 'mp';
   constructor(name = 'Meu mapa') {
     this.name = name;
+    this.mode = Project.defaultMode;
     this.objects = [];
     this.vehicles = [];
     this.actors = [];
@@ -475,6 +641,15 @@ export class Project {
     this.textDraws = [];
     this.checkpoints = [];
     this.mapIcons = [];
+    this.spawns = [];
+    this.doors = [];
+    this.world = makeWorld(null);
+    this.customModels = [];
+    this.retex = [];     // textures replaced in the whole map (Singleplayer)
+    this.handling = {};  // vehicle name -> its changed handling values
+    this.drawDist = {};  // model id -> view distance
+    this.weapons = {};   // weapon.dat line key -> its changed values
+    this.installedAs = ''; // Singleplayer: the name the mod was last installed with (the project may have been renamed since)
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
@@ -484,33 +659,86 @@ export class Project {
     this.redoStack = [];
     this.listeners = new Set();
     this.version = 0;
+    this._extras = this.snapshotExtras();
   }
 
   static fromJSON(data) {
     const p = new Project(data.name || 'Meu mapa');
+    p.mode = data.mode === 'sp' ? 'sp' : 'mp';
+    p.doors = (data.doors || []).map(makeDoor);
+    p.world = makeWorld(data.world);
+    p.customModels = (data.customModels || []).map(makeCustomModel);
+    p.retex = (data.retex || []).filter(r => r && r.txd && r.name && r.srcTxd && r.srcName).map(r => ({ txd: String(r.txd), name: String(r.name), srcTxd: String(r.srcTxd), srcName: String(r.srcName) }));
+    p.handling = {};
+    for (const [k, v] of Object.entries(data.handling || {})) if (Array.isArray(v) && v.length === 35) p.handling[k] = v.map(String);
+    p.installedAs = String(data.installedAs || '');
+    p.weapons = {};
+    for (const [k, v] of Object.entries(data.weapons || {})) if (Array.isArray(v) && v.length >= 8) p.weapons[k] = v.map(String);
+    p.drawDist = {};
+    for (const [k, v] of Object.entries(data.drawDist || {})) if (Number.isFinite(+v) && +v >= 20) p.drawDist[k] = +v;
     for (const k of KINDS) p[k] = (data[k] || []).map(MAKERS[k]);
     repairAttachments(p.objects, p.vehicles);
+    // The spawn point used to be a setting of the world
+    const old = data.world && (data.world.spawn || data.world.start);
+    if (old && Number.isFinite(+old.x) && !p.spawns.length) p.spawns.push(makeSpawn({ x: old.x, y: old.y, z: old.z, rz: old.rot || 0 }));
+    p.world.spawn = null;
     p.camera = data.camera || null;
     p.lastSelection = Array.isArray(data.lastSelection) ? data.lastSelection.filter(u => typeof u === 'string') : [];
     p.cameras = normalizeCameras(data.cameras);
     p.pwnHeader = data.pwnHeader || '';
     p.rawPawn = data.rawPawn || '';
+    p._extras = p.snapshotExtras();
     return p;
   }
 
   toJSON() {
     return {
-      app: 'SA Map Studio', format: 1, name: this.name, savedAt: new Date().toISOString(),
+      app: 'SA Map Studio', format: 1, name: this.name, mode: this.mode, savedAt: new Date().toISOString(),
       pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '',
       camera: this.camera, lastSelection: this.lastSelection || [], cameras: this.cameras,
       objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,
       labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws,
-      checkpoints: this.checkpoints, mapIcons: this.mapIcons
+      checkpoints: this.checkpoints, mapIcons: this.mapIcons, spawns: this.spawns, doors: this.doors, world: this.world, customModels: this.customModels,
+      retex: this.retex, handling: this.handling, drawDist: this.drawDist, weapons: this.weapons, installedAs: this.installedAs
     };
   }
 
-  // Changes outside the history (cameras): only warns to save
-  touch(what = 'cameras') { this.emit({ type: what, uids: [] }); }
+  // Changes outside the history (cameras): only warns to save. The Singleplayer settings (doors, world, textures, handling...) go into
+  // the undo history here: what was kept at the last change is compared with what is there now
+  touch(what = 'cameras') {
+    if (EXTRAS.includes(what)) this.recordExtras(what);
+    this.emit({ type: what, uids: [] });
+  }
+
+  snapshotExtras() { return JSON.stringify(Object.fromEntries(EXTRAS.map(k => [k, this[k]]))); }
+
+  recordExtras(key) {
+    const now = this.snapshotExtras();
+    if (now === this._extras) return;
+    const t = performance.now();
+    const last = this.undoStack[this.undoStack.length - 1];
+    if (last?.extras && last.extras.key === key && !this.redoStack.length && t - last.extras.at < 900) {
+      last.extras.after = now; last.extras.at = t; // typing in a field: one step
+    } else {
+      this.undoStack.push({ label: EXTRA_LABELS[key] || 'Alterar', before: [], after: [], extras: { key, before: this._extras, after: now, at: t }, _seq: ++_globalOpSeq });
+      if (this.undoStack.length > 200) this.undoStack.shift();
+      this.redoStack.length = 0;
+    }
+    this._extras = now;
+  }
+
+  applyExtras(json) {
+    const d = JSON.parse(json);
+    this.doors = (d.doors || []).map(makeDoor);
+    this.world = makeWorld(d.world);
+    this.customModels = (d.customModels || []).map(makeCustomModel);
+    this.retex = d.retex || [];
+    this.handling = d.handling || {};
+    this.drawDist = d.drawDist || {};
+    this.weapons = d.weapons || {};
+    this._extras = this.snapshotExtras();
+    this.emit({ type: 'extras', uids: [] });
+  }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   emit(change) { this.version++; for (const fn of this.listeners) fn(change); }
@@ -613,6 +841,7 @@ export class Project {
     if (!op) return null;
     this.applyStates(op.before);
     this.applyMeta(op.meta?.before);
+    if (op.extras) this.applyExtras(op.extras.before);
     if (this.checkpoints && this.checkpoints.length) {
       updateRaceCheckpointsChain(this.checkpoints);
     }
@@ -627,6 +856,7 @@ export class Project {
     if (!op) return null;
     this.applyStates(op.after);
     this.applyMeta(op.meta?.after);
+    if (op.extras) this.applyExtras(op.extras.after);
     if (this.checkpoints && this.checkpoints.length) {
       updateRaceCheckpointsChain(this.checkpoints);
     }

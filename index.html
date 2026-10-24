@@ -115,6 +115,7 @@
       <svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#i-brand-logo"/></svg>
       <span>SA Map Studio</span>
     </div>
+    <button id="btnMode" class="btn ghost mode-chip" title="Voltar à escolha entre Multiplayer e Singleplayer"><svg><use href="#i-globe"/></svg><span id="modeChipLabel">Multiplayer</span></button>
     <div class="project-box">
       <button id="btnProjects" class="btn ghost" title="Abrir, criar ou apagar projetos"><svg><use href="#i-folder"/></svg><span class="lbl">Projetos</span></button>
       <input id="projectName" class="project-name" aria-label="Nome do projeto" spellcheck="false">
@@ -190,8 +191,13 @@
       <button id="btn3DText" class="btn ghost" title="Criar Texto 3D no mapa"><svg><use href="#i-text3d"/></svg><span class="lbl2">3DTexts</span></button>
       <button id="btnSounds" class="btn ghost" title="Catálogo de sons (PlayerPlaySound) com prévia de áudio"><svg><use href="#i-sound"/></svg><span class="lbl2">Sons</span></button>
       <button id="btnColors" class="btn ghost" title="Seletor e conversor de cores"><svg><use href="#i-palette"/></svg><span class="lbl2">Cores</span></button>
+      <button id="btnDoors" class="btn ghost" title="Entradas e saídas de interiores: marcadores de porta que levam para dentro e para fora"><svg><use href="#i-pin"/></svg><span class="lbl2">Entradas</span></button>
+      <button id="btnWorld" class="btn ghost" title="Ponto inicial do jogador, clima e hora do mundo"><svg><use href="#i-globe"/></svg><span class="lbl2">Mundo</span></button>
+      <button id="btnData" class="btn ghost" title="Handling dos veículos, distância de visão e texturas trocadas no mapa todo"><svg><use href="#i-wrench"/></svg><span class="lbl2">Dados</span></button>
+      <button id="btnModels" class="btn ghost" title="Modelos próprios (.dff, .txd, .col) para usar como objetos"><svg><use href="#i-cube"/></svg><span class="lbl2">Modelos</span></button>
       <button id="btnImport" class="btn ghost" title="Importar mapa de qualquer arquivo"><svg><use href="#i-in"/></svg><span class="lbl2">Importar</span></button>
       <button id="btnExport" class="btn" title="Exportar mapa (Pawn, CreateObject, etc.)"><svg><use href="#i-out"/></svg><span class="lbl-export">Exportar</span></button>
+      <button id="btnSpTest" class="btn primary" title="Instala o mod no jogo, se precisar, e abre o jogo em seguida"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar no jogo</span></button>
       <button id="btnTest" class="btn primary" title="Abre o GTA e coloca você no mapa (servidor de teste local)"><svg><use href="#i-gamepad"/></svg><span class="lbl-test">Testar</span></button>
       <div class="pop-anchor">
         <button id="btnLanguage" class="btn ghost" title="Idioma do editor"><svg><use href="#i-lang"/></svg><span class="lbl2">Idioma</span></button>
@@ -248,6 +254,7 @@
         <div class="chips" id="texChips" role="group" aria-label="Filtros de textura"></div>
         <div class="list-meta"><span id="texMeta"></span><span class="thumb-note" id="texThumbs" hidden title="As miniaturas são feitas aos poucos, quando o mapa não está carregando, e ficam guardadas no disco"></span><button type="button" class="link-btn" id="btnTexReindex" title="Lê de novo as texturas do jogo (depois de instalar mods)">Atualizar lista</button></div>
         <div class="tex-target" id="texTarget"></div>
+        <label class="check" id="texGlobalWrap" title="A textura escolhida substitui a do modelo em todos os objetos do mapa que a usam"><input type="checkbox" id="texGlobal"> Trocar em todo o mapa</label>
         <div class="vlist" id="texList" tabindex="0"><div class="vlist-inner"></div></div>
       </div>
     </section>
@@ -445,6 +452,22 @@
       <div class="bar"><div class="bar-fill" id="bootBar"></div></div>
       <p class="boot-rights" id="bootRights">Todos os direitos reservados · SA Map Studio</p>
     </div>
+    <div class="mode-select" id="modeSelect" hidden>
+      <p>O que você quer criar?</p>
+      <div class="mode-cards">
+        <button type="button" class="mode-card" id="modeSp" data-mode="sp">
+          <svg><use href="#i-gamepad"/></svg>
+          <strong>Singleplayer</strong>
+          <span>Altere o mapa do jogo original e gere um mod para o Modloader.</span>
+        </button>
+        <button type="button" class="mode-card" id="modeMp" data-mode="mp">
+          <svg><use href="#i-globe"/></svg>
+          <strong>Multiplayer</strong>
+          <span>Mapas para servidores SA-MP e open.mp, exportados em Pawn.</span>
+        </button>
+      </div>
+      <button type="button" class="btn ghost" id="modeChangeFolder"><svg><use href="#i-folder"/></svg>Trocar a pasta do GTA</button>
+    </div>
     <form class="setup" id="setupForm" hidden>
       <p>Selecione a pasta de instalação do GTA San Andreas para carregar o editor.</p>
       <p class="setup-hint">O editor apenas lê os arquivos do seu jogo, sem alterar nada. Use a instalação original do GTA San Andreas.</p>
@@ -457,6 +480,123 @@
     </form>
   </div>
 </div>
+
+<div class="door-bar" id="doorBar" hidden>
+  <span id="doorBarLabel"></span>
+  <button type="button" class="btn small" data-door-mode="translate"><svg><use href="#i-move"/></svg>Mover</button>
+  <button type="button" class="btn small" data-door-mode="rotate"><svg><use href="#i-rotate"/></svg>Girar</button>
+  <button type="button" class="btn small primary" id="doorBarDone"><svg><use href="#i-check"/></svg>Concluir</button>
+</div>
+
+<dialog class="dialog" id="dlgModels">
+  <div class="dialog-body">
+    <header class="dialog-head"><h2>Modelos próprios</h2><button class="btn icon" id="cmClose" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="sp-lead">Importe um modelo .dff (com o .txd e a colisão .col, se tiver). Ele ganha um ID livre do jogo, aparece no catálogo em "Modelos próprios" e vai no mod quando algum objeto o usa.</p>
+    <form id="cmForm" class="cm-form">
+      <label class="field">Nome<input type="text" id="cmName" maxlength="40" spellcheck="false"></label>
+      <label class="field">Modelo (.dff)<input type="file" id="cmDff" accept=".dff"></label>
+      <label class="field">Texturas (.txd)<input type="file" id="cmTxd" accept=".txd"></label>
+      <label class="field">Colisão (.col)<input type="file" id="cmCol" accept=".col"></label>
+      <label class="field">Distância de desenho (m)<input type="number" id="cmDist" value="300" min="20" step="10"></label>
+      <button type="submit" class="btn primary" id="cmAdd"><svg><use href="#i-plus"/></svg>Importar modelo</button>
+    </form>
+    <ul class="sp-mod-list" id="cmList"></ul>
+    <p class="insp-note">Sem o .col o modelo não tem colisão no jogo.</p>
+  </div>
+</dialog>
+
+<dialog class="dialog" id="dlgData">
+  <div class="dialog-body">
+    <header class="dialog-head"><h2>Dados do jogo</h2><button class="btn icon" id="dataClose" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="sp-lead">Só o que for alterado aqui vai no mod; o resto continua como no jogo.</p>
+    <fieldset class="door-side"><legend>Handling dos veículos</legend>
+      <label class="field">Veículo (nome no handling.cfg)<input type="text" id="hdName" list="hdNames" spellcheck="false" autocomplete="off" placeholder="Ex.: INFERNUS"></label>
+      <datalist id="hdNames"></datalist>
+      <div class="door-row hd-fields" id="hdFields"></div>
+      <button type="button" class="btn small" id="hdReset" disabled>Voltar aos valores do jogo</button>
+      <ul class="sp-mod-list" id="hdChanged"></ul>
+    </fieldset>
+    <fieldset class="door-side"><legend>Armas (weapon.dat)</legend>
+      <label class="field">Arma<select id="wpName"></select></label>
+      <label class="field">Nível de habilidade<select id="wpRow"></select></label>
+      <label class="check"><input type="checkbox" id="wpAll" checked> Aplicar a todos os níveis desta arma</label>
+      <div class="door-row hd-fields" id="wpFields"></div>
+      <button type="button" class="btn small" id="wpReset" disabled>Voltar aos valores do jogo</button>
+      <ul class="sp-mod-list" id="wpChanged"></ul>
+    </fieldset>
+    <fieldset class="door-side"><legend>Distância de visão de um modelo</legend>
+      <div class="door-row">
+        <label class="door-num"><span>Distância (m)</span><input type="number" id="ddDist" value="500" min="20" max="3000" step="10"></label>
+        <button type="button" class="btn small" id="ddAdd">Usar no modelo do objeto selecionado</button>
+      </div>
+      <ul class="sp-mod-list" id="ddList"></ul>
+    </fieldset>
+    <fieldset class="door-side"><legend>Texturas trocadas no mapa todo</legend>
+      <p class="insp-note">Na aba Texturas, marque "Trocar em todo o mapa", selecione um objeto e o índice, e clique na textura nova.</p>
+      <ul class="sp-mod-list" id="rtList"></ul>
+    </fieldset>
+  </div>
+</dialog>
+
+<dialog class="dialog narrow" id="dlgWorld">
+  <div class="dialog-body">
+    <header class="dialog-head"><h2>Mundo</h2><button class="btn icon" id="worldClose" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="sp-lead">Ajustes do mundo para este mod. O que ficar desligado não é alterado.</p>
+    <fieldset class="door-side"><legend>Local de spawn do jogador</legend>
+      <p class="insp-note" id="wsSpawnNote"></p>
+      <div class="door-row">
+        <label class="door-num"><span>X</span><input type="number" step="0.1" id="wsX"></label>
+        <label class="door-num"><span>Y</span><input type="number" step="0.1" id="wsY"></label>
+        <label class="door-num"><span>Z</span><input type="number" step="0.1" id="wsZ"></label>
+        <label class="door-num"><span>Direção (°)</span><input type="number" step="1" id="wsRot"></label>
+      </div>
+      <div class="door-row">
+        <button type="button" class="btn small primary" id="wsSpawnAdd">Criar o local de spawn</button>
+        <button type="button" class="btn small" id="wsSpawnMove">Ajustar no mapa</button>
+        <button type="button" class="btn small" id="wsHere">Usar a câmera</button>
+        <button type="button" class="btn small danger" id="wsSpawnDel">Remover</button>
+      </div>
+    </fieldset>
+    <fieldset class="door-side"><legend>Clima e hora</legend>
+      <div class="door-row">
+        <label class="check"><input type="checkbox" id="wsWeatherOn"> Fixar o clima</label>
+        <label class="door-num"><span>Clima (0 a 45)</span><input type="number" step="1" min="0" max="45" id="wsWeather"></label>
+      </div>
+      <div class="door-row">
+        <label class="check"><input type="checkbox" id="wsHourOn"> Fixar a hora</label>
+        <label class="door-num"><span>Horário (HH:MM)</span><input type="time" id="wsTime"></label>
+      </div>
+    </fieldset>
+  </div>
+</dialog>
+
+<dialog class="dialog" id="dlgDoors">
+  <div class="dialog-body">
+    <header class="dialog-head"><h2>Entradas e saídas</h2><button class="btn icon" id="doorClose" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="sp-lead">Uma porta leva do lado de fora para dentro de um interior e de volta. Os marcadores aparecem no mapa: amarelo fora, azul dentro.</p>
+    <div class="door-grid">
+      <div class="door-side-list"><ul id="doorList"></ul><button class="btn primary" id="doorAdd"><svg><use href="#i-plus"/></svg>Nova entrada</button></div>
+      <div class="door-form" id="doorForm"></div>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="dialog narrow" id="dlgSp">
+  <div class="dialog-body">
+    <header class="dialog-head"><h2>Mod para o Modloader</h2><button class="btn icon" id="spClose" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
+    <p class="sp-lead">Gera uma pasta de mod com o que você fez neste projeto. Os arquivos originais do jogo nunca são alterados.</p>
+    <div class="export-stats" id="spStats"></div>
+    <ul class="sp-files" id="spFiles"></ul>
+    <p class="sp-status" id="spStatus"></p>
+    <div class="sp-mods"><div class="insp-label">Mods instalados no jogo</div><ul class="sp-mod-list" id="spMods"></ul></div>
+    <div class="sp-actions">
+      <button class="btn" id="spOpen"><svg><use href="#i-folder"/></svg>Abrir pasta</button>
+      <button class="btn" id="spZip"><svg><use href="#i-out"/></svg>Exportar ZIP</button>
+      <button class="btn" id="spBuild"><svg><use href="#i-out"/></svg>Gerar mod</button>
+      <button class="btn" id="spInstall"><svg><use href="#i-in"/></svg>Instalar mod</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog class="dialog" id="dlgExport">
   <form method="dialog" class="dialog-body">
@@ -500,7 +640,8 @@
 <dialog class="dialog" id="dlgImport">
   <form method="dialog" class="dialog-body">
     <header class="dialog-head"><h2>Importar mapa</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
-    <p class="dialog-text">Abra <b>qualquer arquivo</b> ou cole o código: o editor descobre o formato sozinho e traz os objetos com as texturas (SetObjectMaterial), os textos (SetObjectMaterialText), veículos, objetos removidos e câmeras. Entende código Pawn, bancos SQLite, projetos .json, mapas (.map) e IPL do jogo.</p>
+    <p class="dialog-text sp-only">Abra <b>qualquer arquivo</b> ou cole o código: o editor descobre o formato sozinho e traz os objetos, as texturas trocadas e os objetos removidos. Entende código Pawn, bancos SQLite, projetos .json, mapas (.map) e IPL do jogo. O que o Singleplayer não suporta é ignorado.</p>
+    <p class="dialog-text mp-only">Abra <b>qualquer arquivo</b> ou cole o código: o editor descobre o formato sozinho e traz os objetos com as texturas (SetObjectMaterial), os textos (SetObjectMaterialText), veículos, objetos removidos e câmeras. Entende código Pawn, bancos SQLite, projetos .json, mapas (.map) e IPL do jogo.</p>
     <div class="drop" id="importDrop">
       <svg><use href="#i-in"/></svg>
       <span>Arraste o arquivo para cá ou</span>
@@ -1009,6 +1150,20 @@
           <label class="check"><input type="checkbox" id="tdIsPlayer"> PlayerTextDraw</label>
         </div>
 
+        <div class="td-std">
+          <label class="check" style="font-size: 12px;" title="Só para PlayerTextDraw (BlinkPlayerTextDraw, include textdrawblink.inc)"><input type="checkbox" id="tdBlink"> Piscar (BlinkPlayerTextDraw)</label>
+          <div id="tdBlinkFields" style="display: none; flex-direction: column; gap: 6px; margin-top: 4px;">
+            <div class="pair">
+              <label title="Tempo entre cada troca, de 50 a 60000 ms">Intervalo (ms)<input type="number" id="tdBlinkInterval" step="10" min="50" max="60000"></label>
+              <label title="Tempo total da piscada; 0 pisca até ser parada">Duração (ms, 0 = sem fim)<input type="number" id="tdBlinkDuration" step="100" min="0" max="86400000"></label>
+            </div>
+            <label class="check" style="font-size: 12px;" title="Só para texto: esconde tudo e mostra os caracteres um a um, um por intervalo. Com duração, o intervalo se adapta para todos caberem nela."><input type="checkbox" id="tdBlinkPerChar"> Mostrar caractere por caractere</label>
+            <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdBlinkOwn" checked> Piscar sumindo e aparecendo</label>
+            <label id="tdBlinkColorRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;" title="O TextDraw não some: fica nesta cor e depois volta à original. Trechos coloridos por tags (~y~...) mantêm a cor.">Cor da piscada<input type="color" id="tdBlinkColor" value="#ffffff"></label>
+            <div style="font-size: 11px; opacity: 0.8;">Requer a include textdrawblink.inc no servidor.</div>
+          </div>
+        </div>
+
         <div id="tdProgressPanel" style="display: none; background: color-mix(in srgb, var(--sodium) 8%, transparent); border: 1px solid color-mix(in srgb, var(--sodium) 30%, transparent); border-radius: 4px; padding: 6px; flex-direction: column; gap: 6px;">
           <div class="pop-title" style="margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-hi);">Barra de progresso</div>
           <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Nome<input type="text" id="tdPbName" spellcheck="false" placeholder="BarraFome"></label>
@@ -1021,6 +1176,7 @@
               </select>
             </label>
             <label id="tdPbSegmentsRow" style="display: none;" title="Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)">Segmentos (4 a 60)<input type="number" id="tdPbSegments" step="1" min="4" max="60"></label>
+            <label id="tdPbSegScaleRow" style="display: none;" title="Tamanho de cada segmento do anel: 1 é o padrão, 2 o dobro, 0,5 a metade">Escala dos segmentos (0,2 a 3)<input type="number" id="tdPbSegScale" step="0.05" min="0.2" max="3"></label>
           </div>
           <div id="tdPbStyleNote" class="insp-note" style="display: none; font-size: 11px; margin: 0;"></div>
           <div class="pair">

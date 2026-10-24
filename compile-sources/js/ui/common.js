@@ -234,7 +234,7 @@ export function showConfirm(message, {
 }
 
 // Simple alert dialog (OK button only)
-export function showAlert(message, { title = 'SA Map Studio', okText = 'OK' } = {}) {
+export function showAlert(message, { title = 'SA Map Studio', okText = 'OK', html = false } = {}) {
   return new Promise((resolve) => {
     let dlg = $('#dlgConfirm');
     if (!dlg) {
@@ -249,7 +249,7 @@ export function showAlert(message, { title = 'SA Map Studio', okText = 'OK' } = 
     const okBtn = $('#confirmOkBtn', dlg);
 
     if (t) t.textContent = title;
-    if (m) m.textContent = message;
+    if (m) { if (html) m.innerHTML = message; else m.textContent = message; m.style.whiteSpace = html ? 'normal' : ''; }
     if (cancelBtn) cancelBtn.style.display = 'none';
     if (okBtn) {
       okBtn.textContent = okText;

@@ -5,6 +5,7 @@ import { attachHoverPreview } from './hoverPreview.js';
 import { TEXTURE_CATEGORIES } from '../world/categories.js';
 import { isText } from '../editor/materials.js';
 import { app, $, $$, esc, plural, store, toast, modelLabel, showPrompt } from './common.js';
+import { addRetex } from './dataDialog.js';
 
 let filtered = [];
 let filter = 'Todas';
@@ -270,16 +271,31 @@ export function updateTarget() {
   renderTexRows();
 }
 
+// Singleplayer: the texture of the model's slot is replaced in the whole map (every object that uses it), not only in the selected one
+async function applyGlobalTexture(item, objs, indices) {
+  const slots = await app.models.slots(objs[0].item.model);
+  let done = 0;
+  for (const i of indices) {
+    const slot = slots[i];
+    if (!slot?.texture || !slot.txd) continue;
+    addRetex(String(slot.txd).toLowerCase(), String(slot.texture).toLowerCase(), item.txd, item.name);
+    done++;
+  }
+  toast(done ? `${item.name} vai trocar a textura em todo o mapa (veja em Dados)` : 'Esse índice não tem textura para trocar', done ? 'ok' : 'warn', 5000);
+}
+
 export function applyLibraryTexture(item) {
   const ed = app.editor;
   const objs = ed.selectedObjects();
   if (!objs.length) { toast('Selecione um objeto do projeto primeiro', 'warn'); return; }
+  const global = app.project?.mode === 'sp' && $('#texGlobal')?.checked;
   let indices = ed.matSel;
   if (!indices.length) {
     const n = ed.slotInfo(objs[0].item.model).length;
     if (n <= 1) { indices = [0]; ed.setMatSel([0]); }
     else { toast(`Esse objeto tem ${n} índices de material. Marque quais vão receber a textura no inspetor, ou use a ferramenta Textura (T) e clique na parte.`, 'warn', 6000); return; }
   }
+  if (global) { applyGlobalTexture(item, objs, indices); return; }
   const n = ed.applyTexture(objs.map(s => s.uid), indices, { model: item.model, txd: item.txd, texture: item.name });
   const rec = store.get('texRecent', []).filter(k => k !== item.key);
   rec.unshift(item.key);

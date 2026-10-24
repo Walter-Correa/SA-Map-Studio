@@ -26,7 +26,7 @@ const round = (v, d = 4) => Math.round((+v || 0) * 10 ** d) / 10 ** d;
 
 export function getTotalProjectItems() {
   const p = app.project;
-  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.checkpoints?.length || 0) + (p.mapIcons?.length || 0);
+  return (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.labels?.length || 0) + (p.pickups?.length || 0) + (p.checkpoints?.length || 0) + (p.mapIcons?.length || 0) + (p.spawns?.length || 0);
 }
 
 export function getVehicleAttachedObjects(vehicleUid, project = app.project) {
@@ -201,6 +201,9 @@ export function renderInspector() {
   } else if (kind === 'mapIcons') {
     el.innerHTML = mapIconInspector(item);
     bindMapIcon(item);
+  } else if (kind === 'spawns') {
+    el.innerHTML = spawnInspector(item);
+    bindActor(item);
   } else {
     el.innerHTML = objectInspector(item);
     bindItem(item);
@@ -221,19 +224,20 @@ function titleThumb(model, isActor = false) {
 function emptyInspector() {
   const p = app.project;
   const c = p.cameras || { shots: [], paths: [] };
-  const total = getTotalProjectItems() + (p.gangZones?.length || 0);
+  const sp = p.mode === 'sp';
+  const total = sp ? (p.objects?.length || 0) + (p.vehicles?.length || 0) + (p.actors?.length || 0) + (p.pickups?.length || 0) + (p.checkpoints?.length || 0) + (p.mapIcons?.length || 0) + (p.spawns?.length || 0) : getTotalProjectItems() + (p.gangZones?.length || 0);
   return `<div class="insp-empty"><h3>${esc(p.name)}</h3>
     <div class="stat-line"><span>Objetos</span><b>${p.objects?.length || 0}</b></div>
     <div class="stat-line"><span>Veículos</span><b>${p.vehicles?.length || 0}</b></div>
     <div class="stat-line"><span>Actors</span><b>${p.actors?.length || 0}</b></div>
-    <div class="stat-line"><span>Textos 3D</span><b>${p.labels?.length || 0}</b></div>
+    ${sp ? '' : `<div class="stat-line"><span>Textos 3D</span><b>${p.labels?.length || 0}</b></div>`}
     <div class="stat-line"><span>Pickups</span><b>${p.pickups?.length || 0}</b></div>
     <div class="stat-line"><span>Checkpoints</span><b>${p.checkpoints?.length || 0}</b></div>
     <div class="stat-line"><span>MapIcons</span><b>${p.mapIcons?.length || 0}</b></div>
-    <div class="stat-line"><span>GangZones</span><b>${p.gangZones?.length || 0}</b></div>
-    <div class="stat-line"><span>TextDraws</span><b>${p.textDraws?.length || 0}</b></div>
+    ${sp ? '' : `<div class="stat-line"><span>GangZones</span><b>${p.gangZones?.length || 0}</b></div>
+    <div class="stat-line"><span>TextDraws</span><b>${p.textDraws?.length || 0}</b></div>`}
     <div class="stat-line"><span>Objetos removidos</span><b>${p.removed?.length || 0}</b></div>
-    <div class="stat-line"><span>Câmeras</span><b>${c.shots.length + c.paths.length}</b></div>
+    ${sp ? '' : `<div class="stat-line"><span>Câmeras</span><b>${c.shots.length + c.paths.length}</b></div>`}
     ${total > 0 ? `<button type="button" class="btn primary block" id="btnSelectAll" style="margin: 12px 0 16px;"><svg><use href="#i-move"/></svg>Mover todo o projeto (${total} itens)</button>` : ''}
     <ul>
       <li>Escolha um objeto na aba Objetos e clique no mapa para posicionar.</li>
@@ -328,9 +332,9 @@ function objectInspector(o) {
           <label>Alvo Z<input type="number" step="0.1" data-move="targetZ" value="${fmt(o.move.targetZ)}"></label>
           <label>Velocidade<input type="number" step="0.5" min="0.1" data-move="speed" value="${fmt(o.move.speed)}"></label>
         </div>
-        <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkMoveRot" ${o.move.targetRx !== -1000 ? 'checked' : ''}> Rotacionar durante o movimento</label>
+        <label class="check" data-mp style="margin-top:6px;"><input type="checkbox" id="chkMoveRot" ${o.move.targetRx !== -1000 ? 'checked' : ''}> Rotacionar durante o movimento</label>
         ${o.move.targetRx !== -1000 ? `
-          <div class="pair" style="margin-top:4px;">
+          <div class="pair" data-mp style="margin-top:4px;">
             <label>Alvo RX<input type="number" step="1" data-move="targetRx" value="${fmt(o.move.targetRx)}"></label>
             <label>Alvo RY<input type="number" step="1" data-move="targetRy" value="${fmt(o.move.targetRy)}"></label>
             <label>Alvo RZ<input type="number" step="1" data-move="targetRz" value="${fmt(o.move.targetRz)}"></label>
@@ -346,7 +350,7 @@ function objectInspector(o) {
     </div>
 
     <!-- AttachObjectToVehicle / AttachObjectToObject -->
-    <div class="insp-section">
+    <div class="insp-section" data-mp>
       <div class="insp-label">Acoplar (AttachObject)</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkAttach" ${o.attach ? 'checked' : ''} ${hasChildren ? 'disabled' : ''}> Ativar acoplamento</label>
       ${hasChildren ? '<div class="insp-note" style="color: var(--gold-400);">Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.</div>' : (o.attach ? `
@@ -392,17 +396,17 @@ function objectInspector(o) {
     <div class="insp-section"><div class="insp-label">Onde aparece</div>
       <div class="pair">
         <label>Interior<input type="number" step="1" min="-1" data-field="interior" value="${o.interior}"></label>
-        <label>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${o.world}"></label>
+        <label data-mp>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${o.world}"></label>
       </div>
       <div class="insp-note">-1 significa todos.</div>
     </div>
-    <div class="insp-section"><div class="insp-label">Distâncias (0 = padrão)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Distâncias (0 = padrão)</div>
       <div class="pair">
         <label>Stream distance<input type="number" step="10" min="0" data-field="streamDist" value="${o.streamDist}"></label>
         <label>Draw distance<input type="number" step="10" min="0" data-field="drawDist" value="${o.drawDist}"></label>
       </div>
     </div>
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Portão da casa" value="${esc(o.comment || '')}" style="width:100%;">
     </div>
     ${first ? '' : mats}`;
@@ -420,27 +424,36 @@ function vehicleInspector(v) {
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar veículo</button>
     ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [v.x, v.y, v.z], 0.1)}</div>
-    <div class="insp-section"><div class="insp-label">Ângulo e respawn</div>
-      <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(v.rz)}"></label><label>Respawn (s)<input type="number" step="10" min="-1" data-field="respawn" value="${v.respawn}"></label></div>
+    <div class="insp-section"><div class="insp-label">${app.project.mode === 'sp' ? 'Ângulo' : 'Ângulo e respawn'}</div>
+      <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(v.rz)}"></label><label data-mp>Respawn (s)<input type="number" step="10" min="-1" data-field="respawn" value="${v.respawn}"></label></div>
     </div>
     ${speedSection()}
     ${actionGrid()}
 
+    <!-- Singleplayer protections (above the colors) -->
+    <div class="insp-section sp-only">
+      <div class="insp-label">Proteção do veículo</div>
+      <label class="check"><input type="checkbox" id="chkVehIndestructible" ${v.indestructible ? 'checked' : ''}> Indestrutível (sem dano no motor, na lataria e nos pneus)</label>
+      <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkVehNpcLock" ${v.npcLock ? 'checked' : ''}> Só o jogador usa o veículo (NPCs não entram)</label>
+      <label class="field">Volta ao local depois de destruído (segundos)<input type="number" id="vehSpRespawn" min="1" max="3600" step="1" value="${v.spRespawn || 30}"></label>
+      <div class="insp-note">Estas opções usam o CLEO no jogo.</div>
+    </div>
+
     <!-- Cores -->
     <div class="insp-section">
-      <div class="insp-label">Cores do veículo (0 a 255)</div>
+      <div class="insp-label">${app.project.mode === 'sp' ? 'Cores do veículo (0 a 126)' : 'Cores do veículo (0 a 255)'}</div>
       ${isVehicleValidForColor(v.model) ? `
       <div class="pair">
         <label>Cor 1
           <div style="display:flex; gap:6px; align-items:center;">
             <button type="button" class="slot-swatch" id="btnVehColor1" style="width:26px; height:26px; background:${c1Hex}; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="Abrir paleta de 256 cores"></button>
-            <input type="number" step="1" min="-1" max="255" data-field="color1" value="${v.color1}">
+            <input type="number" step="1" min="-1" max="${app.project.mode === 'sp' ? 126 : 255}" data-field="color1" value="${v.color1}">
           </div>
         </label>
         <label>Cor 2
           <div style="display:flex; gap:6px; align-items:center;">
             <button type="button" class="slot-swatch" id="btnVehColor2" style="width:26px; height:26px; background:${c2Hex}; border-radius:4px; border:1px solid rgba(255,255,255,0.2); cursor:pointer;" title="Abrir paleta de 256 cores"></button>
-            <input type="number" step="1" min="-1" max="255" data-field="color2" value="${v.color2}">
+            <input type="number" step="1" min="-1" max="${app.project.mode === 'sp' ? 126 : 255}" data-field="color2" value="${v.color2}">
           </div>
         </label>
       </div>
@@ -449,7 +462,7 @@ function vehicleInspector(v) {
       <div class="insp-note warn">Este modelo de veículo não suporta alteração de cores.</div>
       `}
     </div>
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Carro da polícia" value="${esc(v.comment || '')}" style="width:100%;">
     </div>
 
@@ -504,7 +517,7 @@ function vehicleInspector(v) {
     </div>
 
     <!-- Objetos Acoplados ao Veículo (AttachObjectToVehicle) -->
-    <div class="insp-section">
+    <div class="insp-section" data-mp>
       <div class="insp-label">Objetos Acoplados <span class="tag">${attachedObjs.length} / ${MAX_VEHICLE_ATTACHED_OBJECTS}</span></div>
       <div class="slots" style="max-height:160px; overflow-y:auto;">
         ${attachedObjs.map(obj => `
@@ -533,6 +546,23 @@ function vehicleInspector(v) {
       <details class="pawn-preview" style="margin-top:8px;"><summary>Código Pawn deste veículo</summary><pre class="code small" id="vehCode"></pre>
         <button type="button" class="btn small" data-vehcopy><svg><use href="#i-copy"/></svg>Copiar</button></details>
     </div>`;
+}
+
+import { npcSection, bindNpc, actionSection, bindAction } from './spInspector.js';
+
+function spawnInspector(s) {
+  return `<div class="insp-title">
+      <div style="width:48px; height:48px; background:rgba(123,255,107,0.2); border:2px solid #7bff6b; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#7bff6b; font-size:11px; font-weight:bold;">SP</div>
+      <div><div class="insp-name">Local de spawn</div><div class="insp-sub">O jogador começa aqui, olhando para onde a seta aponta</div></div>
+    </div>
+    <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar o local de spawn</button>
+    ${scopeSection()}
+    <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [s.x, s.y, s.z], 0.1)}</div>
+    <div class="insp-section"><div class="insp-label">Direção</div>
+      <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(s.rz)}"></label></div>
+    </div>
+    ${speedSection()}
+    ${actionGrid()}`;
 }
 
 function actorInspector(a) {
@@ -579,16 +609,19 @@ function actorInspector(a) {
     <!-- Propriedades -->
     <div class="insp-section"><div class="insp-label">Propriedades</div>
       <div class="pair">
-        <label>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${a.world ?? -1}"></label>
-        <label>Vida (Health)<input type="number" step="1" min="0" max="1000" data-field="health" value="${a.health ?? 100}"></label>
+        <label data-mp>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${a.world ?? -1}"></label>
+        <label data-mp>Vida (Health)<input type="number" step="1" min="0" max="1000" data-field="health" value="${a.health ?? 100}"></label>
       </div>
       <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkInvulnerable" ${a.invulnerable ? 'checked' : ''}> Invulnerável (SetActorInvulnerable)</label>
     </div>
 
+    ${npcSection(a)}
+
     <!-- Animação -->
     <div class="insp-section">
       <div class="insp-label">Animação (ApplyActorAnimation)</div>
-      <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkActorAnim" ${a.anim ? 'checked' : ''}> Ativar animação</label>
+      <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkActorAnim" ${a.anim ? 'checked' : ''} ${app.project?.mode === 'sp' && a.weapon ? 'disabled' : ''}> Ativar animação</label>
+      ${app.project?.mode === 'sp' && a.weapon ? '<div class="insp-note">Com uma arma o NPC não usa animação.</div>' : ''}
       ${a.anim ? `
         <button type="button" class="btn small block" id="btnOpenAnimPicker" style="margin: 6px 0 8px;"><svg><use href="#i-search"/></svg> Abrir Galeria de Animações</button>
         <div style="padding: 7px 10px; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-s); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
@@ -616,7 +649,7 @@ function actorInspector(a) {
         </div>
       ` : '<div class="insp-note">Aplica uma animação contínua ou temporária ao spawnar o personagem.</div>'}
     </div>
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Guarda da entrada" value="${esc(a.comment || '')}" style="width:100%;">
     </div>
     <details class="pawn-preview" style="margin-top:8px;"><summary>Código Pawn deste actor</summary><pre class="code small" id="actorCode"></pre>
@@ -1199,6 +1232,14 @@ function bindVehicle(v) {
   const uid = v.uid, project = app.editor.findProjectOf(uid) || app.project;
   bindVecArrows(uid, project);
 
+  for (const [id, key] of [['#chkVehIndestructible', 'indestructible'], ['#chkVehNpcLock', 'npcLock']]) {
+    const el = $(id);
+    if (el) el.onchange = () => project.updateItems('Alterar proteção do veículo', [uid], (o) => { o[key] = el.checked; });
+  }
+
+  const spRespawn = $('#vehSpRespawn');
+  if (spRespawn) spRespawn.onchange = () => project.updateItems('Alterar o reaparecimento do veículo', [uid], (o) => { o.spRespawn = Math.max(1, Math.min(3600, Math.round(parseFloat(spRespawn.value) || 30))); });
+
   const btnC1 = $('#btnVehColor1');
   if (btnC1) {
     btnC1.onclick = () => {
@@ -1467,11 +1508,14 @@ function bindActor(a) {
     thumbImg.onclick = () => btnOpenSkin?.click();
   }
 
+  bindNpc(a, project, renderInspector);
+
   const chkInv = $('#chkInvulnerable');
   if (chkInv) {
     chkInv.onchange = () => {
       project.updateItems('Alterar Invulnerabilidade', [uid], (o) => { o.invulnerable = chkInv.checked; });
       updateActorCode(project.find(uid));
+      if (app.project?.mode === 'sp') renderInspector();
     };
   }
 
@@ -1812,7 +1856,7 @@ function materialSection(objs, mixedModels = false) {
       <button type="button" class="btn seg-btn${matTab === 'text' ? ' active' : ''}" data-mattab="text"><svg><use href="#i-text"/></svg>Texto</button>
     </div>`;
   const label = idx.length > 1 ? `índices ${idx.join(', ')}` : `índice ${idx[0]}`;
-  const body = matTab === 'text' ? textEditor(cur, label) : textureEditor(cur, label, idx, info);
+  const body = matTab === 'text' && app.project.mode !== 'sp' ? textEditor(cur, label) : textureEditor(cur, label, idx, info);
   return `<div class="insp-section mat">${head}${tabs}${body}
     <details class="pawn-preview"><summary>Código Pawn deste objeto</summary><pre class="code small" id="matCode"></pre>
       <button type="button" class="btn small" data-matcopy><svg><use href="#i-copy"/></svg>Copiar</button></details>
@@ -2093,7 +2137,7 @@ function labelInspector(l) {
       </label>
     </div>
 
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Texto da porta de entrada" value="${esc(l.comment || '')}" style="width:100%;">
     </div>
 
@@ -2381,7 +2425,7 @@ function labelCreateInspector(draft) {
       </label>
     </div>
 
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" id="lblDraftComment" placeholder="// Ex: Texto da porta de entrada" value="${esc(draft.comment || '')}" style="width:100%;">
     </div>
   `;
@@ -2544,13 +2588,14 @@ function pickupInspector(p) {
     ${speedSection()}
     ${actionGrid()}
 
-    <div class="insp-section">
+    <div class="insp-section" data-mp>
       <div class="pair">
         <label>Mundo Virtual<input type="number" step="1" data-field="world" value="${p.world ?? 0}"></label>
       </div>
     </div>
+    ${actionSection(p)}
 
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Colete do spawn" value="${esc(p.comment || '')}" style="width:100%;">
     </div>
 
@@ -2568,6 +2613,7 @@ function bindPickup(p) {
   bindSpeedControls();
   bindStringFields(p.uid);
   const uid = p.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindAction(p, project, renderInspector);
   bindVecArrows(uid, project);
 
   const sel = $('#pkModelSelect');
@@ -2808,7 +2854,7 @@ function checkpointCreateInspector(d) {
       </div>
     </div>
 
-    <div class="insp-section">
+    <div class="insp-section" data-mp>
       <div class="insp-label">Categoria do Checkpoint</div>
       <div class="scope-toggle" style="margin:0;">
         <button type="button" class="btn small ${d.cpKind !== 'race' ? 'active' : ''}" data-cpdraft-kind="normal">Normal</button>
@@ -2944,15 +2990,16 @@ function checkpointInspector(cp) {
     ${speedSection()}
     ${actionGrid()}
 
+    ${actionSection(cp)}
     <div class="insp-section">
       <div class="insp-label">Categoria e Tamanho</div>
-      <div class="scope-toggle" style="margin-bottom:8px;">
+      <div class="scope-toggle" style="margin-bottom:8px;" data-mp>
         <button type="button" class="btn small ${!isRace ? 'active' : ''}" data-cp-kind="normal">Normal</button>
         <button type="button" class="btn small ${isRace ? 'active' : ''}" data-cp-kind="race">Race (0-4)</button>
       </div>
       <div class="pair">
         <label>Tamanho (size)<input type="number" step="0.5" min="0.5" max="100" data-field="size" value="${fmt(cp.size ?? 4.0, 2)}"></label>
-        <label>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${cp.world ?? -1}"></label>
+        <label data-mp>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${cp.world ?? -1}"></label>
       </div>
     </div>
 
@@ -2976,7 +3023,7 @@ function checkpointInspector(cp) {
       </div>
     </div>` : ''}
 
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Linha de chegada" value="${esc(cp.comment || '')}" style="width:100%;">
     </div>
 
@@ -2994,6 +3041,7 @@ function bindCheckpoint(cp) {
   bindSpeedControls();
   bindStringFields(cp.uid);
   const uid = cp.uid, project = app.editor.findProjectOf(uid) || app.project;
+  bindAction(cp, project, renderInspector);
   bindVecArrows(uid, project);
 
   $$('#inspector [data-cp-kind]').forEach(btn => {
@@ -3131,19 +3179,19 @@ function mapIconInspector(mi) {
       <button type="button" class="btn small block" id="btnOpenMiRadar" style="margin-bottom:8px;"><svg><use href="#i-pin"/></svg>Abrir Editor 2D de MapIcons</button>
       <div class="pair">
         <label>MarkerType (0-63)<input type="number" step="1" min="0" max="63" data-field="type" value="${mi.type ?? 0}"></label>
-        <label>Estilo (0-3)
+        <label data-mp>Estilo (0-3)
           <select id="miStyleSelect" style="width:100%;">
             ${MAPICON_STYLES.map(s => `<option value="${s.id}" ${(mi.style ?? 0) === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
           </select>
         </label>
       </div>
       <div class="pair" style="margin-top:6px;">
-        <label>Cor Hex (ID 0)<input type="text" id="miColorHex" value="${'0x' + ((mi.color ?? 0xFF0000FF) >>> 0).toString(16).toUpperCase().padStart(8, '0')}" style="font-family:monospace;"></label>
-        <label>Stream Dist.<input type="number" step="10" min="10" data-field="streamDist" value="${mi.streamDist ?? 200}"></label>
+        <label data-mp>Cor Hex (ID 0)<input type="text" id="miColorHex" value="${'0x' + ((mi.color ?? 0xFF0000FF) >>> 0).toString(16).toUpperCase().padStart(8, '0')}" style="font-family:monospace;"></label>
+        <label data-mp>Stream Dist.<input type="number" step="10" min="10" data-field="streamDist" value="${mi.streamDist ?? 200}"></label>
       </div>
     </div>
 
-    <div class="insp-section"><div class="insp-label">Comentário / Anotação (Pawn)</div>
+    <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Pizzaria" value="${esc(mi.comment || '')}" style="width:100%;">
     </div>
 

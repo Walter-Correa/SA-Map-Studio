@@ -80,17 +80,26 @@ async function doSave(project) {
     project.lastSelection = resumableSelection(project);
   }
   try {
-    const res = await fetch('/api/projects/' + encodeURIComponent(project.name), { method: 'POST', body: JSON.stringify(project.toJSON()) });
+    const res = await fetch(projUrl(project.name), { method: 'POST', body: JSON.stringify(project.toJSON()) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    if (app.project === project) { currentName = project.name; store.set('lastProject', project.name); setSaveState('Salvo'); }
+    if (app.project === project) { currentName = project.name; store.set(lastKey(), project.name); setSaveState('Salvo'); }
   } catch {
     if (app.project === project) setSaveState('Erro ao salvar', 'error');
     store.set('backup', project.toJSON());
   }
 }
 
+// Each mode keeps its projects in its own folder (projects/multiplayer, projects/singleplayer)
+const projUrl = (name) => '/api/projects/' + encodeURIComponent(name) + '?mode=' + Project.defaultMode;
+const lastKey = () => (Project.defaultMode === 'sp' ? 'lastProjectSp' : 'lastProject');
+
 export async function listProjects() {
-  try { return await (await fetch('/api/projects')).json(); } catch { return { projects: [], folder: '' }; }
+  try {
+    const data = await (await fetch('/api/projects?mode=' + Project.defaultMode)).json();
+    // Each mode only sees its own projects
+    data.projects = (data.projects || []).filter(p => (p.mode || 'mp') === Project.defaultMode);
+    return data;
+  } catch { return { projects: [], folder: '' }; }
 }
 
 export async function uniqueName(base) {
@@ -102,13 +111,13 @@ export async function uniqueName(base) {
 }
 
 async function fetchProject(name) {
-  const res = await fetch('/api/projects/' + encodeURIComponent(name));
+  const res = await fetch(projUrl(name));
   if (!res.ok) throw new Error('Projeto não encontrado');
   return Project.fromJSON(await res.json());
 }
 
 // Camera on open or import: computes the center of all the project's items and focuses on the item closest to it
-const SPATIAL_KINDS = ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons'];
+const SPATIAL_KINDS = ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns'];
 
 export function projectFocusItem(p) {
   const items = SPATIAL_KINDS.flatMap(k => p?.[k] || [])
@@ -159,7 +168,7 @@ export function useProject(p, { keepCamera = false } = {}) {
   } else positionCameraOverProject(p);
   app.streamer.invalidate();
   currentName = p.name;
-  store.set('lastProject', p.name);
+  store.set(lastKey(), p.name);
   setSaveState('Salvo');
   app.emit('project', p);
 }
@@ -176,12 +185,12 @@ export async function switchTo(nameOrProject) {
 }
 
 export async function openInitialProject() {
-  const last = store.get('lastProject', null);
+  const last = store.get(lastKey(), null);
   if (last) { try { useProject(await fetchProject(last)); app.initialProjectLoaded = true; return; } catch { /* abre outro */ } }
   const list = await listProjects();
   for (const p of list.projects) { try { useProject(await fetchProject(p.name)); return; } catch { /* next */ } }
   // First editor launch: starts with the example map, at the camera saved in it
-  try {
+  if (Project.defaultMode !== 'sp') try {
     const ex = await (await fetch('/api/example_project')).json();
     if (ex.ok && ex.project) {
       useProject(Project.fromJSON(ex.project), { keepCamera: true });
@@ -204,7 +213,7 @@ async function renameProject(newName) {
   project.name = newName;
   $('#projectName').value = newName;
   await saveNow();
-  if (old && old !== newName) await fetch('/api/projects/' + encodeURIComponent(old), { method: 'DELETE' });
+  if (old && old !== newName) await fetch(projUrl(old), { method: 'DELETE' });
   toast(`Projeto renomeado para "${newName}"`);
 }
 
@@ -243,7 +252,7 @@ async function openProjectsDialog() {
       textDraws: p.counts?.textDraws || 0,
       removed: p.counts?.removed || 0,
     };
-    const statsLine = `Objetos: ${counts.objects} | Veículos: ${counts.vehicles} | Actors: ${counts.actors} | Pickups: ${counts.pickups} | 3D Texts: ${counts.labels} | GangZones: ${counts.gangZones} | Map Icons: ${counts.mapIcons} | Checkpoints: ${counts.checkpoints} | TextDraws: ${counts.textDraws} | Removidos: ${counts.removed}`;
+    const statsLine = Project.defaultMode === 'sp' ? `Objetos: ${counts.objects} | Veículos: ${counts.vehicles} | Actors: ${counts.actors} | Pickups: ${counts.pickups} | Removidos: ${counts.removed}` : `Objetos: ${counts.objects} | Veículos: ${counts.vehicles} | Actors: ${counts.actors} | Pickups: ${counts.pickups} | 3D Texts: ${counts.labels} | GangZones: ${counts.gangZones} | Map Icons: ${counts.mapIcons} | Checkpoints: ${counts.checkpoints} | TextDraws: ${counts.textDraws} | Removidos: ${counts.removed}`;
 
     if (isCurrent) li.className = 'current';
     li.innerHTML = `
@@ -332,7 +341,7 @@ async function openProjectsDialog() {
     li.querySelector('[data-del]').onclick = async () => {
       if (!await showConfirm(`Apagar o projeto "${p.name}"? Essa ação não pode ser desfeita.`, { danger: true, confirmText: 'Apagar' })) return;
       if (app.editor.extraProjects?.has(p.name)) app.editor.removeExtraProject(p.name);
-      await fetch('/api/projects/' + encodeURIComponent(p.name), { method: 'DELETE' });
+      await fetch(projUrl(p.name), { method: 'DELETE' });
       if (p.name === app.project.name) { useProject(new Project(await uniqueName('Meu mapa'))); saveNow(); }
       openProjectsDialog();
     };

@@ -2,7 +2,7 @@
 // Compatible with what Map Construction, Texture Studio and similar editors export.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from './project.js';
+import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampTdBlinkInterval, TD_BLINK_DEFAULT, textDrawPawn, tdBlinkActive } from './project.js';
 
 import { t as tr, uiLocale } from '../ui/i18n.js';
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
@@ -95,7 +95,7 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
+const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|BlinkPlayerTextDraw|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 // Color written as a number (0xRRGGBBAA or decimal); anything else is 0 (default color)
@@ -280,7 +280,8 @@ export function parsePwn(source) {
     'TextDrawFont', 'TextDrawColor', 'TextDrawBoxColor', 'TextDrawBackgroundColor',
     'TextDrawLetterSize', 'TextDrawTextSize', 'TextDrawSetOutline', 'TextDrawSetShadow',
     'TextDrawAlignment', 'TextDrawSetSelectable', 'TextDrawSetProportional',
-    'TextDrawSetPreviewModel', 'TextDrawSetPreviewRot', 'TextDrawSetPreviewVehCol', 'TextDrawUseBox'
+    'TextDrawSetPreviewModel', 'TextDrawSetPreviewRot', 'TextDrawSetPreviewVehCol', 'TextDrawUseBox',
+    'PlayerTextDrawFont', 'PlayerTextDrawColor', 'PlayerTextDrawBoxColor', 'PlayerTextDrawBackgroundColor', 'PlayerTextDrawLetterSize', 'PlayerTextDrawTextSize', 'PlayerTextDrawSetOutline', 'PlayerTextDrawSetShadow', 'PlayerTextDrawAlignment', 'PlayerTextDrawSetSelectable', 'PlayerTextDrawSetProportional', 'PlayerTextDrawSetPreviewModel', 'PlayerTextDrawSetPreviewRot', 'PlayerTextDrawSetPreviewVehCol', 'PlayerTextDrawUseBox', 'BlinkPlayerTextDraw'
   ]);
 
   // Pre-parse of batch camera movement callbacks with switch(step) and cases
@@ -400,8 +401,14 @@ export function parsePwn(source) {
     const inner = masked.slice(re.lastIndex, i - 1);
     re.lastIndex = i;
     const stmtEnd = i;
-    const { pos: a, named } = splitNamed(splitArgs(inner));
-    const fn = m[2], variable = m[1] ? varKey(m[1]) : null;
+    let { pos: a, named } = splitNamed(splitArgs(inner));
+    let fn = m[2];
+    const variable = m[1] ? varKey(m[1]) : null;
+    // PlayerTextDraw* (with playerid first) set the same things as TextDraw*
+    if (/^PlayerTextDraw(Font|Color|BoxColor|BackgroundColor|LetterSize|TextSize|SetOutline|SetShadow|Alignment|SetSelectable|SetProportional|SetPreviewModel|SetPreviewRot|SetPreviewVehCol|UseBox)$/.test(fn)) {
+      fn = fn.replace('PlayerTextDraw', 'TextDraw');
+      a = a.slice(1);
+    }
 
     let nextNl = source.indexOf('\n', stmtEnd);
     if (nextNl < 0) nextNl = source.length;
@@ -846,7 +853,7 @@ export function parsePwn(source) {
       }
     } else if (fn === 'CreatePlayerProgressBar') {
       // progressbarpro.inc: CreatePlayerProgressBar(playerid, x, y, width, height, color, maximum, direction, border, border color, style, segments).
-      // The previous order of the include had the style and segments right after the direction (border and border color at the end):
+      // The previous order of the include had the style and segments right after the direction (border and border color at the end; the segment scale is the argument after the segments):
       // it is recognized by the 9th argument being a PB_STYLE_/PB_RING_SEGMENTS or by the 11th being a number with decimals (the border).
       // also with named arguments (.colour = ...) and expressions (the leading number is used)
       if (a.length >= 3) {
@@ -875,6 +882,7 @@ export function parsePwn(source) {
           pbBorderColor: colorArgOrZero(arg(iBorderCol, 'bordercolour', 'bordercolor')),
           pbStyle: (() => { const st = String(arg(iStyle, 'style') ?? '0').trim().toUpperCase(); const i = PB_STYLE_NAMES.indexOf(st); return i >= 0 ? i : clampPbStyle(int(st, 0)); })(),
           pbSegments: clampPbSegments(int(arg(iSeg, 'segments'), 24)),
+          pbSegmentScale: clampPbSegmentScale(num(arg(iSeg + 1, 'segmentscale'), 1)),
           comment: inlineComment, preComment, blankLinesBefore,
         };
         textDraws.push(td);
@@ -903,6 +911,18 @@ export function parsePwn(source) {
         target.pbBlinkDuration = clampPbBlinkDuration(num(arg(3, 'duration'), 0));
         target.pbBlinkColor = colorArgOrZero(col);
         target.pbBlinkBorderColor = colorArgOrZero(arg(5, 'bordercolour', 'bordercolor'));
+      }
+    } else if (fn === 'BlinkPlayerTextDraw') {
+      // BlinkPlayerTextDraw(playerid, textdraw, interval = 500, duration = 0, perChar = false, colour = 0, text = "", baseColour = 0)
+      const target = vars.get(varKey(a[1]));
+      if (target && target.type !== 'progress') {
+        const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
+        target.blink = true;
+        target.isPlayer = true;
+        target.blinkInterval = clampTdBlinkInterval(num(arg(2, 'interval'), TD_BLINK_DEFAULT));
+        target.blinkDuration = clampPbBlinkDuration(num(arg(3, 'duration'), 0));
+        target.blinkPerChar = /^(true|1)$/i.test(String(arg(4, 'perchar') ?? '').trim());
+        target.blinkColor = colorArgOrZero(arg(5, 'colour', 'color'));
       }
     } else if (fn === 'TextDrawFont') {
       const target = vars.get(varKey(a[0])) || textDraws[textDraws.length - 1];
@@ -1330,32 +1350,8 @@ export function exportPawn(project, options = {}) {
       textDrawLines.push(...progressBarPawn(td, progressBarVar(td, textDraws), (v) => formatCoord(v, null)));
       continue;
     }
-    const n = textDrawNative(td);
-    const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
-    const createFn = td.isPlayer ? 'CreatePlayerTextDraw' : 'TextDrawCreate';
     const cmt = commentSuffix(td);
-    const tdVar = textDrawVar(td, textDraws);
-    textDrawLines.push(`new ${prefix}${tdVar} = ${createFn}(${td.isPlayer ? 'playerid, ' : ''}${formatCoord(td.x, null)}, ${formatCoord(td.y, null)}, ${JSON.stringify(n.text)});${cmt}`);
-    textDrawLines.push(`TextDrawFont(${tdVar}, ${n.font});`);
-    textDrawLines.push(`TextDrawLetterSize(${tdVar}, ${formatCoord(n.letterSizeX, null)}, ${formatCoord(n.letterSizeY, null)});`);
-    textDrawLines.push(`TextDrawAlignment(${tdVar}, ${n.align});`);
-    textDrawLines.push(`TextDrawColor(${tdVar}, ${hex(n.color)});`);
-    textDrawLines.push(`TextDrawSetOutline(${tdVar}, ${n.outline});`);
-    textDrawLines.push(`TextDrawSetShadow(${tdVar}, ${n.shadow});`);
-    textDrawLines.push(`TextDrawSetProportional(${tdVar}, ${n.proportional});`);
-    if (n.useBox) {
-      textDrawLines.push(`TextDrawUseBox(${tdVar}, 1);`);
-      textDrawLines.push(`TextDrawBoxColor(${tdVar}, ${hex(n.boxColor)});`);
-    }
-    textDrawLines.push(`TextDrawTextSize(${tdVar}, ${formatCoord(n.textSizeX, null)}, ${formatCoord(n.textSizeY, null)});`);
-    textDrawLines.push(`TextDrawBackgroundColor(${tdVar}, ${hex(n.backgroundColor)});`);
-    if (td.selectable) textDrawLines.push(`TextDrawSetSelectable(${tdVar}, 1);`);
-    if (n.font === 5 && td.previewModel) {
-      textDrawLines.push(`TextDrawSetPreviewModel(${tdVar}, ${td.previewModel});`);
-      textDrawLines.push(`TextDrawSetPreviewRot(${tdVar}, ${formatCoord(td.previewRotX ?? -16)}, ${formatCoord(td.previewRotY ?? 0)}, ${formatCoord(td.previewRotZ ?? -55)}, ${formatCoord(td.previewZoom || 1)});`);
-      textDrawLines.push(`TextDrawSetPreviewVehCol(${tdVar}, ${td.previewColor1 ?? 1}, ${td.previewColor2 ?? 1});`);
-    }
+    textDrawLines.push(...textDrawPawn(td, textDrawVar(td, textDraws), (v) => formatCoord(v, null), undefined, cmt));
   }
 
   const cams = opt.includeCameras ? cameraFunctions(project.cameras) : { code: '', usage: [] };
@@ -1453,6 +1449,7 @@ export function exportPawn(project, options = {}) {
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
   if (opt.objectFn === 'CreateDynamicObject') lines.push(`//   ${tr('Requer o plugin streamer ({0}).', '#include <streamer>')}`);
   if (textDraws.some(td => td.type === 'progress')) lines.push(`//   ${tr('Requer a include SA Progress Bar Pro ({0}) por causa das barras de progresso.', '#include <progressbarpro>')}`);
+  if (textDraws.some(tdBlinkActive)) lines.push(`//   ${tr('Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.', '#include <textdrawblink>')}`);
   if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   ${tr('Posições relativas: some ({0}) ou passe a origem.', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
   lines.push('// ================================================================');

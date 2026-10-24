@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "3.24.0"
+VERSION = "4.0.0"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -103,7 +103,9 @@ if getattr(sys, "frozen", False) and os.name == "nt" and not _dir_writable(BASE_
 
 os.makedirs(BASE_DIR, exist_ok=True)
 PROJECTS_DIR = os.path.join(BASE_DIR, "projects")
+PROJECT_FOLDERS = {"mp": "multiplayer", "sp": "singleplayer"}
 EXPORTS_DIR = os.path.join(BASE_DIR, "exported")
+SP_DIR = os.path.join(BASE_DIR, "singleplayer")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
@@ -638,9 +640,300 @@ def browse_folder(initial="", title="Escolha uma pasta"):
     return os.path.normpath(result["path"]) if result["path"] else ""
 
 
+def projects_dir(mode):
+    return os.path.join(PROJECTS_DIR, PROJECT_FOLDERS.get(mode, PROJECT_FOLDERS["mp"]))
+
+
+def migrate_projects():
+    """Projects saved loose in projects/ (older versions) go to projects/multiplayer or projects/singleplayer."""
+    if not os.path.isdir(PROJECTS_DIR):
+        return
+    for n in os.listdir(PROJECTS_DIR):
+        src = os.path.join(PROJECTS_DIR, n)
+        if not (os.path.isfile(src) and n.lower().endswith(".json")):
+            continue
+        mode = "mp"
+        try:
+            with open(src, "r", encoding="utf-8", errors="replace") as f:
+                data = json.load(f)
+            if isinstance(data, dict) and data.get("mode") == "sp":
+                mode = "sp"
+        except Exception:
+            pass
+        dst_dir = projects_dir(mode)
+        os.makedirs(dst_dir, exist_ok=True)
+        dst = os.path.join(dst_dir, n)
+        if os.path.exists(dst):
+            dst = os.path.join(dst_dir, "old-" + n)
+        try:
+            shutil.move(src, dst)
+        except OSError:
+            pass
+
+
 def safe_name(name):
     name = re.sub(r"[^\w\-. ()]+", "_", name, flags=re.UNICODE).strip(" .")
     return name[:80] or "sem_nome"
+
+
+# ---------------------------------------------------------------------------
+# Singleplayer: mods for the Modloader (a folder of loose files, the game's own files are never changed)
+# ---------------------------------------------------------------------------
+SP_ASSETS = os.path.join(SP_DIR, "assets")  # files a project imported (its own models): one folder per asset
+SP_MAX_ASSET = 64 * 1024 * 1024
+SP_MARK = ".samapstudio-mod"
+SP_MAX_BYTES = 300 * 1024 * 1024
+
+
+def sp_build_dir(name):
+    return os.path.join(SP_DIR, safe_name(name), "modloader", safe_name(name))
+
+
+OPEN_URLS = {
+    "https://github.com/cleolibrary/CLEO5/releases",
+    "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases",
+    "https://www.mixmods.com.br/2026/05/modloader/",
+}
+SP_GROUP = "SA Map Studio"  # the folder of the editor's mods inside modloader: modloader/SA Map Studio/<project>/
+
+
+def sp_group_dir():
+    return os.path.join(State.gta_path, "modloader", SP_GROUP) if State.gta_path else ""
+
+
+def sp_install_dir(name):
+    return os.path.join(sp_group_dir(), safe_name(name)) if State.gta_path else ""
+
+
+def sp_legacy_dir(name):
+    """Where the first versions installed a mod: straight inside modloader."""
+    return os.path.join(State.gta_path, "modloader", safe_name(name)) if State.gta_path else ""
+
+
+def sp_installed_dir(name):
+    """The folder where this project's mod is installed now ('' if it is not)."""
+    for d in (sp_install_dir(name), sp_legacy_dir(name)):
+        if d and os.path.isfile(os.path.join(d, SP_MARK)):
+            return d
+    return ""
+
+
+def sp_tidy_group():
+    """The editor's folder inside modloader exists only while it holds a mod of the editor."""
+    g = sp_group_dir()
+    if not g or not os.path.isdir(g):
+        return
+    if any(os.path.isfile(os.path.join(g, n, SP_MARK)) for n in os.listdir(g)):
+        return
+    try:
+        os.rmdir(g)  # only when nothing else is inside
+    except OSError:
+        pass
+
+
+def sp_game_exe():
+    for n in ("gta_sa.exe", "gta-sa.exe", "gta.exe"):
+        p = resolve_ci(State.gta_path, n) if State.gta_path else None
+        if p and os.path.isfile(p):
+            return p
+    return ""
+
+
+def sp_game_running(exe):
+    name = os.path.basename(exe).lower()
+    try:
+        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq " + name, "/NH"], capture_output=True, text=True,
+                             creationflags=0x08000000 if IS_WINDOWS else 0, timeout=10).stdout.lower()
+        return name in out
+    except Exception:
+        return False
+
+
+ASI_LOADERS = ("dinput8.dll", "vorbisfile.dll", "vorbishooked.dll", "d3d9.dll", "ddraw.dll")
+
+
+def sp_has_modloader():
+    gta = State.gta_path or ""
+    return bool(gta and resolve_ci(gta, "modloader.asi") and resolve_ci(gta, "modloader/.data"))
+
+
+def sp_has_asi_loader():
+    gta = State.gta_path or ""
+    return bool(gta) and any(resolve_ci(gta, n) for n in ASI_LOADERS)
+
+
+def sp_missing():
+    """What the game folder lacks to install and run a mod: the game itself, an ASI Loader and the Modloader."""
+    out = []
+    if not sp_game_exe():
+        out.append("game")
+    if not sp_has_asi_loader():
+        out.append("asi")
+    if not sp_has_modloader():
+        out.append("modloader")
+    return out
+
+
+def sp_status(name, was=""):
+    gta = State.gta_path or ""
+    exe = sp_game_exe()
+    built = sp_build_dir(name)
+    inst = sp_installed_dir(name)
+    renamed = False
+    if not inst and was and was != name:
+        # The project was renamed after the mod was installed: the mod is still there with the old name
+        inst = sp_installed_dir(was)
+        renamed = bool(inst)
+    inst = inst or sp_install_dir(name)
+    return {
+        "ok": True,
+        "hasModloader": sp_has_modloader(), "asiLoader": sp_has_asi_loader(), "missing": sp_missing(), "hasCleo": bool(gta and resolve_ci(gta, "CLEO.asi")),
+        "built": os.path.isdir(built), "builtPath": built,
+        "installed": bool(inst) and os.path.isfile(os.path.join(inst, SP_MARK)),
+        "installPath": inst, "renamed": renamed,
+        "builtHash": sp_marker(built).get("hash", ""), "installedHash": sp_marker(inst).get("hash", "") if inst else "",
+        "gameFound": bool(exe), "gameRunning": bool(exe) and sp_game_running(exe),
+    }
+
+
+def sp_readme(name, info):
+    info = info if isinstance(info, dict) else {}
+    return "\r\n".join([
+        "%s - mod made with SA Map Studio (Singleplayer)" % name,
+        "",
+        "Install: put this folder inside 'modloader' in the GTA San Andreas folder (the editor can do it for you).",
+        "Remove: delete this folder. The original game files are never changed.",
+        "",
+        "New objects: %s, new parked vehicles: %s" % (info.get("objects", 0), info.get("vehicles", 0)),
+        "Original objects removed (buried below the map): %s, IPL files patched: %s" % (info.get("buried", 0), info.get("patched", 0)),
+        "",
+        "Lines for the game's data files (the Modloader reads them from here and merges them into gta.dat):",
+    ] + [str(x) for x in (info.get("dataLines") or []) if re.match(r"^(IPL|IDE) [A-Za-z0-9_ ./\\-]+$", str(x))] + [""])
+
+
+def sp_marker(folder):
+    """What the editor wrote in a mod folder when it built it ({} for an old or foreign folder)."""
+    try:
+        with open(os.path.join(folder, SP_MARK), "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def sp_list_installed():
+    """The mods of this editor inside the game's modloader folder (the ones with its marker)."""
+    out = []
+    # the editor's folder, and (mods installed by the first versions) the folder of modloader itself
+    for base in (sp_group_dir(), os.path.join(State.gta_path, "modloader") if State.gta_path else ""):
+        if base and os.path.isdir(base):
+            for n in sorted(os.listdir(base), key=str.lower):
+                mark = os.path.join(base, n, SP_MARK)
+                if os.path.isfile(mark) and not any(o["folder"] == n for o in out):
+                    m = sp_marker(os.path.join(base, n))
+                    out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "time": os.path.getmtime(mark)})
+    return out
+
+
+def sp_write_files(root, files, meta=None):
+    """Writes {relative path: base64} under root (previous content of the mod folder is replaced)."""
+    total = 0
+    clean = {}
+    for rel, b64 in (files or {}).items():
+        parts = [x for x in str(rel).replace("\\", "/").split("/") if x]
+        if not parts or any(x in (".", "..") or ":" in x for x in parts):
+            raise ValueError("Caminho inválido: " + str(rel))
+        data = base64.b64decode(b64 or "")
+        total += len(data)
+        if total > SP_MAX_BYTES:
+            raise ValueError("Arquivos grandes demais")
+        clean[os.path.join(root, *parts)] = data
+    if os.path.isdir(root):
+        shutil.rmtree(root)
+    os.makedirs(root, exist_ok=True)
+    for full, data in clean.items():
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "wb") as f:
+            f.write(data)
+    mark = {"app": "SA Map Studio", "note": "Created by SA Map Studio. Delete this folder to remove the mod.",
+            "name": str((meta or {}).get("name") or ""), "hash": str((meta or {}).get("hash") or "")}
+    with open(os.path.join(root, SP_MARK), "w", encoding="utf-8") as f:
+        json.dump(mark, f)
+    return len(clean)
+
+
+def sp_asset_dir(asset):
+    asset = str(asset or "")
+    if not re.fullmatch(r"[0-9a-f]{8,32}", asset):
+        raise ValueError("Arquivo inválido")
+    return os.path.join(SP_ASSETS, asset)
+
+
+def sp_asset_save(asset, filename, data):
+    if len(data) > SP_MAX_ASSET:
+        raise ValueError("Arquivos grandes demais")
+    folder = sp_asset_dir(asset)
+    os.makedirs(folder, exist_ok=True)
+    full = os.path.join(folder, safe_name(filename))
+    with open(full, "wb") as f:
+        f.write(data)
+    return full
+
+
+def sp_asset_delete(asset):
+    folder = sp_asset_dir(asset)
+    if os.path.isdir(folder):
+        shutil.rmtree(folder)
+
+
+def sp_zip(name):
+    """The built mod as a .zip: one folder with the mod's name inside, ready to be dropped into the game's modloader folder."""
+    src = sp_build_dir(name)
+    if not os.path.isfile(os.path.join(src, SP_MARK)):
+        raise ValueError("Gere o mod antes de instalar")
+    top = safe_name(name)
+    out = os.path.join(SP_DIR, top, top + ".zip")
+    import zipfile
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        for root, _dirs, files in os.walk(src):
+            for f in files:
+                full = os.path.join(root, f)
+                z.write(full, os.path.join(top, os.path.relpath(full, src)))
+    return out
+
+
+def sp_install(name, was=""):
+    src = sp_build_dir(name)
+    dst = sp_install_dir(name)
+    if not dst:
+        raise ValueError("Pasta do GTA não definida")
+    if not os.path.isfile(os.path.join(src, SP_MARK)):
+        raise ValueError("Gere o mod antes de instalar")
+    if os.path.exists(dst) and not os.path.isfile(os.path.join(dst, SP_MARK)):
+        raise ValueError("Já existe uma pasta do Modloader com esse nome que não foi criada por este programa")
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    old = sp_legacy_dir(name)
+    if os.path.isfile(os.path.join(old, SP_MARK)):
+        shutil.rmtree(old)  # installed by an older version straight inside modloader: it moves to the editor's folder
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copytree(src, dst)
+    if was and was != name:
+        # The project was renamed: the mod installed with the old name goes away
+        old = sp_installed_dir(was)
+        if old and os.path.normcase(old) != os.path.normcase(dst):
+            shutil.rmtree(old)
+        sp_tidy_group()
+    return dst
+
+
+def sp_uninstall(name):
+    dst = sp_installed_dir(name)
+    if not dst:
+        raise ValueError("Esse mod não está instalado")
+    shutil.rmtree(dst)
+    sp_tidy_group()
+    return dst
 
 
 _GDI_FONTS = {}
@@ -2300,6 +2593,76 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json({"ok": True})
             except Exception as e:
                 return self.send_json({"ok": False, "error": str(e)}, 500)
+        if path == "/api/sp/asset":
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                if qs.get("delete"):
+                    sp_asset_delete(qs["delete"][0])
+                    return self.send_json({"ok": True})
+                sp_asset_save(qs.get("asset", [""])[0], qs.get("name", [""])[0], self.read_body())
+                return self.send_json({"ok": True})
+            except Exception as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+        if path.startswith("/api/sp/"):
+            body = self.read_json()
+            if body is None:
+                return self.send_json({"ok": False, "error": "JSON inválido"}, 400)
+            action = path[len("/api/sp/"):]
+            if action == "list":
+                return self.send_json({"ok": True, "mods": sp_list_installed()})
+            name = str(body.get("name") or "").strip()
+            if not name:
+                return self.send_json({"ok": False, "error": "Projeto sem nome"}, 400)
+            try:
+                if action == "status":
+                    return self.send_json(sp_status(name, str(body.get("was") or "")))
+                if action == "build":
+                    files = dict(body.get("files") or {})
+                    files["README.txt"] = base64.b64encode(sp_readme(name, body.get("info")).encode("utf-8")).decode("ascii")
+                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": (body.get("meta") or {}).get("hash")})
+                    return self.send_json({**sp_status(name), "files": n})
+                if action == "install":
+                    missing = sp_missing()
+                    if missing:
+                        return self.send_json({**sp_status(name), "ok": False, "error": "Falta algo no jogo"}, 400)
+                    sp_install(name, str(body.get("was") or ""))
+                    return self.send_json(sp_status(name))
+                if action == "uninstall":
+                    sp_uninstall(name)
+                    return self.send_json(sp_status(name))
+                if action == "launch":
+                    exe = sp_game_exe()
+                    if not exe:
+                        return self.send_json({"ok": False, "error": "Executável do jogo não encontrado"}, 400)
+                    if sp_game_running(exe):
+                        return self.send_json({"ok": False, "running": True, "error": "O jogo já está em execução. Feche-o antes de testar."}, 400)
+                    subprocess.Popen([exe], cwd=os.path.dirname(exe))
+                    return self.send_json({"ok": True})
+                if action == "zip":
+                    out = sp_zip(name)
+                    if IS_WINDOWS:
+                        os.startfile(os.path.dirname(out))
+                    return self.send_json({"ok": True, "path": out})
+                if action == "open":
+                    target = sp_build_dir(name)
+                    if IS_WINDOWS and os.path.isdir(target):
+                        os.startfile(target)
+                        return self.send_json({"ok": True})
+                    return self.send_json({"ok": False, "error": "Gere o mod primeiro"}, 400)
+            except Exception as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+            return self.send_error(HTTPStatus.NOT_FOUND)
+        if path == "/api/open_url":
+            # Only the download pages of the tools the mod needs (the window of the program has no browser bar)
+            body = self.read_json() or {}
+            url = str(body.get("url") or "")
+            if url not in OPEN_URLS:
+                return self.send_json({"ok": False, "error": "Endereço não permitido"}, 400)
+            try:
+                webbrowser.open(url)
+                return self.send_json({"ok": True})
+            except Exception as e:
+                return self.send_json({"ok": False, "error": str(e)}, 500)
         if path == "/api/open_folder":
             body = self.read_json() or {}
             which = body.get("folder", "logs")
@@ -2325,7 +2688,7 @@ class Handler(SimpleHTTPRequestHandler):
         path = unquote(urlparse(self.path).path)
         if path.startswith("/api/projects/"):
             name = safe_name(path[len("/api/projects/"):])
-            full = os.path.join(PROJECTS_DIR, name + ".json")
+            full = os.path.join(projects_dir(self.project_mode()), name + ".json")
             if os.path.isfile(full):
                 os.remove(full)
             return self.send_json({"ok": True})
@@ -2367,6 +2730,15 @@ class Handler(SimpleHTTPRequestHandler):
                 candidate = os.path.join(mdir, os.path.basename(rel))
                 if os.path.isfile(candidate):
                     return self.send_file(candidate, cache="max-age=86400")
+        if low_rel.startswith("__sp/"):
+            parts = [x for x in rel.replace("\\", "/").split("/") if x]
+            try:
+                full = os.path.join(sp_asset_dir(parts[1]), safe_name(parts[2]))
+            except Exception:
+                return self.send_error(HTTPStatus.NOT_FOUND)
+            if not os.path.isfile(full):
+                return self.send_error(HTTPStatus.NOT_FOUND)
+            return self.send_file(full, cache="no-cache")
         if not State.gta_path:
             return self.send_error(HTTPStatus.SERVICE_UNAVAILABLE, "Pasta do GTA não configurada")
         full = resolve_ci(State.gta_path, rel)
@@ -2407,7 +2779,12 @@ class Handler(SimpleHTTPRequestHandler):
                     if os.path.isfile(skin_f):
                         return self.send_file(skin_f, cache="max-age=86400")
         if not full or not os.path.isfile(full):
-            return self.send_error(HTTPStatus.NOT_FOUND)
+            # A thumbnail that does not exist yet is normal (the editor draws it): a quiet 404, not an error in the log
+            self.close_connection = True
+            self.send_response(404)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         self.send_file(full, cache="max-age=86400")
 
     def put_thumb(self, rel):
@@ -2491,21 +2868,29 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_json({"obj": objs, "stale": stale, "tex": texs})
 
     # ---------- projetos ----------
+    def project_mode(self):
+        """"sp" or "mp": which projects folder the request is about (?mode=sp)."""
+        return "sp" if parse_qs(urlparse(self.path).query).get("mode", [""])[0] == "sp" else "mp"
+
     def list_projects(self):
         items = []
-        if os.path.isdir(PROJECTS_DIR):
-            for n in os.listdir(PROJECTS_DIR):
+        migrate_projects()
+        pdir = projects_dir(self.project_mode())
+        if os.path.isdir(pdir):
+            for n in os.listdir(pdir):
                 if n.lower().endswith(".json"):
-                    full = os.path.join(PROJECTS_DIR, n)
+                    full = os.path.join(pdir, n)
                     counts = {
                         "objects": 0, "vehicles": 0, "actors": 0, "pickups": 0,
                         "labels": 0, "gangZones": 0, "mapIcons": 0, "checkpoints": 0,
                         "textDraws": 0, "removed": 0
                     }
+                    mode = "mp"
                     try:
                         with open(full, "r", encoding="utf-8", errors="replace") as pf:
                             pdata = json.load(pf)
                             if isinstance(pdata, dict):
+                                mode = "sp" if pdata.get("mode") == "sp" else "mp"
                                 counts["objects"] = len(pdata.get("objects") or [])
                                 counts["vehicles"] = len(pdata.get("vehicles") or [])
                                 counts["actors"] = len(pdata.get("actors") or [])
@@ -2522,13 +2907,15 @@ class Handler(SimpleHTTPRequestHandler):
                         "name": n[:-5],
                         "modified": os.path.getmtime(full),
                         "size": os.path.getsize(full),
+                        "mode": mode,
                         "counts": counts
                     })
             items.sort(key=lambda i: -i["modified"])
-        self.send_json({"projects": items, "folder": PROJECTS_DIR})
+        self.send_json({"projects": items, "folder": pdir})
 
     def get_project(self, name):
-        full = os.path.join(PROJECTS_DIR, safe_name(name) + ".json")
+        migrate_projects()
+        full = os.path.join(projects_dir(self.project_mode()), safe_name(name) + ".json")
         if not os.path.isfile(full):
             return self.send_json({"error": "Projeto não encontrado"}, 404)
         self.send_file(full)
@@ -2539,8 +2926,9 @@ class Handler(SimpleHTTPRequestHandler):
             json.loads(body.decode("utf-8"))
         except ValueError:
             return self.send_json({"ok": False, "error": "JSON inválido"}, 400)
-        os.makedirs(PROJECTS_DIR, exist_ok=True)
-        full = os.path.join(PROJECTS_DIR, safe_name(name) + ".json")
+        pdir = projects_dir(self.project_mode())
+        os.makedirs(pdir, exist_ok=True)
+        full = os.path.join(pdir, safe_name(name) + ".json")
         tmp = full + ".tmp"
         with State.lock:
             with open(tmp, "wb") as f:

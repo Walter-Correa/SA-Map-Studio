@@ -250,10 +250,13 @@ function ringParts(bar, blinkOn) {
   const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
   const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || (base & 0xFF));
   const nb = Number(bar.pbBorder ?? 1);
-  const bx = Number.isFinite(nb) ? Math.max(0.5, Math.min(5, nb)) : 1, by = bx * PB_BORDER_Y_RATIO;
+  const rawBorder = Number.isFinite(nb) ? Math.max(0.5, Math.min(5, nb)) : 1;
+  // Size of each segment (and of its outline), like the segment scale of the include
+  const scale = Number(bar.pbSegmentScale) > 0 ? Number(bar.pbSegmentScale) : 1;
+  const bx = rawBorder * scale, by = bx * PB_BORDER_Y_RATIO;
   const rx = w / 2, ry = h / 2, cx = x + rx, cy = y + ry;
   const r = Math.min(rx, ry / PB_BORDER_Y_RATIO);
-  const dx = Math.max(0.5, 1.4 * Math.PI * (r - bx) / (n + 0.7 * Math.PI)), dy = dx * PB_BORDER_Y_RATIO;
+  const dx = Math.max(0.5, 1.4 * Math.PI * (r - rawBorder) / (n + 0.7 * Math.PI) * scale), dy = dx * PB_BORDER_Y_RATIO;
   const px = Math.max(0, rx - dx / 2 - bx), py = Math.max(0, ry - dy / 2 - by);
   const dir = bar.pbDir | 0;
   const step = (dir === 1 || dir === 2 ? -1 : 1) * 360 / n;

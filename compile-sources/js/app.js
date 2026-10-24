@@ -29,6 +29,7 @@ import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
 import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
 import { initColorDialog, openColorDialog } from './ui/colorDialog.js';
 import { installColorPicker } from './ui/colorPicker.js';
+import { chooseMode, setupMode } from './ui/singleplayer.js';
 import { t, initI18n, setLanguage, getLanguage, getLanguages, onLanguageChange, uiLocale } from './ui/i18n.js';
 
 // Theme (dark by default): applied before the interface appears
@@ -115,8 +116,19 @@ async function boot() {
     showSetup(cfg.detectedPath || cfg.gtaPath || '', cfg.problem, cfg.needsSetup);
     return;
   }
-  await start(cfg);
+  await begin(cfg);
   if (cfg.problem) toast(cfg.problem, 'warn', 8000);
+}
+
+// Asks Multiplayer or Singleplayer (every time the editor opens) and then loads the game
+async function begin(cfg) {
+  setBootProgress(null);
+  $('#bootBody').hidden = true;
+  const mode = await chooseMode();
+  if (!mode) { showSetup(cfg.gtaPath || '', '', true); return; }
+  Project.defaultMode = mode;
+  $('#bootBody').hidden = false;
+  await start(cfg);
 }
 
 async function browseGta(initial) {
@@ -184,8 +196,7 @@ function showSetup(path, problem, needsSetup) {
     }
     er.hidden = true;
     form.hidden = true;
-    $('#bootBody').hidden = false;
-    await start({ gtaPath: data.gtaPath, ok: true });
+    await begin({ gtaPath: data.gtaPath, ok: true });
   };
 }
 
@@ -197,7 +208,7 @@ async function start(cfg) {
       status.textContent = msg;
       bar.style.width = Math.round(p * 100) + '%';
       setBootProgress(p);
-    });
+    }, { singleplayer: Project.defaultMode === 'sp' });
   } catch (err) {
     // Goes back to the folder selection, showing the error, instead of freezing at startup
     setBootProgress(null);
@@ -242,6 +253,7 @@ async function start(cfg) {
   setupCameras();
   setupOutline();
   setupExport();
+  setupMode();
   setupImport();
   setupTest();
   setupKeys();
@@ -923,6 +935,7 @@ function setupOutline() {
         else if (kind === 'pickups') { nameStr = `Pickup #${o.model}`; idVal = `Tipo ${o.type || 1}`; }
         else if (kind === 'checkpoints') { nameStr = o.cpKind === 'race' ? `Race CP (Tipo ${o.type ?? 0})` : 'Checkpoint'; idVal = `R ${o.size ?? 4}`; }
         else if (kind === 'mapIcons') { nameStr = `MapIcon #${o.type ?? 0}`; idVal = `Estilo ${o.style ?? 0}`; }
+        else if (kind === 'spawns') { nameStr = 'Local de spawn'; idVal = `${Math.round(o.rz || 0)}°`; }
         else if (kind === 'gangZones') { nameStr = o.name || 'GangZone'; idVal = `${o.minx},${o.miny}`; }
         else if (kind === 'textDraws') { nameStr = o.text || 'TextDraw'; idVal = `Font ${o.font ?? 1}`; }
         const cmtStr = o.comment ? `<span class="ol-comment" style="color:var(--text-dim); font-size:11px; margin-left:4px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(o.comment)}">// ${esc(o.comment)}</span>` : '';
@@ -932,18 +945,30 @@ function setupOutline() {
       return `<div class="ol-group"><div class="ol-head"><svg><use href="#${icon}"/></svg>${title} <span class="count">${items.length}</span></div>${rows}${empty}</div>`;
     };
 
-    $('#outline').innerHTML =
-      group('Veículos', 'vehicles', order(project.vehicles), 'i-car', 'Nenhum veículo.') +
+    // Singleplayer doors: they are not selectable items like the rest, so the group has its own rows
+    const doorsGroup = () => {
+      const all = project.doors || [];
+      const list = all.filter(d => !q || d.name.toLowerCase().includes(q));
+      const rows = list.map(d => `<div class="ol-item" data-door="${d.uid}"><span class="ol-name">${esc(d.name)}</span><span class="ol-id">${d.interior}</span><button type="button" class="btn icon" data-door-del="${d.uid}" title="Apagar" aria-label="Apagar"><svg><use href="#i-trash"/></svg></button></div>`).join('');
+      const empty = list.length ? '' : '<div class="ol-empty">Nenhuma entrada criada ainda.</div>';
+      return `<div class="ol-group"><div class="ol-head"><svg><use href="#i-pin"/></svg>Entradas e saídas <span class="count">${all.length}</span></div>${rows}${empty}</div>`;
+    };
+
+    // Singleplayer: only map objects (new, textured), cars, doors and removed ones; the rest has no equivalent in the game
+    const sp = Project.defaultMode === 'sp';
+    const mp = (html) => (sp ? '' : html);
+    $('#outline').innerHTML = group('Veículos', 'vehicles', order(project.vehicles), 'i-car', 'Nenhum veículo.') + (sp ? doorsGroup() : '') +
+      (sp ? group('Local de spawn', 'spawns', order(project.spawns || []), 'i-flag', 'Crie um em Mundo.') : '') +
       group('Actors', 'actors', order(project.actors || []), 'i-actor', 'Nenhum actor criado.') +
-      group('Textos 3D', 'labels', order(project.labels || []), 'i-text3d', 'Nenhum texto 3D criado.') +
+      mp(group('Textos 3D', 'labels', order(project.labels || []), 'i-text3d', 'Nenhum texto 3D criado.')) +
       group('Pickups', 'pickups', order(project.pickups || []), 'i-diamond', 'Nenhum pickup criado.') +
       group('Checkpoints', 'checkpoints', order(project.checkpoints || []), 'i-flag', 'Nenhum checkpoint criado.') +
-      group('MapIcons', 'mapIcons', order(project.mapIcons || []), 'i-pin', 'Nenhum mapicon criado.') +
+      group('MapIcons', 'mapIcons', order(project.mapIcons || []), 'i-pin', 'Nenhum mapicon criado.') + mp(
       group('GangZones', 'gangZones', order(project.gangZones || []), 'i-map', 'Nenhuma gangzone criada.') +
-      group('TextDraws', 'textDraws', order(project.textDraws || []), 'i-text', 'Nenhum textdraw criado.') +
+      group('TextDraws', 'textDraws', order(project.textDraws || []), 'i-text', 'Nenhum textdraw criado.')) +
       group('Objetos', 'objects', regularObjs, 'i-cube', 'Nenhum objeto padrão.') +
       group('Texturizações', 'objects', texObjs, 'i-image', 'Nenhum objeto texturizado.') +
-      group('Texto em objetos', 'objects', textObjs, 'i-text', 'Nenhum objeto com texto.') +
+      mp(group('Texto em objetos', 'objects', textObjs, 'i-text', 'Nenhum objeto com texto.')) +
       group('Objetos removidos', 'removed', order(project.removed), 'i-demolish', 'Clique num objeto do mapa e use "Remover objeto".');
 
     $('#outlineCount').textContent =
@@ -954,8 +979,10 @@ function setupOutline() {
       (project.pickups?.length || 0) +
       (project.checkpoints?.length || 0) +
       (project.mapIcons?.length || 0) +
+      (project.spawns?.length || 0) +
       (project.gangZones?.length || 0) +
       (project.textDraws?.length || 0) +
+      (project.doors?.length || 0) +
       project.removed.length;
   };
 
@@ -1048,6 +1075,9 @@ function setupOutline() {
   app.on('project', render);
   $('#outline').addEventListener('click', (e) => {
     const project = app.project, ed = app.editor;
+    const doorDel = e.target.closest('[data-door-del]'), doorRow = e.target.closest('[data-door]');
+    if (doorDel) { app.emit('door-delete', doorDel.dataset.doorDel); return; }
+    if (doorRow) { app.emit('door-select', doorRow.dataset.door); return; }
     const del = e.target.closest('[data-del]'), res = e.target.closest('[data-restore]');
     if (del) {
       const kind = del.dataset.delKind;
@@ -1094,6 +1124,7 @@ function setupKeys() {
   $('#btnHelp').onclick = () => $('#dlgHelp').showModal();
   window.addEventListener('keydown', (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
+    if (!e.key) return; // autofill and some inputs send key events without a key
     const k = e.key.toLowerCase();
     if (ctrl && k === 's') { e.preventDefault(); saveNow(); toast('Projeto salvo'); return; }
     if (ctrl && k === 'g') { e.preventDefault(); openGoto(); return; }

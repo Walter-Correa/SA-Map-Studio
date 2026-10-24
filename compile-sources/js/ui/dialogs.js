@@ -4,9 +4,10 @@ import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pw
 import { quatOfItem } from '../editor/editor.js';
 import { importAny } from '../editor/importers.js';
 import { t, tFallback, getLanguage } from './i18n.js';
-import { Project, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration } from '../editor/project.js';
+import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, tdBlinkActive, tdBlinkPerChar, tdBlinkColour, clampTdBlinkInterval } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
+import { toSingleplayerImport } from './singleplayer.js';
 import { app, $, esc, plural, store, toast, copyText, postJSON } from './common.js';
 
 // =====================================================================  exportar
@@ -59,6 +60,33 @@ export function setupExport() {
 }
 
 // =====================================================================  importar
+// The Singleplayer settings of an imported project: doors, models of its own, textures replaced in the whole map, world and game data.
+// Into a new or replaced project they all come; merged into another one they are added, and what is already there stays
+function importSpExtras(p, parsed, merge, clone) {
+  if (!merge) {
+    p.doors = (parsed.doors || []).map(d => makeDoor(clone(d)));
+    p.customModels = (parsed.customModels || []).map(m => makeCustomModel(clone(m)));
+    p.retex = clone(parsed.retex || []);
+    p.handling = clone(parsed.handling || {});
+    p.weapons = clone(parsed.weapons || {});
+    p.drawDist = clone(parsed.drawDist || {});
+    p.world = makeWorld(clone(parsed.world || {}));
+    return;
+  }
+  for (const d of parsed.doors || []) {
+    const door = makeDoor({ ...clone(d), uid: undefined });
+    door.name = newDoorName(p.doors, door.name);
+    p.doors.push(door);
+  }
+  const taken = new Set(p.customModels.map(m => m.id));
+  for (const m of parsed.customModels || []) if (!taken.has(m.id)) p.customModels.push(makeCustomModel(clone(m)));
+  for (const r of parsed.retex || []) if (!p.retex.some(x => x.txd === r.txd && x.name === r.name)) p.retex.push(clone(r));
+  for (const k of ['handling', 'weapons', 'drawDist']) for (const [key, v] of Object.entries(parsed[k] || {})) if (!(key in p[k])) p[k][key] = clone(v);
+  const w = makeWorld(clone(parsed.world || {})), cur = p.world;
+  if (cur.weather < 0) cur.weather = w.weather;
+  if (cur.hour < 0) { cur.hour = w.hour; cur.minute = w.minute; }
+}
+
 export function setupImport() {
   const dlg = $('#dlgImport');
   let parsed = null, fileBytes = null, fileName = '';
@@ -81,27 +109,43 @@ export function setupImport() {
     const checkpoints = parsed.checkpoints || [];
     const mapIcons = parsed.mapIcons || [];
     const textDraws = parsed.textDraws || [];
-    const total = objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + checkpoints.length + mapIcons.length + textDraws.length;
-    const parts = [plural(objs.length, 'objeto', 'objetos'), plural(mats - texts, 'textura trocada', 'texturas trocadas'), plural(texts, 'texto', 'textos'),
+    const sp = app.project.mode === 'sp';
+    const spExtra = sp ? (parsed.spawns?.length || 0) + (parsed.doors?.length || 0) + (parsed.customModels?.length || 0) + (parsed.retex?.length || 0) + Object.keys(parsed.handling || {}).length + Object.keys(parsed.weapons || {}).length + Object.keys(parsed.drawDist || {}).length : 0;
+    const total = spExtra + objs.length + (parsed.vehicles || []).length + actors.length + (parsed.removed || []).length + cams + labels.length + pickups.length + gangZones.length + checkpoints.length + mapIcons.length + textDraws.length;
+    const parts = sp ? [plural(objs.length, 'objeto', 'objetos'), plural(mats - texts, 'textura trocada', 'texturas trocadas'), plural((parsed.vehicles || []).length, 'veículo', 'veículos'), plural(actors.length, 'actor', 'actors'), plural(pickups.length, 'pickup', 'pickups'), plural((parsed.removed || []).length, 'objeto removido', 'objetos removidos')]
+      : [plural(objs.length, 'objeto', 'objetos'), plural(mats - texts, 'textura trocada', 'texturas trocadas'), plural(texts, 'texto', 'textos'),
       plural((parsed.vehicles || []).length, 'veículo', 'veículos')];
-    if (actors.length) parts.push(plural(actors.length, 'actor', 'actors'));
+    if (!sp && actors.length) parts.push(plural(actors.length, 'actor', 'actors'));
+    if (sp) {
+      if (parsed.spawns?.length) parts.push('1 local de spawn');
+      if (parsed.doors?.length) parts.push(plural(parsed.doors.length, 'entrada e saída', 'entradas e saídas'));
+      if (parsed.customModels?.length) parts.push(plural(parsed.customModels.length, 'modelo próprio', 'modelos próprios'));
+      if (parsed.retex?.length) parts.push(plural(parsed.retex.length, 'textura trocada no mapa todo', 'texturas trocadas no mapa todo'));
+      const gd = Object.keys(parsed.handling || {}).length + Object.keys(parsed.weapons || {}).length + Object.keys(parsed.drawDist || {}).length;
+      if (gd) parts.push(plural(gd, 'ajuste de dados do jogo', 'ajustes de dados do jogo'));
+    }
     if (labels.length) parts.push(plural(labels.length, 'texto 3D', 'textos 3D'));
     if (pickups.length) parts.push(plural(pickups.length, 'pickup', 'pickups'));
     if (gangZones.length) parts.push(plural(gangZones.length, 'gangzone', 'gangzones'));
     if (checkpoints.length) parts.push(plural(checkpoints.length, 'checkpoint', 'checkpoints'));
     if (mapIcons.length) parts.push(plural(mapIcons.length, 'mapicon', 'mapicons'));
     if (textDraws.length) parts.push(plural(textDraws.length, 'textdraw', 'textdraws'));
-    parts.push(plural((parsed.removed || []).length, 'objeto removido', 'objetos removidos'), plural(cams, 'câmera', 'câmeras'));
+    if (!sp) parts.push(plural((parsed.removed || []).length, 'objeto removido', 'objetos removidos'), plural(cams, 'câmera', 'câmeras'));
     summary.innerHTML = total
       ? `<div><span class="tag">${esc(parsed.format)}</span> Encontrei ${parts.map(p => `<b>${p}</b>`).join(', ')}.</div>
          ${unknown ? `<div class="warn">${plural(unknown, 'objeto usa', 'objetos usam')} modelos que não existem no seu jogo (aparecem só como contorno tracejado).</div>` : ''}
+         ${sp && parsed.unknownModels ? `<div class="warn">${plural(parsed.unknownModels, 'objeto usa', 'objetos usam')} modelos que não existem no jogo original e foram ignorados.</div>` : ''}
+         ${sp && parsed.ignored?.length ? `<div class="warn">Sem suporte no Singleplayer, ignorado: ${parsed.ignored.join(', ')}.</div>` : ''}
          ${parsed.notes.map(n => `<div class="warn">${esc(n)}</div>`).join('')}`
       : (parsed.notes.length ? parsed.notes.map(n => `<div class="warn">${esc(n)}</div>`).join('') : ($('#importText').value.trim() || fileBytes ? 'Não encontrei nenhum mapa nesse conteúdo.' : ''));
     $('#importGo').disabled = !total;
   };
   const analyzeBytes = async (bytes, name) => {
     summary.textContent = 'Analisando';
-    try { parsed = await importAny(bytes, { filename: name, gd: app.gd, readSqlite }); }
+    try {
+      parsed = await importAny(bytes, { filename: name, gd: app.gd, readSqlite });
+      if (app.project.mode === 'sp') parsed = toSingleplayerImport(parsed);
+    }
     catch (err) { parsed = null; summary.textContent = `Não consegui ler esse arquivo: ${err.message}`; return; }
     show();
   };
@@ -159,8 +203,11 @@ export function setupImport() {
     const project = app.project, ed = app.editor;
     // Deep copy: what was read stays intact (it can be imported again) and nothing is shared
     const clone = (o) => JSON.parse(JSON.stringify(o));
-    const KIND_LISTS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws'];
-    const items = prepareImportItems(KIND_LISTS.flatMap(k => (parsed[k] || []).map(o => ({ ...clone(o), kind: k }))));
+    const sp = project.mode === 'sp';
+    const KIND_LISTS = ['objects', 'vehicles', 'actors', 'removed', 'labels', 'pickups', 'gangZones', 'checkpoints', 'mapIcons', 'textDraws', ...(sp ? ['spawns'] : [])];
+    // A project has at most one spawn point: when merging into one that has it, the one that was there stays
+    const kept = (k) => (k === 'spawns' && merge && project.spawns?.length ? [] : (parsed[k] || []));
+    const items = prepareImportItems(KIND_LISTS.flatMap(k => kept(k).map(o => ({ ...clone(o), kind: k }))));
     const removeUids = replace ? KIND_LISTS.flatMap(k => (project[k] || []).map(o => o.uid)) : [];
     const header = parsed.pwnHeader || parsed.preservedHeader || '';
     const cams = parsed.cameras ? normalizeCameras(parsed.cameras) : null;
@@ -175,7 +222,9 @@ export function setupImport() {
       }
       if (replace) p.cameras = normalizeCameras(null);
       if (cams) { p.cameras.shots.push(...cams.shots); p.cameras.paths.push(...cams.paths); }
+      if (sp) importSpExtras(p, parsed, merge, clone);
     });
+    if (sp) for (const k of ['doors', 'world']) project.touch(k); // one undo step for the doors and settings that came
     if (replace) {
       if (projName) {
         project.name = projName;
@@ -355,10 +404,11 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       lines.push(`MI|${mi.iconid !== undefined ? mi.iconid : miIdx}|${mi.x.toFixed(4)}|${mi.y.toFixed(4)}|${mi.z.toFixed(4)}|${mi.type ?? 0}|${colorInt}|${mi.style ?? 0}`);
       miIdx++;
     }
+    let tdIdx = 0; // order of the D lines (the DB lines say which TextDraw blinks)
     for (const td of p.textDraws || []) {
       if (td.type === 'progress') {
         const f = (v) => (+v || 0).toFixed(4);
-        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}|${td.pbStyle | 0}|${td.pbSegments || 24}|${td.pbAutoFill ? 1 : 0}|${f(td.pbAutoFillMax ?? td.pbMax)}`);
+        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}|${td.pbStyle | 0}|${td.pbSegments || 24}|${td.pbAutoFill ? 1 : 0}|${f(td.pbAutoFillMax ?? td.pbMax)}|${f(clampPbSegmentScale(td.pbSegmentScale))}`);
         continue;
       }
       const n = textDrawNative(td);
@@ -368,6 +418,9 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       const rotZ = (n.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
       const f = (v) => (+v || 0).toFixed(4);
       lines.push(`D|${f(td.x)}|${f(td.y)}|${n.font}|${f(n.letterSizeX)}|${f(n.letterSizeY)}|${f(n.textSizeX)}|${f(n.textSizeY)}|${signed(n.color)}|${signed(n.boxColor)}|${signed(n.backgroundColor)}|${n.outline}|${n.shadow}|${n.align}|${n.useBox}|${n.proportional}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${n.text}`);
+      // Blink (BlinkPlayerTextDraw): DB|TextDraw number|interval|duration|character by character|blink colour (0 = it vanishes)
+      if (tdBlinkActive(td)) lines.push(`DB|${tdIdx}|${clampTdBlinkInterval(td.blinkInterval)}|${clampPbBlinkDuration(td.blinkDuration)}|${tdBlinkPerChar(td) ? 1 : 0}|${signed(tdBlinkColour(td))}`);
+      tdIdx++;
     }
   }
   return lines.join('\n') + '\n';

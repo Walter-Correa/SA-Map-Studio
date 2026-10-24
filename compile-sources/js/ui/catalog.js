@@ -7,8 +7,10 @@ import { PREDEFINED_PICKUPS } from '../world/pickups.js';
 import { app, $, $$, esc, plural, store, showPrompt } from './common.js';
 
 import { uiLocale } from './i18n.js';
+import { Project } from '../editor/project.js';
 const ROW_H = 80;
 let catalog = [];
+let catalogReady = false; // the listeners are added only once; the data can be rebuilt (a model was imported)
 let filtered = [];
 let category = store.get('catCategory', ''), region = store.get('catRegion', ''), shortcut = 'Todos';
 
@@ -34,13 +36,16 @@ export function setupCatalog() {
   regSel.onchange = () => { region = regSel.value; store.set('catRegion', region); filterCatalog(); };
 
   const box = $('#catalogChips');
-  box.innerHTML = ['Todos', 'Favoritos', 'Recentes', 'Veículos', 'Actors', 'Pickups'].map(c => `<button type="button" class="chip${c === shortcut ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('');
+  const chips = ['Todos', 'Favoritos', 'Recentes', 'Veículos', 'Actors', 'Pickups'];
+  box.innerHTML = chips.map(c => `<button type="button" class="chip${c === shortcut ? ' active' : ''}" data-cat="${c}">${c}</button>`).join('');
   box.onclick = (e) => {
     const b = e.target.closest('.chip'); if (!b) return;
     shortcut = b.dataset.cat;
     $$('.chip', box).forEach(x => x.classList.toggle('active', x === b));
     filterCatalog();
   };
+  if (catalogReady) { filterCatalog(); return; }
+  catalogReady = true;
   let t;
   $('#catalogSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(filterCatalog, 120); });
   const list = $('#catalogList');

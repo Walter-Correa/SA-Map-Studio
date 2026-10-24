@@ -10,11 +10,12 @@ import { createPickupFallbackMesh } from '../world/pickups.js';
 import { getNextGangZoneName } from '../world/gangzones.js';
 import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
 import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
+import { createSpawnNode } from '../world/spawn.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
 export function eulerFromItem(o, kind) {
-  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons')
+  return (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons' || kind === 'spawns')
     ? new THREE.Euler(0, 0, (o.rz || 0) * D2R, 'ZXY')
     : new THREE.Euler((o.rx || 0) * D2R, (o.ry || 0) * D2R, (o.rz || 0) * D2R, 'ZXY');
 }
@@ -107,6 +108,7 @@ export class Editor extends EventTarget {
       e.preventDefault();
       // While dragging (the item or the arrows) the button does not count, nor right after releasing over it
       if (this.directDragging || this.tc.dragging || performance.now() - (this.dragEndedAt || 0) < 300) return;
+      if (this.externalGizmo) { this.externalGizmo.toggle(); return; }
       this.setMode(this.mode === 'translate' ? 'rotate' : 'translate');
     };
     toggleBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
@@ -242,7 +244,7 @@ export class Editor extends EventTarget {
     const alive = new Set();
     for (const p of projects) {
       if (p.checkpoints) updateRaceCheckpointsChain(p.checkpoints);
-      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons']) {   // GangZones live only in their own editor, not in the 3D map
+      for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns']) {   // GangZones live only in their own editor, not in the 3D map
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
           let node = this.nodes.get(o.uid);
@@ -287,6 +289,11 @@ export class Editor extends EventTarget {
     }
     if (kind === 'checkpoints') {
       const node = createCheckpointNode(o);
+      node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
+      return node;
+    }
+    if (kind === 'spawns') {
+      const node = createSpawnNode(o);
       node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
       return node;
     }
@@ -719,7 +726,7 @@ export class Editor extends EventTarget {
     const items = this.selectedItems();
     if (!items.length) { this.tc.detach(); return; }
 
-    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0) + (this.project.checkpoints?.length || 0) + (this.project.mapIcons?.length || 0);
+    const totalProjectItems = this.project.objects.length + this.project.vehicles.length + (this.project.actors?.length || 0) + (this.project.labels?.length || 0) + (this.project.pickups?.length || 0) + (this.project.checkpoints?.length || 0) + (this.project.mapIcons?.length || 0) + (this.project.spawns?.length || 0);
     const isAll = items.length >= totalProjectItems && totalProjectItems > 0;
 
     if (items.length === 1) {
@@ -747,7 +754,7 @@ export class Editor extends EventTarget {
     this.tc.attach(this.pivot);
     this.tc.setMode(this.mode);
     this.tc.setSpace(this.mode === 'rotate' && items.length === 1 ? this.space : this.space);
-    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons');
+    const onlyYaw = items.every(s => s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'spawns');
     this.tc.showX = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showY = !(this.mode === 'rotate' && onlyYaw);
     this.tc.showZ = true;
@@ -787,6 +794,7 @@ export class Editor extends EventTarget {
       ...(this.project.pickups || []),
       ...(this.project.checkpoints || []),
       ...(this.project.mapIcons || []),
+      ...(this.project.spawns || []),
     ].map(o => o.uid);
     if (all.length) {
       this.mode = 'translate';
@@ -861,7 +869,7 @@ export class Editor extends EventTarget {
         if (item) {
           item.x = round(node.position.x); item.y = round(node.position.y); item.z = round(node.position.z);
           const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons') item.rz = normDeg(e.z * R2D);
+          if (kind === 'vehicles' || kind === 'actors' || kind === 'labels' || kind === 'pickups' || kind === 'checkpoints' || kind === 'mapIcons' || kind === 'spawns') item.rz = normDeg(e.z * R2D);
           else { item.rx = normDeg(e.x * R2D); item.ry = normDeg(e.y * R2D); item.rz = normDeg(e.z * R2D); }
         }
       }
@@ -982,7 +990,7 @@ export class Editor extends EventTarget {
 
       s.item.x = round(node.position.x); s.item.y = round(node.position.y); s.item.z = round(node.position.z);
       const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
-      if (s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons') s.item.rz = normDeg(e.z * R2D);
+      if (s.kind === 'vehicles' || s.kind === 'actors' || s.kind === 'labels' || s.kind === 'pickups' || s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'spawns') s.item.rz = normDeg(e.z * R2D);
       else { s.item.rx = normDeg(e.x * R2D); s.item.ry = normDeg(e.y * R2D); s.item.rz = normDeg(e.z * R2D); }
     }
     this.attachGizmo();
@@ -1515,6 +1523,7 @@ export class Editor extends EventTarget {
       const data = pItems.map(s => {
         const itemCopy = JSON.parse(JSON.stringify(s.item));
         delete itemCopy.uid;
+        delete itemCopy.origin; // a copy is a new object, not the game's one
         delete itemCopy.preComment;
         delete itemCopy.blankLinesBefore;
         if (s.kind === 'checkpoints') {
@@ -1672,7 +1681,7 @@ export class Editor extends EventTarget {
       let finalOffset = bottomOffset;
       if (s.kind === 'actors' || s.kind === 'pickups' || s.kind === 'labels') {
         finalOffset = 0.98;
-      } else if (s.kind === 'checkpoints' || s.kind === 'mapIcons') {
+      } else if (s.kind === 'checkpoints' || s.kind === 'mapIcons' || s.kind === 'spawns') {
         finalOffset = 0;
       }
       const origin = new THREE.Vector3(s.item.x, s.item.y, Math.max(s.item.z + 1.0, box.max.z + 0.1));
@@ -1779,7 +1788,8 @@ export class Editor extends EventTarget {
       items.push({
         kind: 'objects', model: inst.id, x: round(inst.x), y: round(inst.y), z: round(inst.z),
         rx: normDeg(e.x * R2D), ry: normDeg(e.y * R2D), rz: normDeg(e.z * R2D),
-        interior: inst.interior > 0 ? inst.interior : -1
+        interior: inst.interior > 0 ? inst.interior : -1,
+        origin: inst.src ? { file: inst.src.file, idx: inst.src.idx, x: inst.x, y: inst.y, z: inst.z } : null
       });
       if (this.removeLodToo && inst.lodRef) {
         const l = inst.lodRef;
@@ -2011,10 +2021,13 @@ export class Editor extends EventTarget {
 
     // Updates the on-screen position and text of the floating Move / Rotate toggle button
     if (this.gizmoToggleBtn) {
-      if (this.selection.length === 0 || !this.gizmo.visible || this.mode === 'texture') {
+      // externalGizmo: something else (the Singleplayer door markers) has the manipulator and gives its own object and mode
+      const ext = this.externalGizmo;
+      const curMode = ext ? ext.mode() : this.mode;
+      if (ext ? !ext.object?.parent : (this.selection.length === 0 || !this.gizmo.visible || this.mode === 'texture')) {
         this.gizmoToggleBtn.style.display = 'none';
       } else {
-        const v = this.pivot.position.clone().project(this.vp.camera);
+        const v = (ext ? ext.object.position : this.pivot.position).clone().project(this.vp.camera);
         if (v.z >= 1.0) {
           this.gizmoToggleBtn.style.display = 'none';
         } else {
@@ -2026,10 +2039,10 @@ export class Editor extends EventTarget {
             this.gizmoToggleBtn.style.left = `${screenX}px`;
             this.gizmoToggleBtn.style.top = `${screenY}px`;
             this.gizmoToggleBtn.style.display = 'inline-flex';
-            if (this._lastGizmoMode !== this.mode) {
-              this._lastGizmoMode = this.mode;
-              const nextLabel = this.mode === 'translate' ? 'Girar (R)' : 'Mover (G)';
-              const nextIcon = this.mode === 'translate' ? 'i-rotate' : 'i-move';
+            if (this._lastGizmoMode !== curMode) {
+              this._lastGizmoMode = curMode;
+              const nextLabel = curMode === 'translate' ? 'Girar (R)' : 'Mover (G)';
+              const nextIcon = curMode === 'translate' ? 'i-rotate' : 'i-move';
               this.gizmoToggleBtn.innerHTML = `<svg><use href="#${nextIcon}"/></svg><span>${nextLabel}</span>`;
             }
           }

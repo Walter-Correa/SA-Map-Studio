@@ -1,7 +1,7 @@
 // Visual, interactive TextDraw editor (TextDrawCreate / CreatePlayerTextDraw)
 // SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbAutoFillMax, pbAutoFillValue } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, tdBlinkActive, tdBlinkPerChar, tdBlinkColour, clampTdBlinkInterval, TD_BLINK_DEFAULT } from '../editor/project.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep, themeVar } from './common.js';
 import { modelPreviewImage } from '../editor/modelPreview.js';
@@ -568,6 +568,23 @@ function bindFieldInputs() {
     segInp.oninput = () => applySeg(false);
     segInp.onchange = () => applySeg(true);
   }
+  // Size of each ring segment (1 = the default)
+  const scaleInp = dialogEl.querySelector('#tdPbSegScale');
+  if (scaleInp) {
+    scaleInp.onfocus = () => tdPushUndo();
+    const applyScale = (fix) => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      const v = clampPbSegmentScale(scaleInp.value);
+      if (!fix && (scaleInp.value === '' || Number(scaleInp.value) !== v)) return; // typing: only already valid values
+      td.pbSegmentScale = v;
+      if (fix) scaleInp.value = v;
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+    scaleInp.oninput = () => applyScale(false);
+    scaleInp.onchange = () => applyScale(true);
+  }
 
   // Outline and shadow: only on (1) or off (0)
   for (const [id, prop] of [['#tdOutline', 'outline'], ['#tdShadow', 'shadow']]) {
@@ -692,12 +709,99 @@ function bindFieldInputs() {
     if (b) b.onclick = () => moveSelectedTd(where);
   }
 
+  // Blink of a PlayerTextDraw (BlinkPlayerTextDraw)
+  const tdBlinkBox = dialogEl.querySelector('#tdBlink');
+  const tdBlinkOwn = dialogEl.querySelector('#tdBlinkOwn');
+  const tdBlinkColor = dialogEl.querySelector('#tdBlinkColor');
+  const tdBlinkColorValue = () => ((parseInt((tdBlinkColor?.value || '#ffffff').slice(1), 16) << 8) | 0xFF) >>> 0;
+  syncTdBlinkFields = (td) => {
+    const player = Boolean(td?.isPlayer);
+    if (tdBlinkBox) tdBlinkBox.disabled = !player;
+    const fields = dialogEl.querySelector('#tdBlinkFields');
+    if (fields) fields.style.display = player && td?.blink ? 'flex' : 'none';
+    const row = dialogEl.querySelector('#tdBlinkColorRow');
+    if (row) row.style.display = td?.blinkColor && !tdBlinkPerChar(td) ? 'flex' : 'none';
+    const pc = dialogEl.querySelector('#tdBlinkPerChar');
+    if (pc) pc.disabled = [4, 5].includes(td?.font ?? 1);
+  };
+  if (tdBlinkBox) tdBlinkBox.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type === 'progress') return;
+    tdPushUndo();
+    td.blink = tdBlinkBox.checked && Boolean(td.isPlayer);
+    syncTdBlinkFields(td);
+    appRef.project.modified = true;
+    restartBlinkPreview();
+  };
+  for (const [id, prop, clamp] of [['#tdBlinkInterval', 'blinkInterval', clampTdBlinkInterval], ['#tdBlinkDuration', 'blinkDuration', clampPbBlinkDuration]]) {
+    const el = dialogEl.querySelector(id);
+    if (!el) continue;
+    el.onfocus = () => tdPushUndo();
+    // Typing: only already valid values are used; the limit is applied when leaving the field
+    const apply = (fix) => {
+      const td = getSelectedTd();
+      if (!td || td.type === 'progress') return;
+      const typed = Number(String(el.value).replace(',', '.'));
+      const v = clamp(el.value);
+      if (!fix && (el.value === '' || !Number.isFinite(typed) || v !== typed)) return;
+      td[prop] = v;
+      if (fix) el.value = v;
+      appRef.project.modified = true;
+      restartBlinkPreview();
+    };
+    el.oninput = () => apply(false);
+    el.onchange = () => apply(true);
+  }
+  const tdBlinkPerCharBox = dialogEl.querySelector('#tdBlinkPerChar');
+  if (tdBlinkPerCharBox) tdBlinkPerCharBox.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type === 'progress') return;
+    tdPushUndo();
+    // Character by character and vanishing exclude each other (checking one unchecks the other); with neither, the TextDraw is painted in a colour
+    td.blinkPerChar = tdBlinkPerCharBox.checked;
+    if (td.blinkPerChar) {
+      td.blinkColor = 0;
+      if (tdBlinkOwn) tdBlinkOwn.checked = false;
+    } else if (tdBlinkOwn && !tdBlinkOwn.checked) {
+      td.blinkColor = tdBlinkColorValue();
+    }
+    syncTdBlinkFields(td);
+    appRef.project.modified = true;
+    restartBlinkPreview();
+  };
+  if (tdBlinkOwn) tdBlinkOwn.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type === 'progress') return;
+    tdPushUndo();
+    if (tdBlinkOwn.checked) {
+      td.blinkPerChar = false;
+      if (tdBlinkPerCharBox) tdBlinkPerCharBox.checked = false;
+    }
+    td.blinkColor = tdBlinkOwn.checked || td.blinkPerChar ? 0 : tdBlinkColorValue();
+    syncTdBlinkFields(td);
+    appRef.project.modified = true;
+    restartBlinkPreview();
+  };
+  if (tdBlinkColor) {
+    tdBlinkColor.onfocus = () => tdPushUndo();
+    tdBlinkColor.oninput = () => {
+      const td = getSelectedTd();
+      if (!td || td.type === 'progress' || tdBlinkOwn?.checked || tdBlinkPerCharBox?.checked) return;
+      td.blinkColor = tdBlinkColorValue();
+      appRef.project.modified = true;
+      redrawCanvas();
+    };
+  }
+
   const chkPlayer = dialogEl.querySelector('#tdIsPlayer');
   if (chkPlayer) {
     chkPlayer.onchange = () => {
       const td = getSelectedTd();
       if (!td) return;
       td.isPlayer = chkPlayer.checked;
+      if (!td.isPlayer) td.blink = false; // only a PlayerTextDraw can blink
+      syncTdBlinkFields?.(td);
+      if (tdBlinkBox) tdBlinkBox.checked = Boolean(td.blink);
       normalizeTdOrder();
       updateSidebarList();
       redrawCanvas();
@@ -1034,6 +1138,7 @@ function moveSelectedTd(where) {
 // Same as the include: starts lit and toggles every interval; with a duration, stops at the end and the preview
 // restarts after 1 s so it can be seen again.
 let syncPbBlinkFields = null;
+let syncTdBlinkFields = null;
 
 // ---------- Auto preencher (AutoFillPlayerProgressBar) ----------
 // When on, it is saved in the bar and goes into the code; the preview animates with the same timing as the include:
@@ -1071,6 +1176,7 @@ function syncPbStyleRows(td) {
   const style = td.pbStyle | 0;
   const show = (id, on, disp = 'flex') => { const el = dialogEl.querySelector(id); if (el) el.style.display = on ? disp : 'none'; };
   show('#tdPbSegmentsRow', style === 1);
+  show('#tdPbSegScaleRow', style === 1);
   show('#tdPbDirRow', style !== 2);
   const note = dialogEl.querySelector('#tdPbStyleNote');
   if (note) {
@@ -1113,6 +1219,71 @@ function blinkPhaseOf(td) {
   }
   return Math.floor(t / interval) % 2 === 0;
 }
+// ---------- Blink of the TextDraws (BlinkPlayerTextDraw): the same as the include, to see it in the editor ----------
+// Index after the ~x~ tag that starts at i (~k~ also takes the ~KEY~ that follows it)
+function tagEnd(text, i) {
+  let j = i + 1;
+  while (j < text.length && text[j] !== '~') j++;
+  if (text[j] !== '~') return j;
+  const key = j === i + 2 && /k/i.test(text[i + 1]);
+  j++;
+  if (key && text[j] === '~') {
+    j++;
+    while (j < text.length && text[j] !== '~') j++;
+    if (text[j] === '~') j++;
+  }
+  return j;
+}
+function visibleCount(text) {
+  let i = 0, seen = 0;
+  while (i < text.length) { if (text[i] === '~') { i = tagEnd(text, i); continue; } if (text[i] === ' ' || text[i] === '_') { i++; continue; } i++; seen++; }
+  return seen;
+}
+function cutVisible(text, chars) {
+  if (chars <= 0) return '';
+  let i = 0, seen = 0;
+  while (i < text.length) {
+    if (text[i] === '~') { i = tagEnd(text, i); continue; }
+    if (text[i] === ' ' || text[i] === '_') { i++; continue; } // a space goes with the character after it (a text ending in a space is not drawn in game)
+    i++; seen++;
+    if (seen === chars) return text.slice(0, i);
+  }
+  return text;
+}
+// What the TextDraw looks like now: null when it is off, or a copy with the blink colour / the text typed so far
+function tdBlinkView(td) {
+  const n = textDrawNative(td);
+  const duration = clampPbBlinkDuration(td.blinkDuration);
+  const colour = tdBlinkColour(td);
+  let interval = clampTdBlinkInterval(td.blinkInterval);
+  let perChar = tdBlinkPerChar(td);
+  const count = perChar ? visibleCount(n.text) : 0;
+  if (perChar && count === 0) perChar = false;
+  if (perChar && duration > 0 && count * interval > duration) interval = Math.max(50, Math.floor(duration / count));
+  let t = performance.now() - blinkStart;
+  if (duration > 0) {
+    t %= duration + 1000;
+    if (t >= duration) return td; // it ended: the TextDraw stays as it is (the preview restarts after 1 s)
+  }
+  const v = { ...td };
+  let lit = true;
+  if (perChar) {
+    const step = Math.floor(t / interval) % (count + 1);
+    v.text = step === 0 ? ' ' : cutVisible(n.text, step);
+  } else {
+    lit = Math.floor(t / interval) % 2 === 0;
+    if (!colour && !lit) return null;
+  }
+  if (colour && lit) {
+    if (n.font === 5) { v.useBox = 1; v.boxColor = colour; } // a preview model: the colour goes to its background
+    else {
+      v.color = colour;
+      if (n.useBox) v.boxColor = colour;
+    }
+  }
+  return v;
+}
+
 function restartBlinkPreview() {
   blinkStart = performance.now();
   blinkLastKey = '';
@@ -1121,8 +1292,9 @@ function restartBlinkPreview() {
       if (!dialogEl?.open) { clearInterval(blinkTimer); blinkTimer = null; return; }
       if ((appRef.project?.textDraws || []).some(t => t.type === 'progress' && t.pbAutoFill)) { redrawCanvas(); return; }
       const bars = (appRef.project?.textDraws || []).filter(t => t.type === 'progress' && t.pbBlink);
-      if (!bars.length) return;
-      const key = bars.map(b => blinkPhaseOf(b) ? 1 : 0).join('');
+      const blinking = (appRef.project?.textDraws || []).filter(tdBlinkActive);
+      if (!bars.length && !blinking.length) return;
+      const key = bars.map(b => blinkPhaseOf(b) ? 1 : 0).join('') + '|' + blinking.map(b => { const v = tdBlinkView(b); return v ? `${v.text}~${v.color}~${v.boxColor}` : 'off'; }).join('|');
       if (key !== blinkLastKey) { blinkLastKey = key; redrawCanvas(); }
     }, 25);
   }
@@ -1230,15 +1402,19 @@ function drawGrid() {
   useLogicalUnits();
 }
 
-function renderTextDraw(td, isSelected) {
-  const bounds = getTextDrawBounds(td);
+function renderTextDraw(real, isSelected) {
+  const bounds = getTextDrawBounds(real);
+  // A blinking TextDraw is drawn as it is at this moment of the blink (null: off)
+  const td = tdBlinkActive(real) ? tdBlinkView(real) : real;
 
-  if (td.type === 'progress') {
+  if (real.type === 'progress') {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     drawProgressBar(ctx, td.pbAutoFill ? { ...td, pbValue: autoFillPreviewValue(td) } : td, blinkPhaseOf(td));
     ctx.restore();
     useLogicalUnits();
+  } else if (!td) {
+    // off in this phase of the blink: only the selection is drawn
   } else if (td.font === 5) {
     if (td.useBox) {
       ctx.fillStyle = toHexRgba(td.boxColor ?? 0x00000080).css;
@@ -1492,6 +1668,13 @@ function updateSidebarFields() {
   setChk('#tdProportional', td.proportional);
   setChk('#tdSelectable', td.selectable);
   setChk('#tdIsPlayer', td.isPlayer);
+  setChk('#tdBlink', td.type !== 'progress' && td.isPlayer && td.blink);
+  setVal('#tdBlinkInterval', clampTdBlinkInterval(td.blinkInterval ?? TD_BLINK_DEFAULT));
+  setVal('#tdBlinkDuration', clampPbBlinkDuration(td.blinkDuration));
+  setChk('#tdBlinkPerChar', td.type !== 'progress' && tdBlinkPerChar(td));
+  setChk('#tdBlinkOwn', !td.blinkColor && !tdBlinkPerChar(td));
+  if (td.blinkColor) setVal('#tdBlinkColor', '#' + ((Number(td.blinkColor) >>> 8) & 0xFFFFFF).toString(16).padStart(6, '0'));
+  syncTdBlinkFields?.(td);
 
   // Cores
   const textCol = toHexRgba(td.color ?? 0xE1E1E1FF);
@@ -1536,6 +1719,7 @@ function updateSidebarFields() {
     syncPbColorRows(td);
     setVal('#tdPbStyle', td.pbStyle | 0);
     setVal('#tdPbSegments', clampPbSegments(td.pbSegments));
+    setVal('#tdPbSegScale', clampPbSegmentScale(td.pbSegmentScale));
     syncPbStyleRows(td);
     syncAutoFillControls(td);
   }
@@ -1729,6 +1913,9 @@ function copyTextDrawsPawn() {
   }
 
   const lines = ['// TextDraws exportados pelo SA Map Studio'];
+  const usesBlink = tds.some(tdBlinkActive);
+  if (tds.some(td => td.type === 'progress')) lines.push(`// ${t('Requer a include SA Progress Bar Pro ({0}) por causa das barras de progresso.', '#include <progressbarpro>')}`);
+  if (usesBlink) lines.push(`// ${t('Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.', '#include <textdrawblink>')}`);
   const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const num = (v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; };
   tds.forEach((td, i) => {
@@ -1737,34 +1924,13 @@ function copyTextDrawsPawn() {
       lines.push('');
       return;
     }
-    const n = textDrawNative(td);
-    const v = textDrawVar(td, tds);
-    const prefix = td.isPlayer ? 'PlayerText:' : 'Text:';
-    lines.push(`new ${prefix}${v} = ${td.isPlayer ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${num(td.x)}, ${num(td.y)}, ${JSON.stringify(n.text)});`);
-    lines.push(`TextDrawFont(${v}, ${n.font});`);
-    lines.push(`TextDrawLetterSize(${v}, ${num(n.letterSizeX)}, ${num(n.letterSizeY)});`);
-    lines.push(`TextDrawAlignment(${v}, ${n.align});`);
-    lines.push(`TextDrawColor(${v}, ${hex(n.color)});`);
-    lines.push(`TextDrawSetOutline(${v}, ${n.outline});`);
-    lines.push(`TextDrawSetShadow(${v}, ${n.shadow});`);
-    lines.push(`TextDrawSetProportional(${v}, ${n.proportional});`);
-    if (n.useBox) {
-      lines.push(`TextDrawUseBox(${v}, 1);`);
-      lines.push(`TextDrawBoxColor(${v}, ${hex(n.boxColor)});`);
-    }
-    lines.push(`TextDrawTextSize(${v}, ${num(n.textSizeX)}, ${num(n.textSizeY)});`);
-    lines.push(`TextDrawBackgroundColor(${v}, ${hex(n.backgroundColor)});`);
-    if (td.selectable) lines.push(`TextDrawSetSelectable(${v}, 1);`);
-    if (n.font === 5 && td.previewModel) {
-      lines.push(`TextDrawSetPreviewModel(${v}, ${td.previewModel});`);
-      lines.push(`TextDrawSetPreviewRot(${v}, ${num(td.previewRotX ?? -16)}, ${num(td.previewRotY ?? 0)}, ${num(td.previewRotZ ?? -55)}, ${num(td.previewZoom || 1)});`);
-      lines.push(`TextDrawSetPreviewVehCol(${v}, ${td.previewColor1 ?? 1}, ${td.previewColor2 ?? 1});`);
-    }
+    lines.push(...textDrawPawn(td, textDrawVar(td, tds), num));
     lines.push('');
   });
 
   const fullText = lines.join('\n');
   navigator.clipboard.writeText(fullText).then(() => {
     toast(`${tds.length} TextDraw(s) copiados em formato Pawn`, 'ok');
+    if (usesBlink) toast('O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.', 'warn');
   });
 }

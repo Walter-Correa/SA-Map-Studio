@@ -180,6 +180,9 @@ function fromJson(data, out) {
   out.checkpoints = list(data.checkpoints || data.Checkpoints);
   out.mapIcons = list(data.mapIcons || data.MapIcons);
   out.textDraws = list(data.textDraws || data.TextDraws);
+  // What only a Singleplayer project has: the spawn point, the doors, the models of its own and the game data it changes
+  for (const k of ['spawns', 'doors', 'customModels', 'retex']) out[k] = list(data[k]);
+  for (const k of ['world', 'handling', 'weapons', 'drawDist']) if (data[k] && typeof data[k] === 'object' && !Array.isArray(data[k])) out[k] = data[k];
 }
 
 // ---------------------------------------------------------------- linhas soltas

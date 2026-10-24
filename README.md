@@ -1,15 +1,17 @@
 # SA Map Studio
 
-**Map editor for GTA San Andreas, SA-MP and open.mp**: a renewed replacement for the old
-*SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D.
+**Map editor for GTA San Andreas: Singleplayer mods, SA-MP and open.mp**: a renewed replacement for the old
+*SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
+mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-3.24.0-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.0-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
 
-The editor reads the files straight from your GTA San Andreas folder, without changing anything in the game, and
-generates Pawn code ready to paste into your gamemode or filterscript.
+The editor reads the files straight from your GTA San Andreas folder, without changing anything in the game. In
+Multiplayer it generates Pawn code ready to paste into your gamemode or filterscript; in Singleplayer it generates a mod
+folder for the Modloader (the game's own files are never changed).
 
 ---
 
@@ -28,6 +30,49 @@ generates Pawn code ready to paste into your gamemode or filterscript.
 ---
 
 ## Features
+
+### Singleplayer mode (Modloader mods)
+When the program opens you choose **Singleplayer** or **Multiplayer** (the Mode button in the top bar changes it later).
+Each mode has its own projects (`projects\singleplayer` and `projects\multiplayer`). A Singleplayer project becomes a
+**mod for the Modloader**: loose files in `modloader\SA Map Studio\<project>\`, so the original game files are
+never changed and removing the mod is deleting its folder.
+
+- **Map**: new objects and parked vehicles go to an IPL (the cars as car generators, in the streaming IPL of their area).
+  Original buildings are removed by burying them in a copy of the IPL that holds them (text and binary IPLs), which keeps
+  every index and LOD link intact; game objects that were only moved or turned are changed in place.
+- **Texture swaps**: each distinct texturing of a model becomes a copy of it with its own id, DFF, TXD (only the swapped
+  textures, the original TXD as its parent) and collision; the pieces are cut from the game's own TXD and COL byte by byte,
+  so the textures keep their DXT format. Textures can also be replaced in the whole map.
+- **Own models**: import a `.dff` (with `.txd` and `.col`) from files; it gets a free model id, appears in the catalog under
+  "Own models" and goes into the mod when an object uses it.
+- **Doors** (entrances and exits): an outside marker (yellow) and an inside marker (blue) joined by the same name.
+- **World**: the spawn point is an item like the others (the player starts there and after every death or arrest), fixed
+  weather and fixed time of day, and radar icons.
+- **Game data**: vehicle handling (merged into `handling.cfg`), weapons (`weapon.dat`) at each skill level (with
+  "apply to every level" and a reset that covers every level), view distance of a single model. Only what was changed goes
+  into the mod.
+- **Vehicles**: tuning and paintjobs, indestructible, doors only for the player, and unique vehicles that stay where the
+  player leaves them and come back at their place after a time when destroyed.
+- **Pickups and checkpoints with actions**: show a message (as text or in a box, with color codes such as `~y~`), heal,
+  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game,
+  change skin, weather or time, or an explosion trap, optionally only once. Checkpoints are the red mission cylinder with
+  a radar point and are created only near the player.
+- **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading), time to come back after
+  dying, and a role:
+  - *Neutral*: stays in place and never reacts; if moved more than 0.5 m it is put back with its angle and animation.
+  - *Protector*: follows the player running (fast or normal speed), each one with its own place around him, gets into his
+    car, and is brought next to him when far away, in another interior or stuck. It fights with priority over everything:
+    the enemy NPCs, the cops while the player is wanted, the police helicopters and anyone shooting at the player, only
+    what it can hit (clear line of sight) and not inside destroyed vehicles, spreading over the enemies. It never hurts the
+    player, and its kills count as the player's (kill statistics and wanted level).
+  - *Enemy*: attacks the player, and can follow him within 100 m (never into interiors and never teleported).
+- **Moving objects** that go back and forth between two points.
+- **Scripts**: everything that needs a script is generated as CLEO scripts by an assembler built into the editor, only when
+  something needs them (CLEO is required in the game only then).
+- **Install and manage**: install, uninstall, export as ZIP and open the folder from the editor; the list of installed
+  mods shows up to date, out of date or without project. The folder is organized by type with a README. The editor warns
+  when the Modloader, CLEO or an ASI loader is missing and links to where to get them.
+- **Import**: importing a map in Singleplayer brings its objects, texture swaps and removed buildings.
 
 ### Map and navigation
 - The whole of San Andreas with streaming and LOD, water, interiors and the SA-MP objects (`SAMP.img`), loaded in the
@@ -118,8 +163,17 @@ generates Pawn code ready to paste into your gamemode or filterscript.
 - **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom, drawn
   as the SA-MP client does.
 - **Progress bars** (SA Progress Bar Pro, `progressbarpro.inc`, included in the test server) in the four directions,
-  drawn as in the game, as a bar, a ring of segments or a growing circle, with border, blinking and auto fill. Parameter
-  order: `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments)`.
+  drawn as in the game, as a bar, a ring of segments or a growing circle, with border, blinking, auto fill and a segment
+  scale for rings. Parameter order:
+  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments, segmentscale)`.
+  With open.mp the filled part is resized in place and is created together with the bar, so TextDraws made after the bar
+  stay on top of it.
+- **TextDraw blink** (`textdrawblink.inc`, included in the test server): `BlinkPlayerTextDraw(playerid, textdraw, interval,
+  duration, perChar, colour, text, baseColour)` makes a PlayerTextDraw vanish and show up, be painted in a colour (parts
+  coloured by tags keep theirs) or type its text character by character (the interval adapts to the duration; tags and
+  spaces are never a step of their own). It works on texts, sprites, preview models and boxes, and hooks the functions that
+  would break the blink (`Hide`, `Destroy`, `SetString`, colours, font, box). The editor previews it, exports the call
+  with a note that the include is required and imports it back. New TextDraws are PlayerTextDraws by default.
 - Clean export of a Pawn script ready to compile.
 
 ### SA-MP materials
@@ -210,6 +264,7 @@ generates Pawn code ready to paste into your gamemode or filterscript.
 | Disk | About 250 MB free: 98 MB for `SA Map Studio.exe` + 125 MB for the `sa-map-studio` folder created on the first run (the built-in browser cache grows a little with use). |
 | Screen | At least 1050 x 650. |
 | Game | Original GTA San Andreas for PC (the same version as SA-MP), with `gta_sa.exe`, `data\gta.dat` and `models\gta3.img`. The Definitive Edition is not compatible. The editor only reads the game files. |
+| Singleplayer mods | The Modloader in the GTA folder (and CLEO plus an ASI loader when the mod uses scripts: NPCs, pickups or checkpoints with actions, moving objects, tuned vehicles). The editor warns when something is missing and links to where to get it. |
 | Test in game | SA-MP 0.3.7 (or open.mp) client installed in the GTA folder. The open.mp test server is included and uses UDP port 7777 (Windows Firewall may ask for permission). |
 | Internet | Not required. Only used to download extra animation previews. |
 
@@ -279,8 +334,9 @@ it with everything inside:
 SA Map Studio\
 ├── SA Map Studio.exe      the program (launcher with the embedded package)
 └── sa-map-studio\
-    ├── projects\              your maps (saved automatically)
+    ├── projects\              your maps (saved automatically, in multiplayer\ and singleplayer\)
     ├── exported\              exported .pwn / .ipl
+    ├── singleplayer\          Singleplayer mods built by the editor and the models imported from files
     ├── data\                  settings, texture cache, thumbnails and logs
     ├── test-server\           server used by "Test in game"
     └── system\                internal program files
@@ -336,7 +392,7 @@ compile-sources/
 ├── js/lang/                   interface translations (one file per language)
 ├── js/editor/                 core: editor, project, materials, import, Pawn/IPL export
 ├── js/world/                  game data, map streaming, models, categories, workers
-├── js/formats/                readers for the GTA formats (IMG, IDE, IPL, DFF, TXD)
+├── js/formats/                readers for the GTA formats (IMG, IDE, IPL, DFF, TXD), CLEO script assembler (cleo.js) and TXD/COL writers (rwwrite.js)
 ├── js/data/                   static catalogs (sprites)
 ├── js/vendor/                 Three.js r186
 ├── fonts/                     Barlow font (SIL Open Font License)
@@ -347,7 +403,7 @@ compile-sources/
 ├── package_bundle.py          packs the program into the launcher zip
 ├── i18n_check.py, i18n_same.txt, i18n_extra.txt  translation check used by the build
 ├── i18n_tool.py               batch translation, plural forms and key rename for the language files
-├── samapstudio.pwn / .amx     test server gamemode
+├── samapstudio.pwn / .amx     test server gamemode (uses progressbarpro.inc and textdrawblink.inc)
 ├── anim-list.json             animation list
 └── version_info.txt           .exe version metadata
 omp-server-source/             base open.mp server used by "Test in game"
@@ -417,6 +473,35 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.0 — 24/10/2026
+- Singleplayer editor: the editor is no longer only for SA-MP and open.mp. When the program opens you choose Singleplayer or Multiplayer (and can change it later). A Singleplayer project becomes a mod for the Modloader of the original GTA San Andreas: loose files in modloader\SA Map Studio\<project>, so the game's own files are never changed. Singleplayer and multiplayer projects are kept in separate folders.
+- Singleplayer map: new objects and parked vehicles go to an IPL (the cars as car generators, in the streaming IPL of their area); original buildings are removed by burying them in a copy of the IPL that holds them (text and binary IPLs), which keeps every index and LOD link intact; game objects that were only moved or turned are changed in place.
+- Texture swaps in Singleplayer: each distinct texturing of a model becomes a copy of it with its own id, DFF, TXD (only the swapped textures, the original TXD as its parent) and collision. The pieces are cut from the game's own TXD and COL files byte by byte, so the textures keep their original DXT format.
+- Own models: import a .dff (with its .txd and .col) from files. It gets a free model id of the game, appears in the catalog under "Own models", can be placed, moved and textured like any object, and goes into the mod when an object uses it.
+- Doors (entrances and exits): an outside marker (yellow) and an inside marker (blue) joined by the same name, with the point where the player appears after going through.
+- World settings: the spawn point is an item like the others (select, move, turn, copy, undo, delete), the player starts there and comes back there after every death or arrest (the game's hospital and police restart are overridden); fixed weather and fixed time of day; radar icons.
+- Game data of the mod: vehicle handling (merged into handling.cfg), weapons (weapon.dat) at each skill level, with "apply to every level of the weapon" and a reset to the game's values that also covers every level, the view distance of a single model and textures replaced in the whole map. The mod only carries what was changed.
+- Pickups and checkpoints can do something when used: show a message (as text on the screen or in a box, with the game's color codes such as ~y~), heal, give armour, money, a weapon or maximum ammo, change the wanted level, teleport the player, give a vehicle, repair it, install nitro, give a jetpack, save the game, change the skin, the weather or the time, or set off an explosion (trap), optionally only once.
+- Checkpoints are drawn as the red cylinder of the game's missions with a point on the radar, and each one is only created while the player is near it (the game draws a limited number of them at a time).
+- NPCs (the actors of Singleplayer): skin, animation, invulnerability, a weapon with infinite ammunition (the magazine never runs out either), time to come back after dying, a role (neutral, protector of the player or enemy of the player) and, for protectors and enemies, whether they follow the player and how they run to him (fast or normal).
+- Neutral NPCs never react to anything: they stay where they were put and, if anything moves them more than 0.5 m, they are put back with their angle and animation.
+- Protector NPCs follow the player running, each one with its own place around him (never closer than 5 m and never piled up on the same point), get into his car and out of it with him, and are brought next to him after 3 seconds when they are more than 100 m away or in another interior (8 seconds when they stay more than 20 m away, stuck behind something).
+- Protector NPCs fight with priority over everything else: the enemy NPCs of the mod, the cops while the player is wanted, the police helicopters and anyone who shoots at the player. They only go for what they can hit (clear line of sight, so they do not shoot through walls) and ignore targets inside destroyed vehicles. They spread over the enemies, preferring one that no other protector is on, and go to the next one as soon as one dies.
+- Protector NPCs never hurt the player. What they do counts as the player's: every kill adds to the player's kills and raises the wanted level with the same thresholds the game uses for each star (150 chaos for a cop, 20 for anyone else, going down with time).
+- Enemy NPCs attack the player when he comes within 35 m, or follow and attack him within 100 m (without entering interiors and without being teleported to him).
+- Vehicles of the mod: tuning and paintjobs, indestructible, doors only for the player, and unique vehicles that stay where the player leaves them and come back at their place after a time when destroyed.
+- Moving objects that go back and forth between two points at a chosen speed.
+- Everything that needs a script is generated as CLEO scripts by a small assembler built into the editor (the instructions were checked against the Sanny Builder library); scripts are only created when something needs them.
+- Install the mod in the game from the editor, uninstall it, export it as a ZIP and open its folder. The list of installed mods shows whether each one is up to date, out of date or has no project. The mod folder is organized by type (objects, vehicles, NPCs, checkpoints, pickups, world, weapons...) with a README, and renaming a project renames its installed mod.
+- The editor warns when the game lacks what the mod needs (the Modloader, CLEO when a script is used, an ASI loader) and offers links to download them.
+- Importing a map in Singleplayer brings the objects, the texture swaps and the removed buildings. In Portuguese, the Singleplayer interface calls the actors NPCs.
+- TextDraw blink: new textdrawblink.inc include (included in the test server) with BlinkPlayerTextDraw, StopPlayerTextDrawBlink and IsPlayerTextDrawBlinking. The TextDraw can vanish and show up again, be painted in a colour and go back to the original one (parts coloured by tags such as ~y~ keep their colour), or type its text character by character (the interval adapts to a duration so every character fits; tags and spaces are never a step of their own).
+- TextDraw blink works on texts, sprites (font 4), preview models (font 5) and boxes. The include hooks PlayerTextDrawColor/Colour, BoxColor, BackgroundColor, Font, UseBox, Hide, Destroy and SetString: hiding or destroying a blinking TextDraw ends the blink, and a new string changes the text being typed.
+- TextDraw editor: a blink section (interval, duration, vanish, character by character or colour) with a live preview, exported as BlinkPlayerTextDraw with the note that textdrawblink.inc is required, and imported back from Pawn code. The two modes (vanish and character by character) exclude each other.
+- New TextDraws are PlayerTextDraws by default, and the exported code of a PlayerTextDraw uses PlayerTextDraw* functions with playerid (and PlayerTextDrawShow) instead of the global ones. The import understands them.
+- Progress bars: new segment scale for rings (7th parameter of CreatePlayerProgressBar, SetPlayerProgressBarRingScale), set in the editor, the Pawn code and the test server. The filled part is resized in place with open.mp (it is no longer recreated on every update) and is created together with the bar, so the TextDraws made after the bar stay on top of it.
+- Test server: the map's TextDraws are PlayerTextDraws created for each player (so they can blink), and the map file has a new DB line for the blink of a TextDraw.
 
 ### 3.24.0 — 20/10/2026
 - Smoother 3D view while moving: new map objects are created a few dozen per frame instead of hundreds at once. Looking around no longer floods the app with cursor re-centering requests.

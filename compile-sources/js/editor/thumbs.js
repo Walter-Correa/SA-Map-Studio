@@ -34,6 +34,10 @@ export class Thumbnails extends EventTarget {
     this.batches = 0;
   }
 
+  // Thumbnails of the project's own models are kept in memory only (their ids are not the game's, so they must not be saved)
+  custom = new Map();
+  isCustom = () => false;
+
   async loadIndex() {
     try {
       const data = await (await fetch('/api/thumbs/index')).json();
@@ -45,6 +49,7 @@ export class Thumbnails extends EventTarget {
 
   url(id) {
     if (id === 0 || id === '0') return '/thumbs/obj/0.webp?v=4';
+    if (this.custom.has(id)) return this.custom.get(id);
     if (this.have.has(id)) return `/thumbs/obj/${id}.webp?v=5`;
     return this.stale.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
   }
@@ -61,6 +66,7 @@ export class Thumbnails extends EventTarget {
 
   request(id, cb) {
     if (id === 0 || id === '0') { cb('/thumbs/obj/0.webp?v=4'); return; }
+    if (this.custom.has(id)) { cb(this.custom.get(id)); return; }
     if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=5`); return; }
     if (this.failed.has(id)) { cb(null); return; }
     if (this.waiting.has(id)) { this.waiting.get(id).push(cb); return; }
@@ -99,14 +105,16 @@ export class Thumbnails extends EventTarget {
         for (let i = 0; i < batch.length; i++) {
           const id = batch[i];
           const blob = results[i] ? await results[i] : null;
-          if (blob) {
+          if (blob && this.isCustom(id)) {
+            this.custom.set(id, URL.createObjectURL(blob));
+          } else if (blob) {
             try {
               const res = await fetch(`/api/thumbs/obj/${id}`, { method: 'POST', body: blob });
               if (res.ok) { this.have.add(id); this.stale.delete(id); }
             } catch (_) {}
           }
-          if (!this.have.has(id)) this.failed.add(id);
-          const diskUrl = this.have.has(id) ? `/thumbs/obj/${id}.webp?v=5` : null;
+          if (!this.have.has(id) && !this.custom.has(id)) this.failed.add(id);
+          const diskUrl = this.custom.get(id) || (this.have.has(id) ? `/thumbs/obj/${id}.webp?v=5` : null);
           if (this.background.ids?.delete(id)) { this.background.done++; this.dispatchEvent(new Event('progress')); }
           this.finish(id, diskUrl);
           // Models loaded only for the thumbnail leave memory immediately
