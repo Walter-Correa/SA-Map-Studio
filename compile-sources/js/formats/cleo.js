@@ -9,6 +9,8 @@ export const lv = (i) => ({ t: 3, v: i });
 export const ref = (name) => ({ ref: name });
 // A text: up to 7 letters is the game's 8-byte text (type 9); a longer one is CLEO's own text (type 14: length, then the letters)
 export const str = (s) => ({ s: String(s) });
+// The end of the arguments of an opcode that takes a variable number of them (0AD9)
+export const endArgs = { end: true };
 // A text for the game's own opcodes (animations): up to 7 letters is type 9 (8 bytes), up to 15 is type 15 (16 bytes). Type 14 is only understood by CLEO's opcodes
 export const strn = (s) => ({ s: String(s), native: true });
 
@@ -19,7 +21,7 @@ export class Asm {
   jump(name) { return this.op(0x0002, ref(name)); }
 
   build() {
-    const size = (a) => (a.ref ? 5 : a.s !== undefined ? (a.s.length <= 7 ? 9 : a.native ? 17 : 2 + a.s.length) : a.t === 3 ? 3 : 5);
+    const size = (a) => (a.end ? 1 : a.ref ? 5 : a.s !== undefined ? (a.s.length <= 7 ? 9 : a.native ? 17 : 2 + a.s.length) : a.t === 3 ? 3 : 5);
     const labels = new Map();
     let pos = 0;
     for (const it of this.items) {
@@ -37,7 +39,9 @@ export class Asm {
       if (it.label) continue;
       dv.setUint16(at, it.code, true); at += 2;
       for (const a of it.args) {
-        if (a.ref) {
+        if (a.end) {
+          out[at++] = 0;
+        } else if (a.ref) {
           if (!labels.has(a.ref)) throw new Error('label ' + a.ref);
           out[at++] = 1; dv.setInt32(at, -labels.get(a.ref), true); at += 4;
         } else if (a.s !== undefined) {
@@ -415,7 +419,9 @@ const GUARD_VARS = 700; // the shared variables of CLEO (0 to 1023) where the gu
 export const ACTORS_BUDGET = 20;
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
-export const npcVars = (e) => (e.role === 'guard' ? 5 : e.role !== 'neutral' && e.follow ? 4 : 3);
+export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 6 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
+const LOG_FILE = 'cleo\\samsp_log.txt'; // what the scripts write about the teleports (to find what goes wrong when the game fails)
+const PH_WANTED = 1007; // the wanted level the player had a moment ago
 const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed in this time (ms) and looks for another
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
@@ -474,13 +480,25 @@ export function actorsScript(items) {
       if (!e.weapon && e.anim) playAnim(a, e, h, 's' + i);
     },
     manage: (a, e, i, base) => {
-      const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, tt = base + 4, done = 'n' + i;
+      const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, tt = base + 4, pd = base + 5, done = 'n' + i;
       const travel = e.role === 'guard' && !!e.follow;
+      // One line in the log file (the file is opened and closed each time, so the line is there even if the game fails right after)
+      const logTp = (why) => {
+        a.op(0x01BD, lv(T8));
+        a.op(0x00D6, int(0)).op(0x0A9A, str(LOG_FILE), str('a'), lv(T9)).op(0x004D, ref(L('lg' + why)));
+        a.op(0x0AD9, lv(T9), str(`teleport time=%d npc=${i} guard=${e.gid} why=${why}\r\n`), lv(T8), endArgs);
+        a.op(0x0A9B, lv(T9));
+        a.label(L('lg' + why));
+      };
       // goes to where the player is, running (6) or sprinting (7): TASK_GOTO_CHAR has no speed, so this one is used (the player's coordinates are in T1..T3)
       // Each protector has its own place around the player (a ring of 5 m or more, by its number), so they never pile up on the same point
       const gnum = Math.max(0, e.gid | 0), ring = 5 + 2 * Math.floor(gnum / 10), ang = gnum * 0.6283;
       const sdx = +(ring * Math.cos(ang)).toFixed(2), sdy = +(ring * Math.sin(ang)).toFixed(2);
       const slot = () => a.op(0x04C4, lv(PLAYER), flt(sdx), flt(sdy), flt(0), lv(T4), lv(T5), lv(T6));
+      // When they are taken to the player they are grouped, but each one keeps a place of its own (less than 2 m apart): characters exactly on the
+      // same point can not be separated by the game (the distance between them is zero) and get stuck
+      const jr = 0.5 + 0.35 * Math.floor(gnum / 8), ja = gnum * 0.7854;
+      const jx = +(jr * Math.cos(ja)).toFixed(2), jy = +(jr * Math.sin(ja)).toFixed(2);
       const speed = int(e.runFast === false ? 6 : 7);
       // A target that other protectors are already on (more than `limit` of them) goes to blocked; the candidate is in T4. The scan counter T5 is kept in cnt meanwhile
       const capCheck = (pre, blocked, limit) => {
@@ -587,6 +605,23 @@ export function actorsScript(items) {
       // A cutscene or a scripted scene (the player has no control): nothing is asked of the NPC (no task, no scan, no teleport). The game
       // takes charge of every character then, and orders given in the middle of a cutscene crashed it
       a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref(done));
+      // Hitting a NPC of the project with the car is not a crime: when the wanted level goes up while the player is in a car that moves and this NPC is
+      // within 5 m of him, it is put back as it was a moment ago (what the protectors cause themselves is registered below, so it stays)
+      a.op(0x01C0, int(0), lv(T4));
+      a.op(0x0AB4, int(PH_WANTED), lv(T5));
+      a.op(0x00D6, int(0)).op(0x001D, lv(T4), lv(T5)).op(0x004D, ref(L('xw')));
+      a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('xw')));
+      a.op(0x03C0, lv(PLAYER), lv(T0));
+      a.op(0x02E3, lv(T0), lv(T6));
+      a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(2)).op(0x004D, ref(L('xw')));
+      a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(5), flt(5), flt(5), int(0)).op(0x004D, ref(L('xw')));
+      a.op(0x0110, int(0));
+      a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(0)).op(0x004D, ref(L('xv')));
+      a.op(0x010D, int(0), lv(T5));
+      a.label(L('xv'));
+      a.op(0x0085, lv(T4), lv(T5));
+      a.label(L('xw'));
+      a.op(0x0AB3, int(PH_WANTED), lv(T4));
       if (e.role === 'guard') {
         // The chaos counter (what the protectors did) goes down 8 every 5 seconds, and goes back to zero when the game has cleared the stars
         a.op(0x01BD, lv(T4));
@@ -723,19 +758,31 @@ export function actorsScript(items) {
         a.label(L('fa'));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
         a.op(0x00D6, int(0)).op(0x0039, lv(st), int(3)).op(0x004D, ref(L('fs')));
+        // Checked every three seconds. In another area of the game (an interior): taken at once. In the same area: only when it is not getting closer
+        // (more than 3 m closer than at the last check): stuck, or left behind. One that is running toward the player is left alone
         a.op(0x000A, lv(cnt), int(1));
-        a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(100), flt(100), flt(100), int(0)).op(0x004D, ref(L('fb')));
-        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(63)).op(0x004D, ref(done));                 // between 20 and 100 m: eight seconds
+        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));
+        a.op(0x0006, lv(cnt), int(0));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T0), lv(T6)).op(0x004D, ref(L('fv')));
+        a.op(0x00A0, lv(h), lv(T4), lv(T5), lv(T6));
+        a.op(0x050A, lv(T1), lv(T2), lv(T3), lv(T4), lv(T5), lv(T6), lv(T7));
+        a.op(0x0086, lv(T8), lv(pd));
+        a.op(0x0063, lv(T8), lv(T7));
+        a.op(0x0086, lv(pd), lv(T7));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T8), flt(3)).op(0x004D, ref(L('fu')));
+        a.jump(done);
+        a.label(L('fu'));
+        logTp('stuck');
         a.jump(L('fc'));
-        a.label(L('fb'));
-        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));                 // beyond 100 m: three seconds
+        a.label(L('fv'));
+        logTp('area');
         a.label(L('fc'));
         // all of them at the same point, behind the player: 3 m when he is on foot, 10 m when he is in a vehicle
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fo')));
-        a.op(0x04C4, lv(PLAYER), flt(0), flt(-10), flt(0), lv(T4), lv(T5), lv(T6));
+        a.op(0x04C4, lv(PLAYER), flt(jx), flt(-10 + jy), flt(0), lv(T4), lv(T5), lv(T6));
         a.jump(L('fp'));
         a.label(L('fo'));
-        a.op(0x04C4, lv(PLAYER), flt(0), flt(-3), flt(0), lv(T4), lv(T5), lv(T6));
+        a.op(0x04C4, lv(PLAYER), flt(jx), flt(-3 + jy), flt(0), lv(T4), lv(T5), lv(T6));
         a.label(L('fp'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x0575, lv(h), int(0));                                                             // not held and with its collision back before it is moved
@@ -754,6 +801,8 @@ export function actorsScript(items) {
         a.jump(done);
         a.label(L('fs'));
         a.op(0x0006, lv(st), int(3)).op(0x0006, lv(cnt), int(0));                                // starts waiting; meanwhile it goes to the player
+        a.op(0x00A0, lv(h), lv(T4), lv(T5), lv(T6));
+        a.op(0x050A, lv(T1), lv(T2), lv(T3), lv(T4), lv(T5), lv(T6), lv(pd));                    // how far it is now: the first check measures from here
         runTo(9000);
         a.jump(done);
         a.label(L('fn'));
@@ -830,6 +879,7 @@ export function actorsScript(items) {
         });
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(0)).op(0x004D, ref(L('gq')));
         a.op(0x010E, int(0), lv(T5));
+        a.op(0x0AB3, int(PH_WANTED), lv(T5));
         a.label(L('gq'));
         a.op(0x0006, lv(tt), int(0));
         a.op(0x0006, lv(tgt), int(0));                                                           // its enemy died (or went away): free again, and it follows the player again

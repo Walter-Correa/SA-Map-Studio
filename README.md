@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.9-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.10-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,12 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.10 — 26/10/2026
+- Teleports of the protectors: they were all put on exactly the same point, and the game cannot separate characters that are on the same point (the distance between them is zero), so they could get stuck there or crash the game. Each one now has a place of its own around the point, less than 2 meters apart, still grouped behind the player.
+- A protector is only taken to the player when it is really not getting there: every 3 seconds the script checks how far it is, and one that came more than 3 meters closer since the last check is left alone. One in another area of the game (an interior) is still taken at once. Before, any protector that stayed far from the player for 3 to 8 seconds was taken, even if it was running toward him.
+- The scripts write a line in cleo/samsp_log.txt (in the game folder) every time a protector is taken to the player, with the game time, which NPC and why (stuck or other area). The file is opened and closed each time so the line is there even if the game fails right after. Send it with the time of the crash to find what goes wrong.
+- Hitting a NPC of the project with the car no longer brings stars: when the wanted level goes up while the player is in a moving car with a NPC of the project within 5 meters, the level is put back as it was. This can also cancel a real crime done at the same moment, near one of the NPCs. Not tested in the game.
 
 ### 4.1.9 — 26/10/2026
 - Crash when NPCs are taken to the player: a protector that was held in place without collision (to let the car go through it) was moved in that state. It is released, with its collision back, before it is moved. Not tested in the game.
