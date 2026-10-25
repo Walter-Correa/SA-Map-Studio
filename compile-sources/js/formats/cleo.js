@@ -421,7 +421,9 @@ export const ACTORS_BUDGET = 20;
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
 export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 6 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
 const LOG_FILE = 'cleo\\samsp_log.txt'; // what the scripts write about the teleports (to find what goes wrong when the game fails)
-const PH_WANTED = 1007; // the wanted level the player had a moment ago
+// The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
+// brings no stars (the civilians, type 4, do)
+const NPC_TYPE = 16;
 const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed in this time (ms) and looks for another
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
@@ -453,7 +455,7 @@ export function actorsScript(items) {
       // CJ (skin 0) is the player's own model: it is always in memory (asking for it and letting it go would take it away from the player)
       // The clothes are never rebuilt here (BUILD_PLAYER_MODEL crashes the game while a new game starts)
       if (e.skin !== 0) loadModel(a, e.skin, 'a' + i);
-      a.op(0x009A, int(4), int(e.skin), flt(e.x), flt(e.y), flt(e.z), lv(h));                   // a civilian of that skin
+      a.op(0x009A, int(NPC_TYPE), int(e.skin), flt(e.x), flt(e.y), flt(e.z), lv(h));            // a gang member of that skin
       if (e.skin !== 0) a.op(0x0249, int(e.skin));                                              // the model is not kept in memory (the NPC holds it while it lives)
       a.op(0x0173, lv(h), flt(e.rz));
       if (e.invulnerable) a.op(0x02AB, lv(h), int(1), int(1), int(1), int(1), int(1));
@@ -605,23 +607,6 @@ export function actorsScript(items) {
       // A cutscene or a scripted scene (the player has no control): nothing is asked of the NPC (no task, no scan, no teleport). The game
       // takes charge of every character then, and orders given in the middle of a cutscene crashed it
       a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref(done));
-      // Hitting a NPC of the project with the car is not a crime: when the wanted level goes up while the player is in a car that moves and this NPC is
-      // within 5 m of him, it is put back as it was a moment ago (what the protectors cause themselves is registered below, so it stays)
-      a.op(0x01C0, int(0), lv(T4));
-      a.op(0x0AB4, int(PH_WANTED), lv(T5));
-      a.op(0x00D6, int(0)).op(0x001D, lv(T4), lv(T5)).op(0x004D, ref(L('xw')));
-      a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('xw')));
-      a.op(0x03C0, lv(PLAYER), lv(T0));
-      a.op(0x02E3, lv(T0), lv(T6));
-      a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(2)).op(0x004D, ref(L('xw')));
-      a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(5), flt(5), flt(5), int(0)).op(0x004D, ref(L('xw')));
-      a.op(0x0110, int(0));
-      a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(0)).op(0x004D, ref(L('xv')));
-      a.op(0x010D, int(0), lv(T5));
-      a.label(L('xv'));
-      a.op(0x0085, lv(T4), lv(T5));
-      a.label(L('xw'));
-      a.op(0x0AB3, int(PH_WANTED), lv(T4));
       if (e.role === 'guard') {
         // The chaos counter (what the protectors did) goes down 8 every 5 seconds, and goes back to zero when the game has cleared the stars
         a.op(0x01BD, lv(T4));
@@ -665,32 +650,30 @@ export function actorsScript(items) {
         a.label(L('ps'));
         a.op(0x0AB3, int(PH_HEALTH), lv(T0));
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
-        // The player's car goes through the protectors: while he drives and this one is on foot within 15 m of him, it has no collision and is held
-        // where it is (so it does not fall through the ground) as long as the car moves; when the car slows down it stays that way until the car is
-        // 6 m away from it (giving it its collision back with the car on top of it threw it onto the roof). In any other case it is normal again
-        // A protector in a vehicle (or getting in or out) is left alone: the game manages the collision of a ped that is inside a vehicle, and forcing it
-        // on made the passenger collide with the car and throw it into the air. It is only released (in case it was held)
-        a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wv')));
+        // The player's car does not go through the protectors (taking away their collision does not work: the game gives it back to a character
+        // that stands still). A protector on foot within 15 m of the player, in the way of his car (a corridor 9 m wide, 3 to 15 m ahead of it), while
+        // the car moves, steps aside to the side it is on. It is not asked anything else while it does
+        a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('wr')));
-        a.op(0x03C0, lv(PLAYER), lv(T0));
         a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(15), flt(15), flt(15), int(0)).op(0x004D, ref(L('wr')));
+        a.op(0x03C0, lv(PLAYER), lv(T0));
         a.op(0x02E3, lv(T0), lv(T6));
-        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(1.5)).op(0x004D, ref(L('ws')));
-        a.jump(L('wg'));
-        a.label(L('ws'));
-        a.op(0x00AA, lv(T0), lv(T4), lv(T5), lv(T6));
-        a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T4), lv(T5), lv(T6), flt(6), flt(6), flt(6), int(0)).op(0x004D, ref(L('wr')));
-        a.label(L('wg'));
-        a.op(0x0619, lv(h), int(0));
-        a.op(0x0575, lv(h), int(1));
-        a.jump(L('wd'));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(3)).op(0x004D, ref(L('wr')));
+        // [side (+1 right, -1 left), ahead, radius] of the places where a character is in the way
+        [[1, 4, 4.5], [-1, 4, 4.5], [1, 10, 5], [-1, 10, 5]].forEach(([side, ahead, radius], k) => {
+          a.op(0x0407, lv(T0), flt(3 * side), flt(ahead), flt(0), lv(T4), lv(T5), lv(T6));
+          a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T4), lv(T5), lv(T6), flt(radius), flt(radius), flt(radius), int(0)).op(0x004D, ref(L('wt' + k)));
+          a.op(0x0407, lv(T0), flt(9 * side), flt(ahead + 4), flt(0), lv(T4), lv(T5), lv(T6));
+          a.jump(L('wm'));
+          a.label(L('wt' + k));
+        });
+        a.jump(L('wr'));
+        a.label(L('wm'));
+        a.op(0x05D3, lv(h), lv(T4), lv(T5), lv(T6), int(7), int(1500));
+        a.jump(done);
         a.label(L('wr'));
-        a.op(0x0575, lv(h), int(0));
-        a.op(0x0619, lv(h), int(1));
-        a.jump(L('wd'));
         a.label(L('wv'));
-        a.op(0x0575, lv(h), int(0));
         a.label(L('wd'));
       }
       if (e.weapon && e.ammoInfinite === false && !WEAPONS.find(w => w.id === e.weapon)?.melee) {
@@ -879,7 +862,6 @@ export function actorsScript(items) {
         });
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(0)).op(0x004D, ref(L('gq')));
         a.op(0x010E, int(0), lv(T5));
-        a.op(0x0AB3, int(PH_WANTED), lv(T5));
         a.label(L('gq'));
         a.op(0x0006, lv(tt), int(0));
         a.op(0x0006, lv(tgt), int(0));                                                           // its enemy died (or went away): free again, and it follows the player again

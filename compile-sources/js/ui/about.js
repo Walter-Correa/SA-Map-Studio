@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.11', date: '26/10/2026', items: [
+      'The undo of the wanted level when a NPC of the project was hit by the car is gone (it also hid real crimes). The NPCs are made as gang members now (ped type 16) instead of civilians: the game does not count a crime against gang members, so hitting or running one over should bring no stars. Not tested in the game.',
+      'The anti collision of the protectors (taking away their collision while the car of the player passes) is gone: the game gives the collision back to a character that stands still, so it never worked well. A protector on foot within 15 meters of the player that is in the way of his moving car (a corridor 9 meters wide, 3 to 15 meters ahead of it) now steps aside, to the side it is on, and is not asked anything else while it does.',
+    ],
+  },
+  {
     version: '4.1.10', date: '26/10/2026', items: [
       'Teleports of the protectors: they were all put on exactly the same point, and the game cannot separate characters that are on the same point (the distance between them is zero), so they could get stuck there or crash the game. Each one now has a place of its own around the point, less than 2 meters apart, still grouped behind the player.',
       'A protector is only taken to the player when it is really not getting there: every 3 seconds the script checks how far it is, and one that came more than 3 meters closer since the last check is left alone. One in another area of the game (an interior) is still taken at once. Before, any protector that stayed far from the player for 3 to 8 seconds was taken, even if it was running toward him.',
