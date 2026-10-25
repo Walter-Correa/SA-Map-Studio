@@ -422,8 +422,8 @@ export function actorsScript(items) {
   return nearScript(list, {
     radius: 120, wait: 125,
     // CJ NPCs come out see-through when they are made while a new game is still starting (the clothes of the player are not built yet): the script
-    // that has them waits a while before it makes any NPC
-    init: (a) => { if (list.some(e => e.skin === 0)) a.op(0x0001, int(20000)); },
+    // that has them waits a few seconds before it makes any NPC
+    init: (a) => { if (list.some(e => e.skin === 0)) a.op(0x0001, int(3000)); },
     // the player's coordinates
     pre: (a) => {
       a.op(0x00A0, lv(PLAYER), lv(T1), lv(T2), lv(T3));
