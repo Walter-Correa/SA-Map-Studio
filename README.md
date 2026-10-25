@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.19-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.20-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -55,7 +55,7 @@ never changed and removing the mod is deleting its folder.
 - **Vehicles**: tuning and paintjobs, indestructible, doors only for the player, and unique vehicles that stay where the
   player leaves them and come back at their place after a time when destroyed.
 - **Pickups and checkpoints with actions**: show a message (as text or in a box, with color codes such as `~y~`), heal,
-  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game, put fat, muscle, stamina, lung capacity, health, armour, sex appeal, respect or the progress with the girlfriends at the most or the least, remove hunger,
+  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game, put fat, muscle, stamina, lung capacity, health, armour, sex appeal or respect at the most or the least, remove hunger,
   change skin, weather or time, or an explosion trap, optionally only once. Checkpoints are the red mission cylinder with
   an optional radar point (off by default) and are created only near the player.
 - **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading) or a chosen amount (the weapon
@@ -484,6 +484,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.20 — 26/10/2026
+- The progress with the girlfriends actions were removed (the story script may keep its own copy of that progress, and changing only the statistic could conflict with it). A project that used them keeps the action as no action.
+- Maximum armour and Minimum armour now mean how much armour the player can have: Maximum puts it at 150 (what the game gives after the Vigilante missions reach level 12) and Minimum puts it back at the 100 of the start of the game. The game itself uses the same command (INCREASE_PLAYER_MAX_ARMOUR), which also fills the armour. Not tested in the game.
 
 ### 4.1.19 — 26/10/2026
 - Actions of pickups and checkpoints: the strength actions are now Maximum health and Minimum health (the strength of the player is his muscle, which already has its own actions); same stat as before (max health, from 569 to 1000).

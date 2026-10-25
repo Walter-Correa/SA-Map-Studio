@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.20', date: '26/10/2026', items: [
+      'The progress with the girlfriends actions were removed (the story script may keep its own copy of that progress, and changing only the statistic could conflict with it). A project that used them keeps the action as no action.',
+      'Maximum armour and Minimum armour now mean how much armour the player can have: Maximum puts it at 150 (what the game gives after the Vigilante missions reach level 12) and Minimum puts it back at the 100 of the start of the game. The game itself uses the same command (INCREASE_PLAYER_MAX_ARMOUR), which also fills the armour. Not tested in the game.',
+    ],
+  },
+  {
     version: '4.1.19', date: '26/10/2026', items: [
       'Actions of pickups and checkpoints: the strength actions are now Maximum health and Minimum health (the strength of the player is his muscle, which already has its own actions); same stat as before (max health, from 569 to 1000).',
       'New actions: Maximum armour (up to 100, the most the game gives) and Minimum armour (no armour), Maximum and Minimum sex appeal (0 to 1000), Remove hunger (the Energy stat, which the game keeps from 0 to 1000, is put at exactly 1000: fed; what passes 1000 would turn into fat) and Maximum and Minimum progress with the girlfriends (the stats of the six girlfriends, 0 to 100). The progress with the girlfriends may only change what the statistics screen shows if the story script keeps its own copy of the progress; it was not tested in the game. Being fat does not remove hunger: the hunger and the fat are separate stats.',

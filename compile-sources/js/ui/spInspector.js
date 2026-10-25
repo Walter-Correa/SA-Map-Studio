@@ -64,7 +64,7 @@ const TYPES = [
   ['staminaMax', 'Máximo de stamina'], ['staminaMin', 'Mínimo de stamina'], ['lungMax', 'Máximo de fôlego'], ['lungMin', 'Mínimo de fôlego'],
   ['healthMax', 'Máximo de saúde'], ['healthMin', 'Mínimo de saúde'], ['respectMax', 'Máximo de respeito'], ['respectMin', 'Mínimo de respeito'],
   ['armourMax', 'Máximo de colete'], ['armourMin', 'Mínimo de colete'], ['sexMax', 'Máximo de sex appeal'], ['sexMin', 'Mínimo de sex appeal'],
-  ['hungerOff', 'Remover a fome'], ['girlfriendMax', 'Máximo de progresso com namoradas'], ['girlfriendMin', 'Mínimo de progresso com namoradas'],
+  ['hungerOff', 'Remover a fome'],
 ];
 
 // The game's color codes inside a text (as ~y~ in SA-MP): the code, its name and the color it shows
