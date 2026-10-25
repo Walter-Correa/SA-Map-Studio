@@ -506,8 +506,10 @@ export function actorsScript(items) {
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
         // The player's car goes through the protectors: while he drives, the car moves and this one is on foot within 8 m of him, it has no collision
         // and is held where it is (so it does not fall through the ground); in any other case it is normal again
+        // A protector in a vehicle (or getting in or out) is left alone: the game manages the collision of a ped that is inside a vehicle, and forcing it
+        // on made the passenger collide with the car and throw it into the air. It is only released (in case it was held)
+        a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wv')));
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
-        a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x03C0, lv(PLAYER), lv(T0));
         a.op(0x02E3, lv(T0), lv(T6));
@@ -519,6 +521,9 @@ export function actorsScript(items) {
         a.label(L('wr'));
         a.op(0x0575, lv(h), int(0));
         a.op(0x0619, lv(h), int(1));
+        a.jump(L('wd'));
+        a.label(L('wv'));
+        a.op(0x0575, lv(h), int(0));
         a.label(L('wd'));
       }
       if (e.weapon && e.ammoInfinite === false && !WEAPONS.find(w => w.id === e.weapon)?.melee) {

@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.6-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.7-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -479,6 +479,9 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.7 — 25/10/2026
+- Fixed protector NPCs riding in the player car throwing it into the air: the collision of a protector that is in a vehicle (or getting in or out) is no longer touched. The game manages it, and forcing it on made the passenger collide with the car.
 
 ### 4.0.6 — 25/10/2026
 - NPCs in the water are only asked to swim: no walking, fighting or clearing of tasks is given to them there (the game expects the swim task, and changing it is the suspected cause of the crash with the player and the NPCs in the water). They swim toward the player once a second.

@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.7', date: '25/10/2026', items: [
+      'Fixed protector NPCs riding in the player car throwing it into the air: the collision of a protector that is in a vehicle (or getting in or out) is no longer touched. The game manages it, and forcing it on made the passenger collide with the car.',
+    ],
+  },
+  {
     version: '4.0.6', date: '25/10/2026', items: [
       'NPCs in the water are only asked to swim: no walking, fighting or clearing of tasks is given to them there (the game expects the swim task, and changing it is the suspected cause of the crash with the player and the NPCs in the water). They swim toward the player once a second.',
       'Protector NPCs are not brought to the player while he is in the air, on foot (jumping or falling) or in a vehicle that is in the air.',
