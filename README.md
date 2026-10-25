@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.15-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.16-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,12 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.16 — 26/10/2026
+- The radar icon scripts now go in their own folder (mapicons) inside the folder of the mod, apart from the vehicles.
+- Crash dump again with the table of tasks of the game full (this time 111 places taken by the shoot at order and 16 by the walk order), so the limit now covers every NPC order: when fewer than 13 places are free, nothing new is asked of any NPC and its orders are cleared, which frees its places (the places stay taken by events of orders the character did not carry out). Not tested in the game.
+- NPCs could not stay as passengers: the step aside order of the protectors sent away the ones that went to get in the car of the player (the door is inside the corridor of the car). The places next to the car now only count while the car moves.
+- The protectors run and walk 25% faster (the speed of their running and walking animations). Infinite stamina needs nothing: characters of the game never get tired, only the player does.
 
 ### 4.1.15 — 26/10/2026
 - Fixed a crash when a game was loaded with 4.1.14 installed: the new script that watches the table of tasks of the game gave the parameters of an addition in the wrong order, so the game was asked to store a result in a number instead of a variable. Found in the crash dump (a store to an invalid variable).

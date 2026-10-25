@@ -557,6 +557,7 @@ function categoryOf(path) {
     if (/_(npcs|followers)\d+\.cs$/.test(name)) return 'npcs';
     if (/_pickups\d+\.cs$/.test(name)) return 'pickups';
     if (/_checkpoints\d+\.cs$/.test(name)) return 'checkpoints';
+    if (/_icons\d+\.cs$/.test(name)) return 'mapicons';
     if (/_world\.cs$/.test(name)) return 'world';
     if (/_movers\d+\.cs$/.test(name)) return 'objects';
     return 'vehicles'; // the parked cars (tuning, paintjob, doors)

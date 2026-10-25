@@ -7,6 +7,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.16', date: '26/10/2026', items: [
+      'The radar icon scripts now go in their own folder (mapicons) inside the folder of the mod, apart from the vehicles.',
+      'Crash dump again with the table of tasks of the game full (this time 111 places taken by the shoot at order and 16 by the walk order), so the limit now covers every NPC order: when fewer than 13 places are free, nothing new is asked of any NPC and its orders are cleared, which frees its places (the places stay taken by events of orders the character did not carry out). Not tested in the game.',
+      'NPCs could not stay as passengers: the step aside order of the protectors sent away the ones that went to get in the car of the player (the door is inside the corridor of the car). The places next to the car now only count while the car moves.',
+      'The protectors run and walk 25% faster (the speed of their running and walking animations). Infinite stamina needs nothing: characters of the game never get tired, only the player does.',
+    ],
+  },
+  {
     version: '4.1.15', date: '26/10/2026', items: [
       'Fixed a crash when a game was loaded with 4.1.14 installed: the new script that watches the table of tasks of the game gave the parameters of an addition in the wrong order, so the game was asked to store a result in a number instead of a variable. Found in the crash dump (a store to an invalid variable).',
     ],

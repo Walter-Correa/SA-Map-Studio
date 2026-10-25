@@ -670,7 +670,23 @@ export function actorsScript(items) {
       // A cutscene or a scripted scene (the player has no control): nothing is asked of the NPC (no task, no scan, no teleport). The game
       // takes charge of every character then, and orders given in the middle of a cutscene crashed it
       a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref(done));
+      // The table of tasks of the game is nearly full (see taskGuardScript): nothing is asked of the NPC, and its orders are cleared (the events of the
+      // orders it has not carried out are what keep the places taken). A character in a vehicle is left alone
+      a.op(0x0AB4, int(TASK_FREE), lv(T10));
+      a.op(0x00D6, int(0)).op(0x0019, lv(T10), int(0)).op(0x004D, ref(L('tg0')));
+      a.op(0x00D6, int(0)).op(0x0019, lv(T10), int(TASK_MIN_FREE + 1)).op(0x004D, ref(L('tg1')));
+      a.jump(L('tg0'));
+      a.label(L('tg1'));
+      a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(done));
+      a.op(0x0687, lv(h));
+      a.jump(done);
+      a.label(L('tg0'));
       if (e.role === 'guard') {
+        // A protector runs 25% faster than normal: the speed of its running and walking animations (it is set again at every cycle, the game puts
+        // the normal speed back when an animation starts again)
+        ['run_civi', 'sprint_civi', 'walk_civi', 'run_player', 'sprint_panic', 'run_gang1', 'walk_gang1', 'run_old', 'run_fat', 'run_fatold', 'run_wuzi', 'woman_run', 'woman_runfast'].forEach((n) => {
+          a.op(0x0393, lv(h), strn(n), flt(1.25));
+        });
         // The chaos counter (what the protectors did) goes down 8 every 5 seconds, and goes back to zero when the game has cleared the stars
         a.op(0x01BD, lv(T4));
         a.op(0x0AB4, int(CHAOS_TIME), lv(T5));
@@ -726,8 +742,11 @@ export function actorsScript(items) {
         a.label(L('wk'));
         taskGate(a, 'w' + i, L('wr'));
         a.op(0x03C0, lv(PLAYER), lv(T0));
+        a.op(0x02E3, lv(T0), lv(T9));
         // [side (+1 right, -1 left), ahead (negative: behind), radius] of the places where a character is in the way, in front of the car and behind it
         [[1, 4, 4.5], [-1, 4, 4.5], [1, 10, 5], [-1, 10, 5], [1, -4, 4.5], [-1, -4, 4.5], [1, -10, 5], [-1, -10, 5]].forEach(([side, ahead, radius], k) => {
+          // the places close to the car (where its door is) only count when the car moves: a character that goes to get in is not sent away
+          if (Math.abs(ahead) <= 4) a.op(0x00D6, int(0)).op(0x0021, lv(T9), flt(3)).op(0x004D, ref(L('wt' + k)));
           a.op(0x0407, lv(T0), flt(3 * side), flt(ahead), flt(0), lv(T4), lv(T5), lv(T6));
           a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T4), lv(T5), lv(T6), flt(radius), flt(radius), flt(radius), int(0)).op(0x004D, ref(L('wt' + k)));
           a.op(0x0407, lv(T0), flt(9 * side), flt(ahead + (ahead > 0 ? 4 : -4)), flt(0), lv(T4), lv(T5), lv(T6));
