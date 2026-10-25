@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.2', date: '26/10/2026', items: [
+      'NPCs with the CJ skin could appear see-through, with only a piece of the model, in a new game. The script no longer asks for the CJ model and lets it go (it is the model of the player and is always in memory), and it rebuilds the clothes of CJ before making the NPC, so it wears what the player wears. Not tested in the game.',
+      'The CLEO+ button of the missing tools warning goes to the releases page of the plugin on GitHub.',
+    ],
+  },
+  {
     version: '4.1.1', date: '26/10/2026', items: [
       'Saved games never get anything from the mod: just before the game writes a save, the scripts take away everything they keep in the world (moving objects, pickups, radar icons and the checkpoint points), and they make it all again right after. A save made with the mod loads without it, and nothing of the mod is in the file. This uses the CLEO+ plugin, which the editor now asks for (it warns when it is missing) when the project has moving objects, pickups, checkpoints or radar icons.',
       'The Fix saves button of 4.1.0 is gone: with the saves clean from the start it is not needed.',

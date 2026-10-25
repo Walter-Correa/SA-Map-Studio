@@ -427,9 +427,12 @@ export function actorsScript(items) {
     },
     spawn: (a, e, i, base) => {
       const h = base + 1;
-      loadModel(a, e.skin, 'a' + i);
+      // CJ (skin 0) is the player's own model: it is always in memory (asking for it and letting it go would take it away from the player), and its clothes
+      // are rebuilt first so the NPC is made with the clothes the player wears now (otherwise it can come out without a body)
+      if (e.skin === 0) a.op(0x070D, lv(PLAYER));
+      else loadModel(a, e.skin, 'a' + i);
       a.op(0x009A, int(4), int(e.skin), flt(e.x), flt(e.y), flt(e.z), lv(h));                   // a civilian of that skin
-      a.op(0x0249, int(e.skin));                                                                // the model is not kept in memory (the NPC holds it while it lives)
+      if (e.skin !== 0) a.op(0x0249, int(e.skin));                                              // the model is not kept in memory (the NPC holds it while it lives)
       a.op(0x0173, lv(h), flt(e.rz));
       if (e.invulnerable) a.op(0x02AB, lv(h), int(1), int(1), int(1), int(1), int(1));
       if (e.weapon) {

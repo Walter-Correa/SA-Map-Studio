@@ -693,7 +693,7 @@ export async function warnMissing(st, needCleo = false, needPlus = false) {
     game: { name: 'GTA San Andreas (gta_sa.exe)', use: t('O executável do jogo') },
     cleo: { name: 'CLEO Library', use: t('Carregar NPCs, veículos, checkpoints, pickups'), url: 'https://github.com/cleolibrary/CLEO5/releases' },
     asi: { name: 'ASI Loader', use: t('Permitir carregamento de arquivos .asi'), url: 'https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases' },
-    cleoplus: { name: 'CLEO+', use: t('Manter o save do jogo sem nada do mod'), url: 'https://www.mixmods.com.br/2022/02/cleoplus/' },
+    cleoplus: { name: 'CLEO+', use: t('Manter o save do jogo sem nada do mod'), url: 'https://github.com/JuniorDjjr/CLEOPlus/releases' },
     modloader: { name: 'ModLoader', use: t('Carregar modificações sem alterar o jogo'), url: 'https://www.mixmods.com.br/2026/05/modloader/' },
   };
   const lacking = new Set([...(st?.missing || []), ...(needCleo && st && !st.hasCleo ? ['cleo'] : []), ...(needPlus && st && st.hasCleo && !st.hasCleoPlus ? ['cleoplus'] : [])]);

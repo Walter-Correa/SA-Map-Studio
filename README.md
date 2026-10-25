@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.1-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.2-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -481,6 +481,10 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.1.2 — 26/10/2026
+- NPCs with the CJ skin could appear see-through, with only a piece of the model, in a new game. The script no longer asks for the CJ model and lets it go (it is the model of the player and is always in memory), and it rebuilds the clothes of CJ before making the NPC, so it wears what the player wears. Not tested in the game.
+- The CLEO+ button of the missing tools warning goes to the releases page of the plugin on GitHub.
 
 ### 4.1.1 — 26/10/2026
 - Saved games never get anything from the mod: just before the game writes a save, the scripts take away everything they keep in the world (moving objects, pickups, radar icons and the checkpoint points), and they make it all again right after. A save made with the mod loads without it, and nothing of the mod is in the file. This uses the CLEO+ plugin, which the editor now asks for (it warns when it is missing) when the project has moving objects, pickups, checkpoints or radar icons.
