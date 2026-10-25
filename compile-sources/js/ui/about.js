@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.4', date: '26/10/2026', items: [
+      'NPCs with the CJ skin still came out see-through in a new game. The script that has them now waits 20 seconds after the game starts before it makes its NPCs, in case the cause is that the clothes of the player are not built yet at that moment. This is a test: it is not known whether it fixes it.',
+    ],
+  },
+  {
     version: '4.1.3', date: '26/10/2026', items: [
       'Fixed a crash when a new game starts with a CJ NPC in the project: 4.1.2 rebuilt the clothes of the player before making that NPC, and the game cannot do that while a new game starts. The clothes are not rebuilt any more (the CJ model is still not asked for and let go).',
       'The editor now finds the CLEO+ plugin under the name CLEO+.cleo too, so it no longer warns when the plugin is installed.',
