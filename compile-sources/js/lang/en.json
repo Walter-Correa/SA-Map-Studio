@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "With a firearm it shoots the player; without a weapon or with a melee weapon it hits him.",
  "Fica parado onde foi colocado.": "Stays where it was placed.",
  "Arma e comportamento": "Weapon and behavior",
- "Arma (munição infinita)": "Weapon (infinite ammo)",
  "Comportamento": "Behavior",
  "Neutro (fica onde está)": "Neutral (stays where it is)",
  "Protetor do jogador": "Player's protector",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Blink by vanishing and showing up",
  "Requer a include textdrawblink.inc no servidor.": "Requires the textdrawblink.inc include on the server.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Requires the TextDraw blink include ({0}) because of the blinking TextDraws.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "The code uses TextDraw blinking: include textdrawblink.inc on the server."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "The code uses TextDraw blinking: include textdrawblink.inc on the server.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "When the ammunition runs out, the weapon is thrown away and the NPC fights with its hands",
+ "Munição (a arma é descartada quando acaba)": "Ammunition (the weapon is thrown away when it runs out)",
+ "Munição infinita": "Infinite ammunition",
+ "Alterar a munição do NPC": "Change the NPC ammunition"
 }

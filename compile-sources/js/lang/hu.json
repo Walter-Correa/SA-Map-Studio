@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Lőfegyverrel lő a játékosra; fegyver nélkül vagy közelharci fegyverrel megüti.",
  "Fica parado onde foi colocado.": "Ott marad, ahová helyezték.",
  "Arma e comportamento": "Fegyver és viselkedés",
- "Arma (munição infinita)": "Fegyver (végtelen lőszer)",
  "Comportamento": "Viselkedés",
  "Neutro (fica onde está)": "Semleges (ott marad, ahol van)",
  "Protetor do jogador": "A játékos védelmezője",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Villogás eltűnéssel és megjelenéssel",
  "Requer a include textdrawblink.inc no servidor.": "A szerveren a textdrawblink.inc include szükséges.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "A TextDraw-villogtató include ({0}) szükséges a villogó TextDrawok miatt.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "A kód TextDraw-villogást használ: építsd be a textdrawblink.inc-et a szerveren."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "A kód TextDraw-villogást használ: építsd be a textdrawblink.inc-et a szerveren.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Amikor elfogy a lőszer, a fegyvert eldobja, és az NPC puszta kézzel harcol",
+ "Munição (a arma é descartada quando acaba)": "Lőszer (a fegyvert eldobja, ha elfogy)",
+ "Munição infinita": "Végtelen lőszer",
+ "Alterar a munição do NPC": "NPC lőszerének módosítása"
 }

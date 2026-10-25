@@ -12,7 +12,9 @@ export function npcSection(a) {
   const follow = role === 'guard' ? 'Seguir o jogador (corre até ele num raio de 100 m; se ele se afastar, aparece ao lado dele)'
     : 'Perseguir o jogador num raio de 100 m (não entra em interiores e não é teleportado)';
   return `<div class="insp-section"><div class="insp-label">Arma e comportamento</div>
-    <label class="field">Arma (munição infinita)<select id="npcWeapon">${optionsHtml(NPC_WEAPONS, a.weapon | 0)}</select></label>
+    <label class="field">Arma<select id="npcWeapon">${optionsHtml(NPC_WEAPONS, a.weapon | 0)}</select></label>
+    ${a.weapon && !WEAPONS.find(w => w.id === (a.weapon | 0))?.melee ? `<label class="check"><input type="checkbox" id="npcAmmoInf" ${a.ammoInfinite === false ? '' : 'checked'}> Munição infinita</label>
+    ${a.ammoInfinite === false ? `<label class="field" title="Quando a munição acaba, a arma é descartada e o NPC luta com as mãos">Munição (a arma é descartada quando acaba)<input type="number" id="npcAmmo" min="1" max="9999" step="1" value="${a.ammo | 0 || 100}"></label>` : ''}` : ''}
     <label class="field">Comportamento
       <select id="npcRole">
         <option value="neutral" ${role === 'neutral' ? 'selected' : ''}>Neutro (fica onde está)</option>
@@ -38,6 +40,10 @@ export function bindNpc(a, project, rerender) {
   if (r) r.onchange = () => set('Alterar comportamento do NPC', (o) => { o.role = r.value; if (r.value === 'neutral') o.follow = false; });
   const rs = $('#npcRespawn');
   if (rs) rs.onchange = () => set('Alterar o reaparecimento do NPC', (o) => { o.respawn = Math.max(0, Math.min(36000, Math.round(parseFloat(rs.value) || 0))); });
+  const ai = $('#npcAmmoInf');
+  if (ai) ai.onchange = () => set('Alterar a munição do NPC', (o) => { o.ammoInfinite = ai.checked; });
+  const am = $('#npcAmmo');
+  if (am) am.onchange = () => set('Alterar a munição do NPC', (o) => { o.ammo = Math.max(1, Math.min(9999, Math.round(parseFloat(am.value) || 100))); });
   const rn = $('#npcRun');
   if (rn) rn.onchange = () => set('Alterar a velocidade do NPC', (o) => { o.runFast = rn.value !== 'normal'; });
   const f = $('#npcFollow');

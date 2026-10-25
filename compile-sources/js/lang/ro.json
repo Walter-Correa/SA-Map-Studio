@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Cu armă de foc trage în jucător; fără armă sau cu armă albă îl lovește.",
  "Fica parado onde foi colocado.": "Rămâne unde a fost plasat.",
  "Arma e comportamento": "Armă și comportament",
- "Arma (munição infinita)": "Armă (muniție infinită)",
  "Comportamento": "Comportament",
  "Neutro (fica onde está)": "Neutru (rămâne unde este)",
  "Protetor do jogador": "Protectorul jucătorului",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Clipește dispărând și reapărând",
  "Requer a include textdrawblink.inc no servidor.": "Necesită include-ul textdrawblink.inc pe server.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Necesită include-ul de clipire a TextDraw-urilor ({0}) din cauza TextDraw-urilor care clipesc.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Codul folosește clipirea TextDraw-urilor: include textdrawblink.inc pe server."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Codul folosește clipirea TextDraw-urilor: include textdrawblink.inc pe server.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Când muniția se termină, arma este aruncată, iar NPC-ul luptă cu mâinile",
+ "Munição (a arma é descartada quando acaba)": "Muniție (arma este aruncată când se termină)",
+ "Munição infinita": "Muniție infinită",
+ "Alterar a munição do NPC": "Schimbă muniția NPC-ului"
 }

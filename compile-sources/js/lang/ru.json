@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "С огнестрельным оружием стреляет в игрока; без оружия или с холодным бьёт его.",
  "Fica parado onde foi colocado.": "Остаётся там, где был поставлен.",
  "Arma e comportamento": "Оружие и поведение",
- "Arma (munição infinita)": "Оружие (бесконечные патроны)",
  "Comportamento": "Поведение",
  "Neutro (fica onde está)": "Нейтральный (остаётся на месте)",
  "Protetor do jogador": "Защитник игрока",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Мигать, исчезая и появляясь",
  "Requer a include textdrawblink.inc no servidor.": "Требуется include textdrawblink.inc на сервере.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Требуется include мигания TextDraw ({0}) из-за мигающих TextDraw.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Код использует мигание TextDraw: подключите textdrawblink.inc на сервере."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Код использует мигание TextDraw: подключите textdrawblink.inc на сервере.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Когда патроны кончаются, оружие выбрасывается, и NPC дерётся руками",
+ "Munição (a arma é descartada quando acaba)": "Патроны (оружие выбрасывается, когда они кончаются)",
+ "Munição infinita": "Бесконечные патроны",
+ "Alterar a munição do NPC": "Изменить патроны NPC"
 }

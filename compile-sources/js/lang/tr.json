@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Ateşli silahla oyuncuya ateş eder; silahsız veya kesici silahla ona vurur.",
  "Fica parado onde foi colocado.": "Yerleştirildiği yerde kalır.",
  "Arma e comportamento": "Silah ve davranış",
- "Arma (munição infinita)": "Silah (sınırsız mermi)",
  "Comportamento": "Davranış",
  "Neutro (fica onde está)": "Tarafsız (olduğu yerde kalır)",
  "Protetor do jogador": "Oyuncunun koruyucusu",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Kaybolup görünerek yanıp sön",
  "Requer a include textdrawblink.inc no servidor.": "Sunucuda textdrawblink.inc include'u gerekir.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Yanıp sönen TextDraw'lar nedeniyle TextDraw yanıp sönme include'u ({0}) gerekir.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Kod TextDraw yanıp sönmesini kullanıyor: sunucuda textdrawblink.inc ekleyin."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Kod TextDraw yanıp sönmesini kullanıyor: sunucuda textdrawblink.inc ekleyin.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Mermi bittiğinde silah atılır ve NPC elleriyle dövüşür",
+ "Munição (a arma é descartada quando acaba)": "Mermi (bittiğinde silah atılır)",
+ "Munição infinita": "Sonsuz mermi",
+ "Alterar a munição do NPC": "NPC mermisini değiştir"
 }

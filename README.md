@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.0-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.1-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -57,13 +57,15 @@ never changed and removing the mod is deleting its folder.
   armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game,
   change skin, weather or time, or an explosion trap, optionally only once. Checkpoints are the red mission cylinder with
   a radar point and are created only near the player.
-- **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading), time to come back after
-  dying, and a role:
+- **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading) or a chosen amount (the weapon
+  is thrown away when it runs out and the NPC fights with its hands), time to come back after dying, and a role:
   - *Neutral*: stays in place and never reacts; if moved more than 0.5 m it is put back with its angle and animation.
   - *Protector*: follows the player running (fast or normal speed), each one with its own place around him, gets into his
     car, and is brought next to him when far away, in another interior or stuck. It fights with priority over everything:
-    the enemy NPCs, the cops while the player is wanted, the police helicopters and anyone shooting at the player, only
-    what it can hit (clear line of sight) and not inside destroyed vehicles, spreading over the enemies. It never hurts the
+    the police helicopters first, then the enemy NPCs, the cops while the player is wanted and anyone shooting at the player,
+    only what it can hit (clear line of sight), spreading over the enemies. Vehicles and whoever is inside them only with a
+    weapon that shoots and has ammunition (never destroyed ones, and tanks only with a rocket launcher), and a target it
+    has not killed in 15 seconds is let go so it never stays stuck. It never hurts the
     player, and its kills count as the player's (kill statistics and wanted level).
   - *Enemy*: attacks the player, and can follow him within 100 m (never into interiors and never teleported).
 - **Moving objects** that go back and forth between two points.
@@ -473,6 +475,13 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.1 — 25/10/2026
+- Protector NPCs never stay stuck on a target: a target that was not killed in 15 seconds is let go (and the NPC's tasks are cleared) so it can look for another one, or the same one again. Being brought next to the player resets the NPC: it loses its target and its mark.
+- The police helicopter is again the first priority of the protector NPCs: when the player is wanted and a Police Maverick is within 60 m, they let go of their target and shoot at it.
+- Protector NPCs only attack vehicles, and enemies inside vehicles, with a weapon that shoots and still has ammunition; otherwise they ignore the target and look for another one that can be reached. They never attack a tank (Rhino) unless they carry a rocket launcher.
+- NPC ammunition: besides infinite ammunition (the default) an NPC can have a chosen amount. When it runs out the weapon is thrown away and the NPC fights with its hands.
+- Each script of protector NPCs now holds 4 NPCs instead of 5 (every protector keeps one more variable, for the time on its target).
 
 ### 4.0.0 — 24/10/2026
 - Singleplayer editor: the editor is no longer only for SA-MP and open.mp. When the program opens you choose Singleplayer or Multiplayer (and can change it later). A Singleplayer project becomes a mod for the Modloader of the original GTA San Andreas: loose files in modloader\SA Map Studio\<project>, so the game's own files are never changed. Singleplayer and multiplayer projects are kept in separate folders.

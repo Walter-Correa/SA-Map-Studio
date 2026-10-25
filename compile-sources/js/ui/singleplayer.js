@@ -643,7 +643,7 @@ async function buildFiles(project, say = () => {}) {
   // As many scripts as needed: the NPCs that follow or chase (they share the door logic) go apart from the others, which fit more per script
   const npcs = (project.actors || []).map(a => ({
     skin: a.skin, x: a.x, y: a.y, z: a.z, rz: a.rz, invulnerable: !!a.invulnerable, anim: a.weapon ? null : a.anim,
-    weapon: a.weapon | 0, role: a.role || 'neutral', follow: !!a.follow, runFast: a.runFast !== false, respawn: a.invulnerable ? 0 : Math.max(0, +a.respawn || 0),
+    weapon: a.weapon | 0, role: a.role || 'neutral', follow: !!a.follow, ammoInfinite: a.ammoInfinite !== false, ammo: Math.max(1, Math.round(+a.ammo || 100)), runFast: a.runFast !== false, respawn: a.invulnerable ? 0 : Math.max(0, +a.respawn || 0),
   }));
   let guardCount = 0;
   for (const n of npcs) n.gid = n.role === 'guard' && guardCount < 300 ? guardCount++ : -1;

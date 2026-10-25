@@ -7,6 +7,15 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.1', date: '25/10/2026', items: [
+      'Protector NPCs never stay stuck on a target: a target that was not killed in 15 seconds is let go (and the NPC\'s tasks are cleared) so it can look for another one, or the same one again. Being brought next to the player resets the NPC: it loses its target and its mark.',
+      'The police helicopter is again the first priority of the protector NPCs: when the player is wanted and a Police Maverick is within 60 m, they let go of their target and shoot at it.',
+      'Protector NPCs only attack vehicles, and enemies inside vehicles, with a weapon that shoots and still has ammunition; otherwise they ignore the target and look for another one that can be reached. They never attack a tank (Rhino) unless they carry a rocket launcher.',
+      'NPC ammunition: besides infinite ammunition (the default) an NPC can have a chosen amount. When it runs out the weapon is thrown away and the NPC fights with its hands.',
+      'Each script of protector NPCs now holds 4 NPCs instead of 5 (every protector keeps one more variable, for the time on its target).',
+    ],
+  },
+  {
     version: '4.0.0', date: '24/10/2026', items: [
       'Singleplayer editor: the editor is no longer only for SA-MP and open.mp. When the program opens you choose Singleplayer or Multiplayer (and can change it later). A Singleplayer project becomes a mod for the Modloader of the original GTA San Andreas: loose files in modloader\\SA Map Studio\\<project>, so the game\'s own files are never changed. Singleplayer and multiplayer projects are kept in separate folders.',
       'Singleplayer map: new objects and parked vehicles go to an IPL (the cars as car generators, in the streaming IPL of their area); original buildings are removed by burying them in a copy of the IPL that holds them (text and binary IPLs), which keeps every index and LOD link intact; game objects that were only moved or turned are changed in place.',

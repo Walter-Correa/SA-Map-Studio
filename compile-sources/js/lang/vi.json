@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Có súng thì bắn người chơi; không vũ khí hoặc có vũ khí cận chiến thì đánh người chơi.",
  "Fica parado onde foi colocado.": "Ở yên nơi được đặt.",
  "Arma e comportamento": "Vũ khí và hành vi",
- "Arma (munição infinita)": "Vũ khí (đạn vô hạn)",
  "Comportamento": "Hành vi",
  "Neutro (fica onde está)": "Trung lập (ở yên chỗ)",
  "Protetor do jogador": "Người bảo vệ người chơi",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Nhấp nháy bằng cách biến mất và hiện lại",
  "Requer a include textdrawblink.inc no servidor.": "Cần include textdrawblink.inc trên máy chủ.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Cần include nhấp nháy TextDraw ({0}) vì có TextDraw nhấp nháy.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Mã dùng nhấp nháy TextDraw: hãy include textdrawblink.inc trên máy chủ."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Mã dùng nhấp nháy TextDraw: hãy include textdrawblink.inc trên máy chủ.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Khi hết đạn, vũ khí bị vứt đi và NPC đánh bằng tay không",
+ "Munição (a arma é descartada quando acaba)": "Đạn (vũ khí bị vứt đi khi hết đạn)",
+ "Munição infinita": "Đạn vô hạn",
+ "Alterar a munição do NPC": "Đổi đạn của NPC"
 }

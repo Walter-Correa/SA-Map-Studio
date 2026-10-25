@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "З вогнепальною зброєю стріляє в гравця; без зброї або з холодною б'є його.",
  "Fica parado onde foi colocado.": "Залишається там, де був поставлений.",
  "Arma e comportamento": "Зброя і поведінка",
- "Arma (munição infinita)": "Зброя (нескінченні патрони)",
  "Comportamento": "Поведінка",
  "Neutro (fica onde está)": "Нейтральний (залишається на місці)",
  "Protetor do jogador": "Захисник гравця",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Блимати, зникаючи й з'являючись",
  "Requer a include textdrawblink.inc no servidor.": "Потрібен include textdrawblink.inc на сервері.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Потрібен include блимання TextDraw ({0}) через TextDraw, що блимають.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Код використовує блимання TextDraw: підключіть textdrawblink.inc на сервері."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Код використовує блимання TextDraw: підключіть textdrawblink.inc на сервері.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Коли набої закінчуються, зброя викидається, і NPC б'ється руками",
+ "Munição (a arma é descartada quando acaba)": "Набої (зброя викидається, коли вони закінчуються)",
+ "Munição infinita": "Нескінченні набої",
+ "Alterar a munição do NPC": "Змінити набої NPC"
 }

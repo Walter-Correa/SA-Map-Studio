@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Mit Schusswaffe schießt er auf den Spieler; ohne Waffe oder mit Nahkampfwaffe schlägt er ihn.",
  "Fica parado onde foi colocado.": "Bleibt dort, wo er platziert wurde.",
  "Arma e comportamento": "Waffe und Verhalten",
- "Arma (munição infinita)": "Waffe (unendlich Munition)",
  "Comportamento": "Verhalten",
  "Neutro (fica onde está)": "Neutral (bleibt, wo er ist)",
  "Protetor do jogador": "Beschützer des Spielers",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Blinken durch Verschwinden und Erscheinen",
  "Requer a include textdrawblink.inc no servidor.": "Benötigt das Include textdrawblink.inc auf dem Server.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Benötigt das TextDraw-Blink-Include ({0}) wegen der blinkenden TextDraws.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Der Code verwendet blinkende TextDraws: binde textdrawblink.inc auf dem Server ein."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Der Code verwendet blinkende TextDraws: binde textdrawblink.inc auf dem Server ein.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Wenn die Munition aufgebraucht ist, wird die Waffe weggeworfen und der NPC kämpft mit den Händen",
+ "Munição (a arma é descartada quando acaba)": "Munition (die Waffe wird weggeworfen, wenn sie aufgebraucht ist)",
+ "Munição infinita": "Unendliche Munition",
+ "Alterar a munição do NPC": "NPC-Munition ändern"
 }

@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Con un'arma da fuoco spara al giocatore; senza arma o con un'arma bianca lo colpisce.",
  "Fica parado onde foi colocado.": "Resta dove è stato messo.",
  "Arma e comportamento": "Arma e comportamento",
- "Arma (munição infinita)": "Arma (munizioni infinite)",
  "Comportamento": "Comportamento",
  "Neutro (fica onde está)": "Neutrale (resta dove si trova)",
  "Protetor do jogador": "Protettore del giocatore",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Lampeggia sparendo e riapparendo",
  "Requer a include textdrawblink.inc no servidor.": "Richiede l'include textdrawblink.inc sul server.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Richiede l'include di lampeggio dei TextDraw ({0}) per via dei TextDraw lampeggianti.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Il codice usa il lampeggio dei TextDraw: includi textdrawblink.inc sul server."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Il codice usa il lampeggio dei TextDraw: includi textdrawblink.inc sul server.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Quando le munizioni finiscono, l'arma viene scartata e l'NPC combatte a mani nude",
+ "Munição (a arma é descartada quando acaba)": "Munizioni (l'arma viene scartata quando finiscono)",
+ "Munição infinita": "Munizioni infinite",
+ "Alterar a munição do NPC": "Cambia le munizioni dell'NPC"
 }

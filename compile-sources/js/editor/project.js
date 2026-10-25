@@ -124,6 +124,8 @@ export function makeActor(data) {
     weapon: data.weapon | 0,
     role: ['guard', 'enemy'].includes(data.role) ? data.role : 'neutral',
     follow: !!data.follow,
+    ammoInfinite: data.ammoInfinite !== false, // infinite ammunition (the default) or the amount in `ammo`; when it runs out the weapon is thrown away
+    ammo: Math.max(1, Math.min(9999, Math.round(+data.ammo || 100))),
     runFast: data.runFast !== false, // how it runs to the player: fast (sprint) or normal (not for the neutral ones)
     respawn: Math.max(0, Math.min(36000, +data.respawn || 0)), // when it is not invulnerable and dies: seconds to come back (0 = stays dead)
     comment: data.comment ? String(data.comment) : '',

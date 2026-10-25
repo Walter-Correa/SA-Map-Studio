@@ -2178,7 +2178,6 @@
  "Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.": "Dengan senjata api ia menembak pemain; tanpa senjata atau dengan senjata tajam ia memukulnya.",
  "Fica parado onde foi colocado.": "Tetap di tempat ia diletakkan.",
  "Arma e comportamento": "Senjata dan perilaku",
- "Arma (munição infinita)": "Senjata (amunisi tak terbatas)",
  "Comportamento": "Perilaku",
  "Neutro (fica onde está)": "Netral (tetap di tempatnya)",
  "Protetor do jogador": "Pelindung pemain",
@@ -2327,5 +2326,9 @@
  "Piscar sumindo e aparecendo": "Berkedip dengan menghilang dan muncul",
  "Requer a include textdrawblink.inc no servidor.": "Memerlukan include textdrawblink.inc di server.",
  "Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.": "Memerlukan include kedip TextDraw ({0}) karena ada TextDraw yang berkedip.",
- "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Kode memakai kedip TextDraw: sertakan textdrawblink.inc di server."
+ "O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.": "Kode memakai kedip TextDraw: sertakan textdrawblink.inc di server.",
+ "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Saat amunisi habis, senjata dibuang dan NPC bertarung dengan tangan kosong",
+ "Munição (a arma é descartada quando acaba)": "Amunisi (senjata dibuang saat habis)",
+ "Munição infinita": "Amunisi tak terbatas",
+ "Alterar a munição do NPC": "Ubah amunisi NPC"
 }

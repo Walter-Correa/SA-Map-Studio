@@ -319,7 +319,8 @@ const GUARD_VARS = 700; // the shared variables of CLEO (0 to 1023) where the gu
 export const ACTORS_BUDGET = 20;
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
-export const npcVars = (e) => (e.role === 'guard' || (e.role !== 'neutral' && e.follow) ? 4 : 3);
+export const npcVars = (e) => (e.role === 'guard' ? 5 : e.role !== 'neutral' && e.follow ? 4 : 3);
+const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed in this time (ms) and looks for another
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
 export const npcTravels = (e) => e.role !== 'neutral' && !!e.follow;
@@ -352,7 +353,7 @@ export function actorsScript(items) {
       if (e.weapon) {
         const model = weaponModel(e.weapon);
         if (model) loadModel(a, model, 'w' + i);
-        a.op(0x01B2, lv(h), int(e.weapon), int(3000));
+        a.op(0x01B2, lv(h), int(e.weapon), int(e.ammoInfinite === false ? Math.max(1, e.ammo | 0 || 100) : 3000));
         a.op(0x01B9, lv(h), int(e.weapon));
         if (model) a.op(0x0249, int(model));
       }
@@ -370,7 +371,7 @@ export function actorsScript(items) {
       if (!e.weapon && e.anim) playAnim(a, e, h, 's' + i);
     },
     manage: (a, e, i, base) => {
-      const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, done = 'n' + i;
+      const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, tt = base + 4, done = 'n' + i;
       const travel = e.role === 'guard' && !!e.follow;
       // goes to where the player is, running (6) or sprinting (7): TASK_GOTO_CHAR has no speed, so this one is used (the player's coordinates are in T1..T3)
       // Each protector has its own place around the player (a ring of 5 m or more, by its number), so they never pile up on the same point
@@ -409,12 +410,28 @@ export function actorsScript(items) {
         a.op(0x00A0, lv(T4), lv(T8), lv(T9), lv(T10));
         a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(blocked));
       };
-      // A target inside a vehicle that is already destroyed is not worth it (the vehicle is a wreck: nothing to hit), even if it is alive
+      // A target inside a vehicle is only attacked with a weapon that shoots and still has ammunition, never when the vehicle is already destroyed
+      // (nothing to hit) and never when it is a tank (Rhino) unless the weapon is a rocket launcher; otherwise it is ignored and another one is looked for
+      const weaponInfo = WEAPONS.find(w => w.id === e.weapon);
+      const ranged = !!e.weapon && !!weaponInfo && !weaponInfo.melee;
+      const antiTank = e.weapon === 35 || e.weapon === 36;
       const wreckCheck = (v, pre, blocked) => {
         a.op(0x00D6, int(0)).op(0x00DF, lv(v)).op(0x004D, ref(L(pre)));
+        if (!ranged) {
+          a.jump(blocked);
+          a.label(L(pre));
+          return;
+        }
         a.op(0x03C0, lv(v), lv(T0));
-        a.op(0x00D6, int(0)).op(0x0119, lv(T0)).op(0x004D, ref(L(pre)));
+        a.op(0x00D6, int(0)).op(0x0119, lv(T0)).op(0x004D, ref(L(pre + 'a')));
         a.jump(blocked);
+        a.label(L(pre + 'a'));
+        a.op(0x041A, lv(h), int(e.weapon), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(blocked));
+        if (!antiTank) {
+          a.op(0x00D6, int(0)).op(0x0137, lv(T0), int(432)).op(0x004D, ref(L(pre)));
+          a.jump(blocked);
+        }
         a.label(L(pre));
       };
       const runTo = (ms = 4000) => {
@@ -434,7 +451,8 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(Math.round(e.respawn * 8))).op(0x004D, ref(done));
         a.op(0x009B, lv(h));
         a.op(0x0006, lv(st), int(0)).op(0x0006, lv(cnt), int(0));
-        if (npcVars(e) === 4) a.op(0x0006, lv(tgt), int(0));
+        if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
+        if (e.role === 'guard') a.op(0x0006, lv(tt), int(0));
       }
       a.jump(done);
       a.label(L('av'));
@@ -482,8 +500,17 @@ export function actorsScript(items) {
         a.op(0x0AB3, int(PH_HEALTH), lv(T0));
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
       }
+      if (e.weapon && e.ammoInfinite === false && !WEAPONS.find(w => w.id === e.weapon)?.melee) {
+        // finite ammunition: when it runs out the weapon is thrown away and the NPC fights with its hands
+        a.op(0x041A, lv(h), int(e.weapon), lv(T0));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('am1')));
+        a.jump(L('am2'));
+        a.label(L('am1'));
+        a.op(0x0555, lv(h), int(e.weapon));
+        a.label(L('am2'));
+      }
       // an endless supply of ammunition
-      if (e.weapon && !WEAPONS.find(w => w.id === e.weapon)?.melee) {
+      if (e.weapon && e.ammoInfinite !== false && !WEAPONS.find(w => w.id === e.weapon)?.melee) {
         a.op(0x041A, lv(h), int(e.weapon), lv(T0));
         a.op(0x00D6, int(0)).op(0x8019, lv(T0), int(300)).op(0x004D, ref(L('ok')));
         a.op(0x0114, lv(h), int(e.weapon), int(3000));
@@ -533,7 +560,11 @@ export function actorsScript(items) {
         a.op(0x00A1, lv(h), lv(T4), lv(T5), lv(T6));
         a.op(0x0687, lv(h));
         a.op(0x0006, lv(st), int(1)).op(0x0006, lv(cnt), int(0));
-        if (npcVars(e) === 4) a.op(0x0006, lv(tgt), int(0));
+        if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
+        if (e.role === 'guard') {
+          a.op(0x0006, lv(tt), int(0));                                                          // the teleport is a reset: no target, no mark
+          if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        }
         a.jump(done);
         a.label(L('fs'));
         a.op(0x0006, lv(st), int(3)).op(0x0006, lv(cnt), int(0));                                // starts waiting; meanwhile it goes to the player
@@ -542,6 +573,31 @@ export function actorsScript(items) {
         a.label(L('fn'));
       }
       if (e.role === 'guard') {
+        // First priority: a police helicopter (Police Maverick) within 60 m of the player while he is wanted. It lets go of any target it had and
+        // shoots at the helicopter itself (they have no pilot). Only with a weapon that shoots and has ammunition. The order is given once a second,
+        // not at every cycle (it would turn round all the time and never shoot)
+        if (ranged) {
+          a.op(0x00D6, int(0)).op(0x010F, int(0), int(0)).op(0x004D, ref(L('hk')));
+          a.op(0x041A, lv(h), int(e.weapon), lv(T6));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L('hk')));
+          a.op(0x0006, lv(T5), int(0));
+          a.label(L('hs'));
+          a.op(0x00D6, int(0)).op(0x001B, int(30), lv(T5)).op(0x004D, ref(L('hk')));
+          a.op(0x00D6, int(0)).op(0x0AE2, lv(T1), lv(T2), lv(T3), flt(60), lv(T5), int(1), lv(T4)).op(0x004D, ref(L('hk')));
+          a.op(0x00D6, int(0)).op(0x0137, lv(T4), int(497)).op(0x004D, ref(L('hn')));
+          a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0));
+          if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+          a.op(0x000A, lv(cnt), int(1));
+          a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
+          a.op(0x0006, lv(cnt), int(0));
+          a.op(0x00AA, lv(T4), lv(T0), lv(T6), lv(T5));
+          a.op(0x0668, lv(h), lv(T0), lv(T6), lv(T5), int(1500));
+          a.jump(done);
+          a.label(L('hn'));
+          a.op(0x000A, lv(T5), int(1));
+          a.jump(L('hs'));
+          a.label(L('hk'));
+        }
         // Whoever the game has against the player: someone who hurt him, who is shooting, or who has seen him armed (up to sixteen peds a time, one after the other)
         a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gy')));
         a.jump(L('gz'));                                                                         // not fighting
@@ -574,6 +630,7 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(0)).op(0x004D, ref(L('gq')));
         a.op(0x010E, int(0), lv(T5));
         a.label(L('gq'));
+        a.op(0x0006, lv(tt), int(0));
         a.op(0x0006, lv(tgt), int(0));                                                           // its enemy died (or went away): free again, and it follows the player again
         a.jump(L('gz'));
         a.label(L('gy2'));
@@ -588,6 +645,7 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('gr')));
         a.jump(L('gd'));                                                                          // visible: it keeps fighting, no new search
         a.label(L('gr'));
+        a.op(0x0006, lv(tt), int(0));
         a.op(0x0006, lv(tgt), int(0));                                                           // behind a wall or an object: it lets it go and looks for another
         a.label(L('gw'));
         // Two passes: first the targets that no other protector is on (so they spread over the enemies), then any target (nobody stays still
@@ -674,27 +732,25 @@ export function actorsScript(items) {
         };
         searchPass('a', 0, L('pass2'));
         a.label(L('pass2'));
-        searchPass('b', -1, L('hk'));
-        a.label(L('hk'));
-        // A police helicopter (Police Maverick) within 60 m of the player while he is wanted, when there is no other enemy: it shoots at the helicopter.
-        // The order is given once a second, not at every cycle (it would turn round all the time and never shoot)
-        a.op(0x00D6, int(0)).op(0x010F, int(0), int(0)).op(0x004D, ref(L('gd')));
-        a.op(0x0006, lv(T5), int(0));
-        a.label(L('hs'));
-        a.op(0x00D6, int(0)).op(0x001B, int(30), lv(T5)).op(0x004D, ref(L('gd')));
-        a.op(0x00D6, int(0)).op(0x0AE2, lv(T1), lv(T2), lv(T3), flt(60), lv(T5), int(1), lv(T4)).op(0x004D, ref(L('gd')));
-        a.op(0x00D6, int(0)).op(0x0137, lv(T4), int(497)).op(0x004D, ref(L('hn')));
-        a.op(0x000A, lv(cnt), int(1));
-        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
-        a.op(0x0006, lv(cnt), int(0));
-        a.op(0x00AA, lv(T4), lv(T0), lv(T6), lv(T5));                                             // the helicopters of the police have no pilot: it shoots at the vehicle itself
-        a.op(0x0668, lv(h), lv(T0), lv(T6), lv(T5), int(1500));
-        a.jump(done);
-        a.label(L('hn'));
-        a.op(0x000A, lv(T5), int(1));
-        a.jump(L('hs'));
+        searchPass('b', -1, L('gd'));
         a.label(L('gd'));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), lv(tgt));
+        // How long it has had this target: after TARGET_LIMIT without killing it, it lets it go (and clears its tasks) so it is never stuck on one
+        a.op(0x01BD, lv(T4));
+        a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gtm')));
+        a.op(0x0006, lv(tt), int(0));
+        a.jump(L('gtn'));
+        a.label(L('gtm'));
+        a.op(0x00D6, int(0)).op(0x0019, lv(tt), int(0)).op(0x004D, ref(L('gts')));
+        a.op(0x0A8F, lv(T4), lv(tt), lv(T5));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(TARGET_LIMIT)).op(0x004D, ref(L('gtn')));
+        a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        a.op(0x0687, lv(h));
+        a.jump(done);
+        a.label(L('gts'));
+        a.op(0x0085, lv(tt), lv(T4));
+        a.label(L('gtn'));
         a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gx')));
         a.jump(L('gu'));
         a.label(L('gx'));
