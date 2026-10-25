@@ -231,6 +231,40 @@ export function diagScript() {
   a.op(0x01F5, int(0), lv(20));
   a.op(0x0A8D, int(0xA49960 + 3 * 4), int(4), int(0), lv(21));
   a.op(0x0AD9, lv(14), str('dg7:handle_now=%d:var3=%d\r\n'), lv(20), lv(21), endArgs);
+  // Every 20 cycles (10 seconds): all the scripts that run, in the order the game keeps them. The game processes them from the first one and stops at
+  // the first one that is not active, so the ones after it do not run at all: dg8 gives the number in the list, the name (the first eight letters, as
+  // two numbers), whether it is active, how long until it wakes up (negative: it should be running) and where it is
+  a.op(0x0AB4, int(1009), lv(20));
+  a.op(0x000A, lv(20), int(1));
+  a.op(0x0AB3, int(1009), lv(20));
+  a.op(0x0085, lv(21), lv(20));
+  a.op(0x0016, lv(21), int(20));
+  a.op(0x0012, lv(21), int(20));
+  a.op(0x0A8F, lv(20), lv(21), lv(22));
+  a.op(0x00D6, int(0)).op(0x0039, lv(22), int(0)).op(0x004D, ref('nodump'));
+  a.op(0x0A8D, int(0xA8B42C), int(4), int(0), lv(30));
+  a.op(0x0006, lv(25), int(0));
+  a.label('dl');
+  a.op(0x00D6, int(0)).op(0x0039, lv(30), int(0)).op(0x004D, ref('dm'));
+  a.jump('nodump');
+  a.label('dm');
+  a.op(0x0A8E, lv(30), int(8), lv(20));
+  a.op(0x0A8D, lv(20), int(4), int(0), lv(26));
+  a.op(0x0A8E, lv(30), int(12), lv(20));
+  a.op(0x0A8D, lv(20), int(4), int(0), lv(27));
+  a.op(0x0A8E, lv(30), int(0xC4), lv(20));
+  a.op(0x0A8D, lv(20), int(1), int(0), lv(28));
+  a.op(0x0A8E, lv(30), int(0xCC), lv(20));
+  a.op(0x0A8D, lv(20), int(4), int(0), lv(29));
+  a.op(0x0A8F, lv(29), lv(13), lv(29));
+  a.op(0x0A8E, lv(30), int(0x14), lv(20));
+  a.op(0x0A8D, lv(20), int(4), int(0), lv(21));
+  a.op(0x0A8F, lv(21), int(0xA49960), lv(21));
+  a.op(0x0AD9, lv(14), str('dg8:n=%d:name=%x_%x:active=%d:wakes_in=%d:place=%x\r\n'), lv(25), lv(26), lv(27), lv(28), lv(29), lv(21), endArgs);
+  a.op(0x0A8D, lv(30), int(4), int(0), lv(30));
+  a.op(0x000A, lv(25), int(1));
+  a.op(0x00D6, int(0)).op(0x0019, lv(25), int(120)).op(0x004D, ref('dl'));
+  a.label('nodump');
   a.op(0x0A9B, lv(14));
   a.jump('loop');
   return a.build();
