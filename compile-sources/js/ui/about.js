@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.7', date: '26/10/2026', items: [
+      'The player is taken to the spawn point when a new game starts only in the first 20 seconds after the game starts (the intro), when a save is loaded, and after he is arrested or leaves the hospital. A cutscene later in the game no longer takes him there.',
+      'The Save action of a pickup or a checkpoint moves the player back first (3 meters, or the size of the checkpoint plus 1 meter when it is larger) and then opens the save menu, so the saved game does not start with him on the pickup or inside the checkpoint, which opened the save menu again.',
+    ],
+  },
+  {
     version: '4.1.6', date: '26/10/2026', items: [
       'Fixed a crash during cutscenes: the NPCs were not taken to the player any more in a cutscene, but they still got orders (tasks, scans for targets) while the game was running it. Now, while the player has no control (a cutscene or a scripted scene), the NPCs get no order at all until it ends. Not tested in the game.',
     ],

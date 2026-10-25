@@ -141,7 +141,7 @@ function nearScript(items, { radius, wait, spawn, manage, init, pre, save }) {
 // ---------------------------------------------------------------------------  what happens when a checkpoint or a pickup is used
 // act: the action (see makeAction in project.js); x, y, z: where the item is. `id` makes the labels of this copy unique.
 // T6 is left at 1 when the action happened and at 0 when it did not (the player could not pay).
-function emitAction(a, act, x, y, z, id) {
+function emitAction(a, act, x, y, z, id, dist = 3) {
   const u = (n) => n + id;
   const price = act.price | 0;
   if (price > 0) {
@@ -200,7 +200,21 @@ function emitAction(a, act, x, y, z, id) {
       a.op(0x0249, int(1010));
       break;
     case 'jetpack': a.op(0x07A7, lv(PLAYER)); break;
-    case 'save': a.op(0x03D8); break;
+    case 'save':
+      // The game saves where the player is: he is moved `dist` meters back first (away from the item), so the saved game does not start with him
+      // on the pickup or inside the checkpoint, which would open the save menu again
+      a.op(0x04C4, lv(PLAYER), flt(0), flt(-dist), flt(0), lv(T0), lv(T1), lv(T2));
+      a.op(0x04E4, lv(T0), lv(T1));
+      a.op(0x03CB, lv(T0), lv(T1), lv(T2));
+      a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(u('sf')));
+      a.op(0x03C0, lv(PLAYER), lv(T3));
+      a.op(0x00AB, lv(T3), lv(T0), lv(T1), lv(T2));
+      a.jump(u('sg'));
+      a.label(u('sf'));
+      a.op(0x00A1, lv(PLAYER), lv(T0), lv(T1), lv(T2));
+      a.label(u('sg'));
+      a.op(0x03D8);
+      break;
     case 'skin':
       loadModel(a, act.model, 'x' + id);
       a.op(0x09C7, int(0), int(act.model));
@@ -328,7 +342,7 @@ export function checkpointsScript(items) {
       const r = Math.max(1, e.radius);
       a.op(0x00D6, int(0)).op(0x00FE, lv(PLAYER), flt(e.x), flt(e.y), flt(e.z), flt(r), flt(r), flt(Math.max(r, 3)), int(0)).op(0x004D, ref('o' + i));
       a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('n' + i));              // already inside: nothing new
-      emitAction(a, e.action, e.x, e.y, e.z, 'c' + i);
+      emitAction(a, e.action, e.x, e.y, e.z, 'c' + i, Math.max(3, e.radius + 1));
       a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(0)).op(0x004D, ref('u' + i));
       a.jump('n' + i);                                                                           // could not pay: it tries again when the player comes back in
       a.label('u' + i);
@@ -1135,6 +1149,12 @@ export function worldScript(world) {
       // New game: the intro (cutscene, with the player's control off) ends and the game puts the player at its own place. The first time the player gets
       // his control back after having it off, he is taken to the spawn point (once; a saved game that starts with control on is not affected)
       a.op(0x00D6, int(0)).op(0x0039, lv(12), int(0)).op(0x004D, ref('ngd'));
+      // Only in the first 20 seconds after the game starts (the intro of a new game): a cutscene later on, in a saved game, never takes him there
+      a.op(0x000A, lv(13), int(1));
+      a.op(0x00D6, int(0)).op(0x0019, lv(13), int(40)).op(0x004D, ref('ngw'));
+      a.op(0x0006, lv(12), int(1));
+      a.jump('ngd');
+      a.label('ngw');
       a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref('ngo'));
       a.op(0x00D6, int(0)).op(0x0039, lv(11), int(1)).op(0x004D, ref('ngd'));
       a.op(0x0006, lv(12), int(1));

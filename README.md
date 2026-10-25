@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.6-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.7-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.7 — 26/10/2026
+- The player is taken to the spawn point when a new game starts only in the first 20 seconds after the game starts (the intro), when a save is loaded, and after he is arrested or leaves the hospital. A cutscene later in the game no longer takes him there.
+- The Save action of a pickup or a checkpoint moves the player back first (3 meters, or the size of the checkpoint plus 1 meter when it is larger) and then opens the save menu, so the saved game does not start with him on the pickup or inside the checkpoint, which opened the save menu again.
 
 ### 4.1.6 — 26/10/2026
 - Fixed a crash during cutscenes: the NPCs were not taken to the player any more in a cutscene, but they still got orders (tasks, scans for targets) while the game was running it. Now, while the player has no control (a cutscene or a scripted scene), the NPCs get no order at all until it ends. Not tested in the game.
