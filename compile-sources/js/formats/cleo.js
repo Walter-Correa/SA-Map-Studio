@@ -591,6 +591,22 @@ export function actorsScript(items) {
         a.label(L('rx' + n));
       };
       const L = (n) => n + i;
+      // The game removes characters by itself (a dead body after a while, in a cutscene, in the water): the handle then means nothing, and an order
+      // given to it (deleting it, for one) takes the game down. A character that is gone is made again when the player is near, unless it had
+      // died and was to stay dead (state 9)
+      a.op(0x00D6, int(0)).op(0x0039, lv(st), int(9)).op(0x004D, ref(L('sx')));
+      a.jump(done);
+      a.label(L('sx'));
+      a.op(0x00D6, int(0)).op(0x056D, lv(h)).op(0x004D, ref(L('sy')));
+      a.jump(L('sz'));
+      a.label(L('sy'));
+      a.op(0x0006, lv(st), int(0)).op(0x0006, lv(cnt), int(0));
+      if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
+      if (e.role === 'guard') a.op(0x0006, lv(tt), int(0));
+      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(GUARD_VARS + e.gid), int(0)).op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+      if (e.role === 'enemy' && e.eid >= 0) a.op(0x0AB3, int(ENEMY_VARS + e.eid), int(0));
+      a.jump(done);
+      a.label(L('sz'));
       // dead: it stays dead, or comes back after the time asked for
       a.op(0x00D6, int(0)).op(0x0118, lv(h)).op(0x004D, ref(L('av')));
       if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
@@ -601,6 +617,8 @@ export function actorsScript(items) {
         a.op(0x0006, lv(st), int(0)).op(0x0006, lv(cnt), int(0));
         if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
         if (e.role === 'guard') a.op(0x0006, lv(tt), int(0));
+      } else {
+        a.op(0x0006, lv(st), int(9));                                                          // dead for good
       }
       a.jump(done);
       a.label(L('av'));
@@ -652,14 +670,12 @@ export function actorsScript(items) {
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
         // The player's car does not go through the protectors (taking away their collision does not work: the game gives it back to a character
         // that stands still). A protector on foot within 15 m of the player, in the way of his car (a corridor 9 m wide, 3 to 15 m ahead of it), while
-        // the car moves, steps aside to the side it is on. It is not asked anything else while it does
+        // the car is (moving or not), steps aside to the side it is on. It is not asked anything else while it does
         a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(15), flt(15), flt(15), int(0)).op(0x004D, ref(L('wr')));
         a.op(0x03C0, lv(PLAYER), lv(T0));
-        a.op(0x02E3, lv(T0), lv(T6));
-        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(3)).op(0x004D, ref(L('wr')));
         // [side (+1 right, -1 left), ahead, radius] of the places where a character is in the way
         [[1, 4, 4.5], [-1, 4, 4.5], [1, 10, 5], [-1, 10, 5]].forEach(([side, ahead, radius], k) => {
           a.op(0x0407, lv(T0), flt(3 * side), flt(ahead), flt(0), lv(T4), lv(T5), lv(T6));
@@ -741,10 +757,10 @@ export function actorsScript(items) {
         a.label(L('fa'));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
         a.op(0x00D6, int(0)).op(0x0039, lv(st), int(3)).op(0x004D, ref(L('fs')));
-        // Checked every three seconds. In another area of the game (an interior): taken at once. In the same area: only when it is not getting closer
-        // (more than 3 m closer than at the last check): stuck, or left behind. One that is running toward the player is left alone
+        // Checked every five seconds. In another area of the game (an interior): taken at once. In the same area: only when it is not getting closer
+        // (more than 1 m closer than at the last check): stuck, or left behind. One that is running toward the player is left alone
         a.op(0x000A, lv(cnt), int(1));
-        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));
+        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(39)).op(0x004D, ref(done));
         a.op(0x0006, lv(cnt), int(0));
         a.op(0x00D6, int(0)).op(0x0039, lv(T0), lv(T6)).op(0x004D, ref(L('fv')));
         a.op(0x00A0, lv(h), lv(T4), lv(T5), lv(T6));
@@ -752,7 +768,7 @@ export function actorsScript(items) {
         a.op(0x0086, lv(T8), lv(pd));
         a.op(0x0063, lv(T8), lv(T7));
         a.op(0x0086, lv(pd), lv(T7));
-        a.op(0x00D6, int(0)).op(0x0021, lv(T8), flt(3)).op(0x004D, ref(L('fu')));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T8), flt(1)).op(0x004D, ref(L('fu')));
         a.jump(done);
         a.label(L('fu'));
         logTp('stuck');

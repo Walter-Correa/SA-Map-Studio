@@ -7,6 +7,13 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.12', date: '26/10/2026', items: [
+      'Crashes (the game fails in the same place in the water, in cutscenes and when NPCs are taken to the player): the likely cause is that the game removes characters by itself (a dead body after a while, a cutscene, the water) and the script went on giving orders to the removed character, for example deleting it when the time to bring it back came. The script now checks that the character still exists before doing anything with it; one that is gone is made again when the player is near, unless it had died and was to stay dead. Not tested in the game.',
+      'The protectors step out of the way of the car of the player also when the car is stopped (the speed condition is gone).',
+      'A protector is taken to the player only when it did not get more than 1 meter closer in 5 seconds (it was 3 meters in 3 seconds).',
+    ],
+  },
+  {
     version: '4.1.11', date: '26/10/2026', items: [
       'The undo of the wanted level when a NPC of the project was hit by the car is gone (it also hid real crimes). The NPCs are made as gang members now (ped type 16) instead of civilians: the game does not count a crime against gang members, so hitting or running one over should bring no stars. Not tested in the game.',
       'The anti collision of the protectors (taking away their collision while the car of the player passes) is gone: the game gives the collision back to a character that stands still, so it never worked well. A protector on foot within 15 meters of the player that is in the way of his moving car (a corridor 9 meters wide, 3 to 15 meters ahead of it) now steps aside, to the side it is on, and is not asked anything else while it does.',

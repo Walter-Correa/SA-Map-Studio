@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.11-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.12-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,11 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.12 — 26/10/2026
+- Crashes (the game fails in the same place in the water, in cutscenes and when NPCs are taken to the player): the likely cause is that the game removes characters by itself (a dead body after a while, a cutscene, the water) and the script went on giving orders to the removed character, for example deleting it when the time to bring it back came. The script now checks that the character still exists before doing anything with it; one that is gone is made again when the player is near, unless it had died and was to stay dead. Not tested in the game.
+- The protectors step out of the way of the car of the player also when the car is stopped (the speed condition is gone).
+- A protector is taken to the player only when it did not get more than 1 meter closer in 5 seconds (it was 3 meters in 3 seconds).
 
 ### 4.1.11 — 26/10/2026
 - The undo of the wanted level when a NPC of the project was hit by the car is gone (it also hid real crimes). The NPCs are made as gang members now (ped type 16) instead of civilians: the game does not count a crime against gang members, so hitting or running one over should bring no stars. Not tested in the game.
