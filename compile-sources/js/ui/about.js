@@ -7,6 +7,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.14', date: '26/10/2026', items: [
+      'Found the cause of the other crashes and of the NPCs that stood still, in a second crash dump: the game keeps a table of 128 places with the tasks that scripts give to characters (walk to a point, get in a car), and it does not check that there is room. In the dump all 128 places were taken (103 by the walk order and 24 by the get in car order). When the table is full the next task is not given (the NPC stands there and teleports do not help) and soon after the game fails.',
+      'The NPCs near the player were told again to walk or to get in his car about every second, and the step aside order was repeated at every cycle. They are now told again every 3 seconds, and the step aside order is only given to a character that is not already moving.',
+      'New script (samsp_name_npcs0.cs) that counts the free places of that table four times a second. When fewer than 13 are left, the NPCs stop giving the walk and get in car orders until places are free again. It reads the memory of the game and is made for the version of GTA San Andreas that SA-MP uses (1.0 US).',
+      'The protectors that are taken to the player never go to a place in front of him (a car at speed ran into them); the ring around him leaves out the front. The protectors also step out of the way of the car when they are behind it, with the same rules as in front of it.',
+    ],
+  },
+  {
     version: '4.1.13', date: '26/10/2026', items: [
       'Found the cause of the crash with the protectors, in a crash dump of the game: the game hides the characters that are close to the camera and keeps them in a list of only 15 places, with no check of its limit. With many protectors put right behind the player (where the camera is), more than 15 were near the camera at once, the list wrote over the memory that comes next and the game failed when it cleaned the list.',
       'The protectors that are taken to the player now go to a place of their own on a ring around him (6 meters on foot, 12 meters in a vehicle, more rings when there are many of them) instead of all behind him, so few of them are near the camera at the same time. They are no longer grouped on one point behind the player.',

@@ -85,6 +85,40 @@ export function chunkByVars(items, varsOf, budget = LOCALS_BUDGET) {
   return out;
 }
 
+// Skips (jumps to `skip`) when the table of tasks of the game has few free places left. `tag` makes the labels unique. Uses T10
+function taskGate(a, tag, skip) {
+  a.op(0x0AB4, int(TASK_FREE), lv(T10));
+  a.op(0x00D6, int(0)).op(0x0019, lv(T10), int(0)).op(0x004D, ref('tk' + tag));
+  a.op(0x00D6, int(0)).op(0x0019, lv(T10), int(TASK_MIN_FREE + 1)).op(0x004D, ref(skip));
+  a.label('tk' + tag);
+}
+
+// Counts the free places of the table of tasks of the game (a place is free when its three fields that matter are zero, as the game itself tests it)
+// and leaves the number plus 1 in TASK_FREE, four times a second. Only for the game version of SA-MP (1.0 US)
+export function taskGuardScript() {
+  const a = new Asm();
+  a.op(0x0000);
+  a.label('loop').op(0x0001, int(250));
+  a.op(0x0006, lv(0), int(0));                                   // free places
+  a.op(0x0006, lv(1), int(TASK_TABLE));                          // address of the place being looked at
+  a.op(0x0006, lv(2), int(0));                                   // places looked at
+  a.label('next');
+  [4, 8, 12].forEach((o) => {
+    a.op(0x0A8E, lv(4), lv(1), int(o));                          // lv4 = lv1 + o
+    a.op(0x0A8D, lv(4), int(4), int(0), lv(3));                  // the field
+    a.op(0x00D6, int(0)).op(0x0039, lv(3), int(0)).op(0x004D, ref('used'));
+  });
+  a.op(0x000A, lv(0), int(1));
+  a.label('used');
+  a.op(0x0A8E, lv(1), lv(1), int(0x14));
+  a.op(0x000A, lv(2), int(1));
+  a.op(0x00D6, int(0)).op(0x0019, lv(2), int(TASK_PLACES - 1)).op(0x004D, ref('next'));
+  a.op(0x000A, lv(0), int(1));
+  a.op(0x0AB3, int(TASK_FREE), lv(0));
+  a.jump('loop');
+  return a.build();
+}
+
 // Plain letters only: the game's text takes no accents here
 export const ascii = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7e]/g, '?');
 
@@ -424,6 +458,11 @@ const LOG_FILE = 'cleo\\samsp_log.txt'; // what the scripts write about the tele
 // The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
 // brings no stars (the civilians, type 4, do)
 const NPC_TYPE = 16;
+// The game keeps a record of every task a script gives to a character (05D3, 05CA, ...) in a table of 128 places, and it does not check that the
+// table has room: when it is full the next task goes to the place before the table, the character is not given the task (it stands there) and the
+// game fails soon after (found in a crash dump: 128 of 128 places taken, 103 of them by 05D3 and 24 by 05CA). The script taskguard counts the free
+// places (the shared variable TASK_FREE holds that number plus 1, 0 = not measured) and the NPCs give no new task of those while few are left
+const TASK_FREE = 1008, TASK_TABLE = 0xC0B1E8, TASK_PLACES = 128, TASK_MIN_FREE = 12;
 const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed in this time (ms) and looks for another
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
@@ -501,7 +540,9 @@ export function actorsScript(items) {
       // when there are many of them), never piled up behind him. The game hides the characters that are close to the camera and keeps them in a
       // list of 15, with no limit check: more than 15 near the camera (all of them behind the player, where the camera is) write over what comes
       // next in memory and the game fails (found in a crash dump of the game). Around him, few of them are near the camera at the same time
-      const tr = 6 + 2 * Math.floor(gnum / 10), ta = gnum * 0.6283 + 0.3;
+      // Never in front of him (a car at speed would run into them): the places go from the front-left side, round the back, to the front-right
+      // side (220 degrees, from 160 to 380: the front is 90)
+      const tr = 6 + 2 * Math.floor(gnum / 10), ta = (160 + 22 * (gnum % 10) + 5 * Math.floor(gnum / 10)) * Math.PI / 180;
       const tx = +(tr * Math.cos(ta)).toFixed(2), ty = +(tr * Math.sin(ta)).toFixed(2);
       const vx = +((tr + 6) * Math.cos(ta)).toFixed(2), vy = +((tr + 6) * Math.sin(ta)).toFixed(2);
       const speed = int(e.runFast === false ? 6 : 7);
@@ -590,6 +631,7 @@ export function actorsScript(items) {
         a.op(0x07E1, lv(h), lv(x), lv(y), lv(z));                                                  // in the water: it swims
         a.jump(L('rx' + n));
         a.label(L('rw' + n));
+        taskGate(a, 'r' + n + '_' + i, done);
         a.op(0x05D3, lv(h), lv(x), lv(y), lv(z), speed, int(ms));
         a.label(L('rx' + n));
       };
@@ -672,18 +714,23 @@ export function actorsScript(items) {
         a.op(0x0AB3, int(PH_HEALTH), lv(T0));
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
         // The player's car does not go through the protectors (taking away their collision does not work: the game gives it back to a character
-        // that stands still). A protector on foot within 15 m of the player, in the way of his car (a corridor 9 m wide, 3 to 15 m ahead of it), while
+        // that stands still). A protector on foot within 15 m of the player, in the way of his car (a corridor 9 m wide, 3 to 15 m ahead of it or behind it), while
         // the car is (moving or not), steps aside to the side it is on. It is not asked anything else while it does
         a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(15), flt(15), flt(15), int(0)).op(0x004D, ref(L('wr')));
+        a.op(0x06AC, lv(h), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(1.5)).op(0x004D, ref(L('wk')));
+        a.jump(L('wr'));                                                                         // already moving: not told again (it would fill the table of tasks)
+        a.label(L('wk'));
+        taskGate(a, 'w' + i, L('wr'));
         a.op(0x03C0, lv(PLAYER), lv(T0));
-        // [side (+1 right, -1 left), ahead, radius] of the places where a character is in the way
-        [[1, 4, 4.5], [-1, 4, 4.5], [1, 10, 5], [-1, 10, 5]].forEach(([side, ahead, radius], k) => {
+        // [side (+1 right, -1 left), ahead (negative: behind), radius] of the places where a character is in the way, in front of the car and behind it
+        [[1, 4, 4.5], [-1, 4, 4.5], [1, 10, 5], [-1, 10, 5], [1, -4, 4.5], [-1, -4, 4.5], [1, -10, 5], [-1, -10, 5]].forEach(([side, ahead, radius], k) => {
           a.op(0x0407, lv(T0), flt(3 * side), flt(ahead), flt(0), lv(T4), lv(T5), lv(T6));
           a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T4), lv(T5), lv(T6), flt(radius), flt(radius), flt(radius), int(0)).op(0x004D, ref(L('wt' + k)));
-          a.op(0x0407, lv(T0), flt(9 * side), flt(ahead + 4), flt(0), lv(T4), lv(T5), lv(T6));
+          a.op(0x0407, lv(T0), flt(9 * side), flt(ahead + (ahead > 0 ? 4 : -4)), flt(0), lv(T4), lv(T5), lv(T6));
           a.jump(L('wm'));
           a.label(L('wt' + k));
         });
@@ -1011,10 +1058,11 @@ export function actorsScript(items) {
           // close to the player: it comes to him on foot; it gets in his car and out of it with him. Not while it fights
           a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(done));
           a.op(0x000A, lv(cnt), int(1));
-          a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(6)).op(0x004D, ref(done));
+          a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));
           a.op(0x0006, lv(cnt), int(0));
           a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('ff')));
           a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(done));                           // the player drives and it is not in: gets in
+          taskGate(a, 'c' + i, done);
           a.op(0x03C0, lv(PLAYER), lv(T6));
           a.op(0x05CA, lv(h), lv(T6), int(8000), int(-1));
           a.jump(done);

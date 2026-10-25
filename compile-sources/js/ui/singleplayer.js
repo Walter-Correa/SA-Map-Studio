@@ -15,7 +15,7 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
-import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
+import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
 const NOT_OBJECTS = new Set(['cars', 'peds', 'weap', 'hier']);
@@ -656,6 +656,8 @@ async function buildFiles(project, say = () => {}) {
   for (const n of npcs) n.enemyTotal = enemyCount;
   putScripts('npcs', npcs.filter(n => !npcTravels(n)), npcVars, actorsScript);
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
+  // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
+  if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());
   putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action })), () => 3, checkpointsScript);
   const w = project.world || {};
   putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);
