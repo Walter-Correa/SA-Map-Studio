@@ -126,6 +126,8 @@ export function taskGuardScript() {
 // aiming (the secondary task 0); or his event group holds an EVENT_SCRIPT_COMMAND (a script gave him a task). Every half second that it is false
 // every half second, three lines are written in cleo/samsp_log.txt with those values (whether the command says yes or no), the place of the player and
 // whether he is playing: the file cleo/samsp_debug.txt only turns the log on, the log is cleo/samsp_log.txt
+// The first variable of the place of each mission marker in main.scm (read from the script of the game)
+const MISSION_TRIGGERS = [459, 462, 465, 468, 471, 474, 477, 494, 547, 550, 553, 556, 559, 574, 577, 601, 604, 610, 616, 633, 666, 1742, 1745, 2352, 2367, 2370, 2373];
 export function diagScript() {
   const a = new Asm();
   a.op(0x0000);
@@ -168,6 +170,20 @@ export function diagScript() {
   a.op(0x0AD9, lv(14), str('dg1:%d:can=%d:onmission=%d:cutscene=%d:state=%d\r\n'), lv(13), lv(0), lv(1), lv(2), lv(4), endArgs);
   a.op(0x0AD9, lv(14), str('dg2:physical=%x:response=%x:main=%x:attack=%x:invehicle=%d:wanted=%d\r\n'), lv(6), lv(7), lv(8), lv(9), lv(10), lv(11), endArgs);
   a.op(0x0AD9, lv(14), str('dg3:playing=%d:x=%.1f:y=%.1f:z=%.1f\r\n'), lv(12), lv(15), lv(16), lv(17), endArgs);
+  // The mission markers of the game: the main script keeps the place of each one in three variables (x, y, z). The nearest one to the player is
+  // written (the number of its first variable and the distance): the game starts the mission when the player is on foot within 1.2 m (x and y)
+  // and 2 m (z) of that place
+  a.op(0x0007, lv(20), flt(99999));
+  a.op(0x0006, lv(21), int(0));
+  MISSION_TRIGGERS.forEach((v) => {
+    [0, 1, 2].forEach((k) => a.op(0x0A8D, int(0xA49960 + (v + k) * 4), int(4), int(0), lv(22 + k)));
+    a.op(0x050A, lv(15), lv(16), lv(17), lv(22), lv(23), lv(24), lv(25));
+    a.op(0x00D6, int(0)).op(0x0025, lv(20), lv(25)).op(0x004D, ref('tn' + v));
+    a.op(0x0086, lv(20), lv(25));
+    a.op(0x0006, lv(21), int(v));
+    a.label('tn' + v);
+  });
+  a.op(0x0AD9, lv(14), str('dg4:nearest_marker_var=%d:distance=%.1f\r\n'), lv(21), lv(20), endArgs);
   a.op(0x0A9B, lv(14));
   a.jump('loop');
   return a.build();

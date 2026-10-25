@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.23', date: '26/10/2026', items: [
+      'The log of why a mission does not start shows the nearest mission marker of the game and the distance to it (dg4), read from the variables where the main script keeps the place of each marker. The first log showed that the mod was not the cause: the game said yes (CAN_PLAYER_START_MISSION true, no mission running, no cutscene, no wanted level) almost all the time, and only said no for a few seconds while the player had an attack task (aiming or fighting).',
+    ],
+  },
+  {
     version: '4.1.22', date: '26/10/2026', items: [
       'Fixed the crash of the Maximum muscle action (and the one of 4.1.2 with the CJ NPCs): the command that builds the body of the player again (BUILD_PLAYER_MODEL) takes the number of the player, 0, and it was given the handle of his character, which pointed to nothing. Found in a crash dump. Fat and muscle now show on the body at once, as with the cheats of the game, which also build the body again.',
       'Maximum respect and Maximum sex appeal now work like the cheats of the game (read in its code): the game computes both again all the time, and the cheats put a flag that makes the result 1000, so the actions put the same flag and the stats at the most (the respect only reached half of the bar because the total respect also depends on the missions and the other respect stats). Minimum takes the flag away and puts the stats at 0. The flags are not saved: after loading a game the natural value comes back.',

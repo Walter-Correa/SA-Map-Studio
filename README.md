@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.22-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.23-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.23 — 26/10/2026
+- The log of why a mission does not start shows the nearest mission marker of the game and the distance to it (dg4), read from the variables where the main script keeps the place of each marker. The first log showed that the mod was not the cause: the game said yes (CAN_PLAYER_START_MISSION true, no mission running, no cutscene, no wanted level) almost all the time, and only said no for a few seconds while the player had an attack task (aiming or fighting).
 
 ### 4.1.22 — 26/10/2026
 - Fixed the crash of the Maximum muscle action (and the one of 4.1.2 with the CJ NPCs): the command that builds the body of the player again (BUILD_PLAYER_MODEL) takes the number of the player, 0, and it was given the handle of his character, which pointed to nothing. Found in a crash dump. Fat and muscle now show on the body at once, as with the cheats of the game, which also build the body again.
