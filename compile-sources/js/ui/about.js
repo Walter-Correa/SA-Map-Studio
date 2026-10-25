@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.15', date: '26/10/2026', items: [
+      'Fixed a crash when a game was loaded with 4.1.14 installed: the new script that watches the table of tasks of the game gave the parameters of an addition in the wrong order, so the game was asked to store a result in a number instead of a variable. Found in the crash dump (a store to an invalid variable).',
+    ],
+  },
+  {
     version: '4.1.14', date: '26/10/2026', items: [
       'Found the cause of the other crashes and of the NPCs that stood still, in a second crash dump: the game keeps a table of 128 places with the tasks that scripts give to characters (walk to a point, get in a car), and it does not check that there is room. In the dump all 128 places were taken (103 by the walk order and 24 by the get in car order). When the table is full the next task is not given (the NPC stands there and teleports do not help) and soon after the game fails.',
       'The NPCs near the player were told again to walk or to get in his car about every second, and the step aside order was repeated at every cycle. They are now told again every 3 seconds, and the step aside order is only given to a character that is not already moving.',

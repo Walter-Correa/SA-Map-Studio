@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.14-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.15-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.15 — 26/10/2026
+- Fixed a crash when a game was loaded with 4.1.14 installed: the new script that watches the table of tasks of the game gave the parameters of an addition in the wrong order, so the game was asked to store a result in a number instead of a variable. Found in the crash dump (a store to an invalid variable).
 
 ### 4.1.14 — 26/10/2026
 - Found the cause of the other crashes and of the NPCs that stood still, in a second crash dump: the game keeps a table of 128 places with the tasks that scripts give to characters (walk to a point, get in a car), and it does not check that there is room. In the dump all 128 places were taken (103 by the walk order and 24 by the get in car order). When the table is full the next task is not given (the NPC stands there and teleports do not help) and soon after the game fails.

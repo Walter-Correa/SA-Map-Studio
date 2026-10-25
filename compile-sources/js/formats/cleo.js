@@ -104,13 +104,13 @@ export function taskGuardScript() {
   a.op(0x0006, lv(2), int(0));                                   // places looked at
   a.label('next');
   [4, 8, 12].forEach((o) => {
-    a.op(0x0A8E, lv(4), lv(1), int(o));                          // lv4 = lv1 + o
+    a.op(0x0A8E, lv(1), int(o), lv(4));                          // lv4 = lv1 + o (the result is the last parameter)
     a.op(0x0A8D, lv(4), int(4), int(0), lv(3));                  // the field
     a.op(0x00D6, int(0)).op(0x0039, lv(3), int(0)).op(0x004D, ref('used'));
   });
   a.op(0x000A, lv(0), int(1));
   a.label('used');
-  a.op(0x0A8E, lv(1), lv(1), int(0x14));
+  a.op(0x0A8E, lv(1), int(0x14), lv(1));                         // the next place
   a.op(0x000A, lv(2), int(1));
   a.op(0x00D6, int(0)).op(0x0019, lv(2), int(TASK_PLACES - 1)).op(0x004D, ref('next'));
   a.op(0x000A, lv(0), int(1));
