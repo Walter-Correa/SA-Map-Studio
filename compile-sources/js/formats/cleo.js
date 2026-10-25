@@ -497,10 +497,13 @@ export function actorsScript(items) {
       const gnum = Math.max(0, e.gid | 0), ring = 5 + 2 * Math.floor(gnum / 10), ang = gnum * 0.6283;
       const sdx = +(ring * Math.cos(ang)).toFixed(2), sdy = +(ring * Math.sin(ang)).toFixed(2);
       const slot = () => a.op(0x04C4, lv(PLAYER), flt(sdx), flt(sdy), flt(0), lv(T4), lv(T5), lv(T6));
-      // When they are taken to the player they are grouped, but each one keeps a place of its own (less than 2 m apart): characters exactly on the
-      // same point can not be separated by the game (the distance between them is zero) and get stuck
-      const jr = 0.5 + 0.35 * Math.floor(gnum / 8), ja = gnum * 0.7854;
-      const jx = +(jr * Math.cos(ja)).toFixed(2), jy = +(jr * Math.sin(ja)).toFixed(2);
+      // When they are taken to the player, each one goes to a place of its own on a ring around him (6 m on foot, 12 m in a vehicle, more rings
+      // when there are many of them), never piled up behind him. The game hides the characters that are close to the camera and keeps them in a
+      // list of 15, with no limit check: more than 15 near the camera (all of them behind the player, where the camera is) write over what comes
+      // next in memory and the game fails (found in a crash dump of the game). Around him, few of them are near the camera at the same time
+      const tr = 6 + 2 * Math.floor(gnum / 10), ta = gnum * 0.6283 + 0.3;
+      const tx = +(tr * Math.cos(ta)).toFixed(2), ty = +(tr * Math.sin(ta)).toFixed(2);
+      const vx = +((tr + 6) * Math.cos(ta)).toFixed(2), vy = +((tr + 6) * Math.sin(ta)).toFixed(2);
       const speed = int(e.runFast === false ? 6 : 7);
       // A target that other protectors are already on (more than `limit` of them) goes to blocked; the candidate is in T4. The scan counter T5 is kept in cnt meanwhile
       const capCheck = (pre, blocked, limit) => {
@@ -776,12 +779,12 @@ export function actorsScript(items) {
         a.label(L('fv'));
         logTp('area');
         a.label(L('fc'));
-        // all of them at the same point, behind the player: 3 m when he is on foot, 10 m when he is in a vehicle
+        // each one on its own place of a ring around the player: 6 m when he is on foot, 12 m when he is in a vehicle
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fo')));
-        a.op(0x04C4, lv(PLAYER), flt(jx), flt(-10 + jy), flt(0), lv(T4), lv(T5), lv(T6));
+        a.op(0x04C4, lv(PLAYER), flt(vx), flt(vy), flt(0), lv(T4), lv(T5), lv(T6));
         a.jump(L('fp'));
         a.label(L('fo'));
-        a.op(0x04C4, lv(PLAYER), flt(jx), flt(-3 + jy), flt(0), lv(T4), lv(T5), lv(T6));
+        a.op(0x04C4, lv(PLAYER), flt(tx), flt(ty), flt(0), lv(T4), lv(T5), lv(T6));
         a.label(L('fp'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x0575, lv(h), int(0));                                                             // not held and with its collision back before it is moved

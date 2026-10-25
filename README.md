@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.12-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.13-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.13 — 26/10/2026
+- Found the cause of the crash with the protectors, in a crash dump of the game: the game hides the characters that are close to the camera and keeps them in a list of only 15 places, with no check of its limit. With many protectors put right behind the player (where the camera is), more than 15 were near the camera at once, the list wrote over the memory that comes next and the game failed when it cleaned the list.
+- The protectors that are taken to the player now go to a place of their own on a ring around him (6 meters on foot, 12 meters in a vehicle, more rings when there are many of them) instead of all behind him, so few of them are near the camera at the same time. They are no longer grouped on one point behind the player.
 
 ### 4.1.12 — 26/10/2026
 - Crashes (the game fails in the same place in the water, in cutscenes and when NPCs are taken to the player): the likely cause is that the game removes characters by itself (a dead body after a while, a cutscene, the water) and the script went on giving orders to the removed character, for example deleting it when the time to bring it back came. The script now checks that the character still exists before doing anything with it; one that is gone is made again when the player is near, unless it had died and was to stay dead. Not tested in the game.
