@@ -499,6 +499,21 @@ export function actorsScript(items) {
         a.label(L('ps'));
         a.op(0x0AB3, int(PH_HEALTH), lv(T0));
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
+        // The player's car goes through the protectors: while he drives, the car moves and this one is on foot within 8 m of him, it has no collision
+        // and is held where it is (so it does not fall through the ground); in any other case it is normal again
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
+        a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wr')));
+        a.op(0x03C0, lv(PLAYER), lv(T0));
+        a.op(0x02E3, lv(T0), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(1.5)).op(0x004D, ref(L('wr')));
+        a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(8), flt(8), flt(8), int(0)).op(0x004D, ref(L('wr')));
+        a.op(0x0619, lv(h), int(0));
+        a.op(0x0575, lv(h), int(1));
+        a.jump(L('wd'));
+        a.label(L('wr'));
+        a.op(0x0575, lv(h), int(0));
+        a.op(0x0619, lv(h), int(1));
+        a.label(L('wd'));
       }
       if (e.weapon && e.ammoInfinite === false && !WEAPONS.find(w => w.id === e.weapon)?.melee) {
         // finite ammunition: when it runs out the weapon is thrown away and the NPC fights with its hands
@@ -533,6 +548,11 @@ export function actorsScript(items) {
       if (travel) {
         // Only the protectors: beyond 100 m from the player (3 seconds), more than 20 m (8 seconds: it is stuck behind something) or in another area of
         // the game (he went into an interior, or came out): it appears next to him
+        // Not during a cutscene or a scripted scene (the player has no control) nor while the screen fades: nobody is taken anywhere
+        a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref(L('fn')));
+        a.op(0x00D6, int(0)).op(0x016B).op(0x004D, ref(L('fz')));
+        a.jump(L('fn'));
+        a.label(L('fz'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x09E8, lv(h), lv(T6));
         // Fighting (and in the same area as the player): it keeps fighting wherever the fight goes; it is not taken to the player until it is free
@@ -554,7 +574,7 @@ export function actorsScript(items) {
         a.label(L('fb'));
         a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));                 // beyond 100 m: three seconds
         a.label(L('fc'));
-        slot();
+        a.op(0x04C4, lv(PLAYER), flt(0), flt(-2.5), flt(0), lv(T4), lv(T5), lv(T6));                // all of them at the same point, behind the player
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x0860, lv(h), lv(T0));
         a.op(0x00A1, lv(h), lv(T4), lv(T5), lv(T6));

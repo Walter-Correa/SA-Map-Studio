@@ -7,6 +7,13 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.4', date: '25/10/2026', items: [
+      'Protector NPCs brought next to the player appear all together at the same point, behind him, and only afterwards go to their own places around him.',
+      'Protector NPCs are never taken to the player during a cutscene or a scripted scene (when the player has no control) or while the screen fades.',
+      'The car the player drives goes through the protector NPCs that are on foot: while he drives, the car moves and one of them is within 8 m, it has no collision and is held where it is; otherwise it is normal again.',
+    ],
+  },
+  {
     version: '4.0.3', date: '25/10/2026', items: [
       'Fixed the editor not opening after version 4.0.2 (a quotation mark in the update history broke the page).',
     ],
