@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.18-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.19-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -55,7 +55,7 @@ never changed and removing the mod is deleting its folder.
 - **Vehicles**: tuning and paintjobs, indestructible, doors only for the player, and unique vehicles that stay where the
   player leaves them and come back at their place after a time when destroyed.
 - **Pickups and checkpoints with actions**: show a message (as text or in a box, with color codes such as `~y~`), heal,
-  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game, put fat, muscle, stamina, lung capacity, strength or respect at the most or the least,
+  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game, put fat, muscle, stamina, lung capacity, health, armour, sex appeal, respect or the progress with the girlfriends at the most or the least, remove hunger,
   change skin, weather or time, or an explosion trap, optionally only once. Checkpoints are the red mission cylinder with
   an optional radar point (off by default) and are created only near the player.
 - **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading) or a chosen amount (the weapon
@@ -484,6 +484,11 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.19 — 26/10/2026
+- Actions of pickups and checkpoints: the strength actions are now Maximum health and Minimum health (the strength of the player is his muscle, which already has its own actions); same stat as before (max health, from 569 to 1000).
+- New actions: Maximum armour (up to 100, the most the game gives) and Minimum armour (no armour), Maximum and Minimum sex appeal (0 to 1000), Remove hunger (the Energy stat, which the game keeps from 0 to 1000, is put at exactly 1000: fed; what passes 1000 would turn into fat) and Maximum and Minimum progress with the girlfriends (the stats of the six girlfriends, 0 to 100). The progress with the girlfriends may only change what the statistics screen shows if the story script keeps its own copy of the progress; it was not tested in the game. Being fat does not remove hunger: the hunger and the fat are separate stats.
+- The speed of movement is now chosen for each NPC (100% to 200%, in the settings of the NPC; 100% by default), instead of 150% for all the protectors.
 
 ### 4.1.18 — 26/10/2026
 - New actions for pickups and checkpoints that put a stat of the player at its most or its least: fat, muscle, stamina, lung capacity, strength (the max health) and respect. The values are the ones the game allows: fat, muscle, stamina and lung capacity from 0 to 1000 (the game itself never lets them go above 1000); the strength is the max health stat, from 569 (the 100 points of a new game, a lower value would make the player weaker than at the start and 0 would kill him) to 1000 (176 points); respect from 0 to 1000, the range of the other respect stats, because the game computes the total respect from its own pieces and the exact scale of the respect was not found. Fat and muscle build the body of the player again, so the change shows at once.

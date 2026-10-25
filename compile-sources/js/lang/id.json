@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Stamina minimum",
  "Máximo de fôlego": "Kapasitas paru-paru maksimum",
  "Mínimo de fôlego": "Kapasitas paru-paru minimum",
- "Máximo de força (vida máxima)": "Kekuatan (kesehatan maksimum) maksimum",
- "Mínimo de força (vida máxima)": "Kekuatan (kesehatan maksimum) minimum",
  "Máximo de respeito": "Respek maksimum",
- "Mínimo de respeito": "Respek minimum"
+ "Mínimo de respeito": "Respek minimum",
+ "Máximo de saúde": "Kesehatan maksimum",
+ "Mínimo de saúde": "Kesehatan minimum",
+ "Máximo de colete": "Rompi maksimum",
+ "Mínimo de colete": "Rompi minimum",
+ "Máximo de sex appeal": "Daya tarik seksual maksimum",
+ "Mínimo de sex appeal": "Daya tarik seksual minimum",
+ "Remover a fome": "Hilangkan rasa lapar",
+ "Máximo de progresso com namoradas": "Kemajuan dengan pacar maksimum",
+ "Mínimo de progresso com namoradas": "Kemajuan dengan pacar minimum",
+ "Velocidade de movimento (100% a 200%)": "Kecepatan gerak (100% hingga 200%)",
+ "Alterar a velocidade de movimento do NPC": "Ubah kecepatan gerak NPC"
 }

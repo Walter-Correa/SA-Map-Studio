@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Minimalny poziom: kondycja",
  "Máximo de fôlego": "Maksymalny poziom: pojemność płuc",
  "Mínimo de fôlego": "Minimalny poziom: pojemność płuc",
- "Máximo de força (vida máxima)": "Maksymalny poziom: siła (maksymalne zdrowie)",
- "Mínimo de força (vida máxima)": "Minimalny poziom: siła (maksymalne zdrowie)",
  "Máximo de respeito": "Maksymalny poziom: szacunek",
- "Mínimo de respeito": "Minimalny poziom: szacunek"
+ "Mínimo de respeito": "Minimalny poziom: szacunek",
+ "Máximo de saúde": "Maksymalny poziom: zdrowie",
+ "Mínimo de saúde": "Minimalny poziom: zdrowie",
+ "Máximo de colete": "Maksymalny poziom: kamizelka",
+ "Mínimo de colete": "Minimalny poziom: kamizelka",
+ "Máximo de sex appeal": "Maksymalny poziom: seksapil",
+ "Mínimo de sex appeal": "Minimalny poziom: seksapil",
+ "Remover a fome": "Usuń głód",
+ "Máximo de progresso com namoradas": "Maksymalny poziom: postęp z dziewczynami",
+ "Mínimo de progresso com namoradas": "Minimalny poziom: postęp z dziewczynami",
+ "Velocidade de movimento (100% a 200%)": "Prędkość poruszania się (100% do 200%)",
+ "Alterar a velocidade de movimento do NPC": "Zmień prędkość poruszania się NPC"
 }

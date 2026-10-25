@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Endurance minimum",
  "Máximo de fôlego": "Capacité pulmonaire maximum",
  "Mínimo de fôlego": "Capacité pulmonaire minimum",
- "Máximo de força (vida máxima)": "Force (santé maximale) maximum",
- "Mínimo de força (vida máxima)": "Force (santé maximale) minimum",
  "Máximo de respeito": "Respect maximum",
- "Mínimo de respeito": "Respect minimum"
+ "Mínimo de respeito": "Respect minimum",
+ "Máximo de saúde": "Santé maximum",
+ "Mínimo de saúde": "Santé minimum",
+ "Máximo de colete": "Gilet maximum",
+ "Mínimo de colete": "Gilet minimum",
+ "Máximo de sex appeal": "Sex-appeal maximum",
+ "Mínimo de sex appeal": "Sex-appeal minimum",
+ "Remover a fome": "Supprimer la faim",
+ "Máximo de progresso com namoradas": "Progression avec les petites amies maximum",
+ "Mínimo de progresso com namoradas": "Progression avec les petites amies minimum",
+ "Velocidade de movimento (100% a 200%)": "Vitesse de déplacement (100 % à 200 %)",
+ "Alterar a velocidade de movimento do NPC": "Modifier la vitesse de déplacement du PNJ"
 }

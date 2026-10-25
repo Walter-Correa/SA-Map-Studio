@@ -26,7 +26,8 @@ export function npcSection(a) {
     <label class="field">Velocidade ao correr até o jogador<select id="npcRun">
       <option value="fast" ${a.runFast === false ? '' : 'selected'}>Correr rápido</option>
       <option value="normal" ${a.runFast === false ? 'selected' : ''}>Correr normal</option>
-    </select></label>`}
+    </select></label>
+    <label class="field">Velocidade de movimento (100% a 200%)<input type="number" id="npcSpeed" min="100" max="200" step="5" value="${a.speedPct ?? 100}"></label>`}
     <p class="insp-note">${role === 'guard' ? 'Atira em quem ataca o jogador ou está atirando perto dele. Sem a opção de seguir, protege o lugar onde está.'
       : role === 'enemy' ? 'Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.' : 'Fica parado onde foi colocado.'}</p>
   </div>`;
@@ -46,6 +47,8 @@ export function bindNpc(a, project, rerender) {
   if (am) am.onchange = () => set('Alterar a munição do NPC', (o) => { o.ammo = Math.max(1, Math.min(9999, Math.round(parseFloat(am.value) || 100))); });
   const rn = $('#npcRun');
   if (rn) rn.onchange = () => set('Alterar a velocidade do NPC', (o) => { o.runFast = rn.value !== 'normal'; });
+  const sp = $('#npcSpeed');
+  if (sp) sp.onchange = () => set('Alterar a velocidade de movimento do NPC', (o) => { o.speedPct = Math.max(100, Math.min(200, Math.round(parseFloat(sp.value) || 100))); });
   const f = $('#npcFollow');
   if (f) f.onchange = () => set('Alterar o NPC seguir o jogador', (o) => { o.follow = f.checked; });
 }
@@ -59,7 +62,9 @@ const TYPES = [
   ['explosion', 'Explosão (armadilha)'],
   ['fatMax', 'Máximo de gordura'], ['fatMin', 'Mínimo de gordura'], ['muscleMax', 'Máximo de músculos'], ['muscleMin', 'Mínimo de músculos'],
   ['staminaMax', 'Máximo de stamina'], ['staminaMin', 'Mínimo de stamina'], ['lungMax', 'Máximo de fôlego'], ['lungMin', 'Mínimo de fôlego'],
-  ['strengthMax', 'Máximo de força (vida máxima)'], ['strengthMin', 'Mínimo de força (vida máxima)'], ['respectMax', 'Máximo de respeito'], ['respectMin', 'Mínimo de respeito'],
+  ['healthMax', 'Máximo de saúde'], ['healthMin', 'Mínimo de saúde'], ['respectMax', 'Máximo de respeito'], ['respectMin', 'Mínimo de respeito'],
+  ['armourMax', 'Máximo de colete'], ['armourMin', 'Mínimo de colete'], ['sexMax', 'Máximo de sex appeal'], ['sexMin', 'Mínimo de sex appeal'],
+  ['hungerOff', 'Remover a fome'], ['girlfriendMax', 'Máximo de progresso com namoradas'], ['girlfriendMin', 'Mínimo de progresso com namoradas'],
 ];
 
 // The game's color codes inside a text (as ~y~ in SA-MP): the code, its name and the color it shows

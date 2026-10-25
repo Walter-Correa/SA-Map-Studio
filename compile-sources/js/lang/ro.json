@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Rezistență minim",
  "Máximo de fôlego": "Capacitate pulmonară maxim",
  "Mínimo de fôlego": "Capacitate pulmonară minim",
- "Máximo de força (vida máxima)": "Forță (sănătate maximă) maxim",
- "Mínimo de força (vida máxima)": "Forță (sănătate maximă) minim",
  "Máximo de respeito": "Respect maxim",
- "Mínimo de respeito": "Respect minim"
+ "Mínimo de respeito": "Respect minim",
+ "Máximo de saúde": "Sănătate maxim",
+ "Mínimo de saúde": "Sănătate minim",
+ "Máximo de colete": "Vestă maxim",
+ "Mínimo de colete": "Vestă minim",
+ "Máximo de sex appeal": "Sex appeal maxim",
+ "Mínimo de sex appeal": "Sex appeal minim",
+ "Remover a fome": "Elimină foamea",
+ "Máximo de progresso com namoradas": "Progres cu iubitele maxim",
+ "Mínimo de progresso com namoradas": "Progres cu iubitele minim",
+ "Velocidade de movimento (100% a 200%)": "Viteza de mișcare (100% până la 200%)",
+ "Alterar a velocidade de movimento do NPC": "Schimbă viteza de mișcare a NPC-ului"
 }

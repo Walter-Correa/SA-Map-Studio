@@ -7,6 +7,13 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.19', date: '26/10/2026', items: [
+      'Actions of pickups and checkpoints: the strength actions are now Maximum health and Minimum health (the strength of the player is his muscle, which already has its own actions); same stat as before (max health, from 569 to 1000).',
+      'New actions: Maximum armour (up to 100, the most the game gives) and Minimum armour (no armour), Maximum and Minimum sex appeal (0 to 1000), Remove hunger (the Energy stat, which the game keeps from 0 to 1000, is put at exactly 1000: fed; what passes 1000 would turn into fat) and Maximum and Minimum progress with the girlfriends (the stats of the six girlfriends, 0 to 100). The progress with the girlfriends may only change what the statistics screen shows if the story script keeps its own copy of the progress; it was not tested in the game. Being fat does not remove hunger: the hunger and the fat are separate stats.',
+      'The speed of movement is now chosen for each NPC (100% to 200%, in the settings of the NPC; 100% by default), instead of 150% for all the protectors.',
+    ],
+  },
+  {
     version: '4.1.18', date: '26/10/2026', items: [
       'New actions for pickups and checkpoints that put a stat of the player at its most or its least: fat, muscle, stamina, lung capacity, strength (the max health) and respect. The values are the ones the game allows: fat, muscle, stamina and lung capacity from 0 to 1000 (the game itself never lets them go above 1000); the strength is the max health stat, from 569 (the 100 points of a new game, a lower value would make the player weaker than at the start and 0 would kill him) to 1000 (176 points); respect from 0 to 1000, the range of the other respect stats, because the game computes the total respect from its own pieces and the exact scale of the respect was not found. Fat and muscle build the body of the player again, so the change shows at once.',
     ],

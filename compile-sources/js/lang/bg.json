@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Минимум: издръжливост",
  "Máximo de fôlego": "Максимум: белодробен капацитет",
  "Mínimo de fôlego": "Минимум: белодробен капацитет",
- "Máximo de força (vida máxima)": "Максимум: сила (максимално здраве)",
- "Mínimo de força (vida máxima)": "Минимум: сила (максимално здраве)",
  "Máximo de respeito": "Максимум: респект",
- "Mínimo de respeito": "Минимум: респект"
+ "Mínimo de respeito": "Минимум: респект",
+ "Máximo de saúde": "Максимум: здраве",
+ "Mínimo de saúde": "Минимум: здраве",
+ "Máximo de colete": "Максимум: жилетка",
+ "Mínimo de colete": "Минимум: жилетка",
+ "Máximo de sex appeal": "Максимум: сексапил",
+ "Mínimo de sex appeal": "Минимум: сексапил",
+ "Remover a fome": "Премахни глада",
+ "Máximo de progresso com namoradas": "Максимум: напредък с приятелките",
+ "Mínimo de progresso com namoradas": "Минимум: напредък с приятелките",
+ "Velocidade de movimento (100% a 200%)": "Скорост на движение (от 100% до 200%)",
+ "Alterar a velocidade de movimento do NPC": "Промяна на скоростта на движение на NPC"
 }

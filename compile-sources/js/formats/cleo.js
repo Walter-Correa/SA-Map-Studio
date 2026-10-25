@@ -267,8 +267,17 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
     default: {
       const st = STAT_ACTIONS[act.type];
       if (st) {
-        if (st[2] === 'f') a.op(0x062A, int(st[0]), flt(st[1])); else a.op(0x0629, int(st[0]), int(st[1]));
+        for (const id of [].concat(st[0])) {
+          if (st[2] === 'f') a.op(0x062A, int(id), flt(st[1])); else a.op(0x0629, int(id), int(st[1]));
+        }
         if (st[3]) a.op(0x070D, lv(PLAYER));                                                       // the body is built again with the new fat or muscle
+      } else if (act.type === 'armourMax') {
+        a.op(0x035F, lv(PLAYER), int(100));                                                        // up to the most the game gives (100)
+      } else if (act.type === 'armourMin') {
+        // no armour: the armour is a float of the character (offset 0x548 of the ped); nothing in the game's opcodes takes it away
+        a.op(0x0A96, lv(PLAYER), lv(T0));
+        a.op(0x0A8E, lv(T0), int(0x548), lv(T0));
+        a.op(0x0A8C, lv(T0), int(4), flt(0), int(0));
       }
       break;                                                                                     // none, message: only the text
     }
@@ -294,10 +303,16 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
 // max health are capped at 1000 by the game (it clamps them to 1000 when they grow); the least is 0, except the max health, which is 569 at the start
 // of a new game (100 points of health; less than that would leave the player with less than the bar of a new game, and 0 would kill him).
 // Respect is kept between 0 and 1000, the range of the other respect stats (girlfriend, clothes, fitness). The game computes its total from them
+// Also: sex appeal is a float stat capped at 1000 like the others (0 to 1000); the hunger is the Energy stat (165, integer): the game keeps it from 0 to
+// 1000 and what passes 1000 turns into fat, so it is put at exactly 1000 (fed); the progress with the six girlfriends (252 to 257, integer stats) goes
+// from 0 to 100 (percent)
+const GIRLFRIENDS = [252, 253, 254, 255, 256, 257];
 const STAT_ACTIONS = {
   fatMax: [21, 1000, 'f', true], fatMin: [21, 0, 'f', true], muscleMax: [23, 1000, 'f', true], muscleMin: [23, 0, 'f', true],
   staminaMax: [22, 1000, 'f', false], staminaMin: [22, 0, 'f', false], lungMax: [225, 1000, 'i', false], lungMin: [225, 0, 'i', false],
-  strengthMax: [24, 1000, 'f', false], strengthMin: [24, 569, 'f', false], respectMax: [68, 1000, 'f', false], respectMin: [68, 0, 'f', false],
+  healthMax: [24, 1000, 'f', false], healthMin: [24, 569, 'f', false], respectMax: [68, 1000, 'f', false], respectMin: [68, 0, 'f', false],
+  sexMax: [25, 1000, 'f', false], sexMin: [25, 0, 'f', false], hungerOff: [165, 1000, 'i', false],
+  girlfriendMax: [GIRLFRIENDS, 100, 'i', false], girlfriendMin: [GIRLFRIENDS, 0, 'i', false],
 };
 
 // pickups: { model, type, x, y, z, action }. One with an action keeps the pickup, and gives it back some seconds after it was taken
@@ -722,12 +737,14 @@ export function actorsScript(items) {
         a.jump(done);
         a.label(L('sw0'));
       }
-      if (e.role === 'guard') {
-        // A protector runs 50% faster than normal: the speed of its running and walking animations (it is set again at every cycle, the game puts
-        // the normal speed back when an animation starts again)
+      if (e.role !== 'neutral' && e.speedPct > 100) {
+        // The speed of movement chosen for this NPC (100% to 200%): the speed of its running and walking animations (it is set again at every cycle, the
+        // game puts the normal speed back when an animation starts again)
         ['run_civi', 'sprint_civi', 'walk_civi', 'run_player', 'sprint_panic', 'run_gang1', 'walk_gang1', 'run_old', 'run_fat', 'run_fatold', 'run_wuzi', 'woman_run', 'woman_runfast'].forEach((n) => {
-          a.op(0x0393, lv(h), strn(n), flt(1.5));
+          a.op(0x0393, lv(h), strn(n), flt(e.speedPct / 100));
         });
+      }
+      if (e.role === 'guard') {
         // The chaos counter (what the protectors did) goes down 8 every 5 seconds, and goes back to zero when the game has cleared the stars
         a.op(0x01BD, lv(T4));
         a.op(0x0AB4, int(CHAOS_TIME), lv(T5));

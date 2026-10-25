@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Мінімум: витривалість",
  "Máximo de fôlego": "Максимум: об'єм легенів",
  "Mínimo de fôlego": "Мінімум: об'єм легенів",
- "Máximo de força (vida máxima)": "Максимум: сила (максимальне здоров'я)",
- "Mínimo de força (vida máxima)": "Мінімум: сила (максимальне здоров'я)",
  "Máximo de respeito": "Максимум: повага",
- "Mínimo de respeito": "Мінімум: повага"
+ "Mínimo de respeito": "Мінімум: повага",
+ "Máximo de saúde": "Максимум: здоров'я",
+ "Mínimo de saúde": "Мінімум: здоров'я",
+ "Máximo de colete": "Максимум: жилет",
+ "Mínimo de colete": "Мінімум: жилет",
+ "Máximo de sex appeal": "Максимум: сексуальність",
+ "Mínimo de sex appeal": "Мінімум: сексуальність",
+ "Remover a fome": "Прибрати голод",
+ "Máximo de progresso com namoradas": "Максимум: прогрес із дівчатами",
+ "Mínimo de progresso com namoradas": "Мінімум: прогрес із дівчатами",
+ "Velocidade de movimento (100% a 200%)": "Швидкість руху (від 100% до 200%)",
+ "Alterar a velocidade de movimento do NPC": "Змінити швидкість руху NPC"
 }

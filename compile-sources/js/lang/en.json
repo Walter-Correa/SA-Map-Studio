@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Minimum stamina",
  "Máximo de fôlego": "Maximum lung capacity",
  "Mínimo de fôlego": "Minimum lung capacity",
- "Máximo de força (vida máxima)": "Maximum strength (max health)",
- "Mínimo de força (vida máxima)": "Minimum strength (max health)",
  "Máximo de respeito": "Maximum respect",
- "Mínimo de respeito": "Minimum respect"
+ "Mínimo de respeito": "Minimum respect",
+ "Máximo de saúde": "Maximum health",
+ "Mínimo de saúde": "Minimum health",
+ "Máximo de colete": "Maximum armour",
+ "Mínimo de colete": "Minimum armour",
+ "Máximo de sex appeal": "Maximum sex appeal",
+ "Mínimo de sex appeal": "Minimum sex appeal",
+ "Remover a fome": "Remove hunger",
+ "Máximo de progresso com namoradas": "Maximum progress with girlfriends",
+ "Mínimo de progresso com namoradas": "Minimum progress with girlfriends",
+ "Velocidade de movimento (100% a 200%)": "Movement speed (100% to 200%)",
+ "Alterar a velocidade de movimento do NPC": "Change the movement speed of the NPC"
 }

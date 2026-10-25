@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Resistenza minimo",
  "Máximo de fôlego": "Capacità polmonare massimo",
  "Mínimo de fôlego": "Capacità polmonare minimo",
- "Máximo de força (vida máxima)": "Forza (salute massima) massimo",
- "Mínimo de força (vida máxima)": "Forza (salute massima) minimo",
  "Máximo de respeito": "Rispetto massimo",
- "Mínimo de respeito": "Rispetto minimo"
+ "Mínimo de respeito": "Rispetto minimo",
+ "Máximo de saúde": "Salute massimo",
+ "Mínimo de saúde": "Salute minimo",
+ "Máximo de colete": "Giubbotto massimo",
+ "Mínimo de colete": "Giubbotto minimo",
+ "Máximo de sex appeal": "Sex appeal massimo",
+ "Mínimo de sex appeal": "Sex appeal minimo",
+ "Remover a fome": "Rimuovere la fame",
+ "Máximo de progresso com namoradas": "Progresso con le fidanzate massimo",
+ "Mínimo de progresso com namoradas": "Progresso con le fidanzate minimo",
+ "Velocidade de movimento (100% a 200%)": "Velocità di movimento (da 100% a 200%)",
+ "Alterar a velocidade de movimento do NPC": "Cambia la velocità di movimento del PNG"
 }

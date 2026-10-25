@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Minimale Ausdauer",
  "Máximo de fôlego": "Maximale Lungenkapazität",
  "Mínimo de fôlego": "Minimale Lungenkapazität",
- "Máximo de força (vida máxima)": "Maximale Stärke (maximale Gesundheit)",
- "Mínimo de força (vida máxima)": "Minimale Stärke (maximale Gesundheit)",
  "Máximo de respeito": "Maximale Respekt",
- "Mínimo de respeito": "Minimale Respekt"
+ "Mínimo de respeito": "Minimale Respekt",
+ "Máximo de saúde": "Maximale Gesundheit",
+ "Mínimo de saúde": "Minimale Gesundheit",
+ "Máximo de colete": "Maximale Weste",
+ "Mínimo de colete": "Minimale Weste",
+ "Máximo de sex appeal": "Maximale Sexappeal",
+ "Mínimo de sex appeal": "Minimale Sexappeal",
+ "Remover a fome": "Hunger entfernen",
+ "Máximo de progresso com namoradas": "Maximale Fortschritt bei den Freundinnen",
+ "Mínimo de progresso com namoradas": "Minimale Fortschritt bei den Freundinnen",
+ "Velocidade de movimento (100% a 200%)": "Bewegungsgeschwindigkeit (100 % bis 200 %)",
+ "Alterar a velocidade de movimento do NPC": "Bewegungsgeschwindigkeit des NPC ändern"
 }

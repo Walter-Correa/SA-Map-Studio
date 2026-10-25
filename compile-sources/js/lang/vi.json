@@ -2343,8 +2343,17 @@
  "Mínimo de stamina": "Thể lực tối thiểu",
  "Máximo de fôlego": "Dung tích phổi tối đa",
  "Mínimo de fôlego": "Dung tích phổi tối thiểu",
- "Máximo de força (vida máxima)": "Sức mạnh (máu tối đa) tối đa",
- "Mínimo de força (vida máxima)": "Sức mạnh (máu tối đa) tối thiểu",
  "Máximo de respeito": "Sự tôn trọng tối đa",
- "Mínimo de respeito": "Sự tôn trọng tối thiểu"
+ "Mínimo de respeito": "Sự tôn trọng tối thiểu",
+ "Máximo de saúde": "Sức khỏe tối đa",
+ "Mínimo de saúde": "Sức khỏe tối thiểu",
+ "Máximo de colete": "Áo giáp tối đa",
+ "Mínimo de colete": "Áo giáp tối thiểu",
+ "Máximo de sex appeal": "Sức hấp dẫn tối đa",
+ "Mínimo de sex appeal": "Sức hấp dẫn tối thiểu",
+ "Remover a fome": "Xóa cơn đói",
+ "Máximo de progresso com namoradas": "Tiến triển với bạn gái tối đa",
+ "Mínimo de progresso com namoradas": "Tiến triển với bạn gái tối thiểu",
+ "Velocidade de movimento (100% a 200%)": "Tốc độ di chuyển (100% đến 200%)",
+ "Alterar a velocidade de movimento do NPC": "Đổi tốc độ di chuyển của NPC"
 }

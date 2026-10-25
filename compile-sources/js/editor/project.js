@@ -126,6 +126,7 @@ export function makeActor(data) {
     follow: !!data.follow,
     ammoInfinite: data.ammoInfinite !== false, // infinite ammunition (the default) or the amount in `ammo`; when it runs out the weapon is thrown away
     ammo: Math.max(1, Math.min(9999, Math.round(+data.ammo || 100))),
+    speedPct: Math.max(100, Math.min(200, Math.round(+data.speedPct || 100))), // speed of movement: 100% (normal) up to 200%
     runFast: data.runFast !== false, // how it runs to the player: fast (sprint) or normal (not for the neutral ones)
     respawn: Math.max(0, Math.min(36000, +data.respawn || 0)), // when it is not invulnerable and dies: seconds to come back (0 = stays dead)
     comment: data.comment ? String(data.comment) : '',
@@ -219,12 +220,14 @@ export function makeLabel(data) {
 
 // What happens when the player enters a checkpoint or takes a pickup (Singleplayer): a type and its settings, a price and a message
 export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion',
-  'fatMax', 'fatMin', 'muscleMax', 'muscleMin', 'staminaMax', 'staminaMin', 'lungMax', 'lungMin', 'strengthMax', 'strengthMin', 'respectMax', 'respectMin'];
+  'fatMax', 'fatMin', 'muscleMax', 'muscleMin', 'staminaMax', 'staminaMin', 'lungMax', 'lungMin', 'healthMax', 'healthMin', 'respectMax', 'respectMin',
+  'armourMax', 'armourMin', 'sexMax', 'sexMin', 'hungerOff', 'girlfriendMax', 'girlfriendMin'];
 export function makeAction(data) {
   const d = data || {};
   const n = (v, f) => (Number.isFinite(+v) ? +v : f);
+  const kind = d.type === 'strengthMax' ? 'healthMax' : d.type === 'strengthMin' ? 'healthMin' : d.type; // the first name of these two
   return {
-    type: ACTION_TYPES.includes(d.type) ? d.type : 'none',
+    type: ACTION_TYPES.includes(kind) ? kind : 'none',
     price: Math.max(0, Math.min(99999999, n(d.price, 0) | 0)),
     once: !!d.once,
     text: String(d.text || '').slice(0, 200),
