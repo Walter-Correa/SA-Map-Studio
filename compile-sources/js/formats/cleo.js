@@ -486,7 +486,7 @@ export function actorsScript(items) {
       const logTp = (why) => {
         a.op(0x01BD, lv(T8));
         a.op(0x00D6, int(0)).op(0x0A9A, str(LOG_FILE), str('a'), lv(T9)).op(0x004D, ref(L('lg' + why)));
-        a.op(0x0AD9, lv(T9), str(`teleport time=%d npc=${i} guard=${e.gid} why=${why}\r\n`), lv(T8), endArgs);
+        a.op(0x0AD9, lv(T9), str('tp:%d:' + i + ':' + e.gid + ':' + why + '\r\n'), lv(T8), endArgs);
         a.op(0x0A9B, lv(T9));
         a.label(L('lg' + why));
       };
