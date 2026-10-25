@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.5-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.6-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -63,7 +63,7 @@ never changed and removing the mod is deleting its folder.
   - *Neutral*: stays in place and never reacts; if moved more than 0.5 m it is put back with its angle and animation.
   - *Protector*: follows the player running (fast or normal speed), each one with its own place around him, gets into his
     car, and is brought next to him (all together, 3 m behind him or 10 m when he is in a vehicle, never during a cutscene or
-    while he flies) when far away, in another interior or stuck. The car he drives goes through the protectors on foot, and
+    while he flies or is in the air) when far away, in another interior or stuck. The car he drives goes through the protectors on foot, and
     protectors and enemies swim instead of drowning. It fights with priority over everything:
     the police helicopters first, then the enemy NPCs, the cops while the player is wanted and anyone shooting at the player,
     only what it can hit (clear line of sight), spreading over the enemies, and never the characters of the game's story
@@ -479,6 +479,11 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.6 — 25/10/2026
+- NPCs in the water are only asked to swim: no walking, fighting or clearing of tasks is given to them there (the game expects the swim task, and changing it is the suspected cause of the crash with the player and the NPCs in the water). They swim toward the player once a second.
+- Protector NPCs are not brought to the player while he is in the air, on foot (jumping or falling) or in a vehicle that is in the air.
+- Protector NPCs in a vehicle or in the water always keep their collision.
 
 ### 4.0.5 — 25/10/2026
 - Protector NPCs brought next to the player now appear 3 m behind him when he is on foot and 10 m behind him when he is in a vehicle, and they are not brought to him while he is in a helicopter or a plane.

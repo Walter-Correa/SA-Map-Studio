@@ -7,6 +7,13 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.6', date: '25/10/2026', items: [
+      'NPCs in the water are only asked to swim: no walking, fighting or clearing of tasks is given to them there (the game expects the swim task, and changing it is the suspected cause of the crash with the player and the NPCs in the water). They swim toward the player once a second.',
+      'Protector NPCs are not brought to the player while he is in the air, on foot (jumping or falling) or in a vehicle that is in the air.',
+      'Protector NPCs in a vehicle or in the water always keep their collision.',
+    ],
+  },
+  {
     version: '4.0.5', date: '25/10/2026', items: [
       'Protector NPCs brought next to the player now appear 3 m behind him when he is on foot and 10 m behind him when he is in a vehicle, and they are not brought to him while he is in a helicopter or a plane.',
       'Protector and enemy NPCs no longer drown: they swim when they get into the water.',

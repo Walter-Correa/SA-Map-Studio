@@ -435,13 +435,17 @@ export function actorsScript(items) {
         }
         a.label(L(pre));
       };
+      let runCount = 0;
       const runTo = (ms = 4000) => {
-        if (e.role === 'guard') {
-          slot();
-          a.op(0x05D3, lv(h), lv(T4), lv(T5), lv(T6), speed, int(ms));
-        } else {
-          a.op(0x05D3, lv(h), lv(T1), lv(T2), lv(T3), speed, int(ms));
-        }
+        const n = runCount++;
+        if (e.role === 'guard') slot();
+        const [x, y, z] = e.role === 'guard' ? [T4, T5, T6] : [T1, T2, T3];
+        a.op(0x00D6, int(0)).op(0x04AD, lv(h)).op(0x004D, ref(L('rw' + n)));
+        a.op(0x07E1, lv(h), lv(x), lv(y), lv(z));                                                  // in the water: it swims
+        a.jump(L('rx' + n));
+        a.label(L('rw' + n));
+        a.op(0x05D3, lv(h), lv(x), lv(y), lv(z), speed, int(ms));
+        a.label(L('rx' + n));
       };
       const L = (n) => n + i;
       // dead: it stays dead, or comes back after the time asked for
@@ -504,6 +508,7 @@ export function actorsScript(items) {
         // and is held where it is (so it does not fall through the ground); in any other case it is normal again
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wr')));
+        a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x03C0, lv(PLAYER), lv(T0));
         a.op(0x02E3, lv(T0), lv(T6));
         a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(1.5)).op(0x004D, ref(L('wr')));
@@ -558,6 +563,15 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x04C8, lv(PLAYER)).op(0x004D, ref(L('fy')));
         a.jump(L('fn'));
         a.label(L('fy'));
+        // nor while he is in the air (jumping, falling, or in a vehicle that is in the air)
+        a.op(0x00D6, int(0)).op(0x0818, lv(PLAYER)).op(0x004D, ref(L('fj')));
+        a.jump(L('fn'));
+        a.label(L('fj'));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fh')));
+        a.op(0x03C0, lv(PLAYER), lv(T0));
+        a.op(0x00D6, int(0)).op(0x01F3, lv(T0)).op(0x004D, ref(L('fh')));
+        a.jump(L('fn'));
+        a.label(L('fh'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x09E8, lv(h), lv(T6));
         // Fighting (and in the same area as the player): it keeps fighting wherever the fight goes; it is not taken to the player until it is free
@@ -589,7 +603,9 @@ export function actorsScript(items) {
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x0860, lv(h), lv(T0));
         a.op(0x00A1, lv(h), lv(T4), lv(T5), lv(T6));
+        a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('fk')));
         a.op(0x0687, lv(h));
+        a.label(L('fk'));
         a.op(0x0006, lv(st), int(1)).op(0x0006, lv(cnt), int(0));
         if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
         if (e.role === 'guard') {
@@ -602,6 +618,17 @@ export function actorsScript(items) {
         runTo(9000);
         a.jump(done);
         a.label(L('fn'));
+      }
+      if (e.role !== 'neutral') {
+        // In the water it only swims toward the player (once a second): nothing else is asked of it there, the game does not expect it
+        a.op(0x00D6, int(0)).op(0x04AD, lv(h)).op(0x004D, ref(L('nw')));
+        a.op(0x000A, lv(cnt), int(1));
+        a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
+        a.op(0x0006, lv(cnt), int(0));
+        a.op(0x00A0, lv(PLAYER), lv(T0), lv(T6), lv(T7));
+        a.op(0x07E1, lv(h), lv(T0), lv(T6), lv(T7));
+        a.jump(done);
+        a.label(L('nw'));
       }
       if (e.role === 'guard') {
         // First priority: a police helicopter (Police Maverick) within 60 m of the player while he is wanted. It lets go of any target it had and
