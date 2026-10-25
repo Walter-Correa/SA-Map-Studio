@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.21-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.22-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,12 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.22 — 26/10/2026
+- Fixed the crash of the Maximum muscle action (and the one of 4.1.2 with the CJ NPCs): the command that builds the body of the player again (BUILD_PLAYER_MODEL) takes the number of the player, 0, and it was given the handle of his character, which pointed to nothing. Found in a crash dump. Fat and muscle now show on the body at once, as with the cheats of the game, which also build the body again.
+- Maximum respect and Maximum sex appeal now work like the cheats of the game (read in its code): the game computes both again all the time, and the cheats put a flag that makes the result 1000, so the actions put the same flag and the stats at the most (the respect only reached half of the bar because the total respect also depends on the missions and the other respect stats). Minimum takes the flag away and puts the stats at 0. The flags are not saved: after loading a game the natural value comes back.
+- Maximum armour and Minimum armour: the Vigilante missions run INCREASE_PLAYER_MAX_ARMOUR 50 and then ADD_ARMOUR_TO_CHAR 150. The most armour the player can have is a byte of the game; the actions write it (150 or 100) and fill the armour up to it, so asking twice changes nothing.
+- The log of why a mission does not start is written at every half second (three lines: dg1, dg2 and dg3, with the place of the player and whether he is playing), not only when the game says no, because the log of the first try was empty (the game was saying yes). The file cleo/samsp_debug.txt only turns the log on; the lines go to cleo/samsp_log.txt.
 
 ### 4.1.21 — 26/10/2026
 - Why a mission does not start: the main script of the game starts a mission when the player is on foot inside the marker, the flag of a mission running ($409) is 0 and the command CAN_PLAYER_START_MISSION is true (read in main.scm and in the code of the game). That command is false when a cutscene is running, the player is dead or arrested, he was knocked over, he is in an event response that does not end, his main task is not the one of walking on foot, he is attacking or aiming, or a script gave him a task. None of the scripts of the mod gives tasks to the player, so the cause was not found by reading the code.

@@ -124,23 +124,18 @@ export function taskGuardScript() {
 // CAN_PLAYER_START_MISSION is true. That command is false when: a cutscene is running; the player is dead or arrested; the player has a physical
 // response (he was knocked over), an event response that does not end, or a main task that is not the one of walking on foot; he is attacking or
 // aiming (the secondary task 0); or his event group holds an EVENT_SCRIPT_COMMAND (a script gave him a task). Every half second that it is false
-// (and when it changes) two lines are written in cleo/samsp_log.txt with those values
+// every half second, three lines are written in cleo/samsp_log.txt with those values (whether the command says yes or no), the place of the player and
+// whether he is playing: the file cleo/samsp_debug.txt only turns the log on, the log is cleo/samsp_log.txt
 export function diagScript() {
   const a = new Asm();
   a.op(0x0000);
   waitPlayer(a);
-  a.op(0x0006, lv(12), int(1));                                                                  // what the command said the last time
   a.label('loop').op(0x0001, int(500));
   a.op(0x00D6, int(0)).op(0x0AAB, str('cleo\\samsp_debug.txt')).op(0x004D, ref('loop'));
   a.op(0x0006, lv(0), int(0));
   a.op(0x00D6, int(0)).op(0x03EE, int(0)).op(0x004D, ref('nc'));
   a.op(0x0006, lv(0), int(1));
   a.label('nc');
-  a.op(0x00D6, int(0)).op(0x0039, lv(0), int(1)).op(0x004D, ref('go'));                          // it can: only a change is written
-  a.op(0x00D6, int(0)).op(0x0039, lv(12), int(1)).op(0x004D, ref('go'));
-  a.jump('loop');
-  a.label('go');
-  a.op(0x0085, lv(12), lv(0));
   a.op(0x0A8D, int(0xA49960 + 409 * 4), int(4), int(0), lv(1));                                  // $409
   a.op(0x0A8D, int(0x96A8B0), int(1), int(0), lv(2));                                            // a cutscene is running
   a.op(0x0A96, lv(PLAYER), lv(3));                                                               // the ped of the player
@@ -163,10 +158,16 @@ export function diagScript() {
   a.op(0x0006, lv(10), int(1));
   a.label('nv');
   a.op(0x01C0, int(0), lv(11));
+  a.op(0x0006, lv(12), int(0));
+  a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref('np'));
+  a.op(0x0006, lv(12), int(1));
+  a.label('np');
+  a.op(0x00A0, lv(PLAYER), lv(15), lv(16), lv(17));
   a.op(0x01BD, lv(13));
   a.op(0x00D6, int(0)).op(0x0A9A, str(LOG_FILE), str('a'), lv(14)).op(0x004D, ref('loop'));
   a.op(0x0AD9, lv(14), str('dg1:%d:can=%d:onmission=%d:cutscene=%d:state=%d\r\n'), lv(13), lv(0), lv(1), lv(2), lv(4), endArgs);
   a.op(0x0AD9, lv(14), str('dg2:physical=%x:response=%x:main=%x:attack=%x:invehicle=%d:wanted=%d\r\n'), lv(6), lv(7), lv(8), lv(9), lv(10), lv(11), endArgs);
+  a.op(0x0AD9, lv(14), str('dg3:playing=%d:x=%.1f:y=%.1f:z=%.1f\r\n'), lv(12), lv(15), lv(16), lv(17), endArgs);
   a.op(0x0A9B, lv(14));
   a.jump('loop');
   return a.build();
@@ -323,19 +324,25 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
         for (const id of [].concat(st[0])) {
           if (st[2] === 'f') a.op(0x062A, int(id), flt(st[1])); else a.op(0x0629, int(id), int(st[1]));
         }
-        if (st[3]) a.op(0x070D, lv(PLAYER));                                                       // the body is built again with the new fat or muscle
+        if (st[4]) a.op(0x0A8C, int(st[4]), int(1), int(st[5]), int(0));                           // the flag of the cheat of the game
+        if (st[3]) a.op(0x070D, int(0));                                                           // the body is built again with the new fat or muscle (the number of the player, not the character)
       } else if (act.type === 'armourMax' || act.type === 'armourMin') {
         // How much armour the player can have: 100 at the start of the game and 150 after the Vigilante missions reach level 12 (the game's own script
         // raises it with INCREASE_PLAYER_MAX_ARMOUR, which also fills the armour). Maximum: 150. Minimum: back to the 100 of the start of the game
+        // The mission does INCREASE_PLAYER_MAX_ARMOUR 50 and ADD_ARMOUR_TO_CHAR 150: the byte at 0xB7CEE8 (offset 0x150 of the player) is the most armour
+        // he can have; it is written with the value wanted so asking again changes nothing, and the armour is filled up to it
         const goal = act.type === 'armourMax' ? 150 : 100;
-        a.op(0x0945, int(0), lv(T0));
-        a.op(0x0A8F, int(goal), lv(T0), lv(T1));                                                   // what is missing (negative: what is too much)
-        a.op(0x00D6, int(0)).op(0x0039, lv(T1), int(0)).op(0x004D, ref(u('ar')));
-        a.op(0x035F, lv(PLAYER), int(goal));                                                       // already there: the armour is filled
-        a.jump(u('ae'));
-        a.label(u('ar'));
-        a.op(0x055F, int(0), lv(T1));
-        a.label(u('ae'));
+        a.op(0x0A8C, int(0xB7CEE8), int(1), int(goal), int(0));
+        if (goal === 150) {
+          a.op(0x035F, lv(PLAYER), int(150));
+        } else {
+          a.op(0x04DD, lv(PLAYER), lv(T0));                                                        // the armour he has: no more than 100 now
+          a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(100)).op(0x004D, ref(u('ae')));
+          a.op(0x0A96, lv(PLAYER), lv(T1));
+          a.op(0x0A8E, lv(T1), int(0x548), lv(T1));
+          a.op(0x0A8C, lv(T1), int(4), flt(100), int(0));
+          a.label(u('ae'));
+        }
       }
       break;                                                                                     // none, message: only the text
     }
@@ -360,14 +367,19 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
 // and whether the look of the player has to be built again). The values are the ones the game itself allows: fat, stamina, muscle, lung capacity and
 // max health are capped at 1000 by the game (it clamps them to 1000 when they grow); the least is 0, except the max health, which is 569 at the start
 // of a new game (100 points of health; less than that would leave the player with less than the bar of a new game, and 0 would kill him).
-// Respect is kept between 0 and 1000, the range of the other respect stats (girlfriend, clothes, fitness). The game computes its total from them
+// The respect and the sex appeal are not set by writing the stat: the game computes both again all the time (the total respect from the respect, the
+// girlfriend, clothes and fitness respect and the respect of the missions; the sex appeal from the clothes and the like) and the cheats for them (maximum
+// respect, maximum sex appeal) work with a flag of the game that makes the computed value 1000 (read in the code of the game: the bytes at 0x96917F and
+// 0x969180). The actions do the same: they put the flag and the stats at the most (1000), or take the flag away and the stats at 0. The flags are not
+// saved: after loading a game the natural value comes back
 // Also: sex appeal is a float stat capped at 1000 like the others (0 to 1000); the hunger is the Energy stat (165, integer): the game keeps it from 0 to
 // 1000 and what passes 1000 turns into fat, so it is put at exactly 1000 (fed)
 const STAT_ACTIONS = {
   fatMax: [21, 1000, 'f', true], fatMin: [21, 0, 'f', true], muscleMax: [23, 1000, 'f', true], muscleMin: [23, 0, 'f', true],
   staminaMax: [22, 1000, 'f', false], staminaMin: [22, 0, 'f', false], lungMax: [225, 1000, 'i', false], lungMin: [225, 0, 'i', false],
-  healthMax: [24, 1000, 'f', false], healthMin: [24, 569, 'f', false], respectMax: [68, 1000, 'f', false], respectMin: [68, 0, 'f', false],
-  sexMax: [25, 1000, 'f', false], sexMin: [25, 0, 'f', false], hungerOff: [165, 1000, 'i', false],
+  healthMax: [24, 1000, 'f', false], healthMin: [24, 569, 'f', false],
+  respectMax: [[68, 65, 66, 67], 1000, 'f', false, 0x96917F, 1], respectMin: [[68, 65, 66, 67], 0, 'f', false, 0x96917F, 0],
+  sexMax: [25, 1000, 'f', false, 0x969180, 1], sexMin: [25, 0, 'f', false, 0x969180, 0], hungerOff: [165, 1000, 'i', false],
 };
 
 // pickups: { model, type, x, y, z, action }. One with an action keeps the pickup, and gives it back some seconds after it was taken
@@ -583,7 +595,7 @@ export function actorsScript(items) {
     spawn: (a, e, i, base) => {
       const h = base + 1;
       // CJ (skin 0) is the player's own model: it is always in memory (asking for it and letting it go would take it away from the player)
-      // The clothes are never rebuilt here (BUILD_PLAYER_MODEL crashes the game while a new game starts)
+      // (BUILD_PLAYER_MODEL takes the number of the player, 0, not the handle of his character: with the handle it took the game down)
       if (e.skin !== 0) loadModel(a, e.skin, 'a' + i);
       a.op(0x009A, int(NPC_TYPE), int(e.skin), flt(e.x), flt(e.y), flt(e.z), lv(h));            // a gang member of that skin
       if (e.skin !== 0) a.op(0x0249, int(e.skin));                                              // the model is not kept in memory (the NPC holds it while it lives)
