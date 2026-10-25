@@ -482,6 +482,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 ## Version history
 
+<details>
+<summary>Show the version history</summary>
+
 ### 4.1.6 — 26/10/2026
 - Fixed a crash during cutscenes: the NPCs were not taken to the player any more in a cutscene, but they still got orders (tasks, scans for targets) while the game was running it. Now, while the player has no control (a cutscene or a scripted scene), the NPCs get no order at all until it ends. Not tested in the game.
 
@@ -1174,6 +1177,8 @@ Tools (in `compile-sources/`, run with Python 3):
 - Export to Pawn and IPL; .pwn import; projects saved automatically; build to .exe.
 
 ---
+
+</details>
 
 ## Credits and licenses
 
