@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.2-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.3-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -477,6 +477,9 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.3 — 25/10/2026
+- Fixed the editor not opening after version 4.0.2 (a quotation mark in the update history broke the page).
 
 ### 4.0.2 — 25/10/2026
 - New game: after the intro the game puts the player at its own place, so the first time the player gets control back after having it off (the end of the intro) he is now taken to the spawn point. A saved game, which starts with control on, is not affected.

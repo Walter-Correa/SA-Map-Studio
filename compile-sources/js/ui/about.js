@@ -7,9 +7,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.3', date: '25/10/2026', items: [
+      'Fixed the editor not opening after version 4.0.2 (a quotation mark in the update history broke the page).',
+    ],
+  },
+  {
     version: '4.0.2', date: '25/10/2026', items: [
       'New game: after the intro the game puts the player at its own place, so the first time the player gets control back after having it off (the end of the intro) he is now taken to the spawn point. A saved game, which starts with control on, is not affected.',
-      'Protector NPCs ignore the characters of the story (the NPCs of the game's missions, which use the mission ped types) unless one of them has hurt the player.',
+      'Protector NPCs ignore the characters of the story (the NPCs of the game\'s missions, which use the mission ped types) unless one of them has hurt the player.',
     ],
   },
   {
