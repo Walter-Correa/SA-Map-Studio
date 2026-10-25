@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.9', date: '25/10/2026', items: [
+      'Drive by with every firearm that shoots bullets: pistols, shotguns, submachine guns, rifles (M4, AK-47), sniper rifles and the minigun. The thrown weapons, the rocket launchers and the flamethrower are still left out (they would hit the car itself).',
+    ],
+  },
+  {
     version: '4.0.8', date: '25/10/2026', items: [
       'Drive by: a protector NPC sitting in a vehicle (a passenger) with a weapon that can be fired from inside one (a pistol, a micro uzi, an mp5 or a tec 9) and with ammunition now shoots at the enemies and at the police helicopter from the car. With any other weapon, or without ammunition, it stays in the car and does not get out to fight.',
     ],

@@ -435,8 +435,9 @@ export function actorsScript(items) {
         }
         a.label(L(pre));
       };
-      // Weapons that can be fired from inside a vehicle (drive by): pistols, micro uzi, mp5 and tec 9
-      const driveWeapon = [22, 23, 24, 28, 29, 32].includes(e.weapon);
+      // Weapons that can be fired from inside a vehicle (drive by): every firearm that shoots bullets (pistols, shotguns, submachine guns, rifles,
+      // sniper rifles and the minigun); not the thrown ones, the rocket launchers or the flamethrower, which would hit the car itself
+      const driveWeapon = (e.weapon >= 22 && e.weapon <= 34) || e.weapon === 38;
       // The order to attack the target in `v`. Sitting in a vehicle (a passenger): a drive by, only with a weapon that can do it and with ammunition,
       // and nothing otherwise (it stays in the car). On foot: kill it, or shoot at it when it is in a vehicle
       const attackTask = (v, pre) => {

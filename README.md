@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.8-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.9-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -64,7 +64,7 @@ never changed and removing the mod is deleting its folder.
   - *Protector*: follows the player running (fast or normal speed), each one with its own place around him, gets into his
     car, and is brought next to him (all together, 3 m behind him or 10 m when he is in a vehicle, never during a cutscene or
     while he flies or is in the air) when far away, in another interior or stuck. The car he drives goes through the protectors on foot, and
-    protectors and enemies swim instead of drowning. A protector riding in a vehicle with a pistol, micro uzi, mp5 or tec 9
+    protectors and enemies swim instead of drowning. A protector riding in a vehicle with a firearm that shoots bullets
     (and ammunition) shoots from the car (drive by). It fights with priority over everything:
     the police helicopters first, then the enemy NPCs, the cops while the player is wanted and anyone shooting at the player,
     only what it can hit (clear line of sight), spreading over the enemies, and never the characters of the game's story
@@ -480,6 +480,9 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.9 — 25/10/2026
+- Drive by with every firearm that shoots bullets: pistols, shotguns, submachine guns, rifles (M4, AK-47), sniper rifles and the minigun. The thrown weapons, the rocket launchers and the flamethrower are still left out (they would hit the car itself).
 
 ### 4.0.8 — 25/10/2026
 - Drive by: a protector NPC sitting in a vehicle (a passenger) with a weapon that can be fired from inside one (a pistol, a micro uzi, an mp5 or a tec 9) and with ammunition now shoots at the enemies and at the police helicopter from the car. With any other weapon, or without ammunition, it stays in the car and does not get out to fight.
