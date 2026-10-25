@@ -451,6 +451,7 @@ export function actorsScript(items) {
       if (e.skin !== 0) a.op(0x0249, int(e.skin));                                              // the model is not kept in memory (the NPC holds it while it lives)
       a.op(0x0173, lv(h), flt(e.rz));
       if (e.invulnerable) a.op(0x02AB, lv(h), int(1), int(1), int(1), int(1), int(1));
+      else a.op(0x02AB, lv(h), int(0), int(0), int(0), int(1), int(0));                        // a car does not hurt it: running it over is not a crime
       if (e.weapon) {
         const model = weaponModel(e.weapon);
         if (model) loadModel(a, model, 'w' + i);
@@ -629,17 +630,23 @@ export function actorsScript(items) {
         a.label(L('ps'));
         a.op(0x0AB3, int(PH_HEALTH), lv(T0));
         a.op(0x0AB3, int(PH_ARMOUR), lv(T6));
-        // The player's car goes through the protectors: while he drives, the car moves and this one is on foot within 8 m of him, it has no collision
-        // and is held where it is (so it does not fall through the ground); in any other case it is normal again
+        // The player's car goes through the protectors: while he drives and this one is on foot within 15 m of him, it has no collision and is held
+        // where it is (so it does not fall through the ground) as long as the car moves; when the car slows down it stays that way until the car is
+        // 6 m away from it (giving it its collision back with the car on top of it threw it onto the roof). In any other case it is normal again
         // A protector in a vehicle (or getting in or out) is left alone: the game manages the collision of a ped that is inside a vehicle, and forcing it
         // on made the passenger collide with the car and throw it into the air. It is only released (in case it was held)
         a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(L('wv')));
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('wr')));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('wr')));
         a.op(0x03C0, lv(PLAYER), lv(T0));
+        a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(15), flt(15), flt(15), int(0)).op(0x004D, ref(L('wr')));
         a.op(0x02E3, lv(T0), lv(T6));
-        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(1.5)).op(0x004D, ref(L('wr')));
-        a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T1), lv(T2), lv(T3), flt(8), flt(8), flt(8), int(0)).op(0x004D, ref(L('wr')));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T6), flt(1.5)).op(0x004D, ref(L('ws')));
+        a.jump(L('wg'));
+        a.label(L('ws'));
+        a.op(0x00AA, lv(T0), lv(T4), lv(T5), lv(T6));
+        a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T4), lv(T5), lv(T6), flt(6), flt(6), flt(6), int(0)).op(0x004D, ref(L('wr')));
+        a.label(L('wg'));
         a.op(0x0619, lv(h), int(0));
         a.op(0x0575, lv(h), int(1));
         a.jump(L('wd'));
@@ -731,6 +738,8 @@ export function actorsScript(items) {
         a.op(0x04C4, lv(PLAYER), flt(0), flt(-3), flt(0), lv(T4), lv(T5), lv(T6));
         a.label(L('fp'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
+        a.op(0x0575, lv(h), int(0));                                                             // not held and with its collision back before it is moved
+        a.op(0x0619, lv(h), int(1));
         a.op(0x0860, lv(h), lv(T0));
         a.op(0x00A1, lv(h), lv(T4), lv(T5), lv(T6));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('fk')));

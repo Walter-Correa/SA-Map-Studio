@@ -7,6 +7,13 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.9', date: '26/10/2026', items: [
+      'Crash when NPCs are taken to the player: a protector that was held in place without collision (to let the car go through it) was moved in that state. It is released, with its collision back, before it is moved. Not tested in the game.',
+      'The protectors go through the car of the player within 15 meters of him (it was 8). When the car slows down or stops they stay without collision until the car is 6 meters away from them, so they are no longer thrown onto the roof when the car stops over them.',
+      'Running over an NPC of the project is no longer a crime (no stars): the NPCs are proof against collision damage (cars), as long as they are not already invulnerable.',
+    ],
+  },
+  {
     version: '4.1.8', date: '26/10/2026', items: [
       'The 20 seconds limit for the new game spawn teleport of 4.1.7 is gone, because the two intro cutscenes take minutes. The script now tells a new game from a saved game by the game clock when it starts (the clock is kept in the save and starts at zero in a new game): in a new game the player is taken to the spawn point the first time he gets control after the intro, however long it takes; in a saved game no cutscene takes him there. It is not tested in the game whether the clock is really kept in the save.',
     ],
