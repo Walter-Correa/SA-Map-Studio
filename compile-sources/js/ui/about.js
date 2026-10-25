@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.21', date: '26/10/2026', items: [
+      'Why a mission does not start: the main script of the game starts a mission when the player is on foot inside the marker, the flag of a mission running ($409) is 0 and the command CAN_PLAYER_START_MISSION is true (read in main.scm and in the code of the game). That command is false when a cutscene is running, the player is dead or arrested, he was knocked over, he is in an event response that does not end, his main task is not the one of walking on foot, he is attacking or aiming, or a script gave him a task. None of the scripts of the mod gives tasks to the player, so the cause was not found by reading the code.',
+      'New script (samsp_name_diag.cs, in the world folder) that finds the cause: if the file cleo/samsp_debug.txt exists in the game folder, every half second that CAN_PLAYER_START_MISSION is false (and when it changes) it writes two lines in cleo/samsp_log.txt (dg1 and dg2) with the cutscene flag, $409, the state of the player, his tasks, whether he is in a vehicle and his wanted level. Without that file it does nothing. It reads the memory of the game and is made for GTA San Andreas 1.0 US. Create the file, try to start the mission standing in its marker and send the log.',
+    ],
+  },
+  {
     version: '4.1.20', date: '26/10/2026', items: [
       'The progress with the girlfriends actions were removed (the story script may keep its own copy of that progress, and changing only the statistic could conflict with it). A project that used them keeps the action as no action.',
       'Maximum armour and Minimum armour now mean how much armour the player can have: Maximum puts it at 150 (what the game gives after the Vigilante missions reach level 12) and Minimum puts it back at the 100 of the start of the game. The game itself uses the same command (INCREASE_PLAYER_MAX_ARMOUR), which also fills the armour. Not tested in the game.',

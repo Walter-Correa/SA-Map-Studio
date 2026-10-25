@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.20-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.21-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.21 — 26/10/2026
+- Why a mission does not start: the main script of the game starts a mission when the player is on foot inside the marker, the flag of a mission running ($409) is 0 and the command CAN_PLAYER_START_MISSION is true (read in main.scm and in the code of the game). That command is false when a cutscene is running, the player is dead or arrested, he was knocked over, he is in an event response that does not end, his main task is not the one of walking on foot, he is attacking or aiming, or a script gave him a task. None of the scripts of the mod gives tasks to the player, so the cause was not found by reading the code.
+- New script (samsp_name_diag.cs, in the world folder) that finds the cause: if the file cleo/samsp_debug.txt exists in the game folder, every half second that CAN_PLAYER_START_MISSION is false (and when it changes) it writes two lines in cleo/samsp_log.txt (dg1 and dg2) with the cutscene flag, $409, the state of the player, his tasks, whether he is in a vehicle and his wanted level. Without that file it does nothing. It reads the memory of the game and is made for GTA San Andreas 1.0 US. Create the file, try to start the mission standing in its marker and send the log.
 
 ### 4.1.20 — 26/10/2026
 - The progress with the girlfriends actions were removed (the story script may keep its own copy of that progress, and changing only the statistic could conflict with it). A project that used them keeps the action as no action.

@@ -15,7 +15,7 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
-import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
+import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, diagScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
 const NOT_OBJECTS = new Set(['cars', 'peds', 'weap', 'hier']);
@@ -557,6 +557,7 @@ function categoryOf(path) {
     if (/_(npcs|followers)\d+\.cs$/.test(name)) return 'npcs';
     if (/_pickups\d+\.cs$/.test(name)) return 'pickups';
     if (/_checkpoints\d+\.cs$/.test(name)) return 'checkpoints';
+    if (/_diag\.cs$/.test(name)) return 'world';
     if (/_icons\d+\.cs$/.test(name)) return 'mapicons';
     if (/_world\.cs$/.test(name)) return 'world';
     if (/_movers\d+\.cs$/.test(name)) return 'objects';
@@ -659,6 +660,8 @@ async function buildFiles(project, say = () => {}) {
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
   if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());
+  // Why a mission does not start (it does nothing unless the file cleo/samsp_debug.txt exists in the game folder)
+  if (usesCleo(project)) files.set(`samsp_${base}_diag.cs`, diagScript());
   putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, blip: !!c.radarIcon })), () => 3, checkpointsScript);
   const w = project.world || {};
   putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);

@@ -119,6 +119,59 @@ export function taskGuardScript() {
   return a.build();
 }
 
+// A script that watches why a mission can not start (only while the file cleo/samsp_debug.txt exists, and only for the game version of SA-MP, 1.0 US).
+// The game starts a mission when the player is on foot inside the marker AND $409 (the flag of a mission running) is 0 AND the command
+// CAN_PLAYER_START_MISSION is true. That command is false when: a cutscene is running; the player is dead or arrested; the player has a physical
+// response (he was knocked over), an event response that does not end, or a main task that is not the one of walking on foot; he is attacking or
+// aiming (the secondary task 0); or his event group holds an EVENT_SCRIPT_COMMAND (a script gave him a task). Every half second that it is false
+// (and when it changes) two lines are written in cleo/samsp_log.txt with those values
+export function diagScript() {
+  const a = new Asm();
+  a.op(0x0000);
+  waitPlayer(a);
+  a.op(0x0006, lv(12), int(1));                                                                  // what the command said the last time
+  a.label('loop').op(0x0001, int(500));
+  a.op(0x00D6, int(0)).op(0x0AAB, str('cleo\\samsp_debug.txt')).op(0x004D, ref('loop'));
+  a.op(0x0006, lv(0), int(0));
+  a.op(0x00D6, int(0)).op(0x03EE, int(0)).op(0x004D, ref('nc'));
+  a.op(0x0006, lv(0), int(1));
+  a.label('nc');
+  a.op(0x00D6, int(0)).op(0x0039, lv(0), int(1)).op(0x004D, ref('go'));                          // it can: only a change is written
+  a.op(0x00D6, int(0)).op(0x0039, lv(12), int(1)).op(0x004D, ref('go'));
+  a.jump('loop');
+  a.label('go');
+  a.op(0x0085, lv(12), lv(0));
+  a.op(0x0A8D, int(0xA49960 + 409 * 4), int(4), int(0), lv(1));                                  // $409
+  a.op(0x0A8D, int(0x96A8B0), int(1), int(0), lv(2));                                            // a cutscene is running
+  a.op(0x0A96, lv(PLAYER), lv(3));                                                               // the ped of the player
+  a.op(0x00D6, int(0)).op(0x0039, lv(3), int(0)).op(0x004D, ref('p1'));
+  a.jump('loop');
+  a.label('p1');
+  a.op(0x0A8E, lv(3), int(0x530), lv(4));
+  a.op(0x0A8D, lv(4), int(4), int(0), lv(4));                                                    // state of the ped
+  a.op(0x0A8E, lv(3), int(0x47C), lv(5));
+  a.op(0x0A8D, lv(5), int(4), int(0), lv(5));                                                    // its intelligence
+  a.op(0x00D6, int(0)).op(0x0039, lv(5), int(0)).op(0x004D, ref('p2'));
+  a.jump('loop');
+  a.label('p2');
+  [[0x04, 6], [0x0C, 7], [0x10, 8], [0x18, 9]].forEach(([o, v]) => {                             // the tasks: physical, event response, main, attack
+    a.op(0x0A8E, lv(5), int(o), lv(10));
+    a.op(0x0A8D, lv(10), int(4), int(0), lv(v));
+  });
+  a.op(0x0006, lv(10), int(0));
+  a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('nv'));
+  a.op(0x0006, lv(10), int(1));
+  a.label('nv');
+  a.op(0x01C0, int(0), lv(11));
+  a.op(0x01BD, lv(13));
+  a.op(0x00D6, int(0)).op(0x0A9A, str(LOG_FILE), str('a'), lv(14)).op(0x004D, ref('loop'));
+  a.op(0x0AD9, lv(14), str('dg1:%d:can=%d:onmission=%d:cutscene=%d:state=%d\r\n'), lv(13), lv(0), lv(1), lv(2), lv(4), endArgs);
+  a.op(0x0AD9, lv(14), str('dg2:physical=%x:response=%x:main=%x:attack=%x:invehicle=%d:wanted=%d\r\n'), lv(6), lv(7), lv(8), lv(9), lv(10), lv(11), endArgs);
+  a.op(0x0A9B, lv(14));
+  a.jump('loop');
+  return a.build();
+}
+
 // Plain letters only: the game's text takes no accents here
 export const ascii = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7e]/g, '?');
 
