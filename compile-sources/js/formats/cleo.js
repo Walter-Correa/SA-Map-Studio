@@ -435,6 +435,26 @@ export function actorsScript(items) {
         }
         a.label(L(pre));
       };
+      // Weapons that can be fired from inside a vehicle (drive by): pistols, micro uzi, mp5 and tec 9
+      const driveWeapon = [22, 23, 24, 28, 29, 32].includes(e.weapon);
+      // The order to attack the target in `v`. Sitting in a vehicle (a passenger): a drive by, only with a weapon that can do it and with ammunition,
+      // and nothing otherwise (it stays in the car). On foot: kill it, or shoot at it when it is in a vehicle
+      const attackTask = (v, pre) => {
+        a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L(pre + 'f')));
+        if (driveWeapon) {
+          a.op(0x041A, lv(h), int(e.weapon), lv(T6));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'e')));
+          a.op(0x0713, lv(h), lv(v), int(-1), flt(0), flt(0), flt(0), flt(60), int(8), int(0), int(100));
+        }
+        a.jump(L(pre + 'e'));
+        a.label(L(pre + 'f'));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(v)).op(0x004D, ref(L(pre + 'k')));
+        a.op(0x074D, lv(h), lv(v), int(1500));
+        a.jump(L(pre + 'e'));
+        a.label(L(pre + 'k'));
+        a.op(0x05E2, lv(h), lv(v));
+        a.label(L(pre + 'e'));
+      };
       let runCount = 0;
       const runTo = (ms = 4000) => {
         const n = runCount++;
@@ -653,6 +673,10 @@ export function actorsScript(items) {
           a.op(0x000A, lv(cnt), int(1));
           a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
           a.op(0x0006, lv(cnt), int(0));
+          a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('hf')));
+          if (driveWeapon) a.op(0x0713, lv(h), int(-1), lv(T4), flt(0), flt(0), flt(0), flt(80), int(8), int(0), int(100));   // sitting in a vehicle: drive by
+          a.jump(done);
+          a.label(L('hf'));
           a.op(0x00AA, lv(T4), lv(T0), lv(T6), lv(T5));
           a.op(0x0668, lv(h), lv(T0), lv(T6), lv(T5), int(1500));
           a.jump(done);
@@ -731,12 +755,7 @@ export function actorsScript(items) {
             wreckCheck(T4, P + 'ywk', L(P + 'yn'));
             losCheck(L(P + 'yn'));
             capCheck(P + 'y', L(P + 'yn'), limit);
-            a.op(0x00D6, int(0)).op(0x00DF, lv(T4)).op(0x004D, ref(L(P + 'yp')));
-            a.op(0x074D, lv(h), lv(T4), int(1500));
-            a.op(0x0085, lv(tgt), lv(T4));
-            a.jump(L('gd'));
-            a.label(L(P + 'yp'));
-            a.op(0x05E2, lv(h), lv(T4));
+            attackTask(T4, P + 'yat');
             a.op(0x0085, lv(tgt), lv(T4));
             a.jump(L('gd'));
             a.label(L(P + 'yn'));
@@ -784,15 +803,7 @@ export function actorsScript(items) {
           wreckCheck(T4, P + 'gwk', L(P + 'gn'));
           losCheck(L(P + 'gn'));
           capCheck(P + 'g', L(P + 'gn'), limit);
-          a.op(0x00D6, int(0)).op(0x00DF, lv(T4)).op(0x004D, ref(L(P + 'gp')));
-          a.op(0x074D, lv(h), lv(T4), int(1500));                                                    // he is in a vehicle (or a helicopter): it shoots at him
-          a.op(0x0085, lv(tgt), lv(T4));
-          a.jump(L('gd'));
-          a.label(L(P + 'gp'));
-          a.op(0x00D6, int(0)).op(0x0039, lv(tgt), lv(T4)).op(0x004D, ref(L(P + 'gt')));               // already on him
-          a.jump(L('gd'));
-          a.label(L(P + 'gt'));
-          a.op(0x05E2, lv(h), lv(T4));
+          attackTask(T4, P + 'gat');
           a.op(0x0085, lv(tgt), lv(T4));
           a.jump(L('gd'));
           a.label(L(P + 'gn'));
@@ -828,11 +839,7 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
         a.op(0x0006, lv(cnt), int(0));
         a.op(0x0085, lv(T4), lv(tgt));
-        a.op(0x00D6, int(0)).op(0x00DF, lv(T4)).op(0x004D, ref(L('gw2')));
-        a.op(0x074D, lv(h), lv(T4), int(1500));
-        a.jump(done);
-        a.label(L('gw2'));
-        a.op(0x05E2, lv(h), lv(T4));
+        attackTask(T4, 'gxat');
         a.jump(done);
         a.label(L('gu'));
         if (e.follow) {
