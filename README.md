@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.5-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.6-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -481,6 +481,9 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.1.6 — 26/10/2026
+- Fixed a crash during cutscenes: the NPCs were not taken to the player any more in a cutscene, but they still got orders (tasks, scans for targets) while the game was running it. Now, while the player has no control (a cutscene or a scripted scene), the NPCs get no order at all until it ends. Not tested in the game.
 
 ### 4.1.5 — 26/10/2026
 - NPCs with the CJ skin came out see-through in a new game because they were made before the clothes of the player were built. The script that has them now waits 3 seconds after the game starts before it makes its NPCs (20 seconds in 4.1.4 fixed it, so the time was cut to a test of 3).

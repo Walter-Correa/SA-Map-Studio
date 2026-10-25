@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.6', date: '26/10/2026', items: [
+      'Fixed a crash during cutscenes: the NPCs were not taken to the player any more in a cutscene, but they still got orders (tasks, scans for targets) while the game was running it. Now, while the player has no control (a cutscene or a scripted scene), the NPCs get no order at all until it ends. Not tested in the game.',
+    ],
+  },
+  {
     version: '4.1.5', date: '26/10/2026', items: [
       'NPCs with the CJ skin came out see-through in a new game because they were made before the clothes of the player were built. The script that has them now waits 3 seconds after the game starts before it makes its NPCs (20 seconds in 4.1.4 fixed it, so the time was cut to a test of 3).',
     ],

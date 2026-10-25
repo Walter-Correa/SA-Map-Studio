@@ -569,6 +569,9 @@ export function actorsScript(items) {
       }
       a.jump(done);
       a.label(L('av'));
+      // A cutscene or a scripted scene (the player has no control): nothing is asked of the NPC (no task, no scan, no teleport). The game
+      // takes charge of every character then, and orders given in the middle of a cutscene crashed it
+      a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref(done));
       if (e.role === 'guard') {
         // The chaos counter (what the protectors did) goes down 8 every 5 seconds, and goes back to zero when the game has cleared the stars
         a.op(0x01BD, lv(T4));
