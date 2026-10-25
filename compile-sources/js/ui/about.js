@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.24', date: '26/10/2026', items: [
+      'Second log of why a mission does not start: the player stood 14 seconds at 1.0 m from the marker 462 of the main script (the one of the SWEET missions), on foot, with the game saying yes to CAN_PLAYER_START_MISSION, no mission running and no cutscene, and the mission still did not start. The trigger also needs its own progress variable ($452 for that marker) to have the value of a mission (0 to 8), and the game has a limit of scripts. The log (dg5) now also writes the progress variables 448, 452, 453 and 456 and how many scripts are running.',
+    ],
+  },
+  {
     version: '4.1.23', date: '26/10/2026', items: [
       'The log of why a mission does not start shows the nearest mission marker of the game and the distance to it (dg4), read from the variables where the main script keeps the place of each marker. The first log showed that the mod was not the cause: the game said yes (CAN_PLAYER_START_MISSION true, no mission running, no cutscene, no wanted level) almost all the time, and only said no for a few seconds while the player had an attack task (aiming or fighting).',
     ],

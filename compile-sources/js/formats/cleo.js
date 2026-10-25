@@ -184,6 +184,20 @@ export function diagScript() {
     a.label('tn' + v);
   });
   a.op(0x0AD9, lv(14), str('dg4:nearest_marker_var=%d:distance=%.1f\r\n'), lv(21), lv(20), endArgs);
+  // The progress of the stories that the markers depend on (the variables that the triggers of the main script compare) and how many scripts run:
+  // a trigger only starts its mission when its variable has the value of that mission, and the game has a limit of scripts
+  [448, 452, 453, 456].forEach((v, k) => a.op(0x0A8D, int(0xA49960 + v * 4), int(4), int(0), lv(26 + k)));
+  a.op(0x0A8D, int(0xA8B42C), int(4), int(0), lv(30));                                           // the first of the scripts that run
+  a.op(0x0006, lv(25), int(0));
+  a.label('sc');
+  a.op(0x00D6, int(0)).op(0x0039, lv(30), int(0)).op(0x004D, ref('sd'));
+  a.jump('se');
+  a.label('sd');
+  a.op(0x000A, lv(25), int(1));
+  a.op(0x0A8D, lv(30), int(4), int(0), lv(30));                                                  // the next one (the first field of each script)
+  a.op(0x00D6, int(0)).op(0x0019, lv(25), int(300)).op(0x004D, ref('sc'));
+  a.label('se');
+  a.op(0x0AD9, lv(14), str('dg5:var448=%d:var452=%d:var453=%d:var456=%d:scripts_running=%d\r\n'), lv(26), lv(27), lv(28), lv(29), lv(25), endArgs);
   a.op(0x0A9B, lv(14));
   a.jump('loop');
   return a.build();
