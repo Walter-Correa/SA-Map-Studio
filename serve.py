@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.2"
+VERSION = "4.1.3"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -765,7 +765,7 @@ def sp_has_asi_loader():
 def sp_has_cleo_plus():
     """The CLEO+ plugin, which the scripts need to keep the mod out of the saved games."""
     gta = State.gta_path or ""
-    return bool(gta) and any(resolve_ci(gta, p) for p in ("cleo/CLEOPlus.cleo", "cleo/cleo_plugins/CLEOPlus.cleo"))
+    return bool(gta) and any(resolve_ci(gta, p) for p in ("cleo/CLEO+.cleo", "cleo/CLEOPlus.cleo", "cleo/cleo_plugins/CLEO+.cleo", "cleo/cleo_plugins/CLEOPlus.cleo"))
 
 
 def sp_missing():
