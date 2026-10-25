@@ -231,6 +231,11 @@ export function diagScript() {
   a.op(0x01F5, int(0), lv(20));
   a.op(0x0A8D, int(0xA49960 + 3 * 4), int(4), int(0), lv(21));
   a.op(0x0AD9, lv(14), str('dg7:handle_now=%d:var3=%d\r\n'), lv(20), lv(21), endArgs);
+  // The game counts the scripts it processed (0xA447F8) and the commands it ran (0xA447F4) since the start of this frame: our script runs after the
+  // scripts of the game, so the numbers say whether those ran in this frame (27 scripts and hundreds of commands, or almost nothing)
+  a.op(0x0A8D, int(0xA447F8), int(2), int(0), lv(20));
+  a.op(0x0A8D, int(0xA447F4), int(2), int(0), lv(21));
+  a.op(0x0AD9, lv(14), str('dg9:scripts_processed_this_frame=%d:commands_this_frame=%d\r\n'), lv(20), lv(21), endArgs);
   // Every 20 cycles (10 seconds): all the scripts that run, in the order the game keeps them. The game processes them from the first one and stops at
   // the first one that is not active, so the ones after it do not run at all: dg8 gives the number in the list, the name (the first eight letters, as
   // two numbers), whether it is active, how long until it wakes up (negative: it should be running) and where it is
@@ -1065,6 +1070,9 @@ export function actorsScript(items) {
         logTp('stuck');
         a.jump(L('fc'));
         a.label(L('fv'));
+        // The player is inside a building: the protectors do not follow him in (the camera of the game keeps a list of 15 characters near it and writes
+        // over the memory that comes next with more, which took the game down when 19 of them appeared in a house). They wait outside
+        a.op(0x00D6, int(0)).op(0x0039, lv(T0), int(0)).op(0x004D, ref(done));
         logTp('area');
         a.label(L('fc'));
         // each one on its own place of a ring around the player: 6 m when he is on foot, 12 m when he is in a vehicle

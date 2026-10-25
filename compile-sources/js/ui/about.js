@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.27', date: '26/10/2026', items: [
+      'Crash when the protectors follow the player into a house (it happened again after leaving the saving pickup): the dump shows the same fault of the camera of the game as before (the list of 15 characters near the camera written past its end). The protectors no longer teleport next to the player when he is inside a building (they wait outside); outside, the teleport is the same.',
+      'The log of why a mission does not start showed all 27 scripts of the story of the game with the wake up time stopped since the saved game was loaded (the mod scripts run). It happens with the mod and CLEO+ removed too, so it is not caused by them. The log (dg9) now also writes how many scripts and commands the game processed in the frame, to see whether the story scripts run at all.',
+    ],
+  },
+  {
     version: '4.1.26', date: '26/10/2026', items: [
       'Fourth log of why a mission does not start: the scripts SWEET (the trigger of the missions) and PSAVE1 (the saving pickups) are active and past their wake up time, but their wake up time never changes: they have not run once since the saved game was loaded (47 seconds and more), while the handle of the player is the same as the one in the main script ($3 = 1). So the story scripts of the game are not being processed, which also explains the saving pickup. The game processes its scripts from the first one in its list and stops at the first one that is not active. The log (dg8) now writes the whole list in order every ten seconds (name, whether it is active, how long until it wakes up and where it is) to find which one stops the others.',
     ],
