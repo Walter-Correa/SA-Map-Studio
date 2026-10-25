@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.1-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.2-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -46,7 +46,8 @@ never changed and removing the mod is deleting its folder.
 - **Own models**: import a `.dff` (with `.txd` and `.col`) from files; it gets a free model id, appears in the catalog under
   "Own models" and goes into the mod when an object uses it.
 - **Doors** (entrances and exits): an outside marker (yellow) and an inside marker (blue) joined by the same name.
-- **World**: the spawn point is an item like the others (the player starts there and after every death or arrest), fixed
+- **World**: the spawn point is an item like the others (the player starts there, also when a new game ends its intro, and
+  after every death or arrest), fixed
   weather and fixed time of day, and radar icons.
 - **Game data**: vehicle handling (merged into `handling.cfg`), weapons (`weapon.dat`) at each skill level (with
   "apply to every level" and a reset that covers every level), view distance of a single model. Only what was changed goes
@@ -63,7 +64,8 @@ never changed and removing the mod is deleting its folder.
   - *Protector*: follows the player running (fast or normal speed), each one with its own place around him, gets into his
     car, and is brought next to him when far away, in another interior or stuck. It fights with priority over everything:
     the police helicopters first, then the enemy NPCs, the cops while the player is wanted and anyone shooting at the player,
-    only what it can hit (clear line of sight), spreading over the enemies. Vehicles and whoever is inside them only with a
+    only what it can hit (clear line of sight), spreading over the enemies, and never the characters of the game's story
+    unless they hurt the player. Vehicles and whoever is inside them only with a
     weapon that shoots and has ammunition (never destroyed ones, and tanks only with a rocket launcher), and a target it
     has not killed in 15 seconds is let go so it never stays stuck. It never hurts the
     player, and its kills count as the player's (kill statistics and wanted level).
@@ -475,6 +477,10 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.2 — 25/10/2026
+- New game: after the intro the game puts the player at its own place, so the first time the player gets control back after having it off (the end of the intro) he is now taken to the spawn point. A saved game, which starts with control on, is not affected.
+- Protector NPCs ignore the characters of the story (the NPCs of the game's missions, which use the mission ped types) unless one of them has hurt the player.
 
 ### 4.0.1 — 25/10/2026
 - Protector NPCs never stay stuck on a target: a target that was not killed in 15 seconds is let go (and the NPC's tasks are cleared) so it can look for another one, or the same one again. Being brought next to the player resets the NPC: it loses its target and its mark.

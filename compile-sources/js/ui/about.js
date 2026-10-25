@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.2', date: '25/10/2026', items: [
+      'New game: after the intro the game puts the player at its own place, so the first time the player gets control back after having it off (the end of the intro) he is now taken to the spawn point. A saved game, which starts with control on, is not affected.',
+      'Protector NPCs ignore the characters of the story (the NPCs of the game's missions, which use the mission ped types) unless one of them has hurt the player.',
+    ],
+  },
+  {
     version: '4.0.1', date: '25/10/2026', items: [
       'Protector NPCs never stay stuck on a target: a target that was not killed in 15 seconds is let go (and the NPC\'s tasks are cleared) so it can look for another one, or the same one again. Being brought next to the player resets the NPC: it loses its target and its mark.',
       'The police helicopter is again the first priority of the protector NPCs: when the player is wanted and a Police Maverick is within 60 m, they let go of their target and shoot at it.',

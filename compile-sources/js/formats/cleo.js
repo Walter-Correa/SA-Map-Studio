@@ -702,6 +702,12 @@ export function actorsScript(items) {
             a.jump(L(P + 'ga'));
             a.label(L(P + 'gk'));
           }
+          // A character of the story (the ped types the game gives to the characters of its missions, 23 to 31) is never a target, unless it
+          // has hurt the player
+          a.op(0x089F, lv(T4), lv(T6));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(22)).op(0x004D, ref(L(P + 'gso')));
+          a.op(0x00D6, int(0)).op(0x051A, lv(PLAYER), lv(T4)).op(0x004D, ref(L(P + 'gn')));
+          a.label(L(P + 'gso'));
           a.op(0x00D6, int(0)).op(0x051A, lv(PLAYER), lv(T4)).op(0x004D, ref(L(P + 'g2')));            // it hurt the player
           a.jump(L(P + 'gf'));
           a.label(L(P + 'g2'));
@@ -949,6 +955,22 @@ export function worldScript(world) {
       a.label('pd');
       a.op(0x0006, lv(10), int(1));
       a.label('alive');
+      // New game: the intro (cutscene, with the player's control off) ends and the game puts the player at its own place. The first time the player gets
+      // his control back after having it off, he is taken to the spawn point (once; a saved game that starts with control on is not affected)
+      a.op(0x00D6, int(0)).op(0x0039, lv(12), int(0)).op(0x004D, ref('ngd'));
+      a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref('ngo'));
+      a.op(0x00D6, int(0)).op(0x0039, lv(11), int(1)).op(0x004D, ref('ngd'));
+      a.op(0x0006, lv(12), int(1));
+      a.op(0x04E4, flt(world.spawn.x), flt(world.spawn.y));
+      a.op(0x03CB, flt(world.spawn.x), flt(world.spawn.y), flt(world.spawn.z));
+      a.op(0x04BB, int(0));
+      a.op(0x0860, lv(PLAYER), int(0));
+      a.op(0x00A1, lv(PLAYER), flt(world.spawn.x), flt(world.spawn.y), flt(world.spawn.z));
+      a.op(0x0173, lv(PLAYER), flt(world.spawn.rot));
+      a.jump('ngd');
+      a.label('ngo');
+      a.op(0x0006, lv(11), int(1));
+      a.label('ngd');
     }
     if (world.weather >= 0) a.op(0x01B5, int(world.weather));
     if (world.hour >= 0) a.op(0x00C0, int(world.hour), int(world.minute | 0));
