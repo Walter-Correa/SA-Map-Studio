@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.24-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.25-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.25 — 26/10/2026
+- Third log of why a mission does not start. It showed the first Sweet mission (marker 462, progress variable $452 = 0, the right value for the first mission) with the player at 1.0 m on foot and the game saying yes to every condition. You also tried it without any mod, and the mission did not start there either, and the saving pickup of the house collected without opening the save menu. Reading the saved game (GTASAsf1.b) shows its script part normal: the scripts SWEET and PSAVE1 run, $409 is 0, the save pickups exist. The log (dg6 and dg7) now also writes where those two scripts are, whether they are asleep, and the handle of the player against the one the main script keeps in $3.
 
 ### 4.1.24 — 26/10/2026
 - Second log of why a mission does not start: the player stood 14 seconds at 1.0 m from the marker 462 of the main script (the one of the SWEET missions), on foot, with the game saying yes to CAN_PLAYER_START_MISSION, no mission running and no cutscene, and the mission still did not start. The trigger also needs its own progress variable ($452 for that marker) to have the value of a mission (0 to 8), and the game has a limit of scripts. The log (dg5) now also writes the progress variables 448, 452, 453 and 456 and how many scripts are running.

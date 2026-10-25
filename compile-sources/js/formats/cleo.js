@@ -189,15 +189,48 @@ export function diagScript() {
   [448, 452, 453, 456].forEach((v, k) => a.op(0x0A8D, int(0xA49960 + v * 4), int(4), int(0), lv(26 + k)));
   a.op(0x0A8D, int(0xA8B42C), int(4), int(0), lv(30));                                           // the first of the scripts that run
   a.op(0x0006, lv(25), int(0));
+  a.op(0x0006, lv(18), int(0));                                                                  // the script SWEET (the trigger of the missions) if it runs
+  a.op(0x0006, lv(19), int(0));                                                                  // the script PSAVE1 (the saving pickups) if it runs
   a.label('sc');
   a.op(0x00D6, int(0)).op(0x0039, lv(30), int(0)).op(0x004D, ref('sd'));
   a.jump('se');
   a.label('sd');
+  a.op(0x0A8E, lv(30), int(8), lv(20));
+  a.op(0x0A8D, lv(20), int(4), int(0), lv(20));                                                  // the first four letters of its name
+  a.op(0x00D6, int(0)).op(0x0039, lv(20), int(0x65657773)).op(0x004D, ref('s1'));
+  a.op(0x0085, lv(18), lv(30));
+  a.label('s1');
+  a.op(0x00D6, int(0)).op(0x0039, lv(20), int(0x76617370)).op(0x004D, ref('s2'));
+  a.op(0x0085, lv(19), lv(30));
+  a.label('s2');
   a.op(0x000A, lv(25), int(1));
   a.op(0x0A8D, lv(30), int(4), int(0), lv(30));                                                  // the next one (the first field of each script)
   a.op(0x00D6, int(0)).op(0x0019, lv(25), int(300)).op(0x004D, ref('sc'));
   a.label('se');
   a.op(0x0AD9, lv(14), str('dg5:var448=%d:var452=%d:var453=%d:var456=%d:scripts_running=%d\r\n'), lv(26), lv(27), lv(28), lv(29), lv(25), endArgs);
+  // Where the scripts SWEET and PSAVE1 are: the place in the main script (the trigger waits at 0xF29A), how long until it wakes up (negative: it is awake) and
+  // whether it is active. -1 for the place: the script does not run
+  [[18, 'sweet'], [19, 'psave1']].forEach(([ptr, tag]) => {
+    a.op(0x00D6, int(0)).op(0x0039, lv(ptr), int(0)).op(0x004D, ref(tag + 'f'));
+    a.op(0x0006, lv(20), int(-1)).op(0x0006, lv(21), int(0)).op(0x0006, lv(22), int(0));
+    a.jump(tag + 'g');
+    a.label(tag + 'f');
+    a.op(0x0A8E, lv(ptr), int(0x14), lv(23));
+    a.op(0x0A8D, lv(23), int(4), int(0), lv(20));
+    a.op(0x0A8F, lv(20), int(0xA49960), lv(20));
+    a.op(0x0A8E, lv(ptr), int(0xCC), lv(23));
+    a.op(0x0A8D, lv(23), int(4), int(0), lv(21));
+    a.op(0x0A8F, lv(21), lv(13), lv(21));
+    a.op(0x0A8E, lv(ptr), int(0xC4), lv(23));
+    a.op(0x0A8D, lv(23), int(1), int(0), lv(22));
+    a.label(tag + 'g');
+    a.op(0x0AD9, lv(14), str('dg6:' + tag + ':place=%x:wakes_in=%d:active=%d\r\n'), lv(20), lv(21), lv(22), endArgs);
+  });
+  // The handle of the character of the player as the game gives it now, and the one the main script keeps in $3 (the triggers use $3: if they
+  // differ after loading a saved game, the triggers never see the player)
+  a.op(0x01F5, int(0), lv(20));
+  a.op(0x0A8D, int(0xA49960 + 3 * 4), int(4), int(0), lv(21));
+  a.op(0x0AD9, lv(14), str('dg7:handle_now=%d:var3=%d\r\n'), lv(20), lv(21), endArgs);
   a.op(0x0A9B, lv(14));
   a.jump('loop');
   return a.build();

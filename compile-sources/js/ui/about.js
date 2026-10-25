@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.25', date: '26/10/2026', items: [
+      'Third log of why a mission does not start. It showed the first Sweet mission (marker 462, progress variable $452 = 0, the right value for the first mission) with the player at 1.0 m on foot and the game saying yes to every condition. You also tried it without any mod, and the mission did not start there either, and the saving pickup of the house collected without opening the save menu. Reading the saved game (GTASAsf1.b) shows its script part normal: the scripts SWEET and PSAVE1 run, $409 is 0, the save pickups exist. The log (dg6 and dg7) now also writes where those two scripts are, whether they are asleep, and the handle of the player against the one the main script keeps in $3.',
+    ],
+  },
+  {
     version: '4.1.24', date: '26/10/2026', items: [
       'Second log of why a mission does not start: the player stood 14 seconds at 1.0 m from the marker 462 of the main script (the one of the SWEET missions), on foot, with the game saying yes to CAN_PLAYER_START_MISSION, no mission running and no cutscene, and the mission still did not start. The trigger also needs its own progress variable ($452 for that marker) to have the value of a mission (0 to 8), and the game has a limit of scripts. The log (dg5) now also writes the progress variables 448, 452, 453 and 456 and how many scripts are running.',
     ],
