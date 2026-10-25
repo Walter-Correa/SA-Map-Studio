@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Патрони (оръжието се изхвърля, когато свършат)",
  "Munição infinita": "Безкрайни патрони",
  "Alterar a munição do NPC": "Промяна на патроните на NPC",
- "Manter o save do jogo sem nada do mod": "Пази записите на играта без нищо от мода"
+ "Manter o save do jogo sem nada do mod": "Пази записите на играта без нищо от мода",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Показва на радара жълтата иконка за цел, като при мисиите. По подразбиране е изключено.",
+ "Ícone amarelo no radar": "Жълта иконка на радара",
+ "Alterar ícone no radar": "Промяна на иконата на радара"
 }

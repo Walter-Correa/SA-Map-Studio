@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Munizioni (l'arma viene scartata quando finiscono)",
  "Munição infinita": "Munizioni infinite",
  "Alterar a munição do NPC": "Cambia le munizioni dell'NPC",
- "Manter o save do jogo sem nada do mod": "Mantiene i salvataggi del gioco senza nulla della mod"
+ "Manter o save do jogo sem nada do mod": "Mantiene i salvataggi del gioco senza nulla della mod",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Mostra sul radar l'icona gialla dell'obiettivo, come quelle delle missioni. Disattivato per impostazione predefinita.",
+ "Ícone amarelo no radar": "Icona gialla sul radar",
+ "Alterar ícone no radar": "Cambia icona del radar"
 }

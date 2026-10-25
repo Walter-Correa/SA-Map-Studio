@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Đạn (vũ khí bị vứt đi khi hết đạn)",
  "Munição infinita": "Đạn vô hạn",
  "Alterar a munição do NPC": "Đổi đạn của NPC",
- "Manter o save do jogo sem nada do mod": "Giữ các bản lưu của trò chơi không chứa bất cứ thứ gì của mod"
+ "Manter o save do jogo sem nada do mod": "Giữ các bản lưu của trò chơi không chứa bất cứ thứ gì của mod",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Hiển thị biểu tượng mục tiêu màu vàng trên radar, như trong các nhiệm vụ. Mặc định tắt.",
+ "Ícone amarelo no radar": "Biểu tượng vàng trên radar",
+ "Alterar ícone no radar": "Đổi biểu tượng radar"
 }

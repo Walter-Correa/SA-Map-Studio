@@ -2991,6 +2991,7 @@ function checkpointInspector(cp) {
     ${actionGrid()}
 
     ${actionSection(cp)}
+    ${app.project?.mode === 'sp' ? `<div class="insp-section"><label class="check" title="Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão."><input type="checkbox" id="cpRadarIcon" ${cp.radarIcon ? 'checked' : ''}> Ícone amarelo no radar</label></div>` : ''}
     <div class="insp-section">
       <div class="insp-label">Categoria e Tamanho</div>
       <div class="scope-toggle" style="margin-bottom:8px;" data-mp>
@@ -3043,6 +3044,8 @@ function bindCheckpoint(cp) {
   const uid = cp.uid, project = app.editor.findProjectOf(uid) || app.project;
   bindAction(cp, project, renderInspector);
   bindVecArrows(uid, project);
+  const radarIcon = $('#cpRadarIcon');
+  if (radarIcon) radarIcon.onchange = () => project.updateItems('Alterar ícone no radar', [uid], (o) => { o.radarIcon = radarIcon.checked; });
 
   $$('#inspector [data-cp-kind]').forEach(btn => {
     btn.onclick = () => {

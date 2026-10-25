@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Muniție (arma este aruncată când se termină)",
  "Munição infinita": "Muniție infinită",
  "Alterar a munição do NPC": "Schimbă muniția NPC-ului",
- "Manter o save do jogo sem nada do mod": "Păstrează salvările jocului fără nimic din mod"
+ "Manter o save do jogo sem nada do mod": "Păstrează salvările jocului fără nimic din mod",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Afișează pe radar pictograma galbenă de obiectiv, ca la misiuni. Dezactivat implicit.",
+ "Ícone amarelo no radar": "Pictogramă galbenă pe radar",
+ "Alterar ícone no radar": "Schimbă pictograma radarului"
 }

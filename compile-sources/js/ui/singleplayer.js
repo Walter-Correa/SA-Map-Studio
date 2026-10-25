@@ -659,7 +659,7 @@ async function buildFiles(project, say = () => {}) {
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
   if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());
-  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action })), () => 3, checkpointsScript);
+  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, blip: !!c.radarIcon })), () => 3, checkpointsScript);
   const w = project.world || {};
   putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);
   if (worldSettings(project)) {

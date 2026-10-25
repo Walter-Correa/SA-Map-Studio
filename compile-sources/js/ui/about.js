@@ -7,6 +7,15 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.17', date: '26/10/2026', items: [
+      'NPCs stuck with the swimming animation on land (arms out): a NPC that is out of the water but swimming, or playing a swimming animation, now has its tasks cleared at once, which resets the animation. The protectors also have their tasks and animations reset before they are taken to the player.',
+      'The NPCs taken to the player are not put inside walls, buildings or objects: if the place can not be seen from the player (chest to chest, checking buildings and objects), the NPC goes 1.5 meters behind him.',
+      'The protectors run and walk 50% faster than normal (it was 25%).',
+      'Moving objects (gates): they are no longer marked as no longer needed. With that mark the game treated them as loose objects and, far from the player, they did not move the whole way (the clean saved games do not need it any more, the script takes them away before a save). Not tested in the game.',
+      'The yellow radar icon of the checkpoints is now optional: a new Yellow icon on the radar box in the checkpoint inspector (Singleplayer), off by default.',
+    ],
+  },
+  {
     version: '4.1.16', date: '26/10/2026', items: [
       'The radar icon scripts now go in their own folder (mapicons) inside the folder of the mod, apart from the vehicles.',
       'Crash dump again with the table of tasks of the game full (this time 111 places taken by the shoot at order and 16 by the walk order), so the limit now covers every NPC order: when fewer than 13 places are free, nothing new is asked of any NPC and its orders are cleared, which frees its places (the places stay taken by events of orders the character did not carry out). Not tested in the game.',

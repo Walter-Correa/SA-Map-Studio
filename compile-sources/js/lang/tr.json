@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Mermi (bittiğinde silah atılır)",
  "Munição infinita": "Sonsuz mermi",
  "Alterar a munição do NPC": "NPC mermisini değiştir",
- "Manter o save do jogo sem nada do mod": "Oyun kayıtlarını modun hiçbir şeyi olmadan tutar"
+ "Manter o save do jogo sem nada do mod": "Oyun kayıtlarını modun hiçbir şeyi olmadan tutar",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Radarda görevlerdeki gibi sarı hedef simgesini gösterir. Varsayılan olarak kapalı.",
+ "Ícone amarelo no radar": "Radarda sarı simge",
+ "Alterar ícone no radar": "Radar simgesini değiştir"
 }

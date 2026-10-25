@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Ammunition (the weapon is thrown away when it runs out)",
  "Munição infinita": "Infinite ammunition",
  "Alterar a munição do NPC": "Change the NPC ammunition",
- "Manter o save do jogo sem nada do mod": "Keeps the game's saved games free of anything from the mod"
+ "Manter o save do jogo sem nada do mod": "Keeps the game's saved games free of anything from the mod",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Shows the yellow objective icon on the radar, like the ones of the missions. Off by default.",
+ "Ícone amarelo no radar": "Yellow icon on the radar",
+ "Alterar ícone no radar": "Change radar icon"
 }

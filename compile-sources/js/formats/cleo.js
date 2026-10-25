@@ -335,8 +335,10 @@ export function checkpointsScript(items) {
   items.forEach((e) => {
     e.base = next; next += 3;
     a.op(0x0006, lv(e.base), int(0)).op(0x0006, lv(e.base + 2), int(0));
-    a.op(0x018A, flt(e.x), flt(e.y), flt(e.z), lv(e.base + 1));                                    // the point on the radar
-    a.op(0x018B, lv(e.base + 1), int(2));
+    if (e.blip) {
+      a.op(0x018A, flt(e.x), flt(e.y), flt(e.z), lv(e.base + 1));                                  // the point on the radar (only when asked for)
+      a.op(0x018B, lv(e.base + 1), int(2));
+    }
   });
   saveGuard(a);
   a.label('loop');
@@ -344,6 +346,7 @@ export function checkpointsScript(items) {
   // A save was made: the points on the radar come back (the ones of checkpoints used up for good stay away)
   a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('fl'));
   items.forEach((e) => {
+    if (!e.blip) return;
     a.op(0x00D6, int(0)).op(0x0039, lv(e.base), int(3)).op(0x004D, ref('fb' + e.base));
     a.jump('fn' + e.base);
     a.label('fb' + e.base);
@@ -385,7 +388,7 @@ export function checkpointsScript(items) {
       a.jump('n' + i);                                                                           // could not pay: it tries again when the player comes back in
       a.label('u' + i);
       if (e.action.once) {
-        a.op(0x0164, lv(base + 1));
+        if (e.blip) a.op(0x0164, lv(base + 1));
         a.op(0x03BD, lv(base + 2));
         a.op(0x0006, lv(base), int(3));
       } else {
@@ -406,7 +409,7 @@ export function checkpointsScript(items) {
     a.op(0x00D6, int(0)).op(0x0039, lv(base), int(3)).op(0x004D, ref('sa' + i));
     a.jump('sk' + i);                                                                            // used up for good: nothing is left
     a.label('sa' + i);
-    a.op(0x0164, lv(base + 1));
+    if (e.blip) a.op(0x0164, lv(base + 1));
     a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('sb' + i));
     a.op(0x03BD, lv(base + 2));
     a.op(0x0006, lv(base), int(0));
@@ -681,11 +684,31 @@ export function actorsScript(items) {
       a.op(0x0687, lv(h));
       a.jump(done);
       a.label(L('tg0'));
+      if (e.role !== 'neutral') {
+        // Out of the water but still swimming (or with a swimming animation, arms out, as after the water): the tasks are cleared at once, that
+        // resets the animation, and the NPC walks again
+        a.op(0x00D6, int(0)).op(0x04AD, lv(h)).op(0x004D, ref(L('swa')));
+        a.jump(L('sw0'));
+        a.label(L('swa'));
+        a.op(0x00D6, int(0)).op(0x0965, lv(h)).op(0x004D, ref(L('swb')));
+        a.jump(L('sw1'));
+        a.label(L('swb'));
+        ['swim_tread', 'swim_crawl', 'swim_breast', 'swim_glide'].forEach((n, k) => {
+          a.op(0x00D6, int(0)).op(0x0611, lv(h), strn(n)).op(0x004D, ref(L('swn' + k)));
+          a.jump(L('sw1'));
+          a.label(L('swn' + k));
+        });
+        a.jump(L('sw0'));
+        a.label(L('sw1'));
+        a.op(0x0792, lv(h));
+        a.jump(done);
+        a.label(L('sw0'));
+      }
       if (e.role === 'guard') {
-        // A protector runs 25% faster than normal: the speed of its running and walking animations (it is set again at every cycle, the game puts
+        // A protector runs 50% faster than normal: the speed of its running and walking animations (it is set again at every cycle, the game puts
         // the normal speed back when an animation starts again)
         ['run_civi', 'sprint_civi', 'walk_civi', 'run_player', 'sprint_panic', 'run_gang1', 'walk_gang1', 'run_old', 'run_fat', 'run_fatold', 'run_wuzi', 'woman_run', 'woman_runfast'].forEach((n) => {
-          a.op(0x0393, lv(h), strn(n), flt(1.25));
+          a.op(0x0393, lv(h), strn(n), flt(1.5));
         });
         // The chaos counter (what the protectors did) goes down 8 every 5 seconds, and goes back to zero when the game has cleared the stars
         a.op(0x01BD, lv(T4));
@@ -852,13 +875,24 @@ export function actorsScript(items) {
         a.label(L('fo'));
         a.op(0x04C4, lv(PLAYER), flt(tx), flt(ty), flt(0), lv(T4), lv(T5), lv(T6));
         a.label(L('fp'));
+        // Not inside a wall, a building or an object: if the place can not be seen from the player (chest to chest), it goes 1.5 m behind him
+        a.op(0x0086, lv(T7), lv(T3));
+        a.op(0x000B, lv(T7), flt(0.8));
+        a.op(0x0086, lv(T8), lv(T6));
+        a.op(0x000B, lv(T8), flt(0.8));
+        a.op(0x00D6, int(0)).op(0x06BD, lv(T1), lv(T2), lv(T7), lv(T4), lv(T5), lv(T8), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('fl1')));
+        a.jump(L('fl2'));
+        a.label(L('fl1'));
+        a.op(0x04C4, lv(PLAYER), flt(0), flt(-1.5), flt(0), lv(T4), lv(T5), lv(T6));
+        a.label(L('fl2'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
+        a.op(0x0792, lv(h));                                                                     // tasks and animations reset before it is moved (a swimming animation stayed)
         a.op(0x0575, lv(h), int(0));                                                             // not held and with its collision back before it is moved
         a.op(0x0619, lv(h), int(1));
         a.op(0x0860, lv(h), lv(T0));
         a.op(0x00A1, lv(h), lv(T4), lv(T5), lv(T6));
         a.op(0x00D6, int(0)).op(0x84AD, lv(h)).op(0x004D, ref(L('fk')));
-        a.op(0x0687, lv(h));
+        a.op(0x0792, lv(h));
         a.label(L('fk'));
         a.op(0x0006, lv(st), int(1)).op(0x0006, lv(cnt), int(0));
         if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
@@ -1214,9 +1248,8 @@ export function moversScript(items) {
       a.op(0x0107, int(e.model), flt(e.x), flt(e.y), flt(e.z), lv(base + 2));
       a.op(0x0453, lv(base + 2), flt(e.rx), flt(e.ry), flt(e.rz));
       a.op(0x0249, int(e.model));
-      // Not an object of a mission any more: the game does not keep it in a saved game (the model may belong to the mod, and a save that has it
-      // does not load without the mod). The game may remove it; then it is made again
-      a.op(0x01C4, lv(base + 2));
+      // It stays an object of a mission (the game keeps it where it is and moving while the player is far). What a saved game would keep of it is
+      // taken away by the script just before a save (see saveGuard)
     },
     manage: (a, e, i, base) => {
       a.op(0x00D6, int(0)).op(0x03CA, lv(base + 2)).op(0x004D, ref('mz' + i));

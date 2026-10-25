@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Lőszer (a fegyvert eldobja, ha elfogy)",
  "Munição infinita": "Végtelen lőszer",
  "Alterar a munição do NPC": "NPC lőszerének módosítása",
- "Manter o save do jogo sem nada do mod": "A játék mentéseit mentesen tartja a mod minden elemétől"
+ "Manter o save do jogo sem nada do mod": "A játék mentéseit mentesen tartja a mod minden elemétől",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "A radaron megjeleníti a sárga célikont, mint a küldetéseknél. Alapértelmezés szerint kikapcsolva.",
+ "Ícone amarelo no radar": "Sárga ikon a radaron",
+ "Alterar ícone no radar": "Radarikon módosítása"
 }

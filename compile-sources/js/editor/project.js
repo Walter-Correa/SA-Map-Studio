@@ -573,6 +573,7 @@ export function makeCheckpoint(data) {
     nextz: data.nextz !== undefined ? +data.nextz : z,
     size: Math.max(0.5, +data.size || (isRace ? 6.0 : 4.0)),
     action: data.action ? makeAction(data.action) : null,
+    radarIcon: Boolean(data.radarIcon),
     world: data.world ?? -1,
     interior: data.interior ?? -1,
     streamDist: +data.streamDist || 200.0,

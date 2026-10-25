@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Amunisi (senjata dibuang saat habis)",
  "Munição infinita": "Amunisi tak terbatas",
  "Alterar a munição do NPC": "Ubah amunisi NPC",
- "Manter o save do jogo sem nada do mod": "Menjaga save game bebas dari apa pun milik mod"
+ "Manter o save do jogo sem nada do mod": "Menjaga save game bebas dari apa pun milik mod",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Menampilkan ikon sasaran kuning di radar, seperti pada misi. Nonaktif secara default.",
+ "Ícone amarelo no radar": "Ikon kuning di radar",
+ "Alterar ícone no radar": "Ubah ikon radar"
 }

@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.16-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.17-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,13 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.17 — 26/10/2026
+- NPCs stuck with the swimming animation on land (arms out): a NPC that is out of the water but swimming, or playing a swimming animation, now has its tasks cleared at once, which resets the animation. The protectors also have their tasks and animations reset before they are taken to the player.
+- The NPCs taken to the player are not put inside walls, buildings or objects: if the place can not be seen from the player (chest to chest, checking buildings and objects), the NPC goes 1.5 meters behind him.
+- The protectors run and walk 50% faster than normal (it was 25%).
+- Moving objects (gates): they are no longer marked as no longer needed. With that mark the game treated them as loose objects and, far from the player, they did not move the whole way (the clean saved games do not need it any more, the script takes them away before a save). Not tested in the game.
+- The yellow radar icon of the checkpoints is now optional: a new Yellow icon on the radar box in the checkpoint inspector (Singleplayer), off by default.
 
 ### 4.1.16 — 26/10/2026
 - The radar icon scripts now go in their own folder (mapicons) inside the folder of the mod, apart from the vehicles.

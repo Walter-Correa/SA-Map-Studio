@@ -2331,5 +2331,8 @@
  "Munição (a arma é descartada quando acaba)": "Набої (зброя викидається, коли вони закінчуються)",
  "Munição infinita": "Нескінченні набої",
  "Alterar a munição do NPC": "Змінити набої NPC",
- "Manter o save do jogo sem nada do mod": "Зберігає збереження гри без будь-чого з моду"
+ "Manter o save do jogo sem nada do mod": "Зберігає збереження гри без будь-чого з моду",
+ "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Показує на радарі жовту іконку цілі, як у місіях. За замовчуванням вимкнено.",
+ "Ícone amarelo no radar": "Жовта іконка на радарі",
+ "Alterar ícone no radar": "Змінити іконку радара"
 }
