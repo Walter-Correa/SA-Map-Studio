@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Giữ các bản lưu của trò chơi không chứa bất cứ thứ gì của mod",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Hiển thị biểu tượng mục tiêu màu vàng trên radar, như trong các nhiệm vụ. Mặc định tắt.",
  "Ícone amarelo no radar": "Biểu tượng vàng trên radar",
- "Alterar ícone no radar": "Đổi biểu tượng radar"
+ "Alterar ícone no radar": "Đổi biểu tượng radar",
+ "Máximo de gordura": "Mỡ tối đa",
+ "Mínimo de gordura": "Mỡ tối thiểu",
+ "Máximo de músculos": "Cơ bắp tối đa",
+ "Mínimo de músculos": "Cơ bắp tối thiểu",
+ "Máximo de stamina": "Thể lực tối đa",
+ "Mínimo de stamina": "Thể lực tối thiểu",
+ "Máximo de fôlego": "Dung tích phổi tối đa",
+ "Mínimo de fôlego": "Dung tích phổi tối thiểu",
+ "Máximo de força (vida máxima)": "Sức mạnh (máu tối đa) tối đa",
+ "Mínimo de força (vida máxima)": "Sức mạnh (máu tối đa) tối thiểu",
+ "Máximo de respeito": "Sự tôn trọng tối đa",
+ "Mínimo de respeito": "Sự tôn trọng tối thiểu"
 }

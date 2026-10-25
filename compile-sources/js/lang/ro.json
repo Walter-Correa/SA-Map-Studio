@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Păstrează salvările jocului fără nimic din mod",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Afișează pe radar pictograma galbenă de obiectiv, ca la misiuni. Dezactivat implicit.",
  "Ícone amarelo no radar": "Pictogramă galbenă pe radar",
- "Alterar ícone no radar": "Schimbă pictograma radarului"
+ "Alterar ícone no radar": "Schimbă pictograma radarului",
+ "Máximo de gordura": "Grăsime maxim",
+ "Mínimo de gordura": "Grăsime minim",
+ "Máximo de músculos": "Mușchi maxim",
+ "Mínimo de músculos": "Mușchi minim",
+ "Máximo de stamina": "Rezistență maxim",
+ "Mínimo de stamina": "Rezistență minim",
+ "Máximo de fôlego": "Capacitate pulmonară maxim",
+ "Mínimo de fôlego": "Capacitate pulmonară minim",
+ "Máximo de força (vida máxima)": "Forță (sănătate maximă) maxim",
+ "Mínimo de força (vida máxima)": "Forță (sănătate maximă) minim",
+ "Máximo de respeito": "Respect maxim",
+ "Mínimo de respeito": "Respect minim"
 }

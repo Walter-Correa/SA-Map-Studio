@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Menjaga save game bebas dari apa pun milik mod",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Menampilkan ikon sasaran kuning di radar, seperti pada misi. Nonaktif secara default.",
  "Ícone amarelo no radar": "Ikon kuning di radar",
- "Alterar ícone no radar": "Ubah ikon radar"
+ "Alterar ícone no radar": "Ubah ikon radar",
+ "Máximo de gordura": "Lemak maksimum",
+ "Mínimo de gordura": "Lemak minimum",
+ "Máximo de músculos": "Otot maksimum",
+ "Mínimo de músculos": "Otot minimum",
+ "Máximo de stamina": "Stamina maksimum",
+ "Mínimo de stamina": "Stamina minimum",
+ "Máximo de fôlego": "Kapasitas paru-paru maksimum",
+ "Mínimo de fôlego": "Kapasitas paru-paru minimum",
+ "Máximo de força (vida máxima)": "Kekuatan (kesehatan maksimum) maksimum",
+ "Mínimo de força (vida máxima)": "Kekuatan (kesehatan maksimum) minimum",
+ "Máximo de respeito": "Respek maksimum",
+ "Mínimo de respeito": "Respek minimum"
 }

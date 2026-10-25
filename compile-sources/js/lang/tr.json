@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Oyun kayıtlarını modun hiçbir şeyi olmadan tutar",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Radarda görevlerdeki gibi sarı hedef simgesini gösterir. Varsayılan olarak kapalı.",
  "Ícone amarelo no radar": "Radarda sarı simge",
- "Alterar ícone no radar": "Radar simgesini değiştir"
+ "Alterar ícone no radar": "Radar simgesini değiştir",
+ "Máximo de gordura": "En yüksek yağ",
+ "Mínimo de gordura": "En düşük yağ",
+ "Máximo de músculos": "En yüksek kas",
+ "Mínimo de músculos": "En düşük kas",
+ "Máximo de stamina": "En yüksek dayanıklılık",
+ "Mínimo de stamina": "En düşük dayanıklılık",
+ "Máximo de fôlego": "En yüksek akciğer kapasitesi",
+ "Mínimo de fôlego": "En düşük akciğer kapasitesi",
+ "Máximo de força (vida máxima)": "En yüksek güç (azami sağlık)",
+ "Mínimo de força (vida máxima)": "En düşük güç (azami sağlık)",
+ "Máximo de respeito": "En yüksek saygı",
+ "Mínimo de respeito": "En düşük saygı"
 }

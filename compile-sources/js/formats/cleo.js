@@ -264,7 +264,14 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
       break;
     case 'time': a.op(0x00C0, int(act.hour), int(act.minute)); break;
     case 'explosion': a.op(0x020C, flt(x), flt(y), flt(z), int(act.explosion)); break;
-    default: break;                                                                              // none, message: only the text
+    default: {
+      const st = STAT_ACTIONS[act.type];
+      if (st) {
+        if (st[2] === 'f') a.op(0x062A, int(st[0]), flt(st[1])); else a.op(0x0629, int(st[0]), int(st[1]));
+        if (st[3]) a.op(0x070D, lv(PLAYER));                                                       // the body is built again with the new fat or muscle
+      }
+      break;                                                                                     // none, message: only the text
+    }
   }
   a.label(u('end'));
   if (act.text) {
@@ -281,6 +288,17 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
     a.label(u('paid'));
   }
 }
+
+// The stats of the player that an action can put at the most or at the least (the id of the stat, the value, whether it is a float or an integer stat,
+// and whether the look of the player has to be built again). The values are the ones the game itself allows: fat, stamina, muscle, lung capacity and
+// max health are capped at 1000 by the game (it clamps them to 1000 when they grow); the least is 0, except the max health, which is 569 at the start
+// of a new game (100 points of health; less than that would leave the player with less than the bar of a new game, and 0 would kill him).
+// Respect is kept between 0 and 1000, the range of the other respect stats (girlfriend, clothes, fitness). The game computes its total from them
+const STAT_ACTIONS = {
+  fatMax: [21, 1000, 'f', true], fatMin: [21, 0, 'f', true], muscleMax: [23, 1000, 'f', true], muscleMin: [23, 0, 'f', true],
+  staminaMax: [22, 1000, 'f', false], staminaMin: [22, 0, 'f', false], lungMax: [225, 1000, 'i', false], lungMin: [225, 0, 'i', false],
+  strengthMax: [24, 1000, 'f', false], strengthMin: [24, 569, 'f', false], respectMax: [68, 1000, 'f', false], respectMin: [68, 0, 'f', false],
+};
 
 // pickups: { model, type, x, y, z, action }. One with an action keeps the pickup, and gives it back some seconds after it was taken
 export function pickupsScript(items) {

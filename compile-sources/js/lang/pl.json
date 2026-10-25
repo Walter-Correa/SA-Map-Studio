@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Utrzymuje zapisy gry bez niczego z moda",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Pokazuje na radarze żółtą ikonę celu, jak w misjach. Domyślnie wyłączone.",
  "Ícone amarelo no radar": "Żółta ikona na radarze",
- "Alterar ícone no radar": "Zmień ikonę radaru"
+ "Alterar ícone no radar": "Zmień ikonę radaru",
+ "Máximo de gordura": "Maksymalny poziom: tłuszcz",
+ "Mínimo de gordura": "Minimalny poziom: tłuszcz",
+ "Máximo de músculos": "Maksymalny poziom: mięśnie",
+ "Mínimo de músculos": "Minimalny poziom: mięśnie",
+ "Máximo de stamina": "Maksymalny poziom: kondycja",
+ "Mínimo de stamina": "Minimalny poziom: kondycja",
+ "Máximo de fôlego": "Maksymalny poziom: pojemność płuc",
+ "Mínimo de fôlego": "Minimalny poziom: pojemność płuc",
+ "Máximo de força (vida máxima)": "Maksymalny poziom: siła (maksymalne zdrowie)",
+ "Mínimo de força (vida máxima)": "Minimalny poziom: siła (maksymalne zdrowie)",
+ "Máximo de respeito": "Maksymalny poziom: szacunek",
+ "Mínimo de respeito": "Minimalny poziom: szacunek"
 }

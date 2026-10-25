@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.17-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.18-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -55,9 +55,9 @@ never changed and removing the mod is deleting its folder.
 - **Vehicles**: tuning and paintjobs, indestructible, doors only for the player, and unique vehicles that stay where the
   player leaves them and come back at their place after a time when destroyed.
 - **Pickups and checkpoints with actions**: show a message (as text or in a box, with color codes such as `~y~`), heal,
-  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game,
+  armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game, put fat, muscle, stamina, lung capacity, strength or respect at the most or the least,
   change skin, weather or time, or an explosion trap, optionally only once. Checkpoints are the red mission cylinder with
-  a radar point and are created only near the player.
+  an optional radar point (off by default) and are created only near the player.
 - **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading) or a chosen amount (the weapon
   is thrown away when it runs out and the NPC fights with its hands), time to come back after dying, and a role:
   - *Neutral*: stays in place and never reacts; if moved more than 0.5 m it is put back with its angle and animation.
@@ -484,6 +484,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.18 — 26/10/2026
+- New actions for pickups and checkpoints that put a stat of the player at its most or its least: fat, muscle, stamina, lung capacity, strength (the max health) and respect. The values are the ones the game allows: fat, muscle, stamina and lung capacity from 0 to 1000 (the game itself never lets them go above 1000); the strength is the max health stat, from 569 (the 100 points of a new game, a lower value would make the player weaker than at the start and 0 would kill him) to 1000 (176 points); respect from 0 to 1000, the range of the other respect stats, because the game computes the total respect from its own pieces and the exact scale of the respect was not found. Fat and muscle build the body of the player again, so the change shows at once.
 
 ### 4.1.17 — 26/10/2026
 - NPCs stuck with the swimming animation on land (arms out): a NPC that is out of the water but swimming, or playing a swimming animation, now has its tasks cleared at once, which resets the animation. The protectors also have their tasks and animations reset before they are taken to the player.

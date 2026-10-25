@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.18', date: '26/10/2026', items: [
+      'New actions for pickups and checkpoints that put a stat of the player at its most or its least: fat, muscle, stamina, lung capacity, strength (the max health) and respect. The values are the ones the game allows: fat, muscle, stamina and lung capacity from 0 to 1000 (the game itself never lets them go above 1000); the strength is the max health stat, from 569 (the 100 points of a new game, a lower value would make the player weaker than at the start and 0 would kill him) to 1000 (176 points); respect from 0 to 1000, the range of the other respect stats, because the game computes the total respect from its own pieces and the exact scale of the respect was not found. Fat and muscle build the body of the player again, so the change shows at once.',
+    ],
+  },
+  {
     version: '4.1.17', date: '26/10/2026', items: [
       'NPCs stuck with the swimming animation on land (arms out): a NPC that is out of the water but swimming, or playing a swimming animation, now has its tasks cleared at once, which resets the animation. The protectors also have their tasks and animations reset before they are taken to the player.',
       'The NPCs taken to the player are not put inside walls, buildings or objects: if the place can not be seen from the player (chest to chest, checking buildings and objects), the NPC goes 1.5 meters behind him.',

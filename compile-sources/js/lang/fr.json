@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Garde les sauvegardes du jeu sans rien du mod",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Affiche sur le radar l'icône jaune d'objectif, comme celles des missions. Désactivé par défaut.",
  "Ícone amarelo no radar": "Icône jaune sur le radar",
- "Alterar ícone no radar": "Modifier l'icône du radar"
+ "Alterar ícone no radar": "Modifier l'icône du radar",
+ "Máximo de gordura": "Graisse maximum",
+ "Mínimo de gordura": "Graisse minimum",
+ "Máximo de músculos": "Muscles maximum",
+ "Mínimo de músculos": "Muscles minimum",
+ "Máximo de stamina": "Endurance maximum",
+ "Mínimo de stamina": "Endurance minimum",
+ "Máximo de fôlego": "Capacité pulmonaire maximum",
+ "Mínimo de fôlego": "Capacité pulmonaire minimum",
+ "Máximo de força (vida máxima)": "Force (santé maximale) maximum",
+ "Mínimo de força (vida máxima)": "Force (santé maximale) minimum",
+ "Máximo de respeito": "Respect maximum",
+ "Mínimo de respeito": "Respect minimum"
 }

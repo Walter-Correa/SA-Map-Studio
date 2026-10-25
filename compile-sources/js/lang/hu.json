@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "A játék mentéseit mentesen tartja a mod minden elemétől",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "A radaron megjeleníti a sárga célikont, mint a küldetéseknél. Alapértelmezés szerint kikapcsolva.",
  "Ícone amarelo no radar": "Sárga ikon a radaron",
- "Alterar ícone no radar": "Radarikon módosítása"
+ "Alterar ícone no radar": "Radarikon módosítása",
+ "Máximo de gordura": "Maximális zsír",
+ "Mínimo de gordura": "Minimális zsír",
+ "Máximo de músculos": "Maximális izom",
+ "Mínimo de músculos": "Minimális izom",
+ "Máximo de stamina": "Maximális állóképesség",
+ "Mínimo de stamina": "Minimális állóképesség",
+ "Máximo de fôlego": "Maximális tüdőkapacitás",
+ "Mínimo de fôlego": "Minimális tüdőkapacitás",
+ "Máximo de força (vida máxima)": "Maximális erő (maximális élet)",
+ "Mínimo de força (vida máxima)": "Minimális erő (maximális élet)",
+ "Máximo de respeito": "Maximális tisztelet",
+ "Mínimo de respeito": "Minimális tisztelet"
 }

@@ -57,6 +57,9 @@ const TYPES = [
   ['teleport', 'Teleportar o jogador'], ['vehicle', 'Dar um veículo'], ['repair', 'Consertar o veículo do jogador'], ['nitro', 'Instalar nitro no veículo'],
   ['jetpack', 'Dar um jetpack'], ['save', 'Salvar o jogo'], ['skin', 'Trocar a skin do jogador'], ['weather', 'Mudar o clima'], ['time', 'Mudar a hora'],
   ['explosion', 'Explosão (armadilha)'],
+  ['fatMax', 'Máximo de gordura'], ['fatMin', 'Mínimo de gordura'], ['muscleMax', 'Máximo de músculos'], ['muscleMin', 'Mínimo de músculos'],
+  ['staminaMax', 'Máximo de stamina'], ['staminaMin', 'Mínimo de stamina'], ['lungMax', 'Máximo de fôlego'], ['lungMin', 'Mínimo de fôlego'],
+  ['strengthMax', 'Máximo de força (vida máxima)'], ['strengthMin', 'Mínimo de força (vida máxima)'], ['respectMax', 'Máximo de respeito'], ['respectMin', 'Mínimo de respeito'],
 ];
 
 // The game's color codes inside a text (as ~y~ in SA-MP): the code, its name and the color it shows

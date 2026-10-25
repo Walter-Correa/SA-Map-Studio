@@ -218,7 +218,8 @@ export function makeLabel(data) {
 }
 
 // What happens when the player enters a checkpoint or takes a pickup (Singleplayer): a type and its settings, a price and a message
-export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion'];
+export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion',
+  'fatMax', 'fatMin', 'muscleMax', 'muscleMin', 'staminaMax', 'staminaMin', 'lungMax', 'lungMin', 'strengthMax', 'strengthMin', 'respectMax', 'respectMin'];
 export function makeAction(data) {
   const d = data || {};
   const n = (v, f) => (Number.isFinite(+v) ? +v : f);

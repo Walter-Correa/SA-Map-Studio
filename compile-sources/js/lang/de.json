@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Hält die Spielstände des Spiels frei von allem aus dem Mod",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Zeigt das gelbe Zielsymbol auf dem Radar, wie bei den Missionen. Standardmäßig aus.",
  "Ícone amarelo no radar": "Gelbes Symbol auf dem Radar",
- "Alterar ícone no radar": "Radarsymbol ändern"
+ "Alterar ícone no radar": "Radarsymbol ändern",
+ "Máximo de gordura": "Maximale Fett",
+ "Mínimo de gordura": "Minimale Fett",
+ "Máximo de músculos": "Maximale Muskeln",
+ "Mínimo de músculos": "Minimale Muskeln",
+ "Máximo de stamina": "Maximale Ausdauer",
+ "Mínimo de stamina": "Minimale Ausdauer",
+ "Máximo de fôlego": "Maximale Lungenkapazität",
+ "Mínimo de fôlego": "Minimale Lungenkapazität",
+ "Máximo de força (vida máxima)": "Maximale Stärke (maximale Gesundheit)",
+ "Mínimo de força (vida máxima)": "Minimale Stärke (maximale Gesundheit)",
+ "Máximo de respeito": "Maximale Respekt",
+ "Mínimo de respeito": "Minimale Respekt"
 }

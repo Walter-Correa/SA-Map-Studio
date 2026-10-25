@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Keeps the game's saved games free of anything from the mod",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Shows the yellow objective icon on the radar, like the ones of the missions. Off by default.",
  "Ícone amarelo no radar": "Yellow icon on the radar",
- "Alterar ícone no radar": "Change radar icon"
+ "Alterar ícone no radar": "Change radar icon",
+ "Máximo de gordura": "Maximum fat",
+ "Mínimo de gordura": "Minimum fat",
+ "Máximo de músculos": "Maximum muscle",
+ "Mínimo de músculos": "Minimum muscle",
+ "Máximo de stamina": "Maximum stamina",
+ "Mínimo de stamina": "Minimum stamina",
+ "Máximo de fôlego": "Maximum lung capacity",
+ "Mínimo de fôlego": "Minimum lung capacity",
+ "Máximo de força (vida máxima)": "Maximum strength (max health)",
+ "Mínimo de força (vida máxima)": "Minimum strength (max health)",
+ "Máximo de respeito": "Maximum respect",
+ "Mínimo de respeito": "Minimum respect"
 }

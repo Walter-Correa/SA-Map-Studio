@@ -2334,5 +2334,17 @@
  "Manter o save do jogo sem nada do mod": "Пази записите на играта без нищо от мода",
  "Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão.": "Показва на радара жълтата иконка за цел, като при мисиите. По подразбиране е изключено.",
  "Ícone amarelo no radar": "Жълта иконка на радара",
- "Alterar ícone no radar": "Промяна на иконата на радара"
+ "Alterar ícone no radar": "Промяна на иконата на радара",
+ "Máximo de gordura": "Максимум: мазнини",
+ "Mínimo de gordura": "Минимум: мазнини",
+ "Máximo de músculos": "Максимум: мускули",
+ "Mínimo de músculos": "Минимум: мускули",
+ "Máximo de stamina": "Максимум: издръжливост",
+ "Mínimo de stamina": "Минимум: издръжливост",
+ "Máximo de fôlego": "Максимум: белодробен капацитет",
+ "Mínimo de fôlego": "Минимум: белодробен капацитет",
+ "Máximo de força (vida máxima)": "Максимум: сила (максимално здраве)",
+ "Mínimo de força (vida máxima)": "Минимум: сила (максимално здраве)",
+ "Máximo de respeito": "Максимум: респект",
+ "Mínimo de respeito": "Минимум: респект"
 }
