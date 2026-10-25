@@ -2331,11 +2331,5 @@
  "Munição (a arma é descartada quando acaba)": "Патрони (оръжието се изхвърля, когато свършат)",
  "Munição infinita": "Безкрайни патрони",
  "Alterar a munição do NPC": "Промяна на патроните на NPC",
- "Corrigir saves": "Поправи записите",
- "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Премахва от записите на играта обектите, зависещи от неинсталирани модове, за да се зарежда записът без тях. До всеки поправен запис остава резервно копие.",
- "Verificando os saves do jogo…": "Проверка на записите на играта…",
- "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Записите са поправени: обектите на неинсталирани модове бяха премахнати (резервно копие до файла).",
- "Os saves do jogo não dependem de nenhum mod.": "Записите на играта не зависят от никой мод.",
- "Nenhum save do jogo foi encontrado.": "Не е намерен запис на играта.",
- "Jogo não encontrado": "Играта не е намерена"
+ "Manter o save do jogo sem nada do mod": "Пази записите на играта без нищо от мода"
 }

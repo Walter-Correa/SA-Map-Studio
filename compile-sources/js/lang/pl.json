@@ -2331,11 +2331,5 @@
  "Munição (a arma é descartada quando acaba)": "Amunicja (broń jest odrzucana, gdy się skończy)",
  "Munição infinita": "Nieskończona amunicja",
  "Alterar a munição do NPC": "Zmień amunicję NPC",
- "Corrigir saves": "Napraw zapisy",
- "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Usuwa z zapisów gry obiekty zależne od niezainstalowanych modów, aby zapis wczytywał się bez nich. Kopia zapasowa zostaje obok każdego naprawionego zapisu.",
- "Verificando os saves do jogo…": "Sprawdzanie zapisów gry…",
- "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Zapisy naprawione: usunięto obiekty z niezainstalowanych modów (kopia zapasowa obok pliku).",
- "Os saves do jogo não dependem de nenhum mod.": "Zapisy gry nie zależą od żadnego moda.",
- "Nenhum save do jogo foi encontrado.": "Nie znaleziono żadnego zapisu gry.",
- "Jogo não encontrado": "Nie znaleziono gry"
+ "Manter o save do jogo sem nada do mod": "Utrzymuje zapisy gry bez niczego z moda"
 }

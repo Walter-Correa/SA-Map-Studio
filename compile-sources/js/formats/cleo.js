@@ -64,6 +64,9 @@ export class Asm {
 const PLAYER = 31, T0 = 30, T1 = 29, T2 = 28, T3 = 27, T4 = 26, T5 = 25, T6 = 24;
 const T7 = 23, T8 = 22, T9 = 21, T10 = 20; // only the actors scripts use these (their NPCs keep the variables below 20)
 export const LOCALS_BUDGET = 24;
+// What the scripts that keep things in the world need to leave a saved game clean (CLEO+, see saveGuard): T5 receives the slot of the save,
+// T4 tells the loop that a save happened
+const SLOT = 25, FLAG = 26;
 
 // Splits the items into scripts that fit the variables (`varsOf(item)` is how many each one keeps)
 export function chunkByVars(items, varsOf, budget = LOCALS_BUDGET) {
@@ -88,6 +91,14 @@ function waitPlayer(a) {
   a.op(0x01F5, int(0), lv(PLAYER));
 }
 
+// A saved game keeps what the scripts leave in the world (objects, pickups, radar icons): a save made with the mod would carry things of the mod
+// (models that only the mod has) and would not load without it. CLEO+ runs a piece of the script (the label 'sv') just before the game writes
+// a save: it removes all of that, and the script makes it again afterwards, so the save has nothing from the mod.
+function saveGuard(a) {
+  a.op(0x0006, lv(FLAG), int(0));
+  a.op(0x0ED1, int(1), ref('sv'), lv(SLOT));
+}
+
 // Waits (one tick at a time) until the model is in memory
 function loadModel(a, model, tag) {
   a.op(0x0247, int(model));
@@ -96,13 +107,14 @@ function loadModel(a, model, tag) {
 }
 
 // items: each one has x, y, z and `vars` (variables kept). spawn(a, e, i, base) creates it; manage(a, e, i, base) runs while it exists.
-function nearScript(items, { radius, wait, spawn, manage, init, pre }) {
+function nearScript(items, { radius, wait, spawn, manage, init, pre, save }) {
   const a = new Asm();
   a.op(0x0000);
   waitPlayer(a);
   let next = 0;
   for (const e of items) { e.base = next; next += e.vars; for (let k = 0; k < e.vars; k++) a.op(0x0006, lv(e.base + k), int(0)); }
   init?.(a);
+  if (save) saveGuard(a);
   a.label('loop');
   a.op(0x0001, int(wait));
   pre?.(a);
@@ -118,6 +130,11 @@ function nearScript(items, { radius, wait, spawn, manage, init, pre }) {
     a.label('n' + i);
   });
   a.jump('loop');
+  if (save) {
+    a.label('sv');
+    items.forEach((e, i) => save(a, e, i, e.base));
+    a.op(0x0ED0);
+  }
   return a.build();
 }
 
@@ -215,16 +232,22 @@ function emitAction(a, act, x, y, z, id) {
 
 // pickups: { model, type, x, y, z, action }. One with an action keeps the pickup, and gives it back some seconds after it was taken
 export function pickupsScript(items) {
-  const list = items.map(e => ({ ...e, vars: e.action && e.action.type !== 'none' ? 3 : 1 }));
+  const list = items.map(e => ({ ...e, vars: e.action && e.action.type !== 'none' ? 3 : 2 }));
   return nearScript(list, {
     radius: 150, wait: 250,
+    save: (a, e, i, base) => {
+      a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('sk' + i));               // there is a pickup
+      a.op(0x0215, lv(base + 1));
+      a.op(0x0006, lv(base), int(0));                                                           // it is made again when the save is done
+      a.label('sk' + i);
+    },
     spawn: (a, e, i, base) => {
       loadModel(a, e.model, 'p' + i);
       a.op(0x0213, int(e.model), int(e.type), flt(e.x), flt(e.y), flt(e.z), lv(base + 1));
       a.op(0x0249, int(e.model));                                                              // the model is not kept in memory
     },
     manage: (a, e, i, base) => {
-      if (e.vars === 1) return;
+      if (e.vars === 2) return;
       // state 1: waiting to be taken; state 3: taken, counting to come back (state 2: taken for good)
       a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('t' + i));
       a.op(0x00D6, int(0)).op(0x0214, lv(base + 1)).op(0x004D, ref('n' + i));
@@ -263,8 +286,21 @@ export function checkpointsScript(items) {
     a.op(0x018A, flt(e.x), flt(e.y), flt(e.z), lv(e.base + 1));                                    // the point on the radar
     a.op(0x018B, lv(e.base + 1), int(2));
   });
+  saveGuard(a);
   a.label('loop');
   a.op(0x0001, int(200));
+  // A save was made: the points on the radar come back (the ones of checkpoints used up for good stay away)
+  a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('fl'));
+  items.forEach((e) => {
+    a.op(0x00D6, int(0)).op(0x0039, lv(e.base), int(3)).op(0x004D, ref('fb' + e.base));
+    a.jump('fn' + e.base);
+    a.label('fb' + e.base);
+    a.op(0x018A, flt(e.x), flt(e.y), flt(e.z), lv(e.base + 1));
+    a.op(0x018B, lv(e.base + 1), int(2));
+    a.label('fn' + e.base);
+  });
+  a.op(0x0006, lv(FLAG), int(0));
+  a.label('fl');
   items.forEach((e, i) => {
     const base = e.base;
     // state 0: no sphere; 1: waiting for the player; 2: the player is inside; 3: used up
@@ -276,6 +312,11 @@ export function checkpointsScript(items) {
     a.op(0x03BC, flt(e.x), flt(e.y), flt(e.z), flt(Math.max(0.5, e.radius)), lv(base + 2));
     a.op(0x0006, lv(base), int(1)).jump('n' + i);
     a.label('m' + i);
+    // the sphere was taken away for the save while the player was inside: it comes back as it was
+    a.op(0x00D6, int(0)).op(0x0039, lv(base), int(5)).op(0x004D, ref('m5' + i));
+    a.op(0x03BC, flt(e.x), flt(e.y), flt(e.z), flt(Math.max(0.5, e.radius)), lv(base + 2));
+    a.op(0x0006, lv(base), int(2)).jump('n' + i);
+    a.label('m5' + i);
     // far away: the sphere goes
     a.op(0x00D6, int(0)).op(0x00FE, lv(PLAYER), flt(e.x), flt(e.y), flt(e.z), flt(220), flt(220), flt(220), int(0)).op(0x004D, ref('r' + i));
     a.jump('k' + i);
@@ -306,6 +347,47 @@ export function checkpointsScript(items) {
     a.label('n' + i);
   });
   a.jump('loop');
+  // Just before a save (see saveGuard): the points on the radar and the spheres go; the loop makes them again afterwards
+  a.label('sv');
+  items.forEach((e, i) => {
+    const base = e.base;
+    a.op(0x00D6, int(0)).op(0x0039, lv(base), int(3)).op(0x004D, ref('sa' + i));
+    a.jump('sk' + i);                                                                            // used up for good: nothing is left
+    a.label('sa' + i);
+    a.op(0x0164, lv(base + 1));
+    a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('sb' + i));
+    a.op(0x03BD, lv(base + 2));
+    a.op(0x0006, lv(base), int(0));
+    a.jump('sk' + i);
+    a.label('sb' + i);
+    a.op(0x00D6, int(0)).op(0x0039, lv(base), int(2)).op(0x004D, ref('sk' + i));
+    a.op(0x03BD, lv(base + 2));
+    a.op(0x0006, lv(base), int(5));                                                              // the player is inside: the sphere comes back as it was
+    a.label('sk' + i);
+  });
+  a.op(0x0006, lv(FLAG), int(1));
+  a.op(0x0ED0);
+  return a.build();
+}
+
+// The radar icons of the project: the script keeps the icons while the game runs and takes them away just before a save (see saveGuard)
+// items: { sprite, x, y, z }. One variable each (the icon)
+export function blipsScript(items) {
+  const a = new Asm();
+  a.op(0x0000);
+  waitPlayer(a);
+  const make = () => items.forEach((b, i) => a.op(0x02A8, flt(b.x), flt(b.y), flt(b.z), int(b.sprite), lv(i)));
+  make();
+  saveGuard(a);
+  a.label('loop').op(0x0001, int(500));
+  a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('loop'));
+  make();
+  a.op(0x0006, lv(FLAG), int(0));
+  a.jump('loop');
+  a.label('sv');
+  items.forEach((b, i) => a.op(0x0164, lv(i)));
+  a.op(0x0006, lv(FLAG), int(1));
+  a.op(0x0ED0);
   return a.build();
 }
 
@@ -970,6 +1052,14 @@ export function moversScript(items) {
   const list = items.map(e => ({ ...e, vars: 3 }));
   return nearScript(list, {
     radius: 150, wait: 0,
+    save: (a, e, i, base) => {
+      a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('sk' + i));
+      a.op(0x00D6, int(0)).op(0x03CA, lv(base + 2)).op(0x004D, ref('sj' + i));
+      a.op(0x0108, lv(base + 2));
+      a.label('sj' + i);
+      a.op(0x0006, lv(base), int(0)).op(0x0006, lv(base + 1), int(0));                         // it is made again when the save is done
+      a.label('sk' + i);
+    },
     spawn: (a, e, i, base) => {
       loadModel(a, e.model, 'o' + i);
       a.op(0x0107, int(e.model), flt(e.x), flt(e.y), flt(e.z), lv(base + 2));
@@ -998,12 +1088,11 @@ export function moversScript(items) {
 }
 
 // The rest of the world: radar icons, where the player appears, fixed weather and time.
-// world: { blips: [{ sprite, x, y, z }], spawn: { x, y, z, rot } | null, weather: -1.., hour: -1.., minute }
+// world: { spawn: { x, y, z, rot } | null, weather: -1.., hour: -1.., minute }
 export function worldScript(world) {
   const a = new Asm();
   a.op(0x0000);
   waitPlayer(a);
-  for (const b of world.blips || []) a.op(0x02A8, flt(b.x), flt(b.y), flt(b.z), int(b.sprite), lv(T0));
   if (world.spawn) {
     // Whatever the saved game: the player starts here (once the game has finished putting him where the save was)
     const s = world.spawn;

@@ -2331,11 +2331,5 @@
  "Munição (a arma é descartada quando acaba)": "Munitions (l'arme est jetée quand elles sont épuisées)",
  "Munição infinita": "Munitions infinies",
  "Alterar a munição do NPC": "Modifier les munitions du PNJ",
- "Corrigir saves": "Corriger les sauvegardes",
- "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Retire des sauvegardes du jeu les objets qui dépendent de mods non installés, pour que la sauvegarde se charge sans eux. Une copie de secours est gardée à côté de chaque sauvegarde corrigée.",
- "Verificando os saves do jogo…": "Vérification des sauvegardes du jeu…",
- "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Sauvegardes corrigées : les objets des mods non installés ont été retirés (copie de secours à côté du fichier).",
- "Os saves do jogo não dependem de nenhum mod.": "Les sauvegardes du jeu ne dépendent d'aucun mod.",
- "Nenhum save do jogo foi encontrado.": "Aucune sauvegarde du jeu n'a été trouvée.",
- "Jogo não encontrado": "Jeu introuvable"
+ "Manter o save do jogo sem nada do mod": "Garde les sauvegardes du jeu sans rien du mod"
 }

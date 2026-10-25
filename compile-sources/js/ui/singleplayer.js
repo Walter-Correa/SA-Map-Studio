@@ -15,7 +15,7 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
-import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
+import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
 const NOT_OBJECTS = new Set(['cars', 'peds', 'weap', 'hier']);
@@ -117,6 +117,8 @@ export const worldSettings = (project) => { const w = project.world || {}; retur
 export const usesCleo = (project) => project.vehicles.some(v => app.gd.models.get(v.model)?.type === 'cars')
   || project.pickups?.length > 0 || project.actors?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0
   || project.objects.some(isMover) || worldSettings(project);
+// What stays in the world (objects, pickups, radar icons) is taken away by CLEO+ just before the game is saved: the saved games have nothing of the mod
+export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0 || project.objects.some(isMover);
 
 // A short fingerprint of what goes into the mod: the installed mod remembers it, to tell whether it is up to date
 export function projectHash(project) {
@@ -639,7 +641,7 @@ async function buildFiles(project, say = () => {}) {
   }), () => 3, moversScript);
   putScripts('pickups', (project.pickups || []).map(p => ({
     model: p.model, type: p.type === 3 || p.model === 1212 ? 3 : 2, x: p.x, y: p.y, z: p.z, action: p.action,
-  })), (p) => (p.action && p.action.type !== 'none' ? 3 : 1), pickupsScript);
+  })), (p) => (p.action && p.action.type !== 'none' ? 3 : 2), pickupsScript);
   // As many scripts as needed: the NPCs that follow or chase (they share the door logic) go apart from the others, which fit more per script
   const npcs = (project.actors || []).map(a => ({
     skin: a.skin, x: a.x, y: a.y, z: a.z, rz: a.rz, invulnerable: !!a.invulnerable, anim: a.weapon ? null : a.anim,
@@ -656,9 +658,9 @@ async function buildFiles(project, say = () => {}) {
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action })), () => 3, checkpointsScript);
   const w = project.world || {};
-  if ((project.mapIcons || []).length || worldSettings(project)) {
+  putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);
+  if (worldSettings(project)) {
     files.set(`samsp_${base}_world.cs`, worldScript({
-      blips: (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })),
       spawn: project.spawns?.[0] ? { x: project.spawns[0].x, y: project.spawns[0].y, z: project.spawns[0].z, rot: project.spawns[0].rz } : null, weather: w.weather ?? -1, hour: w.hour ?? -1, minute: w.minute ?? 0,
     }));
   }
@@ -685,15 +687,16 @@ function toBase64(bytes) {
 
 // ---------------------------------------------------------------------------  dialog
 // What the game folder lacks to install and run a mod (the server says it with codes). Warns the user and returns true when something is missing.
-export async function warnMissing(st, needCleo = false) {
+export async function warnMissing(st, needCleo = false, needPlus = false) {
   // name, what it is for, and where to get it (a link opens in the browser)
   const tools = {
     game: { name: 'GTA San Andreas (gta_sa.exe)', use: t('O executável do jogo') },
     cleo: { name: 'CLEO Library', use: t('Carregar NPCs, veículos, checkpoints, pickups'), url: 'https://github.com/cleolibrary/CLEO5/releases' },
     asi: { name: 'ASI Loader', use: t('Permitir carregamento de arquivos .asi'), url: 'https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases' },
+    cleoplus: { name: 'CLEO+', use: t('Manter o save do jogo sem nada do mod'), url: 'https://www.mixmods.com.br/2022/02/cleoplus/' },
     modloader: { name: 'ModLoader', use: t('Carregar modificações sem alterar o jogo'), url: 'https://www.mixmods.com.br/2026/05/modloader/' },
   };
-  const lacking = new Set([...(st?.missing || []), ...(needCleo && st && !st.hasCleo ? ['cleo'] : [])]);
+  const lacking = new Set([...(st?.missing || []), ...(needCleo && st && !st.hasCleo ? ['cleo'] : []), ...(needPlus && st && st.hasCleo && !st.hasCleoPlus ? ['cleoplus'] : [])]);
   const missing = Object.keys(tools).filter(k => lacking.has(k)); // in the order of the list above
   if (!missing.length) return false;
   const rows = missing.map((k) => {
@@ -816,15 +819,6 @@ function setupSingleplayer() {
   $('#spClose').onclick = () => dlg.close();
   $('#spBuild').onclick = () => run(build);
   $('#spOpen').onclick = () => postJSON('/api/sp/open', { name: name() });
-  // Saves of the game made with a mod that is not installed now: the objects that depend on it are taken out so the save loads
-  $('#spFixSaves').onclick = () => run(async () => {
-    say('Verificando os saves do jogo…');
-    const r = await postJSON('/api/sp/fixsaves', {});
-    if (!r.ok) throw new Error(r.error || 'erro');
-    if (r.fixed.length) say('Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).', 'ok');
-    else if (r.checked) say('Os saves do jogo não dependem de nenhum mod.', 'ok');
-    else say('Nenhum save do jogo foi encontrado.', 'warn');
-  });
   // One .zip with the whole mod (every script and file in it), to share: its folder goes inside the game's modloader folder
   $('#spZip').onclick = () => run(async () => {
     await build();
@@ -850,7 +844,7 @@ function setupSingleplayer() {
   };
   $('#spInstall').onclick = () => run(async () => {
     const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' });
-    if (await warnMissing(st, usesCleo(app.project))) return;
+    if (await warnMissing(st, usesCleo(app.project), usesCleoPlus(app.project))) return;
     if (!await install(st.installed)) return;
     toast('Mod instalado no jogo', 'ok', 4000);
     say('Mod instalado no jogo.');
@@ -861,7 +855,7 @@ function setupSingleplayer() {
     busy = true;
     try {
       const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' });
-      if (await warnMissing(st, usesCleo(app.project))) return;
+      if (await warnMissing(st, usesCleo(app.project), usesCleoPlus(app.project))) return;
       if (st.gameRunning) { toast('O jogo já está em execução. Feche-o antes de testar.', 'warn', 6000); return; }
       toast('Instalando o mod…', 'ok', 2500);
       await install(st.installed, false);

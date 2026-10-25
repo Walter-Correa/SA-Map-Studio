@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.0-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.1-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -73,16 +73,14 @@ never changed and removing the mod is deleting its folder.
     has not killed in 15 seconds is let go so it never stays stuck. It never hurts the
     player, and its kills count as the player's (kill statistics and wanted level).
   - *Enemy*: attacks the player, and can follow him within 100 m (never into interiors and never teleported).
-- **Moving objects** that go back and forth between two points (they are not kept in saved games, so a save does not
-  depend on the mod).
+- **Moving objects** that go back and forth between two points (they are taken away just before the game saves, so a save has nothing
+  of the mod).
 - **Scripts**: everything that needs a script is generated as CLEO scripts by an assembler built into the editor, only when
   something needs them (CLEO is required in the game only then).
 - **Install and manage**: install, uninstall, export as ZIP and open the folder from the editor; the list of installed
   mods shows up to date, out of date or without project. The folder is organized by type with a README. The editor warns
   when the Modloader, CLEO or an ASI loader is missing and links to where to get them.
 - **Import**: importing a map in Singleplayer brings its objects, texture swaps and removed buildings.
-- **Fix saves**: a button that takes out of the game's saved games the objects that depend on mods that are not installed,
-  so a game saved with a mod loads without it (a backup copy is kept next to each fixed save).
 
 ### Map and navigation
 - The whole of San Andreas with streaming and LOD, water, interiors and the SA-MP objects (`SAMP.img`), loaded in the
@@ -274,7 +272,7 @@ never changed and removing the mod is deleting its folder.
 | Disk | About 250 MB free: 98 MB for `SA Map Studio.exe` + 125 MB for the `sa-map-studio` folder created on the first run (the built-in browser cache grows a little with use). |
 | Screen | At least 1050 x 650. |
 | Game | Original GTA San Andreas for PC (the same version as SA-MP), with `gta_sa.exe`, `data\gta.dat` and `models\gta3.img`. The Definitive Edition is not compatible. The editor only reads the game files. |
-| Singleplayer mods | The Modloader in the GTA folder (and CLEO plus an ASI loader when the mod uses scripts: NPCs, pickups or checkpoints with actions, moving objects, tuned vehicles). The editor warns when something is missing and links to where to get it. |
+| Singleplayer mods | The Modloader in the GTA folder (and CLEO plus an ASI loader when the mod uses scripts: NPCs, pickups or checkpoints with actions, moving objects, tuned vehicles; plus the CLEO+ plugin, CLEOPlus.cleo in cleo/cleo_plugins, when the mod has moving objects, pickups, checkpoints or radar icons, so the saved games stay free of the mod). The editor warns when something is missing and links to where to get it. |
 | Test in game | SA-MP 0.3.7 (or open.mp) client installed in the GTA folder. The open.mp test server is included and uses UDP port 7777 (Windows Firewall may ask for permission). |
 | Internet | Not required. Only used to download extra animation previews. |
 
@@ -483,6 +481,12 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.1.1 — 26/10/2026
+- Saved games never get anything from the mod: just before the game writes a save, the scripts take away everything they keep in the world (moving objects, pickups, radar icons and the checkpoint points), and they make it all again right after. A save made with the mod loads without it, and nothing of the mod is in the file. This uses the CLEO+ plugin, which the editor now asks for (it warns when it is missing) when the project has moving objects, pickups, checkpoints or radar icons.
+- The Fix saves button of 4.1.0 is gone: with the saves clean from the start it is not needed.
+- Pickups without an action kept their handle in the variable of the next item of the script; each one has its own variable now.
+- Radar icons have their own scripts now (samsp_name_icons1.cs), so they can be taken away and made again around a save.
 
 ### 4.1.0 — 26/10/2026
 - Saved games: a game saved with the mod installed could not be loaded without it, because the save kept the moving objects that the mod scripts had made (with models that only exist in the mod). The moving objects are no longer objects of a mission for the game, so a save does not keep them, and the script makes them again if the game removes them.

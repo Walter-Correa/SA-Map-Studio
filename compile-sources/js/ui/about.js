@@ -7,6 +7,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.1', date: '26/10/2026', items: [
+      'Saved games never get anything from the mod: just before the game writes a save, the scripts take away everything they keep in the world (moving objects, pickups, radar icons and the checkpoint points), and they make it all again right after. A save made with the mod loads without it, and nothing of the mod is in the file. This uses the CLEO+ plugin, which the editor now asks for (it warns when it is missing) when the project has moving objects, pickups, checkpoints or radar icons.',
+      'The Fix saves button of 4.1.0 is gone: with the saves clean from the start it is not needed.',
+      'Pickups without an action kept their handle in the variable of the next item of the script; each one has its own variable now.',
+      'Radar icons have their own scripts now (samsp_name_icons1.cs), so they can be taken away and made again around a save.',
+    ],
+  },
+  {
     version: '4.1.0', date: '26/10/2026', items: [
       'Saved games: a game saved with the mod installed could not be loaded without it, because the save kept the moving objects that the mod scripts had made (with models that only exist in the mod). The moving objects are no longer objects of a mission for the game, so a save does not keep them, and the script makes them again if the game removes them.',
       'New Fix saves button in the Singleplayer window: it takes out of the saved games the objects whose model the game does not have (they come from mods that are not installed), so those saves load. It keeps a backup copy next to each save it fixes (GTASAsf1.b.samapstudio-backup).',

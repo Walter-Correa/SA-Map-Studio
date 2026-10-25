@@ -2331,11 +2331,5 @@
  "Munição (a arma é descartada quando acaba)": "Đạn (vũ khí bị vứt đi khi hết đạn)",
  "Munição infinita": "Đạn vô hạn",
  "Alterar a munição do NPC": "Đổi đạn của NPC",
- "Corrigir saves": "Sửa bản lưu",
- "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Xóa khỏi các bản lưu của trò chơi những đối tượng phụ thuộc vào mod chưa cài, để bản lưu tải được mà không cần chúng. Một bản sao lưu được giữ cạnh mỗi bản lưu đã sửa.",
- "Verificando os saves do jogo…": "Đang kiểm tra các bản lưu của trò chơi…",
- "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Đã sửa bản lưu: các đối tượng của mod chưa cài đã bị xóa (bản sao lưu cạnh tệp).",
- "Os saves do jogo não dependem de nenhum mod.": "Các bản lưu của trò chơi không phụ thuộc vào mod nào.",
- "Nenhum save do jogo foi encontrado.": "Không tìm thấy bản lưu nào của trò chơi.",
- "Jogo não encontrado": "Không tìm thấy trò chơi"
+ "Manter o save do jogo sem nada do mod": "Giữ các bản lưu của trò chơi không chứa bất cứ thứ gì của mod"
 }
