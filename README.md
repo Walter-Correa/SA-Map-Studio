@@ -272,7 +272,7 @@ never changed and removing the mod is deleting its folder.
 | Disk | About 250 MB free: 98 MB for `SA Map Studio.exe` + 125 MB for the `sa-map-studio` folder created on the first run (the built-in browser cache grows a little with use). |
 | Screen | At least 1050 x 650. |
 | Game | Original GTA San Andreas for PC (the same version as SA-MP), with `gta_sa.exe`, `data\gta.dat` and `models\gta3.img`. The Definitive Edition is not compatible. The editor only reads the game files. |
-| Singleplayer mods | The Modloader in the GTA folder (and CLEO plus an ASI loader when the mod uses scripts: NPCs, pickups or checkpoints with actions, moving objects, tuned vehicles; plus the CLEO+ plugin, CLEOPlus.cleo in cleo/cleo_plugins, when the mod has moving objects, pickups, checkpoints or radar icons, so the saved games stay free of the mod). The editor warns when something is missing and links to where to get it. |
+| Singleplayer mods | The Modloader in the GTA folder (and CLEO plus an ASI loader when the mod uses scripts: NPCs, pickups or checkpoints with actions, moving objects, tuned vehicles; plus the CLEO+ plugin, CLEOPlus.cleo in the cleo folder, next to the other .cleo plugins (or in cleo/cleo_plugins, depending on the CLEO version), when the mod has moving objects, pickups, checkpoints or radar icons, so the saved games stay free of the mod). The editor warns when something is missing and links to where to get it. |
 | Test in game | SA-MP 0.3.7 (or open.mp) client installed in the GTA folder. The open.mp test server is included and uses UDP port 7777 (Windows Firewall may ask for permission). |
 | Internet | Not required. Only used to download extra animation previews. |
 
