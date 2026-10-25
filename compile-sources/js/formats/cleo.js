@@ -1114,6 +1114,9 @@ export function moversScript(items) {
 export function worldScript(world) {
   const a = new Asm();
   a.op(0x0000);
+  // A new game or a saved game? The game clock is kept in the save and counts from zero in a new game, so a script that starts with the clock below
+  // 30 seconds is in a new game (the intro is on). Read before anything else: waiting for the player could take long in a new game
+  a.op(0x01BD, lv(13));
   waitPlayer(a);
   if (world.spawn) {
     // Whatever the saved game: the player starts here (once the game has finished putting him where the save was)
@@ -1146,13 +1149,12 @@ export function worldScript(world) {
       a.label('pd');
       a.op(0x0006, lv(10), int(1));
       a.label('alive');
-      // New game: the intro (cutscene, with the player's control off) ends and the game puts the player at its own place. The first time the player gets
-      // his control back after having it off, he is taken to the spawn point (once; a saved game that starts with control on is not affected)
+      // New game: the intro (cutscenes, with the player's control off) ends and the game puts the player at its own place. The first time the player gets
+      // his control back after having it off, he is taken to the spawn point (once). Only in a new game (the clock was near zero when the script
+      // started): in a saved game no cutscene ever takes him there. lv(12) is 1 when this is over or does not apply
       a.op(0x00D6, int(0)).op(0x0039, lv(12), int(0)).op(0x004D, ref('ngd'));
-      // Only in the first 20 seconds after the game starts (the intro of a new game): a cutscene later on, in a saved game, never takes him there
-      a.op(0x000A, lv(13), int(1));
-      a.op(0x00D6, int(0)).op(0x0019, lv(13), int(40)).op(0x004D, ref('ngw'));
-      a.op(0x0006, lv(12), int(1));
+      a.op(0x00D6, int(0)).op(0x0019, lv(13), int(30000)).op(0x004D, ref('ngw'));
+      a.op(0x0006, lv(12), int(1));                                                              // started with the clock high: a saved game
       a.jump('ngd');
       a.label('ngw');
       a.op(0x00D6, int(0)).op(0x09E7, int(0)).op(0x004D, ref('ngo'));

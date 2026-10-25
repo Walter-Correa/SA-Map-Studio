@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.7-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.8-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.8 — 26/10/2026
+- The 20 seconds limit for the new game spawn teleport of 4.1.7 is gone, because the two intro cutscenes take minutes. The script now tells a new game from a saved game by the game clock when it starts (the clock is kept in the save and starts at zero in a new game): in a new game the player is taken to the spawn point the first time he gets control after the intro, however long it takes; in a saved game no cutscene takes him there. It is not tested in the game whether the clock is really kept in the save.
 
 ### 4.1.7 — 26/10/2026
 - The player is taken to the spawn point when a new game starts only in the first 20 seconds after the game starts (the intro), when a save is loaded, and after he is arrested or leaves the hospital. A cutscene later in the game no longer takes him there.

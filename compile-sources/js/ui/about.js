@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.8', date: '26/10/2026', items: [
+      'The 20 seconds limit for the new game spawn teleport of 4.1.7 is gone, because the two intro cutscenes take minutes. The script now tells a new game from a saved game by the game clock when it starts (the clock is kept in the save and starts at zero in a new game): in a new game the player is taken to the spawn point the first time he gets control after the intro, however long it takes; in a saved game no cutscene takes him there. It is not tested in the game whether the clock is really kept in the save.',
+    ],
+  },
+  {
     version: '4.1.7', date: '26/10/2026', items: [
       'The player is taken to the spawn point when a new game starts only in the first 20 seconds after the game starts (the intro), when a save is loaded, and after he is arrested or leaves the hospital. A cutscene later in the game no longer takes him there.',
       'The Save action of a pickup or a checkpoint moves the player back first (3 meters, or the size of the checkpoint plus 1 meter when it is larger) and then opens the save menu, so the saved game does not start with him on the pickup or inside the checkpoint, which opened the save menu again.',
