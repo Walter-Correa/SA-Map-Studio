@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.9-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.0-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -73,13 +73,16 @@ never changed and removing the mod is deleting its folder.
     has not killed in 15 seconds is let go so it never stays stuck. It never hurts the
     player, and its kills count as the player's (kill statistics and wanted level).
   - *Enemy*: attacks the player, and can follow him within 100 m (never into interiors and never teleported).
-- **Moving objects** that go back and forth between two points.
+- **Moving objects** that go back and forth between two points (they are not kept in saved games, so a save does not
+  depend on the mod).
 - **Scripts**: everything that needs a script is generated as CLEO scripts by an assembler built into the editor, only when
   something needs them (CLEO is required in the game only then).
 - **Install and manage**: install, uninstall, export as ZIP and open the folder from the editor; the list of installed
   mods shows up to date, out of date or without project. The folder is organized by type with a README. The editor warns
   when the Modloader, CLEO or an ASI loader is missing and links to where to get them.
 - **Import**: importing a map in Singleplayer brings its objects, texture swaps and removed buildings.
+- **Fix saves**: a button that takes out of the game's saved games the objects that depend on mods that are not installed,
+  so a game saved with a mod loads without it (a backup copy is kept next to each fixed save).
 
 ### Map and navigation
 - The whole of San Andreas with streaming and LOD, water, interiors and the SA-MP objects (`SAMP.img`), loaded in the
@@ -480,6 +483,10 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.1.0 — 26/10/2026
+- Saved games: a game saved with the mod installed could not be loaded without it, because the save kept the moving objects that the mod scripts had made (with models that only exist in the mod). The moving objects are no longer objects of a mission for the game, so a save does not keep them, and the script makes them again if the game removes them.
+- New Fix saves button in the Singleplayer window: it takes out of the saved games the objects whose model the game does not have (they come from mods that are not installed), so those saves load. It keeps a backup copy next to each save it fixes (GTASAsf1.b.samapstudio-backup).
 
 ### 4.0.9 — 25/10/2026
 - Drive by with every firearm that shoots bullets: pistols, shotguns, submachine guns, rifles (M4, AK-47), sniper rifles and the minigun. The thrown weapons, the rocket launchers and the flamethrower are still left out (they would hit the car itself).

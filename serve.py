@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.0.9"
+VERSION = "4.1.0"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -833,6 +833,120 @@ def sp_list_installed():
                     m = sp_marker(os.path.join(base, n))
                     out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "time": os.path.getmtime(mark)})
     return out
+
+
+SAVE_SIZE = 0x31800
+SAVE_BACKUP = ".samapstudio-backup"
+
+
+def sp_saves_dirs():
+    """The folders where the game keeps its saves (GTA San Andreas User Files, inside Documents)."""
+    cands = []
+    try:  # the Documents folder of Windows (it may have been moved)
+        import ctypes
+        buf = ctypes.create_unicode_buffer(260)
+        ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
+        cands.append(os.path.join(buf.value, "GTA San Andreas User Files"))
+    except Exception:
+        pass
+    home = os.path.expanduser("~")
+    cands += [os.path.join(home, "Documents", "GTA San Andreas User Files"), os.path.join(home, "OneDrive", "Documents", "GTA San Andreas User Files")]
+    out = []
+    for d in cands:
+        if os.path.isdir(d) and d.lower() not in [o.lower() for o in out]:
+            out.append(d)
+    return out
+
+
+def sp_known_models():
+    """Every model id defined by the IDE files the game loads now: its own (data) and the ones of the mods (modloader)."""
+    ids = set()
+    if not State.gta_path:
+        return ids
+    for top in ("data", "modloader"):
+        for root, _dirs, files in os.walk(os.path.join(State.gta_path, top)):
+            for n in files:
+                if not n.lower().endswith(".ide"):
+                    continue
+                sec = None
+                try:
+                    lines = open(os.path.join(root, n), encoding="latin-1").read().splitlines()
+                except OSError:
+                    continue
+                for ln in lines:
+                    ln = ln.strip()
+                    if not ln or ln.startswith("#"):
+                        continue
+                    if ln in ("objs", "tobj", "anim", "peds", "cars", "weap", "hier", "2dfx", "path", "txdp"):
+                        sec = ln
+                        continue
+                    if ln == "end":
+                        sec = None
+                        continue
+                    if sec:
+                        m = re.match(r"(\d+)\s*,", ln)
+                        if m:
+                            ids.add(int(m.group(1)))
+    return ids
+
+
+def sp_fix_save(path, ids):
+    """Takes out of a saved game the objects whose model the game does not have now (they come from a mod that is not installed: a save with
+    them does not load). Block 2 of the save holds the player and the objects (0x3C bytes each). Returns the removed models ([] = nothing changed)."""
+    raw = open(path, "rb").read()
+    if len(raw) != SAVE_SIZE or (sum(raw[:-4]) & 0xFFFFFFFF) != struct.unpack_from("<I", raw, len(raw) - 4)[0]:
+        return None
+    pos = [m.start() for m in re.finditer(b"BLOCK", raw)]
+    if len(pos) < 28:
+        return None
+    b2, b3 = pos[2], pos[3]
+    p = b2 + 5
+    players = struct.unpack_from("<I", raw, p)[0]
+    p += 4 + players * 0x224
+    count_at = p
+    n = struct.unpack_from("<I", raw, p)[0]
+    p += 4
+    if players > 4 or p + n * 0x3C != b3:
+        return None
+    keep, gone = [], []
+    for i in range(n):
+        rec = raw[p + i * 0x3C:p + (i + 1) * 0x3C]
+        model = struct.unpack_from("<H", rec, 4)[0]
+        if model in ids:
+            keep.append(rec)
+        else:
+            gone.append((model, rec))
+    gone_models = [g[0] for g in gone]
+    if not gone_models:
+        return []
+    new = raw[:count_at] + struct.pack("<I", len(keep)) + b"".join(keep) + raw[b3:-4]
+    new += b"\xff" * (len(raw) - 4 - len(new))
+    new += struct.pack("<I", sum(new) & 0xFFFFFFFF)
+    if not os.path.exists(path + SAVE_BACKUP):
+        shutil.copyfile(path, path + SAVE_BACKUP)
+    with open(path, "wb") as f:
+        f.write(new)
+    return gone_models
+
+
+def sp_fix_saves():
+    """Fixes the saves of the game that depend on a mod that is not installed. Returns what was checked and what was changed."""
+    ids = sp_known_models()
+    checked, fixed = 0, []
+    if not ids:
+        return {"ok": False, "error": "Jogo não encontrado"}
+    for d in sp_saves_dirs():
+        for n in sorted(os.listdir(d)):
+            if not re.match(r"(?i)^GTASAsf\d+\.b$", n):
+                continue
+            checked += 1
+            try:
+                removed = sp_fix_save(os.path.join(d, n), ids)
+            except OSError:
+                continue
+            if removed:
+                fixed.append({"name": n, "removed": removed})
+    return {"ok": True, "checked": checked, "fixed": fixed}
 
 
 def sp_write_files(root, files, meta=None):
@@ -2610,6 +2724,8 @@ class Handler(SimpleHTTPRequestHandler):
             action = path[len("/api/sp/"):]
             if action == "list":
                 return self.send_json({"ok": True, "mods": sp_list_installed()})
+            if action == "fixsaves":
+                return self.send_json(sp_fix_saves())
             name = str(body.get("name") or "").strip()
             if not name:
                 return self.send_json({"ok": False, "error": "Projeto sem nome"}, 400)

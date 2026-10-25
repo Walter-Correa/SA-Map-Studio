@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "When the ammunition runs out, the weapon is thrown away and the NPC fights with its hands",
  "Munição (a arma é descartada quando acaba)": "Ammunition (the weapon is thrown away when it runs out)",
  "Munição infinita": "Infinite ammunition",
- "Alterar a munição do NPC": "Change the NPC ammunition"
+ "Alterar a munição do NPC": "Change the NPC ammunition",
+ "Corrigir saves": "Fix saves",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Removes from the game saves the objects that depend on mods that are not installed, so the save loads without them. A backup copy is kept next to each fixed save.",
+ "Verificando os saves do jogo…": "Checking the game saves…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Saves fixed: the objects of mods that are not installed were removed (backup copy next to the file).",
+ "Os saves do jogo não dependem de nenhum mod.": "The game saves do not depend on any mod.",
+ "Nenhum save do jogo foi encontrado.": "No game save was found.",
+ "Jogo não encontrado": "Game not found"
 }

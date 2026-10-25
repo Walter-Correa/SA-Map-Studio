@@ -816,6 +816,15 @@ function setupSingleplayer() {
   $('#spClose').onclick = () => dlg.close();
   $('#spBuild').onclick = () => run(build);
   $('#spOpen').onclick = () => postJSON('/api/sp/open', { name: name() });
+  // Saves of the game made with a mod that is not installed now: the objects that depend on it are taken out so the save loads
+  $('#spFixSaves').onclick = () => run(async () => {
+    say('Verificando os saves do jogo…');
+    const r = await postJSON('/api/sp/fixsaves', {});
+    if (!r.ok) throw new Error(r.error || 'erro');
+    if (r.fixed.length) say('Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).', 'ok');
+    else if (r.checked) say('Os saves do jogo não dependem de nenhum mod.', 'ok');
+    else say('Nenhum save do jogo foi encontrado.', 'warn');
+  });
   // One .zip with the whole mod (every script and file in it), to share: its folder goes inside the game's modloader folder
   $('#spZip').onclick = () => run(async () => {
     await build();

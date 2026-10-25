@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Când muniția se termină, arma este aruncată, iar NPC-ul luptă cu mâinile",
  "Munição (a arma é descartada quando acaba)": "Muniție (arma este aruncată când se termină)",
  "Munição infinita": "Muniție infinită",
- "Alterar a munição do NPC": "Schimbă muniția NPC-ului"
+ "Alterar a munição do NPC": "Schimbă muniția NPC-ului",
+ "Corrigir saves": "Corectează salvările",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Elimină din salvările jocului obiectele care depind de moduri neinstalate, astfel încât salvarea să se încarce fără ele. O copie de rezervă rămâne lângă fiecare salvare corectată.",
+ "Verificando os saves do jogo…": "Se verifică salvările jocului…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Salvări corectate: obiectele modurilor neinstalate au fost eliminate (copie de rezervă lângă fișier).",
+ "Os saves do jogo não dependem de nenhum mod.": "Salvările jocului nu depind de niciun mod.",
+ "Nenhum save do jogo foi encontrado.": "Nu a fost găsită nicio salvare a jocului.",
+ "Jogo não encontrado": "Jocul nu a fost găsit"
 }

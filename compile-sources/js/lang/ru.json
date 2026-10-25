@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Когда патроны кончаются, оружие выбрасывается, и NPC дерётся руками",
  "Munição (a arma é descartada quando acaba)": "Патроны (оружие выбрасывается, когда они кончаются)",
  "Munição infinita": "Бесконечные патроны",
- "Alterar a munição do NPC": "Изменить патроны NPC"
+ "Alterar a munição do NPC": "Изменить патроны NPC",
+ "Corrigir saves": "Исправить сохранения",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Удаляет из сохранений игры объекты, зависящие от не установленных модов, чтобы сохранение загружалось без них. Рядом с каждым исправленным сохранением остаётся резервная копия.",
+ "Verificando os saves do jogo…": "Проверка сохранений игры…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Сохранения исправлены: объекты не установленных модов удалены (резервная копия рядом с файлом).",
+ "Os saves do jogo não dependem de nenhum mod.": "Сохранения игры не зависят ни от каких модов.",
+ "Nenhum save do jogo foi encontrado.": "Сохранения игры не найдены.",
+ "Jogo não encontrado": "Игра не найдена"
 }

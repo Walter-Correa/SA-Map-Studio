@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Коли набої закінчуються, зброя викидається, і NPC б'ється руками",
  "Munição (a arma é descartada quando acaba)": "Набої (зброя викидається, коли вони закінчуються)",
  "Munição infinita": "Нескінченні набої",
- "Alterar a munição do NPC": "Змінити набої NPC"
+ "Alterar a munição do NPC": "Змінити набої NPC",
+ "Corrigir saves": "Виправити збереження",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Видаляє зі збережень гри об'єкти, що залежать від не встановлених модів, щоб збереження завантажувалося без них. Поруч із кожним виправленим збереженням лишається резервна копія.",
+ "Verificando os saves do jogo…": "Перевірка збережень гри…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Збереження виправлено: об'єкти не встановлених модів видалено (резервна копія поруч із файлом).",
+ "Os saves do jogo não dependem de nenhum mod.": "Збереження гри не залежать від жодного моду.",
+ "Nenhum save do jogo foi encontrado.": "Збережень гри не знайдено.",
+ "Jogo não encontrado": "Гру не знайдено"
 }

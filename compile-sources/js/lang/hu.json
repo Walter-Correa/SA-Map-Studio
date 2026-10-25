@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Amikor elfogy a lőszer, a fegyvert eldobja, és az NPC puszta kézzel harcol",
  "Munição (a arma é descartada quando acaba)": "Lőszer (a fegyvert eldobja, ha elfogy)",
  "Munição infinita": "Végtelen lőszer",
- "Alterar a munição do NPC": "NPC lőszerének módosítása"
+ "Alterar a munição do NPC": "NPC lőszerének módosítása",
+ "Corrigir saves": "Mentések javítása",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Eltávolítja a játék mentéseiből a nem telepített modoktól függő objektumokat, hogy a mentés ezek nélkül is betöltődjön. Minden javított mentés mellett biztonsági másolat marad.",
+ "Verificando os saves do jogo…": "A játék mentéseinek ellenőrzése…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Mentések javítva: a nem telepített modok objektumait eltávolítottuk (biztonsági másolat a fájl mellett).",
+ "Os saves do jogo não dependem de nenhum mod.": "A játék mentései nem függnek egyetlen modtól sem.",
+ "Nenhum save do jogo foi encontrado.": "Nem található játékmentés.",
+ "Jogo não encontrado": "A játék nem található"
 }

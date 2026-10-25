@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Mermi bittiğinde silah atılır ve NPC elleriyle dövüşür",
  "Munição (a arma é descartada quando acaba)": "Mermi (bittiğinde silah atılır)",
  "Munição infinita": "Sonsuz mermi",
- "Alterar a munição do NPC": "NPC mermisini değiştir"
+ "Alterar a munição do NPC": "NPC mermisini değiştir",
+ "Corrigir saves": "Kayıtları düzelt",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Oyun kayıtlarından, yüklü olmayan modlara bağlı nesneleri kaldırır; böylece kayıt onlar olmadan yüklenir. Düzeltilen her kaydın yanında bir yedek kopya kalır.",
+ "Verificando os saves do jogo…": "Oyun kayıtları kontrol ediliyor…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Kayıtlar düzeltildi: yüklü olmayan modların nesneleri kaldırıldı (yedek kopya dosyanın yanında).",
+ "Os saves do jogo não dependem de nenhum mod.": "Oyun kayıtları hiçbir moda bağlı değil.",
+ "Nenhum save do jogo foi encontrado.": "Hiç oyun kaydı bulunamadı.",
+ "Jogo não encontrado": "Oyun bulunamadı"
 }

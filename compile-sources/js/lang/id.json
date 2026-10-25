@@ -2330,5 +2330,12 @@
  "Quando a munição acaba, a arma é descartada e o NPC luta com as mãos": "Saat amunisi habis, senjata dibuang dan NPC bertarung dengan tangan kosong",
  "Munição (a arma é descartada quando acaba)": "Amunisi (senjata dibuang saat habis)",
  "Munição infinita": "Amunisi tak terbatas",
- "Alterar a munição do NPC": "Ubah amunisi NPC"
+ "Alterar a munição do NPC": "Ubah amunisi NPC",
+ "Corrigir saves": "Perbaiki save",
+ "Remove dos saves do jogo os objetos que dependem de mods que não estão instalados, para o save carregar sem eles. Uma cópia de segurança fica ao lado de cada save corrigido.": "Menghapus dari save game objek yang bergantung pada mod yang tidak terpasang, agar save dapat dimuat tanpa mod itu. Salinan cadangan disimpan di samping setiap save yang diperbaiki.",
+ "Verificando os saves do jogo…": "Memeriksa save game…",
+ "Saves corrigidos: os objetos de mods que não estão instalados foram removidos (cópia de segurança ao lado do arquivo).": "Save diperbaiki: objek dari mod yang tidak terpasang dihapus (salinan cadangan di samping berkas).",
+ "Os saves do jogo não dependem de nenhum mod.": "Save game tidak bergantung pada mod apa pun.",
+ "Nenhum save do jogo foi encontrado.": "Tidak ada save game yang ditemukan.",
+ "Jogo não encontrado": "Game tidak ditemukan"
 }

@@ -975,8 +975,17 @@ export function moversScript(items) {
       a.op(0x0107, int(e.model), flt(e.x), flt(e.y), flt(e.z), lv(base + 2));
       a.op(0x0453, lv(base + 2), flt(e.rx), flt(e.ry), flt(e.rz));
       a.op(0x0249, int(e.model));
+      // Not an object of a mission any more: the game does not keep it in a saved game (the model may belong to the mod, and a save that has it
+      // does not load without the mod). The game may remove it; then it is made again
+      a.op(0x01C4, lv(base + 2));
     },
     manage: (a, e, i, base) => {
+      a.op(0x00D6, int(0)).op(0x03CA, lv(base + 2)).op(0x004D, ref('mz' + i));
+      a.jump('mo' + i);
+      a.label('mz' + i);
+      a.op(0x0006, lv(base), int(0));                                                             // gone: it is made again when the player is near
+      a.jump('n' + i);
+      a.label('mo' + i);
       const s = flt(Math.max(0.001, e.speed / 50));
       a.op(0x00D6, int(0)).op(0x0039, lv(base + 1), int(0)).op(0x004D, ref('b' + i));            // going to the target?
       a.op(0x00D6, int(0)).op(0x034E, lv(base + 2), flt(e.tx), flt(e.ty), flt(e.tz), s, s, s, int(0)).op(0x004D, ref('n' + i));
