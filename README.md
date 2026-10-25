@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.0.4-f0a630)
+![Version](https://img.shields.io/badge/version-4.0.5-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -62,8 +62,9 @@ never changed and removing the mod is deleting its folder.
   is thrown away when it runs out and the NPC fights with its hands), time to come back after dying, and a role:
   - *Neutral*: stays in place and never reacts; if moved more than 0.5 m it is put back with its angle and animation.
   - *Protector*: follows the player running (fast or normal speed), each one with its own place around him, gets into his
-    car, and is brought next to him (all together behind him, never during a cutscene) when far away, in another interior or
-    stuck. The car he drives goes through the protectors on foot. It fights with priority over everything:
+    car, and is brought next to him (all together, 3 m behind him or 10 m when he is in a vehicle, never during a cutscene or
+    while he flies) when far away, in another interior or stuck. The car he drives goes through the protectors on foot, and
+    protectors and enemies swim instead of drowning. It fights with priority over everything:
     the police helicopters first, then the enemy NPCs, the cops while the player is wanted and anyone shooting at the player,
     only what it can hit (clear line of sight), spreading over the enemies, and never the characters of the game's story
     unless they hurt the player. Vehicles and whoever is inside them only with a
@@ -478,6 +479,10 @@ Tools (in `compile-sources/`, run with Python 3):
 ---
 
 ## Version history
+
+### 4.0.5 — 25/10/2026
+- Protector NPCs brought next to the player now appear 3 m behind him when he is on foot and 10 m behind him when he is in a vehicle, and they are not brought to him while he is in a helicopter or a plane.
+- Protector and enemy NPCs no longer drown: they swim when they get into the water.
 
 ### 4.0.4 — 25/10/2026
 - Protector NPCs brought next to the player appear all together at the same point, behind him, and only afterwards go to their own places around him.

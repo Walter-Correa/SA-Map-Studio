@@ -364,6 +364,7 @@ export function actorsScript(items) {
         a.op(0x02E2, lv(h), int(e.role === 'guard' ? 100 : 80));                                // aim (the protectors never miss on purpose)
         a.op(0x07DD, lv(h), int(e.role === 'guard' ? 100 : 70));                                // how often it shoots
       }
+      if (e.role !== 'neutral') a.op(0x04D8, lv(h), int(0));                                    // it does not drown in the water: it swims
       if (e.role !== 'neutral' && e.follow) a.op(0x0588, lv(h), int(1));                        // the ground stays loaded around it, wherever it walks
       if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(GUARD_VARS + e.gid), lv(h));        // so the other guards know it is an ally
       if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
@@ -553,6 +554,10 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x016B).op(0x004D, ref(L('fz')));
         a.jump(L('fn'));
         a.label(L('fz'));
+        // nor while the player is in a flying vehicle (a helicopter or a plane)
+        a.op(0x00D6, int(0)).op(0x04C8, lv(PLAYER)).op(0x004D, ref(L('fy')));
+        a.jump(L('fn'));
+        a.label(L('fy'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x09E8, lv(h), lv(T6));
         // Fighting (and in the same area as the player): it keeps fighting wherever the fight goes; it is not taken to the player until it is free
@@ -574,7 +579,13 @@ export function actorsScript(items) {
         a.label(L('fb'));
         a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));                 // beyond 100 m: three seconds
         a.label(L('fc'));
-        a.op(0x04C4, lv(PLAYER), flt(0), flt(-2.5), flt(0), lv(T4), lv(T5), lv(T6));                // all of them at the same point, behind the player
+        // all of them at the same point, behind the player: 3 m when he is on foot, 10 m when he is in a vehicle
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fo')));
+        a.op(0x04C4, lv(PLAYER), flt(0), flt(-10), flt(0), lv(T4), lv(T5), lv(T6));
+        a.jump(L('fp'));
+        a.label(L('fo'));
+        a.op(0x04C4, lv(PLAYER), flt(0), flt(-3), flt(0), lv(T4), lv(T5), lv(T6));
+        a.label(L('fp'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x0860, lv(h), lv(T0));
         a.op(0x00A1, lv(h), lv(T4), lv(T5), lv(T6));

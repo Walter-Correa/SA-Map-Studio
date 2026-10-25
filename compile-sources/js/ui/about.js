@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.0.5', date: '25/10/2026', items: [
+      'Protector NPCs brought next to the player now appear 3 m behind him when he is on foot and 10 m behind him when he is in a vehicle, and they are not brought to him while he is in a helicopter or a plane.',
+      'Protector and enemy NPCs no longer drown: they swim when they get into the water.',
+    ],
+  },
+  {
     version: '4.0.4', date: '25/10/2026', items: [
       'Protector NPCs brought next to the player appear all together at the same point, behind him, and only afterwards go to their own places around him.',
       'Protector NPCs are never taken to the player during a cutscene or a scripted scene (when the player has no control) or while the screen fades.',
