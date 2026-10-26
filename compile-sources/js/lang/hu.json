@@ -2357,5 +2357,7 @@
  "Encaixe automático de pistas, rampas, estradas, etc.": "Pályák, rámpák, utak stb. automatikus illesztése",
  "Encaixar peças pelas bordas": "Darabok illesztése a szélüknél",
  "Distância do encaixe (m)": "Illesztési távolság (m)",
- "Pistas, rampas e estradas": "Pályák, rámpák és utak"
+ "Pistas, rampas e estradas": "Pályák, rámpák és utak",
+ "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "A gizmo az objektumon csúszik a kamera felé, anélkül hogy elhagyná, és minél közelebb van a kamera, annál kisebb lesz",
+ "Mover o gizmo na direção da câmera": "A gizmo mozgatása a kamera felé"
 }

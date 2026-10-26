@@ -2357,5 +2357,7 @@
  "Encaixe automático de pistas, rampas, estradas, etc.": "Automatisches Einrasten von Strecken, Rampen, Straßen usw.",
  "Encaixar peças pelas bordas": "Teile an den Rändern verbinden",
  "Distância do encaixe (m)": "Rastabstand (m)",
- "Pistas, rampas e estradas": "Strecken, Rampen und Straßen"
+ "Pistas, rampas e estradas": "Strecken, Rampen und Straßen",
+ "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Das Gizmo gleitet auf dem Objekt zur Kamera, ohne es zu verlassen, und wird kleiner, je näher die Kamera ist",
+ "Mover o gizmo na direção da câmera": "Gizmo zur Kamera hin verschieben"
 }

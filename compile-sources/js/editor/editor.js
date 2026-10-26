@@ -76,6 +76,7 @@ export class Editor extends EventTarget {
     });
     this.selOverlays = [];
     this.showSelectionBox = false;
+    this.gizmoToCamera = false;      // the manipulator slides over the object toward the camera, and gets smaller as the camera gets near
     this.removeLodToo = true;
 
     // Gizmo
@@ -843,6 +844,47 @@ export class Editor extends EventTarget {
     const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
     const p = { uid, model: item.model, x: node.position.x, y: node.position.y, z: node.position.z, rx: e.x * R2D, ry: e.y * R2D, rz: e.z * R2D };
     return roadSnap(p, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
+  }
+
+  // The manipulator slides over the selected object toward the camera, without leaving it (the limits are the edges of the object), and its size follows
+  // the distance: the nearer the camera, the smaller it is, so it fits on the screen. Only to move (to rotate it stays at the middle of the object)
+  followCameraGizmo() {
+    if (this.dragging || this.externalGizmo) return;
+    const items = this.selection.length && !this.placing && this.gizmo.visible && this.tc.object === this.pivot ? this.selectedItems() : [];
+    if (!this.gizmoToCamera || !items.length || this.mode !== 'translate') {
+      if (this._camShifted) { this._camShifted = false; this.tc.setSize(0.9); this.attachGizmo(); }
+      return;
+    }
+    // the box of the selection (the box of the object turned as the object is, so the limits are its edges; the box of the group of several)
+    const cam = this.vp.camera.position;
+    const box = new THREE.Box3();
+    let target = null, radius = 1;
+    if (items.length === 1) {
+      const node = this.nodes.get(items[0].uid);
+      const lb = node && getLocalBox(node);
+      if (lb) {
+        const local = node.worldToLocal(cam.clone());
+        local.clamp(lb.min, lb.max);
+        target = node.localToWorld(local);
+        radius = lb.getSize(new THREE.Vector3()).length() / 2;
+      }
+    } else {
+      for (const s of items) {
+        const node = this.nodes.get(s.uid);
+        const lb = node && getLocalBox(node);
+        if (!lb) continue;
+        for (const x of [lb.min.x, lb.max.x]) for (const y of [lb.min.y, lb.max.y]) for (const z of [lb.min.z, lb.max.z]) box.expandByPoint(node.localToWorld(new THREE.Vector3(x, y, z)));
+      }
+      if (!box.isEmpty()) { target = cam.clone().clamp(box.min, box.max); radius = box.getSize(new THREE.Vector3()).length() / 2; }
+    }
+    if (!target) return;
+    this.pivot.position.lerp(target, 0.4);
+    this.pivot.updateMatrixWorld(true);
+    this._camShifted = true;
+    const dist = cam.distanceTo(this.pivot.position);
+    const k = Math.max(0.3, Math.min(1, dist / (radius * 2.5 + 8)));
+    const size = 0.9 * k;
+    if (Math.abs(size - (this._gizmoSize || 0.9)) > 0.015) { this._gizmoSize = size; this.tc.setSize(size); }
   }
 
   beginDrag() {
@@ -2058,6 +2100,7 @@ export class Editor extends EventTarget {
 
   frame() {
     this.streamer.update(this.vp.camera);
+    this.followCameraGizmo();
     if (this.nodes) {
       for (const node of this.nodes.values()) {
         if (node.userData?.isPickup) {

@@ -344,6 +344,7 @@ function setupToolbar(cfg) {
       water: $('#showWater').checked,
       interiors: $('#showInteriors').checked,
       showSelectionBox: $('#showSelectionBox')?.checked ?? false,
+      gizmoToCamera: $('#gizmoToCamera')?.checked ?? false,
       removeLod: $('#removeLod').checked,
       autoCollapseSidebars: $('#autoCollapseSidebars')?.checked ?? false,
       weather: Math.max(0, Math.min(45, +($('#viewWeather')?.value ?? 10) || 10)),
@@ -360,6 +361,7 @@ function setupToolbar(cfg) {
     vp.fly.speed = v.speed;
     if (water) water.visible = v.water && !v.interiors;
     ed.removeLodToo = v.removeLod;
+    ed.gizmoToCamera = v.gizmoToCamera;
     if (ed.showSelectionBox !== v.showSelectionBox) {
       ed.showSelectionBox = v.showSelectionBox;
       ed.refreshSelectionBoxes();
@@ -383,10 +385,11 @@ function setupToolbar(cfg) {
   $('#viewDist').value = view.dist; $('#camSpeed').value = view.speed; $('#showLod').checked = view.lod;
   $('#showWater').checked = view.water; $('#showInteriors').checked = view.interiors; $('#removeLod').checked = view.removeLod;
   if ($('#showSelectionBox')) $('#showSelectionBox').checked = view.showSelectionBox === true;
+  if ($('#gizmoToCamera')) $('#gizmoToCamera').checked = view.gizmoToCamera === true;
   if ($('#autoCollapseSidebars')) $('#autoCollapseSidebars').checked = view.autoCollapseSidebars ?? false;
   if ($('#viewWeather')) $('#viewWeather').value = view.weather !== undefined ? view.weather : 10;
   if ($('#viewTime')) $('#viewTime').value = view.time || '10:00';
-  ['#viewDist', '#camSpeed', '#showLod', '#showWater', '#showInteriors', '#showSelectionBox', '#removeLod', '#autoCollapseSidebars', '#viewWeather', '#viewTime'].forEach(s => {
+  ['#viewDist', '#camSpeed', '#showLod', '#showWater', '#showInteriors', '#showSelectionBox', '#gizmoToCamera', '#removeLod', '#autoCollapseSidebars', '#viewWeather', '#viewTime'].forEach(s => {
     const el = $(s);
     if (el) el.addEventListener('input', applyView);
     if (el) el.addEventListener('change', applyView);

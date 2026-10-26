@@ -2357,5 +2357,7 @@
  "Encaixe automático de pistas, rampas, estradas, etc.": "Автоматичне стикування трас, рамп, доріг тощо",
  "Encaixar peças pelas bordas": "Стикувати елементи по краях",
  "Distância do encaixe (m)": "Відстань стикування (м)",
- "Pistas, rampas e estradas": "Траси, рампи та дороги"
+ "Pistas, rampas e estradas": "Траси, рампи та дороги",
+ "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Гізмо ковзає по об'єкту в бік камери, не виходячи за його межі, і зменшується, чим ближче камера",
+ "Mover o gizmo na direção da câmera": "Зсувати гізмо в бік камери"
 }

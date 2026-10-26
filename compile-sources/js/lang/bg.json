@@ -2357,5 +2357,7 @@
  "Encaixe automático de pistas, rampas, estradas, etc.": "Автоматично закачане на писти, рампи, пътища и др.",
  "Encaixar peças pelas bordas": "Свързване на елементите по ръбовете",
  "Distância do encaixe (m)": "Разстояние на закачане (м)",
- "Pistas, rampas e estradas": "Писти, рампи и пътища"
+ "Pistas, rampas e estradas": "Писти, рампи и пътища",
+ "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Гизмото се плъзга по обекта към камерата, без да го напуска, и става по-малко, колкото по-близо е камерата",
+ "Mover o gizmo na direção da câmera": "Преместване на гизмото към камерата"
 }
