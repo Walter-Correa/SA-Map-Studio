@@ -2338,7 +2338,6 @@
  "Remover a fome": "Убрать голод",
  "Velocidade de movimento (100% a 200%)": "Скорость движения (от 100% до 200%)",
  "Alterar a velocidade de movimento do NPC": "Изменить скорость движения NPC",
- "O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.": "SAMPFUNCS.asi находится в папке игры. Он замораживает скрипты сюжета игры в режиме Singleplayer (миссии и точки сохранения перестают работать). Удалите файл SAMPFUNCS.asi из папки игры, чтобы игра работала нормально.",
  "SAMPFUNCS encontrado": "SAMPFUNCS найден",
  "Vou continuar": "Продолжу",
  "Vou desinstalar": "Удалю",
@@ -2350,5 +2349,6 @@
  "Alterar respeito": "Изменить уважение",
  "Alterar sex appeal": "Изменить сексуальность",
  "Valor (569 a 1000)": "Значение (от 569 до 1000)",
- "Valor (0 a 1000)": "Значение (от 0 до 1000)"
+ "Valor (0 a 1000)": "Значение (от 0 до 1000)",
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} находится в папке игры, он ориентирован на мультиплеер и конфликтует с сингплеером, вредя миссиям и другим модам! Хотите всё равно продолжить или собираетесь удалить его?"
 }

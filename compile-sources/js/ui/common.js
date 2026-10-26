@@ -163,6 +163,7 @@ export function showConfirm(message, {
   confirmText = 'OK',
   cancelText = 'Cancelar',
   danger = false,
+  html = false,
 } = {}) {
   return new Promise((resolve) => {
     let dlg = $('#dlgConfirm');
@@ -200,7 +201,7 @@ export function showConfirm(message, {
     const okBtn = $('#confirmOkBtn', dlg);
 
     if (t) t.textContent = title;
-    if (m) m.textContent = message;
+    if (m) { if (html) m.innerHTML = message; else m.textContent = message; }
     if (cancelBtn) {
       cancelBtn.style.display = '';
       cancelBtn.textContent = cancelText;

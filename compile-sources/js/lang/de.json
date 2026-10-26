@@ -2338,7 +2338,6 @@
  "Remover a fome": "Hunger entfernen",
  "Velocidade de movimento (100% a 200%)": "Bewegungsgeschwindigkeit (100 % bis 200 %)",
  "Alterar a velocidade de movimento do NPC": "Bewegungsgeschwindigkeit des NPC ändern",
- "O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.": "SAMPFUNCS.asi befindet sich im Spielordner. Es blockiert die Skripte der Spielgeschichte im Singleplayer-Modus (Missionen und Speicherpunkte funktionieren nicht mehr). Entfernen Sie die Datei SAMPFUNCS.asi aus dem Spielordner, damit das Spiel normal läuft.",
  "SAMPFUNCS encontrado": "SAMPFUNCS gefunden",
  "Vou continuar": "Ich mache weiter",
  "Vou desinstalar": "Ich deinstalliere es",
@@ -2350,5 +2349,6 @@
  "Alterar respeito": "Respekt ändern",
  "Alterar sex appeal": "Sexappeal ändern",
  "Valor (569 a 1000)": "Wert (569 bis 1000)",
- "Valor (0 a 1000)": "Wert (0 bis 1000)"
+ "Valor (0 a 1000)": "Wert (0 bis 1000)",
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} befindet sich im Spielordner, ist auf den Multiplayer ausgerichtet und verursacht Konflikte mit dem Singleplayer, was Missionen und andere Mods beeinträchtigt! Möchten Sie trotzdem fortfahren oder wollen Sie es deinstallieren?"
 }

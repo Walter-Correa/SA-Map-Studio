@@ -2338,7 +2338,6 @@
  "Remover a fome": "Xóa cơn đói",
  "Velocidade de movimento (100% a 200%)": "Tốc độ di chuyển (100% đến 200%)",
  "Alterar a velocidade de movimento do NPC": "Đổi tốc độ di chuyển của NPC",
- "O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.": "SAMPFUNCS.asi nằm trong thư mục game. Nó làm treo các script cốt truyện của game ở chế độ Singleplayer (nhiệm vụ và điểm lưu ngừng hoạt động). Hãy xóa tệp SAMPFUNCS.asi khỏi thư mục game để game chạy bình thường.",
  "SAMPFUNCS encontrado": "Đã tìm thấy SAMPFUNCS",
  "Vou continuar": "Tôi sẽ tiếp tục",
  "Vou desinstalar": "Tôi sẽ gỡ cài đặt",
@@ -2350,5 +2349,6 @@
  "Alterar respeito": "Đổi độ tôn trọng",
  "Alterar sex appeal": "Đổi sức hấp dẫn",
  "Valor (569 a 1000)": "Giá trị (569 đến 1000)",
- "Valor (0 a 1000)": "Giá trị (0 đến 1000)"
+ "Valor (0 a 1000)": "Giá trị (0 đến 1000)",
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} nằm trong thư mục game, nó dành cho multiplayer và xung đột với singleplayer, gây hại cho nhiệm vụ và các mod khác! Bạn muốn tiếp tục dù vậy hay định gỡ cài đặt?"
 }

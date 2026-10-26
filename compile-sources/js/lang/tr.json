@@ -2338,7 +2338,6 @@
  "Remover a fome": "Açlığı gider",
  "Velocidade de movimento (100% a 200%)": "Hareket hızı (%100 ile %200 arası)",
  "Alterar a velocidade de movimento do NPC": "NPC'nin hareket hızını değiştir",
- "O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.": "SAMPFUNCS.asi oyun klasöründe. Singleplayer modunda oyunun hikâye betiklerini dondurur (görevler ve kayıt noktaları çalışmaz). Oyunun normal çalışması için SAMPFUNCS.asi dosyasını oyun klasöründen silin.",
  "SAMPFUNCS encontrado": "SAMPFUNCS bulundu",
  "Vou continuar": "Devam edeceğim",
  "Vou desinstalar": "Kaldıracağım",
@@ -2350,5 +2349,6 @@
  "Alterar respeito": "Saygıyı değiştir",
  "Alterar sex appeal": "Çekiciliği değiştir",
  "Valor (569 a 1000)": "Değer (569 ile 1000)",
- "Valor (0 a 1000)": "Değer (0 ile 1000)"
+ "Valor (0 a 1000)": "Değer (0 ile 1000)",
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} oyun klasöründe, çok oyunculu moda odaklıdır ve tek oyunculu modla çakışarak görevlere ve diğer modlara zarar verir! Yine de devam etmek mi istiyorsunuz yoksa kaldırmayı mı düşünüyorsunuz?"
 }

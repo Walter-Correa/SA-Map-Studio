@@ -2338,7 +2338,6 @@
  "Remover a fome": "Elimină foamea",
  "Velocidade de movimento (100% a 200%)": "Viteza de mișcare (100% până la 200%)",
  "Alterar a velocidade de movimento do NPC": "Schimbă viteza de mișcare a NPC-ului",
- "O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.": "SAMPFUNCS.asi se află în folderul jocului. Blochează scripturile poveștii jocului în modul Singleplayer (misiunile și punctele de salvare nu mai funcționează). Șterge fișierul SAMPFUNCS.asi din folderul jocului pentru ca jocul să funcționeze normal.",
  "SAMPFUNCS encontrado": "SAMPFUNCS găsit",
  "Vou continuar": "Continui",
  "Vou desinstalar": "Îl dezinstalez",
@@ -2350,5 +2349,6 @@
  "Alterar respeito": "Schimbă respectul",
  "Alterar sex appeal": "Schimbă sex appeal-ul",
  "Valor (569 a 1000)": "Valoare (569 la 1000)",
- "Valor (0 a 1000)": "Valoare (0 la 1000)"
+ "Valor (0 a 1000)": "Valoare (0 la 1000)",
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} se află în folderul jocului, este orientat spre multiplayer și intră în conflict cu singleplayer, afectând misiunile și alte moduri! Vrei să continui oricum sau intenționezi să îl dezinstalezi?"
 }

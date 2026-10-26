@@ -2338,7 +2338,6 @@
  "Remover a fome": "Éhség megszüntetése",
  "Velocidade de movimento (100% a 200%)": "Mozgási sebesség (100%-tól 200%-ig)",
  "Alterar a velocidade de movimento do NPC": "Az NPC mozgási sebességének módosítása",
- "O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.": "A SAMPFUNCS.asi a játék mappájában van. Lefagyasztja a játék történetének szkriptjeit Singleplayer módban (a küldetések és a mentési pontok nem működnek). Töröld a SAMPFUNCS.asi fájlt a játék mappájából, hogy a játék rendesen működjön.",
  "SAMPFUNCS encontrado": "SAMPFUNCS megtalálva",
  "Vou continuar": "Folytatom",
  "Vou desinstalar": "Eltávolítom",
@@ -2350,5 +2349,6 @@
  "Alterar respeito": "Respekt módosítása",
  "Alterar sex appeal": "Vonzerő módosítása",
  "Valor (569 a 1000)": "Érték (569–1000)",
- "Valor (0 a 1000)": "Érték (0–1000)"
+ "Valor (0 a 1000)": "Érték (0–1000)",
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "A(z) {0} a játék mappájában van, többjátékos módra készült, ütközik az egyjátékos móddal, és árt a küldetéseknek és más moddoknak! Mégis folytatod, vagy eltávolítod?"
 }
