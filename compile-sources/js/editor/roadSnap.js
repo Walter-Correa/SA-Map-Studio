@@ -11,7 +11,8 @@ import * as THREE from 'three';
 import {
   TUBE_TYPES, TUBE_REL, TUBE_COUNTER, TUBE_COVERS, TUBE_LIGHTS, TUBE_SUPPORT_1, TUBE_SUPPORT_2, TUBE_SUPPORT_3,
 } from '../world/roadTubes.js';
-import { isRoadModel, isTubeModel, isShapeTube, TUBE_EXTRAS, PLATES } from '../world/roadPieces.js';
+import { isRoadModel, isTubeModel, isShapeTube, roadKind, TUBE_EXTRAS, ROAD_TUNNEL_IDS as TUNNELS } from '../world/roadPieces.js';
+import { computeEnds } from './roadEnds.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 const ONE = new THREE.Vector3(1, 1, 1);
@@ -163,69 +164,13 @@ function tubeSockets(model) {
   return out;
 }
 
-function computeSockets(root, bothAxes = false) {
-  const verts = collectVerts(root);
-  const n = verts.length / 3;
-  if (n < 8) return false;
-  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) { const c = verts[i * 3 + k]; if (c < min[k]) min[k] = c; if (c > max[k]) max[k] = c; }
-  const size = [max[0] - min[0], max[1] - min[1]];
-  // The long side of the piece (the way the traffic goes); Y when it is square (a plate joins by the four edges)
-  const axes = bothAxes ? [0, 1] : [size[0] > size[1] * 1.25 ? 0 : 1];
-  const out = [];
-  for (const axis of axes) for (const sign of [-1, 1]) {
-    const lat = 1 - axis, L = size[axis];
-    if (L < 3) continue;
-    const bins = 10, binW = L * 0.5 / bins;
-    const end = sign > 0 ? max[axis] : min[axis];
-    // the width of the end: the sideways extent of all the points of the first strips
-    let latMin = Infinity, latMax = -Infinity;
-    for (let i = 0; i < n; i++) {
-      const d = (end - verts[i * 3 + axis]) * sign;
-      if (d < 0 || d > binW * 2) continue;
-      const c = verts[i * 3 + lat];
-      if (c < latMin) latMin = c; if (c > latMax) latMax = c;
-    }
-    if (!(latMax - latMin > 0.5)) continue;
-    const centre = (latMin + latMax) / 2;
-    // the surface along the middle of the piece (the rails of the sides do not count): its highest point in each strip from the end inwards; when the
-    // middle has no points (a hollow model) all the width counts
-    let top, z0 = -1;
-    for (const half of [Math.max(0.3, (latMax - latMin) * 0.2), Infinity]) {
-      top = new Array(bins).fill(-Infinity);
-      for (let i = 0; i < n; i++) {
-        const d = (end - verts[i * 3 + axis]) * sign;
-        if (d < 0 || d >= binW * bins || Math.abs(verts[i * 3 + lat] - centre) > half) continue;
-        const b = Math.min(bins - 1, Math.floor(d / binW));
-        if (verts[i * 3 + 2] > top[b]) top[b] = verts[i * 3 + 2];
-      }
-      z0 = top.findIndex(z => z > -Infinity);
-      if (z0 === 0 || (z0 > 0 && half === Infinity)) break;
-    }
-    if (z0 < 0) continue;
-    // the height at the end and the slope going out: from the first strips
-    const z1 = top[z0], b1 = z0;
-    let b2 = b1 + 1; while (b2 < bins && !(top[b2] > -Infinity)) b2++;
-    const slope = b2 < bins ? -(top[b2] - z1) / ((b2 - b1) * binW) : 0;       // up when going out of the piece: positive
-    const pitch = Math.atan(Math.max(-1.5, Math.min(1.5, slope)));
-    const f = new THREE.Vector3();
-    f.setComponent(axis, sign * Math.cos(pitch)); f.setComponent(2, Math.sin(pitch));
-    const up = new THREE.Vector3(0, 0, 1).addScaledVector(f, -f.z).normalize();
-    const right = new THREE.Vector3().crossVectors(f, up).normalize();
-    const m = new THREE.Matrix4().makeBasis(right, f, up);
-    const p = new THREE.Vector3(); p.setComponent(axis, end); p.setComponent(lat, centre); p.setComponent(2, z1);
-    m.setPosition(p);
-    out.push({ m, width: latMax - latMin, kind: 'surface', fz: f.z });
-  }
-  return out.length ? out : false;
-}
-
 // Reads the ends of the models that are not known yet (the model must be loaded: it is done while it is shown)
 export function warmRoad(models, ids) {
   for (const id of ids) {
     if (isTubeModel(id) || TUBE_EXTRAS.includes(id) || sockets.has(id) || !isRoadModel(id)) continue;
     sockets.set(id, null);
-    const read = isShapeTube(id) ? computeTubeSockets : (root) => computeSockets(root, PLATES.includes(id));
+    const kind = roadKind(id);
+    const read = kind === 'tube' ? computeTubeSockets : (root) => computeEnds(root, kind, null, TUNNELS.includes(id));
     Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? read(obj) : false)).catch(() => sockets.set(id, false));
   }
 }
@@ -240,10 +185,11 @@ function socketCandidates(p, q, out) {
     const target = wq.clone().multiply(b.m).multiply(FLIP);                    // the end of p must be here, looking at the end of q
     for (const a of sp) {
       if (a.kind !== b.kind) continue;
-      if (a.kind === 'surface') {
+      if (a.kind === 'rim') {
+        // pipes of the same size
+        if (Math.abs(a.width - b.width) > 0.15 * Math.max(a.width, b.width) || Math.abs(a.height - b.height) > 0.15 * Math.max(a.height, b.height)) continue;
+      } else if (a.kind === 'surface') {
         if (Math.abs(a.width - b.width) > 0.25 * Math.max(a.width, b.width)) continue;
-        // The surfaces have to continue one the other: the slope of the two ends is the same (one going up where the other goes down)
-        if (Math.abs(Math.asin(a.fz) + Math.asin(b.fz)) > 0.21) continue;
       }
       out.push(poseOf(target.clone().multiply(a.m.clone().invert()), p.model, false));
     }

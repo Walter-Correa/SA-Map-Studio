@@ -14,13 +14,27 @@ export const TUBE_BY_SHAPE = [19673, 19674, 19675, 19676];
 export const PLATES = [19650];
 export const ROAD_TUBE_IDS = [...Object.keys(TUBE_TYPES).map(Number), ...TUBE_BY_SHAPE, ...PLATES, ...TUBE_EXTRAS];
 
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+// Pipes of SA-MP (the end of each one is a round rim; pipes of the same size join): straight, bent, funnels, junctions, the rainbow ones...
+export const ROAD_PIPE_IDS = [
+  ...range(18808, 18829), ...range(18831, 18842), 18851, ...range(18852, 18855), ...range(18982, 19000), 19901,
+];
+// Roads, ramps, jumps, tunnels, bridges and loops of SA-MP (the end of each one is a cut across it): the surface of one continues in the next one
+export const ROAD_SAMP_IDS = [
+  ...range(18772, 18779), 18781, ...range(18783, 18807), 18830, 19628, 19629,
+];
+// The tunnel pieces among them: the floor is the lowest surface (the roof is above the road)
+export const ROAD_TUNNEL_IDS = [18772, 18773, 18774, 18775, 18776, 18777];
 // Ramps, jumps and stunt pieces of the original game
 export const ROAD_VANILLA_IDS = [
-  1631, 1632, 1633, 1634, 1655, 1660, 2939, 2940, 3069, 3080, 2931, 2893, 5152, 5153,
-  13593, 13604, 13645, 13639, 13643, 13646, 13649, 12975, 16084, 16303, 16367,
+  1632, 1633, 1634, 1655, 2939, 2940, 3069, 3080, 5152, 5153, 13593, 13645,
 ];
+const PIPE_SET = new Set(ROAD_PIPE_IDS);
+// How the ends of a piece are read: 'tube' (the tubes of SA-MP), 'rim' (pipes) or 'surface' (roads, ramps, plates)
+export const roadKind = (id) => (PIPE_SET.has(id) ? 'rim' : TUBE_BY_SHAPE.includes(id) ? 'tube' : 'surface');
 
-const ROAD_SET = new Set([...ROAD_TUBE_IDS, ...ROAD_VANILLA_IDS]);
+const ROAD_SET = new Set([...ROAD_TUBE_IDS, ...ROAD_PIPE_IDS, ...ROAD_SAMP_IDS, ...ROAD_VANILLA_IDS]);
 export const isRoadModel = (id) => ROAD_SET.has(id);
 export const isTubeModel = (id) => TUBE_TYPES[id] !== undefined;
 export const isShapeTube = (id) => TUBE_BY_SHAPE.includes(id);
