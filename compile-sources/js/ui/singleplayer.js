@@ -708,10 +708,10 @@ export async function warnMissing(st, needCleo = false, needPlus = false) {
       { title: t('SAMPFUNCS encontrado'), confirmText: t('Vou continuar'), cancelText: t('Vou desinstalar'), html: true });
     // The text of Continue in red and of Uninstall in yellow (the colors go back when the dialog closes: the dialog is shared)
     const okBtn = $('#confirmOkBtn'), noBtn = $('#confirmCancelBtn');
-    if (okBtn) { okBtn.style.color = '#ff4d4d'; okBtn.style.background = '#262b34'; okBtn.style.borderColor = '#ff4d4d'; }
-    if (noBtn) { noBtn.style.color = '#f5c518'; }
+    if (okBtn) { okBtn.style.color = '#ff4d4d'; okBtn.style.background = '#262b34'; okBtn.style.borderColor = '#ff4d4d'; okBtn.style.order = '1'; }
+    if (noBtn) { noBtn.style.color = '#f5c518'; noBtn.style.order = '2'; }
     const go = await asking;
-    for (const b of [okBtn, noBtn]) if (b) { b.style.color = ''; b.style.background = ''; b.style.borderColor = ''; }
+    for (const b of [okBtn, noBtn]) if (b) { b.style.color = ''; b.style.background = ''; b.style.borderColor = ''; b.style.order = ''; }
     if (!go) return true;
     await postJSON('/api/sp/sampfuncs_continue', {});
     return false;
