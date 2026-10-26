@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import {
   TUBE_TYPES, TUBE_REL, TUBE_COUNTER, TUBE_COVERS, TUBE_LIGHTS, TUBE_SUPPORT_1, TUBE_SUPPORT_2, TUBE_SUPPORT_3,
 } from '../world/roadTubes.js';
-import { isRoadModel, isTubeModel, TUBE_EXTRAS } from '../world/roadPieces.js';
+import { isRoadModel, isTubeModel, isShapeTube, TUBE_EXTRAS, PLATES } from '../world/roadPieces.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 const ONE = new THREE.Vector3(1, 1, 1);
@@ -94,7 +94,7 @@ export function tubeAfter(q, model) {
 // sockets: model id -> [{ m: Matrix4 (frame of the end: +Y goes out of the piece, +Z up), width }] | null (being read) | false (none)
 const sockets = new Map();
 
-function computeSockets(root) {
+function collectVerts(root) {
   root.updateMatrixWorld(true);
   const verts = [];
   const v = new THREE.Vector3();
@@ -103,18 +103,80 @@ function computeSockets(root) {
     if (!pos) return;
     for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); verts.push(v.x, v.y, v.z); }
   });
+  return verts;
+}
+
+// The ends of a piece with the profile of a tube (the 5 degree bends), along X: the plane of each end is fitted to the points of the rim, so a tilted end
+// gives a tilted socket. The frame of a socket here: +X goes out of the piece, +Z up
+export function computeTubeSockets(root, slab = 2) {
+  const verts = collectVerts(root);
+  const n = verts.length / 3;
+  if (n < 8) return false;
+  let xmin = Infinity, xmax = -Infinity;
+  for (let i = 0; i < n; i++) { const x = verts[i * 3]; if (x < xmin) xmin = x; if (x > xmax) xmax = x; }
+  const out = [];
+  for (const sign of [-1, 1]) {
+    const xe = sign > 0 ? xmax : xmin;
+    const pts = [];
+    for (let i = 0; i < n; i++) if ((xe - verts[i * 3]) * sign <= slab) pts.push(verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
+    const m = pts.length / 3;
+    if (m < 6) continue;
+    // least squares of x = a + b z + c y
+    let sy = 0, sz = 0, sx = 0, syy = 0, szz = 0, syz = 0, sxy = 0, sxz = 0, ymin = Infinity, ymax = -Infinity, zmin = Infinity, zmax = -Infinity;
+    for (let i = 0; i < m; i++) {
+      const x = pts[i * 3], y = pts[i * 3 + 1], z = pts[i * 3 + 2];
+      sx += x; sy += y; sz += z; syy += y * y; szz += z * z; syz += y * z; sxy += x * y; sxz += x * z;
+      if (y < ymin) ymin = y; if (y > ymax) ymax = y; if (z < zmin) zmin = z; if (z > zmax) zmax = z;
+    }
+    const A = new THREE.Matrix3().set(m, sy, sz, sy, syy, syz, sz, syz, szz);
+    if (Math.abs(A.determinant()) < 1e-9) continue;
+    const sol = new THREE.Vector3(sx, sxy, sxz).applyMatrix3(A.clone().invert());       // (a, c, b)
+    const a = sol.x, c = sol.y, b = sol.z;
+    const ym = (ymin + ymax) / 2, zm = (zmin + zmax) / 2;
+    const f = new THREE.Vector3(sign, -sign * c, -sign * b).normalize();
+    const up = new THREE.Vector3(0, 0, 1).addScaledVector(f, -f.z).normalize();
+    const left = new THREE.Vector3().crossVectors(up, f).normalize();
+    const mat = new THREE.Matrix4().makeBasis(f, left, up);
+    mat.setPosition(a + b * zm + c * ym, ym, zm);
+    out.push({ m: mat, width: ymax - ymin, kind: 'tube', fz: f.z });
+  }
+  return out.length ? out : false;
+}
+
+// The ends of the straight tube of 10 m are at x = -5 and x = 5: every tube of the table is placed from there. The start and the end of the tube of
+// each type (the places where it joins what comes before and after it), as frames with +X going out of the piece
+const S0 = new THREE.Matrix4().makeTranslation(-5, 0, 0), E0 = new THREE.Matrix4().makeTranslation(5, 0, 0);
+const tubeSocketCache = new Map();
+function tubeSockets(model) {
+  if (tubeSocketCache.has(model)) return tubeSocketCache.get(model);
+  let out = false;
+  const types = TUBE_TYPES[model];
+  if (types && model !== BENT) {
+    out = [];
+    const keep = (m) => { if (!out.some(k => k.m.equals(m))) out.push({ m, width: 10.84, kind: 'tube', fz: m.elements[2] }); };
+    for (const t of types) {
+      keep(rel(t, 0).clone().multiply(S0));                                         // the end: where the next one goes
+      keep(rel(0, t).clone().invert().multiply(E0).multiply(FLIP));                // the start, looking out of the piece
+    }
+  }
+  tubeSocketCache.set(model, out);
+  return out;
+}
+
+function computeSockets(root, bothAxes = false) {
+  const verts = collectVerts(root);
   const n = verts.length / 3;
   if (n < 8) return false;
   const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) { const c = verts[i * 3 + k]; if (c < min[k]) min[k] = c; if (c > max[k]) max[k] = c; }
   const size = [max[0] - min[0], max[1] - min[1]];
-  // The long side of the piece (the way the traffic goes); Y when it is square
-  const axis = size[0] > size[1] * 1.25 ? 0 : 1, lat = 1 - axis;
-  const L = size[axis];
-  if (L < 3) return false;
-  const bins = 10, binW = L * 0.5 / bins;
+  // The long side of the piece (the way the traffic goes); Y when it is square (a plate joins by the four edges)
+  const axes = bothAxes ? [0, 1] : [size[0] > size[1] * 1.25 ? 0 : 1];
   const out = [];
-  for (const sign of [-1, 1]) {
+  for (const axis of axes) for (const sign of [-1, 1]) {
+    const lat = 1 - axis, L = size[axis];
+    if (L < 3) continue;
+    const bins = 10, binW = L * 0.5 / bins;
     const end = sign > 0 ? max[axis] : min[axis];
     // the width of the end: the sideways extent of all the points of the first strips
     let latMin = Infinity, latMax = -Infinity;
@@ -153,7 +215,7 @@ function computeSockets(root) {
     const m = new THREE.Matrix4().makeBasis(right, f, up);
     const p = new THREE.Vector3(); p.setComponent(axis, end); p.setComponent(lat, centre); p.setComponent(2, z1);
     m.setPosition(p);
-    out.push({ m, width: latMax - latMin });
+    out.push({ m, width: latMax - latMin, kind: 'surface', fz: f.z });
   }
   return out.length ? out : false;
 }
@@ -163,22 +225,26 @@ export function warmRoad(models, ids) {
   for (const id of ids) {
     if (isTubeModel(id) || TUBE_EXTRAS.includes(id) || sockets.has(id) || !isRoadModel(id)) continue;
     sockets.set(id, null);
-    Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? computeSockets(obj) : false)).catch(() => sockets.set(id, false));
+    const read = isShapeTube(id) ? computeTubeSockets : (root) => computeSockets(root, PLATES.includes(id));
+    Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? read(obj) : false)).catch(() => sockets.set(id, false));
   }
 }
-export const roadSockets = (id) => sockets.get(id) || null;
+export const roadSockets = (id) => (isTubeModel(id) ? tubeSockets(id) : sockets.get(id)) || null;
 
 const FLIP = new THREE.Matrix4().makeRotationZ(Math.PI);
 function socketCandidates(p, q, out) {
-  const sp = sockets.get(p.model), sq = sockets.get(q.model);
+  const sp = roadSockets(p.model), sq = roadSockets(q.model);
   if (!sp || !sq) return;
   const wq = realMatrix(q);
   for (const b of sq) {
     const target = wq.clone().multiply(b.m).multiply(FLIP);                    // the end of p must be here, looking at the end of q
     for (const a of sp) {
-      if (Math.abs(a.width - b.width) > 0.25 * Math.max(a.width, b.width)) continue;
-      // The surfaces have to continue one the other: the slope of the two ends is the same (one going up where the other goes down)
-      if (Math.abs(Math.asin(a.m.elements[6]) + Math.asin(b.m.elements[6])) > 0.21) continue;
+      if (a.kind !== b.kind) continue;
+      if (a.kind === 'surface') {
+        if (Math.abs(a.width - b.width) > 0.25 * Math.max(a.width, b.width)) continue;
+        // The surfaces have to continue one the other: the slope of the two ends is the same (one going up where the other goes down)
+        if (Math.abs(Math.asin(a.fz) + Math.asin(b.fz)) > 0.21) continue;
+      }
       out.push(poseOf(target.clone().multiply(a.m.clone().invert()), p.model, false));
     }
   }
@@ -203,8 +269,11 @@ export function roadSnap(p, others, maxDist = 8, want = null) {
   const list = [];
   for (const q of near) {
     list.length = 0;
-    if (isTubeModel(q.model)) { if (isTubeModel(p.model) || TUBE_EXTRAS.includes(p.model)) tubeCandidates(p, q, list); }
-    else if (!isTubeModel(p.model) && !TUBE_EXTRAS.includes(p.model)) socketCandidates(p, q, list);
+    const pt = isTubeModel(p.model), qt = isTubeModel(q.model), ps = isShapeTube(p.model), qs = isShapeTube(q.model);
+    const pe = TUBE_EXTRAS.includes(p.model), qe = TUBE_EXTRAS.includes(q.model);
+    if (qt && (pt || pe)) tubeCandidates(p, q, list);                                         // the table of the tool
+    if ((pt || ps) && (qt || qs) && (ps || qs)) socketCandidates(p, q, list);                  // a tube of the table with one that is not in it, or two of those
+    else if (!(pt || ps || pe || qt || qs || qe)) socketCandidates(p, q, list);                // ramps, jumps and plates
     for (const c of list) {
       const d = c.pos.distanceTo(here);
       if (d > maxDist) continue;

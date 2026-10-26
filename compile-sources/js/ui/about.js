@@ -7,6 +7,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.30', date: '26/10/2026', items: [
+      'The category Pistas, rampas e estradas now also has the pieces the tool TBR does not join: the 5 degree bends (19673 to 19676) and the flat plate of 25 x 25 m (19650). The ends of the bends are read from the model (the plane of each end is fitted to its rim, so the tilted end gives a tilted place; checked against the table of the tool with the 15 degree bends, where it gives the same place), and they join the other tubes, with the pitch continuing. The plates join their twins by the four edges.',
+      'The tubes of the table also join the ones that are not in it: the start and the end of each tube are worked out from the table itself, so a 5 degree bend can go after or before any tube of the table.',
+    ],
+  },
+  {
     version: '4.1.29', date: '26/10/2026', items: [
       'New category of objects, Pistas, rampas e estradas (tracks, ramps and roads), with the automatic snap of tracks, ramps, roads, etc. in the Snap menu (on by default, with its own distance, 8 m): a piece of the category that is moved near the edge of another one goes to the place where the two join, exactly (position and rotation), and the same happens to the piece that is about to be placed. Holding Alt lets the piece go without joining.',
       'The snap of the tubes of SA-MP (objects 19646 to 19689) is made with the table of the tool TBR (Adr1 Tube Connector 1.10): every kind each model can be joined by is tried, after and before each nearby piece, and the supports, the light and the covers go on their tube. Spots that already have a piece are not used again.',

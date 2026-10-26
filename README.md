@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.29-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.30-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.30 — 26/10/2026
+- The category Pistas, rampas e estradas now also has the pieces the tool TBR does not join: the 5 degree bends (19673 to 19676) and the flat plate of 25 x 25 m (19650). The ends of the bends are read from the model (the plane of each end is fitted to its rim, so the tilted end gives a tilted place; checked against the table of the tool with the 15 degree bends, where it gives the same place), and they join the other tubes, with the pitch continuing. The plates join their twins by the four edges.
+- The tubes of the table also join the ones that are not in it: the start and the end of each tube are worked out from the table itself, so a 5 degree bend can go after or before any tube of the table.
 
 ### 4.1.29 — 26/10/2026
 - New category of objects, Pistas, rampas e estradas (tracks, ramps and roads), with the automatic snap of tracks, ramps, roads, etc. in the Snap menu (on by default, with its own distance, 8 m): a piece of the category that is moved near the edge of another one goes to the place where the two join, exactly (position and rotation), and the same happens to the piece that is about to be placed. Holding Alt lets the piece go without joining.

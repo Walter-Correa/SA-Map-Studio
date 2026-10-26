@@ -8,7 +8,11 @@ export const ROAD_CATEGORY = 'Pistas, rampas e estradas';
 
 // Supports (19670, 19671) and the light (19672) of the tubes: they go on a tube, not after it
 export const TUBE_EXTRAS = [19670, 19671, 19672];
-export const ROAD_TUBE_IDS = [...Object.keys(TUBE_TYPES).map(Number), ...TUBE_EXTRAS];
+// Tubes the tool does not join (it has no place for them in its table): the 5 degree bends. They join the other tubes by their ends, read from the model
+export const TUBE_BY_SHAPE = [19673, 19674, 19675, 19676];
+// The flat plate of 25 x 25 m (TubeFlat25x25m1): joins its twin by the four edges
+export const PLATES = [19650];
+export const ROAD_TUBE_IDS = [...Object.keys(TUBE_TYPES).map(Number), ...TUBE_BY_SHAPE, ...PLATES, ...TUBE_EXTRAS];
 
 // Ramps, jumps and stunt pieces of the original game
 export const ROAD_VANILLA_IDS = [
@@ -19,3 +23,4 @@ export const ROAD_VANILLA_IDS = [
 const ROAD_SET = new Set([...ROAD_TUBE_IDS, ...ROAD_VANILLA_IDS]);
 export const isRoadModel = (id) => ROAD_SET.has(id);
 export const isTubeModel = (id) => TUBE_TYPES[id] !== undefined;
+export const isShapeTube = (id) => TUBE_BY_SHAPE.includes(id);
