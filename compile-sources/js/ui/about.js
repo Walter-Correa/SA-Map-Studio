@@ -7,6 +7,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.29', date: '26/10/2026', items: [
+      'New category of objects, Pistas, rampas e estradas (tracks, ramps and roads), with the automatic snap of tracks, ramps, roads, etc. in the Snap menu (on by default, with its own distance, 8 m): a piece of the category that is moved near the edge of another one goes to the place where the two join, exactly (position and rotation), and the same happens to the piece that is about to be placed. Holding Alt lets the piece go without joining.',
+      'The snap of the tubes of SA-MP (objects 19646 to 19689) is made with the table of the tool TBR (Adr1 Tube Connector 1.10): every kind each model can be joined by is tried, after and before each nearby piece, and the supports, the light and the covers go on their tube. Spots that already have a piece are not used again.',
+      'The ramps, jumps and stunt pieces of the original game in the category (25 models, also in Singleplayer without SA-MP) join by the ends of their long side: the point of the surface and the slope at each end are read from the model, and two pieces join when their width and their slope match, the surfaces continuing one the other.',
+      'The settings of the Snap menu that were saved are now applied when the editor starts (until now they only counted after changing something in the menu).',
+    ],
+  },
+  {
     version: '4.1.28', date: '26/10/2026', items: [
       'The protectors that were put on exactly the same point when the place around the player could not be seen (a wall, a small room) now each have a place of their own: the angle and the distance behind the player change with the number of the protector, and the ones beyond 300 use their order in the script. Characters piled on one point are what brings the game down, so the 4.1.27 block that kept them out of interiors is gone: they follow the player into interiors again, each on its own place.',
       'The protectors now go against anyone that has the player as the target of its attack (shooting at him, fighting him, running to him to attack), also when it does not hurt him (with a cheat that takes no damage nobody hurts him). It is read from the kill target of the tasks of the ped with CLEO+, which is now also asked for when the project has protectors.',

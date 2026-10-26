@@ -296,9 +296,10 @@ function setupToolbar(cfg) {
   setupPopover('#btnSnap', '#popSnap');
   setupPopover('#btnGoto', '#popGoto', () => setTimeout(() => $('#gotoInput')?.focus({ preventScroll: true }), 0));
   setupPopover('#btnView', '#popView');
-  const snap = store.get('snap', { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 });
+  const snap = store.get('snap', { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1, roads: true, roadDist: 8 });
   $('#snapOn').checked = snap.enabled ?? true; $('#snapMove').value = snap.move; $('#snapRot').value = snap.rotate;
   $('#snapMagnetic').checked = snap.magnetic ?? true; $('#snapMagDist').value = snap.magDist ?? 0.1;
+  $('#snapRoads').checked = snap.roads ?? true; $('#snapRoadDist').value = snap.roadDist ?? 8;
   const applySnap = () => {
     const s = {
       enabled: $('#snapOn').checked,
@@ -306,14 +307,17 @@ function setupToolbar(cfg) {
       rotate: Math.max(0.01, +$('#snapRot').value || 0.1),
       magnetic: $('#snapMagnetic').checked,
       magDist: Math.max(0.01, +$('#snapMagDist').value || 0.1),
+      roads: $('#snapRoads').checked,
+      roadDist: Math.min(30, Math.max(1, +$('#snapRoadDist').value || 8)),
     };
     ed.setSnap(s);
     store.set('snap', s);
   };
-  ['#snapOn', '#snapMove', '#snapRot', '#snapMagnetic', '#snapMagDist'].forEach(s => {
+  ['#snapOn', '#snapMove', '#snapRot', '#snapMagnetic', '#snapMagDist', '#snapRoads', '#snapRoadDist'].forEach(s => {
     $(s).addEventListener('change', applySnap);
     $(s).addEventListener('input', applySnap);
   });
+  applySnap();                                                                                    // the settings kept from the last time
   const rawSpeed = store.get('transformSpeed', { move: 1.0, rotate: 1.0 });
   ed.setTransformSpeed({ move: rawSpeed?.move ?? 1.0, rotate: rawSpeed?.rotate ?? 1.0 });
   $('#btnUndo').onclick = doUndo;

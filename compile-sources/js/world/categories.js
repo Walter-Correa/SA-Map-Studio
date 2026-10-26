@@ -45,13 +45,14 @@ const OBJECT_RULES = [
 ];
 
 import { isPickupModel } from './pickups.js';
+import { ROAD_CATEGORY, isRoadModel } from './roadPieces.js';
 
 export const OBJECT_CATEGORIES = [
   'Actors (Personagens)', 'Armas', 'Barreiras e cercas', 'Comida e bebida', 'Diversos',
   'Efeitos e partículas', 'Eletrônicos e escritório', 'Esportes e lazer', 'Iluminação',
   'Industrial', 'Interiores', 'Kit de construção', 'LOD (vistos de longe)', 'Lixo e sucata',
   'Móveis', 'Pickups', 'Placas e sinalização', 'Portas e janelas', 'Praia', 'Prédios e casas',
-  'Ruas e estradas', 'Terreno', 'Vegetação', 'Veículos', 'Água e docas'
+  ROAD_CATEGORY, 'Ruas e estradas', 'Terreno', 'Vegetação', 'Veículos', 'Água e docas'
 ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 export function objectCategory(def) {
@@ -59,6 +60,7 @@ export function objectCategory(def) {
   if (def.type === 'peds') return 'Actors (Personagens)';
   if (isPickupModel(def.id) && def.type !== 'weap') return 'Pickups';
   if (def.type === 'weap' || (def.id >= 321 && def.id <= 373)) return 'Armas';
+  if (isRoadModel(def.id)) return ROAD_CATEGORY;
   if (isKitPiece(def.id)) return 'Kit de construção';
   const n = (def.model || '').toLowerCase();
   const s = (def.source || '').toLowerCase();

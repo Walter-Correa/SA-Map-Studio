@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.28-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.29-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -105,8 +105,8 @@ never changed and removing the mod is deleting its folder.
 - **Hover preview**: pointing at an item of the Objects list (objects, vehicles, pickups, actors...) or of the Textures
   list opens a big picture in the middle of the screen; it closes when the mouse leaves or on click.
 - Place by clicking on the map (`R` / `X` rotate 15° / 90° before dropping, `Shift` + click keeps placing), gizmo to move
-  and rotate (world or object axes), movement and rotation speeds from 0.001x to 10x, **grid snapping** and **magnetic
-  snapping** to the edges of nearby objects.
+  and rotate (world or object axes), movement and rotation speeds from 0.001x to 10x, **grid snapping**, **magnetic
+  snapping** to the edges of nearby objects and the **automatic snap of tracks, ramps and roads** (category *Pistas, rampas e estradas*: the tubes of SA-MP and ramps of the game join by their edges).
 - Multiple selection with joint movement and rotation around the common center; `Ctrl+A` selects everything.
 - **Duplicate** (`Ctrl+D`) and **Place another one** create the copy in the same spot, already with the move gizmo;
   `End` drops the selection on the surface, `X` rotates 90°, `Page Up` / `Page Down` raise and lower.
@@ -484,6 +484,12 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.29 — 26/10/2026
+- New category of objects, Pistas, rampas e estradas (tracks, ramps and roads), with the automatic snap of tracks, ramps, roads, etc. in the Snap menu (on by default, with its own distance, 8 m): a piece of the category that is moved near the edge of another one goes to the place where the two join, exactly (position and rotation), and the same happens to the piece that is about to be placed. Holding Alt lets the piece go without joining.
+- The snap of the tubes of SA-MP (objects 19646 to 19689) is made with the table of the tool TBR (Adr1 Tube Connector 1.10): every kind each model can be joined by is tried, after and before each nearby piece, and the supports, the light and the covers go on their tube. Spots that already have a piece are not used again.
+- The ramps, jumps and stunt pieces of the original game in the category (25 models, also in Singleplayer without SA-MP) join by the ends of their long side: the point of the surface and the slope at each end are read from the model, and two pieces join when their width and their slope match, the surfaces continuing one the other.
+- The settings of the Snap menu that were saved are now applied when the editor starts (until now they only counted after changing something in the menu).
 
 ### 4.1.28 — 26/10/2026
 - The protectors that were put on exactly the same point when the place around the player could not be seen (a wall, a small room) now each have a place of their own: the angle and the distance behind the player change with the number of the protector, and the ones beyond 300 use their order in the script. Characters piled on one point are what brings the game down, so the 4.1.27 block that kept them out of interiors is gone: they follow the player into interiors again, each on its own place.

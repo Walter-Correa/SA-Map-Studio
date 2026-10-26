@@ -2352,5 +2352,10 @@
  "Valor (0 a 1000)": "Valoare (0 la 1000)",
  "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} se află în folderul jocului, este orientat spre multiplayer și intră în conflict cu singleplayer, afectând misiunile și alte moduri! Vrei să continui oricum sau intenționezi să îl dezinstalezi?",
  "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Obiecte SA-MP neîncărcate deoarece SA-MP nu este instalat: {0}.",
- "Objetos do SA-MP carregados como objetos do mod: {0}.": "Obiecte SA-MP încărcate ca obiecte ale modului: {0}."
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Obiecte SA-MP încărcate ca obiecte ale modului: {0}.",
+ "Uma peça da categoria Pistas, rampas e estradas, ao ser movida perto da borda de outra, encaixa nela de forma perfeita (posição e rotação). Segure Alt para soltar a peça sem encaixar": "O piesă din categoria Piste, rampe și drumuri, mutată lângă marginea alteia, se potrivește perfect cu ea (poziție și rotație). Ține apăsat Alt pentru a lăsa piesa fără potrivire",
+ "Encaixe automático de pistas, rampas, estradas, etc.": "Potrivire automată a pistelor, rampelor, drumurilor etc.",
+ "Encaixar peças pelas bordas": "Îmbină piesele pe margini",
+ "Distância do encaixe (m)": "Distanța de potrivire (m)",
+ "Pistas, rampas e estradas": "Piste, rampe și drumuri"
 }

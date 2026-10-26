@@ -11,6 +11,8 @@ import { getNextGangZoneName } from '../world/gangzones.js';
 import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
 import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
 import { createSpawnNode } from '../world/spawn.js';
+import { roadSnap, warmRoad } from './roadSnap.js';
+import { isRoadModel } from '../world/roadPieces.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
@@ -38,6 +40,11 @@ export class Editor extends EventTarget {
   constructor({ viewport, streamer, models, gamedata, project }) {
     super();
     this.vp = viewport;
+    // Alt held: the automatic snap of tracks, ramps and roads is let go of while it is held (to put a piece close without it joining)
+    this.altDown = false;
+    window.addEventListener('keydown', (e) => { this.altDown = e.altKey; });
+    window.addEventListener('keyup', (e) => { this.altDown = e.altKey; });
+    window.addEventListener('blur', () => { this.altDown = false; });
     this.streamer = streamer;
     this.models = models;
     this.gd = gamedata;
@@ -50,7 +57,7 @@ export class Editor extends EventTarget {
     this.worldSelection = [];        // selected map instances
     this.mode = 'translate';
     this.space = 'local';
-    this.snap = { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1 };
+    this.snap = { enabled: true, move: 0.1, rotate: 0.1, magnetic: true, magDist: 0.1, roads: true, roadDist: 8 };
     this.transformSpeed = { move: 1.0, rotate: 1.0 };
     this.placing = null;             // {model, ghost}
     this.matSel = [];                // chosen material indices (0 to 15)
@@ -828,6 +835,16 @@ export class Editor extends EventTarget {
     this.tc.setRotationSnap(this.snap.enabled ? this.snap.rotate * D2R : null);
   }
 
+  // The place where a piece of the category "Pistas, rampas e estradas" joins the nearest one (see roadSnap.js), or null
+  roadSnapFor(uid, node, kind) {
+    if (this.snap.roads === false || this.altDown || kind !== 'objects') return null;
+    const item = this.findProjectOf(uid)?.find(uid);
+    if (!item || !isRoadModel(item.model) || item.attach?.to) return null;
+    const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
+    const p = { uid, model: item.model, x: node.position.x, y: node.position.y, z: node.position.z, rx: e.x * R2D, ry: e.y * R2D, rz: e.z * R2D };
+    return roadSnap(p, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
+  }
+
   beginDrag() {
     this.dragging = true;
     const items = this.selectedItems();
@@ -842,6 +859,7 @@ export class Editor extends EventTarget {
           kind: s.kind,
           pos: node ? node.position.clone() : new THREE.Vector3(s.item.x, s.item.y, s.item.z),
           quat: node ? node.quaternion.clone() : new THREE.Quaternion().setFromEuler(eulerFromItem(s.item, s.kind)),
+          rot: [s.item.rx || 0, s.item.ry || 0, s.item.rz || 0],                                   // for when a road snap is let go of
         };
       }),
     };
@@ -877,7 +895,8 @@ export class Editor extends EventTarget {
       // Joint movement preserving relative distances
       const dPos = this.pivot.position.clone().sub(C);
 
-      for (const { uid, kind, pos, quat } of this.dragStart.nodes) {
+      for (const start of this.dragStart.nodes) {
+        const { uid, kind, pos, quat } = start;
         const node = this.nodes.get(uid);
         if (!node) continue;
         node.position.copy(pos).add(dPos);
@@ -885,8 +904,25 @@ export class Editor extends EventTarget {
         node.scale.set(1, 1, 1);
         node.updateMatrixWorld(true);
 
+        // Automatic snap of tracks, ramps and roads: the piece goes to the place where it joins the nearest one (position and rotation)
+        let roadHit = null;
+        if (this.mode === 'translate' && this.selection.length === 1) {
+          roadHit = this.roadSnapFor(uid, node, kind);
+          const it = this.findProjectOf(uid)?.find(uid);
+          if (roadHit) {
+            node.position.copy(roadHit.pos);
+            node.quaternion.copy(roadHit.quat);
+            node.updateMatrixWorld(true);
+            if (it) { it.rx = normDeg(roadHit.rot[0]); it.ry = normDeg(roadHit.rot[1]); it.rz = normDeg(roadHit.rot[2]); }
+            start.roaded = true;
+          } else if (start.roaded && it) {
+            it.rx = start.rot[0]; it.ry = start.rot[1]; it.rz = start.rot[2];                      // let go: the rotation it had
+            start.roaded = false;
+          }
+        }
+
         // Magnetic snap to edges of nearby objects
-        if (this.mode === 'translate' && this.snap.magnetic && this.selection.length === 1) {
+        if (!roadHit && this.mode === 'translate' && this.snap.magnetic && this.selection.length === 1) {
           const itemAttached = this.findProjectOf(uid)?.find(uid);
           if (!itemAttached?.attach || !itemAttached.attach.to) {
             const candidates = [...this.nodes.values()].filter(n => n !== node);
@@ -1462,7 +1498,20 @@ export class Editor extends EventTarget {
     pl.ghost.rotation.set(0, 0, pl.rz * D2R, 'ZXY');
     pl.ghost.updateMatrixWorld(true);
 
-    if (this.snap.magnetic) {
+    // Automatic snap of tracks, ramps and roads: the new piece shows where it would join the nearest one
+    pl.snapRot = null;
+    let roadHit = null;
+    if (this.snap.roads !== false && !this.altDown && !pl.options?.kind && isRoadModel(pl.model)) {
+      roadHit = roadSnap({ uid: 'ghost', model: pl.model, x: p.x, y: p.y, z: p.z, rx: 0, ry: 0, rz: pl.rz }, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
+      if (roadHit) {
+        pl.ghost.position.copy(roadHit.pos);
+        pl.ghost.quaternion.copy(roadHit.quat);
+        pl.ghost.updateMatrixWorld(true);
+        pl.snapRot = roadHit.rot;
+      }
+    }
+
+    if (!roadHit && this.snap.magnetic) {
       const candidates = [...this.nodes.values()];
       const snapDelta = findMagneticSnap(pl.ghost, candidates, this.snap.magDist || 0.8);
       if (snapDelta) {
@@ -1490,7 +1539,7 @@ export class Editor extends EventTarget {
       type: 1, // Default type for pickups (1: always visible)
       world: 0,
       x: round(p.x), y: round(p.y), z: round(p.z),
-      rx: 0, ry: 0, rz: pl.rz,
+      rx: pl.snapRot ? normDeg(pl.snapRot[0]) : 0, ry: pl.snapRot ? normDeg(pl.snapRot[1]) : 0, rz: pl.snapRot ? normDeg(pl.snapRot[2]) : pl.rz,
       interior: pl.interior ?? -1,
     };
     const label = kind === 'actors' ? 'Adicionar actor' : (kind === 'vehicles' ? 'Adicionar veículo' : (kind === 'pickups' ? 'Adicionar pickup' : 'Adicionar objeto'));

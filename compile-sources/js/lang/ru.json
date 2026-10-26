@@ -2352,5 +2352,10 @@
  "Valor (0 a 1000)": "Значение (от 0 до 1000)",
  "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} находится в папке игры, он ориентирован на мультиплеер и конфликтует с сингплеером, вредя миссиям и другим модам! Хотите всё равно продолжить или собираетесь удалить его?",
  "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Объекты SA-MP не загружены, так как SA-MP не установлен: {0}.",
- "Objetos do SA-MP carregados como objetos do mod: {0}.": "Объекты SA-MP загружены как объекты мода: {0}."
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Объекты SA-MP загружены как объекты мода: {0}.",
+ "Uma peça da categoria Pistas, rampas e estradas, ao ser movida perto da borda de outra, encaixa nela de forma perfeita (posição e rotação). Segure Alt para soltar a peça sem encaixar": "Элемент категории «Трассы, рампы и дороги», перемещённый к краю другого, идеально стыкуется с ним (положение и поворот). Удерживайте Alt, чтобы отпустить элемент без стыковки",
+ "Encaixe automático de pistas, rampas, estradas, etc.": "Автоматическая стыковка трасс, рамп, дорог и т. д.",
+ "Encaixar peças pelas bordas": "Стыковать элементы по краям",
+ "Distância do encaixe (m)": "Расстояние стыковки (м)",
+ "Pistas, rampas e estradas": "Трассы, рампы и дороги"
 }

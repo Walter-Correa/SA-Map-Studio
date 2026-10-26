@@ -2352,5 +2352,10 @@
  "Valor (0 a 1000)": "Değer (0 ile 1000)",
  "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} oyun klasöründe, çok oyunculu moda odaklıdır ve tek oyunculu modla çakışarak görevlere ve diğer modlara zarar verir! Yine de devam etmek mi istiyorsunuz yoksa kaldırmayı mı düşünüyorsunuz?",
  "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "SA-MP kurulu olmadığı için yüklenmeyen SA-MP nesneleri: {0}.",
- "Objetos do SA-MP carregados como objetos do mod: {0}.": "Mod nesnesi olarak yüklenen SA-MP nesneleri: {0}."
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Mod nesnesi olarak yüklenen SA-MP nesneleri: {0}.",
+ "Uma peça da categoria Pistas, rampas e estradas, ao ser movida perto da borda de outra, encaixa nela de forma perfeita (posição e rotação). Segure Alt para soltar a peça sem encaixar": "Pistler, rampalar ve yollar kategorisindeki bir parça, başka bir parçanın kenarına yakın taşındığında ona kusursuz biçimde oturur (konum ve dönüş). Parçayı oturtmadan bırakmak için Alt tuşunu basılı tutun",
+ "Encaixe automático de pistas, rampas, estradas, etc.": "Pistlerin, rampaların, yolların vb. otomatik oturması",
+ "Encaixar peças pelas bordas": "Parçaları kenarlarından birleştir",
+ "Distância do encaixe (m)": "Oturma mesafesi (m)",
+ "Pistas, rampas e estradas": "Pistler, rampalar ve yollar"
 }
