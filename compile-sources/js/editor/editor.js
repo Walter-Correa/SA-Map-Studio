@@ -134,29 +134,30 @@ export class Editor extends EventTarget {
 
   get renderer() { return this.vp.renderer; }
 
-  // Arrows next to the rotation manipulator: each one turns the selection around an axis by clicking, or all the time while the button is held down. The
-  // size of the turn follows the rotation speed that is set (5 degrees a click and 60 degrees a second held, at speed 1)
+  // Arrows on the rings of the rotation manipulator: on each ring (X, Y, Z) one arrow for each way; a click turns the selection around that axis by 5
+  // degrees, and holding the button turns it all the time (60 degrees a second); both are multiplied by the rotation speed that is set
   setupRotateArrows(host) {
     if (!host) return;
     const box = document.createElement('div');
     box.className = 'gizmo-rot-arrows';
     box.style.display = 'none';
-    const axes = [['x', 'X', '#e0383e'], ['y', 'Y', '#3fb950'], ['z', 'Z', '#4d8cf5']];
-    const rows = {};
-    for (const [axis, label, color] of axes) {
-      const row = document.createElement('div');
-      row.className = 'gra-row';
-      row.innerHTML = `<button type="button" class="gra-btn" data-dir="-1" title="Girar para um lado (clique ou segure)">&#8630;</button><b style="color:${color}">${label}</b><button type="button" class="gra-btn" data-dir="1" title="Girar para o outro lado (clique ou segure)">&#8631;</button>`;
-      box.appendChild(row);
-      rows[axis] = row;
-      row.querySelectorAll('.gra-btn').forEach((btn) => {
-        const dir = +btn.dataset.dir;
-        let timer = null, tick = null, before = null, last = 0, holding = false;
+    const colors = { x: '#e0383e', y: '#3fb950', z: '#4d8cf5' };
+    this.rotArrowBtns = [];
+    for (const axis of ['x', 'y', 'z']) {
+      for (const dir of [-1, 1]) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'gra-arrow';
+        btn.style.setProperty('--gra', colors[axis]);
+        btn.title = dir < 0 ? 'Girar para um lado (clique ou segure)' : 'Girar para o outro lado (clique ou segure)';
+        btn.innerHTML = '<svg viewBox="0 0 16 16"><path d="M3 2 L14 8 L3 14 L6 8 Z"/></svg>';
+        box.appendChild(btn);
+        this.rotArrowBtns.push({ btn, axis, dir });
+        let timer = null, tick = null, before = null, last = 0;
         const speed = () => this.transformSpeed?.rotate || 1;
         const stop = () => {
           clearTimeout(timer); clearInterval(tick); timer = tick = null;
           if (before) { this.finishArrowRotation(before); before = null; }
-          holding = false;
         };
         btn.addEventListener('pointerdown', (e) => {
           e.stopPropagation(); e.preventDefault();
@@ -164,7 +165,7 @@ export class Editor extends EventTarget {
           before = this.beginArrowRotation();
           this.rotateAroundAxis(axis, dir * 5 * speed());
           timer = setTimeout(() => {
-            holding = true; last = performance.now();
+            last = performance.now();
             tick = setInterval(() => {
               const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000);
               last = now;
@@ -175,11 +176,44 @@ export class Editor extends EventTarget {
         for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) btn.addEventListener(ev, stop);
         btn.addEventListener('mousedown', (e) => e.stopPropagation());
         btn.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
-      });
+      }
     }
     host.appendChild(box);
     this.rotArrows = box;
-    this.rotArrowRows = rows;
+  }
+
+  // Puts each arrow on its ring, on the side that faces the camera, pointing the way the ring turns on the screen
+  placeRotateArrows() {
+    const cam = this.vp.camera, dom = this.vp.dom, rect = dom ? dom.getBoundingClientRect() : null;
+    const c = this.pivot.position;
+    const dist = cam.position.distanceTo(c);
+    // the radius of the rings of the manipulator (see TransformControls: 0.5 of its scale, which follows the distance to the camera and its size)
+    const factor = dist * Math.min(1.9 * Math.tan(Math.PI * cam.fov / 360) / (cam.zoom || 1), 7);
+    const R = 0.5 * factor * (this.tc.size || 0.9) / 4;
+    const items = this.selectedItems();
+    const yawOnly = items.length > 0 && items.every(s => ['vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns'].includes(s.kind));
+    const local = this.space === 'local' && items.length === 1;
+    const q = local ? this.pivot.quaternion : new THREE.Quaternion();
+    const eye = cam.position.clone().sub(c).normalize();
+    const proj = (p) => { const v = p.clone().project(cam); return [((v.x + 1) / 2) * rect.width, ((-v.y + 1) / 2) * rect.height, v.z]; };
+    for (const { btn, axis, dir } of this.rotArrowBtns) {
+      if (yawOnly && axis !== 'z') { btn.style.display = 'none'; continue; }
+      const a = new THREE.Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0).applyQuaternion(q);
+      // the ring is the circle around the axis; its point that is nearest the camera, and the arrows on both sides of it
+      let u = eye.clone().sub(a.clone().multiplyScalar(eye.dot(a)));
+      if (u.lengthSq() < 1e-4) u = new THREE.Vector3(1, 0, 0).cross(a);
+      u.normalize();
+      const v = new THREE.Vector3().crossVectors(a, u);
+      const ang = dir * 0.95;
+      const p = c.clone().addScaledVector(u, Math.cos(ang) * R).addScaledVector(v, Math.sin(ang) * R);
+      const t = new THREE.Vector3().crossVectors(a, p.clone().sub(c)).normalize().multiplyScalar(dir);   // the way the ring turns for this arrow
+      const [sx, sy, sz] = proj(p), [tx, ty] = proj(p.clone().addScaledVector(t, R * 0.2));
+      if (sz >= 1 || !isFinite(sx)) { btn.style.display = 'none'; continue; }
+      btn.style.display = '';
+      btn.style.left = `${sx}px`;
+      btn.style.top = `${sy}px`;
+      btn.style.transform = `translate(-50%, -50%) rotate(${Math.atan2(ty - sy, tx - sx)}rad)`;
+    }
   }
 
   beginArrowRotation() {
@@ -2205,24 +2239,11 @@ export class Editor extends EventTarget {
     if (this.worldSelection.length && !this._lastWorldBoxOk) { this.refreshSelectionBoxes(); }
     this._lastWorldBoxOk = !this.worldSelection.length || this.worldSelection.every(w => this.streamer.shown.has(w.index));
 
-    // The arrows of the rotation manipulator: next to it, only while the selection is being rotated
+    // The arrows on the rings of the rotation manipulator: only while the selection is being rotated
     if (this.rotArrows) {
-      const show = this.mode === 'rotate' && !this.externalGizmo && this.selection.length > 0 && this.gizmo.visible && !this.placing && this.tc.object === this.pivot;
-      let ok = false;
-      if (show) {
-        const v = this.pivot.position.clone().project(this.vp.camera);
-        const dom = this.vp.dom, rect = dom ? dom.getBoundingClientRect() : null;
-        if (rect && v.z < 1) {
-          const sx = ((v.x + 1) / 2) * rect.width, sy = ((-v.y + 1) / 2) * rect.height;
-          this.rotArrows.style.left = `${Math.min(rect.width - 110, sx + 120)}px`;
-          this.rotArrows.style.top = `${Math.max(10, Math.min(rect.height - 110, sy - 45))}px`;
-          const yawOnly = this.selectedItems().every(s => ['vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns'].includes(s.kind));
-          this.rotArrowRows.x.style.display = yawOnly ? 'none' : '';
-          this.rotArrowRows.y.style.display = yawOnly ? 'none' : '';
-          ok = true;
-        }
-      }
-      this.rotArrows.style.display = ok ? 'block' : 'none';
+      const show = this.mode === 'rotate' && !this.externalGizmo && this.selection.length > 0 && this.gizmo.visible && !this.placing && this.tc.object === this.pivot && !this.dragging && !this.tc.dragging;
+      this.rotArrows.style.display = show ? 'block' : 'none';
+      if (show && this.vp.dom) this.placeRotateArrows();
     }
 
     // Updates the on-screen position and text of the floating Move / Rotate toggle button
