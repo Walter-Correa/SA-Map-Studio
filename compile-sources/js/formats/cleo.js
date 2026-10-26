@@ -549,7 +549,7 @@ const GUARD_VARS = 700; // the shared variables of CLEO (0 to 1023) where the gu
 export const ACTORS_BUDGET = 20;
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
-export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 6 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
+export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 7 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
 // The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
 // brings no stars (the civilians, type 4, do)
 const NPC_TYPE = 16;
@@ -911,6 +911,21 @@ export function actorsScript(items) {
         a.label(L('ni'));
       }
       if (travel) {
+        // Getting into a vehicle comes first: while it is getting in, and for five seconds after it was last seen getting in, nothing else is done with
+        // it (no teleport, no order, no target): any of those would take it out of the vehicle. After that it is checked again as usual
+        const ei = base + 6;
+        a.op(0x00D6, int(0)).op(0x0039, lv(ei), int(0)).op(0x004D, ref(L('ei1')));
+        a.jump(L('ei2'));
+        a.label(L('ei1'));
+        a.op(0x01BD, lv(T4));
+        a.op(0x0A8F, lv(T4), lv(ei), lv(T5));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(5000)).op(0x004D, ref(done));                 // not yet five seconds: left alone
+        a.op(0x0006, lv(ei), int(0));
+        a.label(L('ei2'));
+        a.op(0x00D6, int(0)).op(0x09DE, lv(h)).op(0x004D, ref(L('ei3')));
+        a.op(0x01BD, lv(ei));
+        a.jump(done);
+        a.label(L('ei3'));
         // Only the protectors: beyond 100 m from the player (3 seconds), more than 20 m (8 seconds: it is stuck behind something) or in another area of
         // the game (he went into an interior, or came out): it appears next to him
         // Not during a cutscene or a scripted scene (the player has no control) nor while the screen fades: nobody is taken anywhere
