@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.33-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.34-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.34 — 26/10/2026
+- The rotation manipulator now has arrows next to it (X, Y and Z, one for each way): a click turns the selection 5 degrees, and holding the button turns it all the time (60 degrees a second), both multiplied by the rotation speed that is set. They turn around the axes of the manipulator (of the world, or of the object when its own axes are used), around the middle of the selection; objects that only turn on Z show only that arrow. A turn made by holding is one step of undo.
 
 ### 4.1.33 — 26/10/2026
 - New option in the View menu, Move the gizmo toward the camera (off by default): the gizmo slides over the selected object toward the camera, without leaving it (the limits are the edges of the object, or of the group when several are selected), and it gets smaller the nearer the camera is to the object, so it fits on the screen. It works while moving; to rotate, the gizmo stays at the middle of the object.

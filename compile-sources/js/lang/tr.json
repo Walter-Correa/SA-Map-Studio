@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Oturma mesafesi (m)",
  "Pistas, rampas e estradas": "Pistler, rampalar ve yollar",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Gizmo, nesnenin dışına çıkmadan kameraya doğru nesnenin üzerinde kayar ve kamera yaklaştıkça küçülür",
- "Mover o gizmo na direção da câmera": "Gizmoyu kameraya doğru kaydır"
+ "Mover o gizmo na direção da câmera": "Gizmoyu kameraya doğru kaydır",
+ "Girar para um lado (clique ou segure)": "Bir yöne döndür (tıkla veya basılı tut)",
+ "Girar para o outro lado (clique ou segure)": "Diğer yöne döndür (tıkla veya basılı tut)"
 }

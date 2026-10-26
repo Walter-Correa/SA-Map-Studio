@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Расстояние стыковки (м)",
  "Pistas, rampas e estradas": "Трассы, рампы и дороги",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Гизмо скользит по объекту в сторону камеры, не выходя за его пределы, и уменьшается, чем ближе камера",
- "Mover o gizmo na direção da câmera": "Сдвигать гизмо в сторону камеры"
+ "Mover o gizmo na direção da câmera": "Сдвигать гизмо в сторону камеры",
+ "Girar para um lado (clique ou segure)": "Повернуть в одну сторону (клик или удерживать)",
+ "Girar para o outro lado (clique ou segure)": "Повернуть в другую сторону (клик или удерживать)"
 }

@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Snap distance (m)",
  "Pistas, rampas e estradas": "Tracks, ramps and roads",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "The gizmo slides over the object toward the camera, without leaving it, and gets smaller the nearer the camera is",
- "Mover o gizmo na direção da câmera": "Move the gizmo toward the camera"
+ "Mover o gizmo na direção da câmera": "Move the gizmo toward the camera",
+ "Girar para um lado (clique ou segure)": "Rotate one way (click or hold)",
+ "Girar para o outro lado (clique ou segure)": "Rotate the other way (click or hold)"
 }

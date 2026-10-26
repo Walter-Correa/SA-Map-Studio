@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Distanța de potrivire (m)",
  "Pistas, rampas e estradas": "Piste, rampe și drumuri",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Gizmo alunecă pe obiect spre cameră, fără să iasă din el, și devine mai mic cu cât camera este mai aproape",
- "Mover o gizmo na direção da câmera": "Mută gizmo spre cameră"
+ "Mover o gizmo na direção da câmera": "Mută gizmo spre cameră",
+ "Girar para um lado (clique ou segure)": "Rotește într-o parte (clic sau ține apăsat)",
+ "Girar para o outro lado (clique ou segure)": "Rotește în cealaltă parte (clic sau ține apăsat)"
 }

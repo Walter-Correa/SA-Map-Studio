@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Odległość dopasowania (m)",
  "Pistas, rampas e estradas": "Tory, rampy i drogi",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Gizmo przesuwa się po obiekcie w stronę kamery, nie wychodząc poza niego, i zmniejsza się, gdy kamera jest bliżej",
- "Mover o gizmo na direção da câmera": "Przesuwaj gizmo w stronę kamery"
+ "Mover o gizmo na direção da câmera": "Przesuwaj gizmo w stronę kamery",
+ "Girar para um lado (clique ou segure)": "Obróć w jedną stronę (kliknij lub przytrzymaj)",
+ "Girar para o outro lado (clique ou segure)": "Obróć w drugą stronę (kliknij lub przytrzymaj)"
 }

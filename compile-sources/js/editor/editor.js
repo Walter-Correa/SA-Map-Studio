@@ -125,6 +125,7 @@ export class Editor extends EventTarget {
     const vpDom = viewport.dom || viewport.container;
     if (vpDom) vpDom.appendChild(toggleBtn);
     this.gizmoToggleBtn = toggleBtn;
+    this.setupRotateArrows(vpDom);
 
     this.bindPointer();
     viewport.onFrame(() => this.frame());
@@ -132,6 +133,99 @@ export class Editor extends EventTarget {
   }
 
   get renderer() { return this.vp.renderer; }
+
+  // Arrows next to the rotation manipulator: each one turns the selection around an axis by clicking, or all the time while the button is held down. The
+  // size of the turn follows the rotation speed that is set (5 degrees a click and 60 degrees a second held, at speed 1)
+  setupRotateArrows(host) {
+    if (!host) return;
+    const box = document.createElement('div');
+    box.className = 'gizmo-rot-arrows';
+    box.style.display = 'none';
+    const axes = [['x', 'X', '#e0383e'], ['y', 'Y', '#3fb950'], ['z', 'Z', '#4d8cf5']];
+    const rows = {};
+    for (const [axis, label, color] of axes) {
+      const row = document.createElement('div');
+      row.className = 'gra-row';
+      row.innerHTML = `<button type="button" class="gra-btn" data-dir="-1" title="Girar para um lado (clique ou segure)">&#8630;</button><b style="color:${color}">${label}</b><button type="button" class="gra-btn" data-dir="1" title="Girar para o outro lado (clique ou segure)">&#8631;</button>`;
+      box.appendChild(row);
+      rows[axis] = row;
+      row.querySelectorAll('.gra-btn').forEach((btn) => {
+        const dir = +btn.dataset.dir;
+        let timer = null, tick = null, before = null, last = 0, holding = false;
+        const speed = () => this.transformSpeed?.rotate || 1;
+        const stop = () => {
+          clearTimeout(timer); clearInterval(tick); timer = tick = null;
+          if (before) { this.finishArrowRotation(before); before = null; }
+          holding = false;
+        };
+        btn.addEventListener('pointerdown', (e) => {
+          e.stopPropagation(); e.preventDefault();
+          btn.setPointerCapture?.(e.pointerId);
+          before = this.beginArrowRotation();
+          this.rotateAroundAxis(axis, dir * 5 * speed());
+          timer = setTimeout(() => {
+            holding = true; last = performance.now();
+            tick = setInterval(() => {
+              const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000);
+              last = now;
+              this.rotateAroundAxis(axis, dir * 60 * speed() * dt);
+            }, 30);
+          }, 350);
+        });
+        for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) btn.addEventListener(ev, stop);
+        btn.addEventListener('mousedown', (e) => e.stopPropagation());
+        btn.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
+      });
+    }
+    host.appendChild(box);
+    this.rotArrows = box;
+    this.rotArrowRows = rows;
+  }
+
+  beginArrowRotation() {
+    const items = this.selectedItems();
+    return items.map(s => ({ proj: this.findProjectOf(s.uid), snap: this.findProjectOf(s.uid).snapshot(s.uid) }));
+  }
+
+  finishArrowRotation(before) {
+    const byProject = new Map();
+    for (const b of before) {
+      if (!byProject.has(b.proj)) byProject.set(b.proj, []);
+      byProject.get(b.proj).push(b.snap);
+    }
+    for (const [p, snaps] of byProject) p.record('Girar', snaps, snaps.map(s => p.snapshot(s.uid)));
+    this.emit('change');
+  }
+
+  // Turns the selection `deg` degrees around an axis of the manipulator (of the world, or of the object when it is alone and the axes are its own)
+  rotateAroundAxis(axis, deg) {
+    const items = this.selectedItems();
+    if (!items.length || !deg) return;
+    const c = new THREE.Vector3();
+    for (const s of items) { const n = this.nodes.get(s.uid); c.add(n ? n.position : new THREE.Vector3(s.item.x, s.item.y, s.item.z)); }
+    c.divideScalar(items.length);
+    const v = new THREE.Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0);
+    if (this.space === 'local' && items.length === 1) {
+      const n = this.nodes.get(items[0].uid);
+      if (n) v.applyQuaternion(n.quaternion);
+    }
+    const Q = new THREE.Quaternion().setFromAxisAngle(v, deg * D2R);
+    const yawOnly = (k) => k === 'vehicles' || k === 'actors' || k === 'labels' || k === 'pickups' || k === 'checkpoints' || k === 'mapIcons' || k === 'spawns';
+    for (const s of items) {
+      const node = this.nodes.get(s.uid);
+      if (!node) continue;
+      node.position.copy(c).add(node.position.clone().sub(c).applyQuaternion(Q));
+      node.quaternion.premultiply(Q);
+      node.updateMatrixWorld(true);
+      s.item.x = round(node.position.x); s.item.y = round(node.position.y); s.item.z = round(node.position.z);
+      const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
+      if (yawOnly(s.kind)) s.item.rz = normDeg(e.z * R2D);
+      else { s.item.rx = normDeg(e.x * R2D); s.item.ry = normDeg(e.y * R2D); s.item.rz = normDeg(e.z * R2D); }
+    }
+    this.attachGizmo();
+    this.refreshSelectionBoxes();
+    this.emit('live');
+  }
 
   // During a drag the manipulator's Move/Rotate button becomes transparent to the mouse
   setGizmoButtonPassive(on) {
@@ -2110,6 +2204,26 @@ export class Editor extends EventTarget {
     }
     if (this.worldSelection.length && !this._lastWorldBoxOk) { this.refreshSelectionBoxes(); }
     this._lastWorldBoxOk = !this.worldSelection.length || this.worldSelection.every(w => this.streamer.shown.has(w.index));
+
+    // The arrows of the rotation manipulator: next to it, only while the selection is being rotated
+    if (this.rotArrows) {
+      const show = this.mode === 'rotate' && !this.externalGizmo && this.selection.length > 0 && this.gizmo.visible && !this.placing && this.tc.object === this.pivot;
+      let ok = false;
+      if (show) {
+        const v = this.pivot.position.clone().project(this.vp.camera);
+        const dom = this.vp.dom, rect = dom ? dom.getBoundingClientRect() : null;
+        if (rect && v.z < 1) {
+          const sx = ((v.x + 1) / 2) * rect.width, sy = ((-v.y + 1) / 2) * rect.height;
+          this.rotArrows.style.left = `${Math.min(rect.width - 110, sx + 120)}px`;
+          this.rotArrows.style.top = `${Math.max(10, Math.min(rect.height - 110, sy - 45))}px`;
+          const yawOnly = this.selectedItems().every(s => ['vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns'].includes(s.kind));
+          this.rotArrowRows.x.style.display = yawOnly ? 'none' : '';
+          this.rotArrowRows.y.style.display = yawOnly ? 'none' : '';
+          ok = true;
+        }
+      }
+      this.rotArrows.style.display = ok ? 'block' : 'none';
+    }
 
     // Updates the on-screen position and text of the floating Move / Rotate toggle button
     if (this.gizmoToggleBtn) {

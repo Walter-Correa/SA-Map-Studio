@@ -7,6 +7,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.34', date: '26/10/2026', items: [
+      'The rotation manipulator now has arrows next to it (X, Y and Z, one for each way): a click turns the selection 5 degrees, and holding the button turns it all the time (60 degrees a second), both multiplied by the rotation speed that is set. They turn around the axes of the manipulator (of the world, or of the object when its own axes are used), around the middle of the selection; objects that only turn on Z show only that arrow. A turn made by holding is one step of undo.',
+    ],
+  },
+  {
     version: '4.1.33', date: '26/10/2026', items: [
       'New option in the View menu, Move the gizmo toward the camera (off by default): the gizmo slides over the selected object toward the camera, without leaving it (the limits are the edges of the object, or of the group when several are selected), and it gets smaller the nearer the camera is to the object, so it fits on the screen. It works while moving; to rotate, the gizmo stays at the middle of the object.',
     ],

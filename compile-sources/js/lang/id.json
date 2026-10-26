@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Jarak penyambungan (m)",
  "Pistas, rampas e estradas": "Lintasan, ramp, dan jalan",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Gizmo bergeser di atas objek ke arah kamera, tanpa keluar dari objek, dan makin kecil saat kamera makin dekat",
- "Mover o gizmo na direção da câmera": "Geser gizmo ke arah kamera"
+ "Mover o gizmo na direção da câmera": "Geser gizmo ke arah kamera",
+ "Girar para um lado (clique ou segure)": "Putar ke satu arah (klik atau tahan)",
+ "Girar para o outro lado (clique ou segure)": "Putar ke arah sebaliknya (klik atau tahan)"
 }

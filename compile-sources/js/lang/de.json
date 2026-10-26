@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Rastabstand (m)",
  "Pistas, rampas e estradas": "Strecken, Rampen und Straßen",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Das Gizmo gleitet auf dem Objekt zur Kamera, ohne es zu verlassen, und wird kleiner, je näher die Kamera ist",
- "Mover o gizmo na direção da câmera": "Gizmo zur Kamera hin verschieben"
+ "Mover o gizmo na direção da câmera": "Gizmo zur Kamera hin verschieben",
+ "Girar para um lado (clique ou segure)": "In eine Richtung drehen (Klick oder halten)",
+ "Girar para o outro lado (clique ou segure)": "In die andere Richtung drehen (Klick oder halten)"
 }

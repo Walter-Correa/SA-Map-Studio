@@ -2359,5 +2359,7 @@
  "Distância do encaixe (m)": "Khoảng cách ghép (m)",
  "Pistas, rampas e estradas": "Đường đua, dốc và đường",
  "O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver": "Gizmo trượt trên vật thể về phía camera, không ra khỏi vật thể, và nhỏ dần khi camera càng gần",
- "Mover o gizmo na direção da câmera": "Di chuyển gizmo về phía camera"
+ "Mover o gizmo na direção da câmera": "Di chuyển gizmo về phía camera",
+ "Girar para um lado (clique ou segure)": "Xoay một chiều (bấm hoặc giữ)",
+ "Girar para o outro lado (clique ou segure)": "Xoay chiều ngược lại (bấm hoặc giữ)"
 }

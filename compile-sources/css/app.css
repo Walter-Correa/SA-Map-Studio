@@ -721,6 +721,31 @@ legend.sub { margin-top: 8px; }
   height: 13px;
 }
 
+/* Arrows of the rotation manipulator: turn the selection around an axis */
+.gizmo-rot-arrows {
+  position: absolute;
+  z-index: 45;
+  padding: 5px 6px;
+  background: rgba(18, 22, 30, 0.6);
+  backdrop-filter: blur(4px);
+  border: 1px solid color-mix(in srgb, var(--sodium) 45%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  user-select: none;
+}
+.gizmo-rot-arrows .gra-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 2px 0; }
+.gizmo-rot-arrows .gra-row b { font-size: 12px; width: 12px; text-align: center; }
+.gizmo-rot-arrows .gra-btn {
+  width: 28px; height: 24px; padding: 0; line-height: 1;
+  font-size: 17px; color: #fff; cursor: pointer;
+  background: rgba(40, 46, 58, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  touch-action: none;
+}
+.gizmo-rot-arrows .gra-btn:hover { border-color: var(--sodium); background: rgba(60, 68, 84, 0.95); }
+.gizmo-rot-arrows .gra-btn:active { background: var(--sodium); color: #111; }
+
 /* Sounds dialog (PlayerPlaySound) - fixed header and filters, only the list scrolls */
 #dlgSounds:not([open]) {
   display: none !important;
