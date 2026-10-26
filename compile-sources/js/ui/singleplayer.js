@@ -704,8 +704,14 @@ export async function warnMissing(st, needCleo = false, needPlus = false) {
   if (!missing.length) {
     // Nothing is missing: SAMPFUNCS.asi in the game folder stops the scripts of the story of the game (the missions and the saving pickups do not work)
     if (!st?.sampfuncs) return false;
-    const go = await showConfirm(t('{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?', '<b style="color:#f5c518">SAMPFUNCS.asi</b>'),
+    const asking = showConfirm(t('{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?', '<b style="color:#f5c518">SAMPFUNCS.asi</b>'),
       { title: t('SAMPFUNCS encontrado'), confirmText: t('Vou continuar'), cancelText: t('Vou desinstalar'), html: true });
+    // The text of Continue in red and of Uninstall in yellow (the colors go back when the dialog closes: the dialog is shared)
+    const okBtn = $('#confirmOkBtn'), noBtn = $('#confirmCancelBtn');
+    if (okBtn) { okBtn.style.color = '#ff4d4d'; }
+    if (noBtn) { noBtn.style.color = '#f5c518'; }
+    const go = await asking;
+    for (const b of [okBtn, noBtn]) if (b) b.style.color = '';
     if (!go) return true;
     await postJSON('/api/sp/sampfuncs_continue', {});
     return false;
