@@ -708,10 +708,13 @@ export async function warnMissing(st, needCleo = false, needPlus = false) {
       { title: t('SAMPFUNCS encontrado'), confirmText: t('Vou continuar'), cancelText: t('Vou desinstalar'), html: true });
     // The text of Continue in red and of Uninstall in yellow (the colors go back when the dialog closes: the dialog is shared)
     const okBtn = $('#confirmOkBtn'), noBtn = $('#confirmCancelBtn');
-    if (okBtn) { okBtn.style.color = '#ff4d4d'; okBtn.style.background = '#262b34'; okBtn.style.borderColor = '#ff4d4d'; okBtn.style.order = '1'; }
-    if (noBtn) { noBtn.style.color = '#f5c518'; noBtn.style.order = '2'; }
+    const okClass = okBtn?.className;
+    // Uninstall is the one marked (the highlighted button and the one with the focus), Continue is a plain button
+    if (okBtn) { okBtn.className = 'btn'; okBtn.style.color = '#ff4d4d'; okBtn.style.background = '#262b34'; okBtn.style.borderColor = '#6b3030'; okBtn.style.order = '1'; }
+    if (noBtn) { noBtn.style.color = '#f5c518'; noBtn.style.background = '#262b34'; noBtn.style.borderColor = '#f5c518'; noBtn.style.order = '2'; setTimeout(() => { okBtn?.blur(); noBtn.focus(); }, 60); }
     const go = await asking;
     for (const b of [okBtn, noBtn]) if (b) { b.style.color = ''; b.style.background = ''; b.style.borderColor = ''; b.style.order = ''; }
+    if (okBtn && okClass) okBtn.className = okClass;
     if (!go) return true;
     await postJSON('/api/sp/sampfuncs_continue', {});
     return false;
