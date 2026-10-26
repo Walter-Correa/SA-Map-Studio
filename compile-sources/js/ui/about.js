@@ -7,6 +7,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.32', date: '26/10/2026', items: [
+      'Every piece of the category now snaps to every other one, whatever the model (a loop to a road, a ramp to a box, a pipe to a road, a tube to a pipe): the pieces were only joined with their own group before. The closer the width of the two ends, the better the match, and the ends of the same kind come first.',
+      'Ramps can be made longer: besides the flat join (the piece keeps the attitude of the one it joins, as ramps back to back or a ramp and a box), a join that follows the slope is offered, with the piece tilted so the incline goes on. Which one is taken depends on where the piece is dragged: near the flat place or up the incline.',
+      'New in the category: the water slide pieces (19884 to 19892) and the round ramps (19633 to 19635, which can only be placed, they have no ends to join).',
+      'Test in the game: samp.exe is taken first from the GTA folder that was chosen in the editor; when it is not there, the SA-MP that is installed on the computer is used (registry of SA-MP, the list of installed programs and the usual folders).',
+    ],
+  },
+  {
     version: '4.1.31', date: '26/10/2026', items: [
       'The category Pistas, rampas e estradas now has all the roads, ramps, jumps, tunnels, bridges and pipes of SA-MP (the ones with ids from 18772 to 19000 and 19628, 19629, 19901), and the automatic snap works with them: roads and bridges (straight, bent, banked, sloped), the funbox ramps and boxes, the tunnel sections and every pipe (straight, bent, funnels, junctions, the rainbow ones). They only exist when SA-MP is installed; in Singleplayer they are mod objects.',
       'The ends of these pieces are read from the model itself, not from a table: the piece is seen from above, its outline is simplified and the straight edges between two sharp corners are the ends (so curved and sloped roads work), with the height of the surface at the end taken from the triangles; the ends of pipes are the round rims. The position of an end is then taken from the points of the model on it, so two roads join to the hundredth of a meter. Roads, ramps and boxes join with the same attitude (a ramp does not tilt the piece after it); pipes join in any direction.',

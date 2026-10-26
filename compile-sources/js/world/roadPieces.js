@@ -22,7 +22,7 @@ export const ROAD_PIPE_IDS = [
 ];
 // Roads, ramps, jumps, tunnels, bridges and loops of SA-MP (the end of each one is a cut across it): the surface of one continues in the next one
 export const ROAD_SAMP_IDS = [
-  ...range(18772, 18779), 18781, ...range(18783, 18807), 18830, 19628, 19629,
+  ...range(18772, 18779), 18781, ...range(18783, 18807), 18830, 19628, 19629, ...range(19633, 19635), ...range(19884, 19892),
 ];
 // The tunnel pieces among them: the floor is the lowest surface (the roof is above the road)
 export const ROAD_TUNNEL_IDS = [18772, 18773, 18774, 18775, 18776, 18777];

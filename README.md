@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.31-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.32-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -484,6 +484,12 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.32 — 26/10/2026
+- Every piece of the category now snaps to every other one, whatever the model (a loop to a road, a ramp to a box, a pipe to a road, a tube to a pipe): the pieces were only joined with their own group before. The closer the width of the two ends, the better the match, and the ends of the same kind come first.
+- Ramps can be made longer: besides the flat join (the piece keeps the attitude of the one it joins, as ramps back to back or a ramp and a box), a join that follows the slope is offered, with the piece tilted so the incline goes on. Which one is taken depends on where the piece is dragged: near the flat place or up the incline.
+- New in the category: the water slide pieces (19884 to 19892) and the round ramps (19633 to 19635, which can only be placed, they have no ends to join).
+- Test in the game: samp.exe is taken first from the GTA folder that was chosen in the editor; when it is not there, the SA-MP that is installed on the computer is used (registry of SA-MP, the list of installed programs and the usual folders).
 
 ### 4.1.31 — 26/10/2026
 - The category Pistas, rampas e estradas now has all the roads, ramps, jumps, tunnels, bridges and pipes of SA-MP (the ones with ids from 18772 to 19000 and 19628, 19629, 19901), and the automatic snap works with them: roads and bridges (straight, bent, banked, sloped), the funbox ramps and boxes, the tunnel sections and every pipe (straight, bent, funnels, junctions, the rainbow ones). They only exist when SA-MP is installed; in Singleplayer they are mod objects.

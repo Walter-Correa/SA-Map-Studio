@@ -467,9 +467,14 @@ export function computeEnds(root, kind, dbg = null, floorMode = false) {
     const f = nh.clone();
     const right = new THREE.Vector3().crossVectors(f, Z).normalize();
     const m = new THREE.Matrix4().makeBasis(right, f, Z);
+    // the same end with the slope of the surface (pitch and bank): to make a ramp longer the next piece is tilted like this
+    const N3 = new THREE.Vector3().addScaledVector(nh, -sf).addScaledVector(left, -sl).add(Z).normalize();
+    const f3 = nh.clone().addScaledVector(Z, sf).normalize();
+    const m3 = new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(f3, N3).normalize(), f3, N3);
     const pos = nh.clone().multiplyScalar(dh).addScaledVector(left, cl).addScaledVector(Z, zEnd);
     m.setPosition(pos);
-    return { m, width, height: 0, kind: 'surface', fz: 0, slope: sf, bank: sl };
+    m3.setPosition(pos);
+    return { m, m3, width, height: 0, kind: 'surface', fz: 0, slope: sf, bank: sl };
   }
 
   // ---- the rims of a pipe: the open edges of the model (an edge that belongs to one triangle only) joined in loops; each loop is a round end

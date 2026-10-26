@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.31"
+VERSION = "4.1.32"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -1440,8 +1440,64 @@ def detect_servers():
 
 
 def samp_client():
+    """The SA-MP client: first the one in the GTA folder the user chose; when it is not there, the one the computer has installed."""
     exe = resolve_ci(State.gta_path, "samp.exe") if State.gta_path else None
-    return exe if exe and os.path.isfile(exe) else None
+    if exe and os.path.isfile(exe):
+        return exe
+    return samp_installed_client()
+
+
+def samp_installed_client():
+    """samp.exe of the SA-MP installed on the computer (registry of SA-MP, the list of installed programs, the usual folders)."""
+    folders = []
+    if IS_WINDOWS:
+        try:
+            import winreg
+            keys = [
+                (winreg.HKEY_CURRENT_USER, r"Software\SAMP", "gta_sa_exe"),
+                (winreg.HKEY_LOCAL_MACHINE, r"Software\SAMP", "gta_sa_exe"),
+                (winreg.HKEY_LOCAL_MACHINE, r"Software\WOW6432Node\SAMP", "gta_sa_exe"),
+            ]
+            for root, path, name in keys:
+                try:
+                    with winreg.OpenKey(root, path) as k:
+                        val, _ = winreg.QueryValueEx(k, name)
+                        if val:
+                            folders.append(os.path.dirname(str(val)))
+                except OSError:
+                    pass
+            # the list of installed programs: SA-MP leaves its folder there
+            for root in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+                for path in (r"Software\Microsoft\Windows\CurrentVersion\Uninstall", r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"):
+                    try:
+                        with winreg.OpenKey(root, path) as base:
+                            for i in range(winreg.QueryInfoKey(base)[0]):
+                                try:
+                                    with winreg.OpenKey(base, winreg.EnumKey(base, i)) as app:
+                                        title = str(winreg.QueryValueEx(app, "DisplayName")[0])
+                                        if "sa-mp" in title.lower() or "san andreas multiplayer" in title.lower():
+                                            for val in ("InstallLocation", "DisplayIcon"):
+                                                try:
+                                                    v = str(winreg.QueryValueEx(app, val)[0]).strip('"')
+                                                    if v:
+                                                        folders.append(v if os.path.isdir(v) else os.path.dirname(v))
+                                                except OSError:
+                                                    pass
+                                except OSError:
+                                    pass
+                    except OSError:
+                        pass
+        except ImportError:
+            pass
+    for env in ("ProgramFiles(x86)", "ProgramFiles"):
+        base = os.environ.get(env)
+        if base:
+            folders += [os.path.join(base, "Rockstar Games", "GTA San Andreas"), os.path.join(base, "SA-MP"), os.path.join(base, "GTA San Andreas")]
+    for folder in folders:
+        exe = resolve_ci(folder, "samp.exe") if folder and os.path.isdir(folder) else None
+        if exe and os.path.isfile(exe):
+            return exe
+    return None
 
 
 def find_samapstudio_amx():
