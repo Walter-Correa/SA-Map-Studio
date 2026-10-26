@@ -7,29 +7,18 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.28', date: '26/10/2026', items: [
+      'The protectors that were put on exactly the same point when the place around the player could not be seen (a wall, a small room) now each have a place of their own: the angle and the distance behind the player change with the number of the protector, and the ones beyond 300 use their order in the script. Characters piled on one point are what brings the game down, so the 4.1.27 block that kept them out of interiors is gone: they follow the player into interiors again, each on its own place.',
+      'The protectors now go against anyone that has the player as the target of its attack (shooting at him, fighting him, running to him to attack), also when it does not hurt him (with a cheat that takes no damage nobody hurts him). It is read from the kill target of the tasks of the ped with CLEO+, which is now also asked for when the project has protectors.',
+      'The actions that put a stat of the player at its most or its least (fat, muscle, stamina, lung capacity, max health, respect, sex appeal) are now one action each: Change fat, Change muscle, Change stamina, Change lung capacity, Change max health, Change respect and Change sex appeal. With one selected, the settings below take the value to put, between the least and the most the game allows (0 to 1000, and 569 to 1000 for the max health); if nothing is changed the value is the most. Projects with the old Maximum and Minimum actions are converted (Maximum becomes 1000 and Minimum the least). The Maximum armour and Minimum armour actions were removed.',
+      'The radar icons of the project (and the radar points of the checkpoints) go away while the player is in an interior and come back when he leaves it, as the icons of the game do. The saves keep working: nothing is removed twice.',
+      'If SAMPFUNCS.asi is in the game folder, the editor warns after checking the missing tools: it freezes the scripts of the story of the game in Singleplayer (missions and saving points stop working). The buttons are I will continue (it is saved in the settings of the editor and it does not warn again) and I will uninstall (nothing is done until the file is removed). Installing the mod and starting the game are stopped while it is there.',
+      'Removed the diagnostic log (cleo/samsp_debug.txt and cleo/samsp_log.txt), the script that wrote it and the teleport log lines. They can be made again when needed.',
+    ],
+  },
+  {
     version: '4.1.27', date: '26/10/2026', items: [
       'Crash when the protectors follow the player into a house (it happened again after leaving the saving pickup): the dump shows the same fault of the camera of the game as before (the list of 15 characters near the camera written past its end). The protectors no longer teleport next to the player when he is inside a building (they wait outside); outside, the teleport is the same.',
-      'The log of why a mission does not start showed all 27 scripts of the story of the game with the wake up time stopped since the saved game was loaded (the mod scripts run). It happens with the mod and CLEO+ removed too, so it is not caused by them. The log (dg9) now also writes how many scripts and commands the game processed in the frame, to see whether the story scripts run at all.',
-    ],
-  },
-  {
-    version: '4.1.26', date: '26/10/2026', items: [
-      'Fourth log of why a mission does not start: the scripts SWEET (the trigger of the missions) and PSAVE1 (the saving pickups) are active and past their wake up time, but their wake up time never changes: they have not run once since the saved game was loaded (47 seconds and more), while the handle of the player is the same as the one in the main script ($3 = 1). So the story scripts of the game are not being processed, which also explains the saving pickup. The game processes its scripts from the first one in its list and stops at the first one that is not active. The log (dg8) now writes the whole list in order every ten seconds (name, whether it is active, how long until it wakes up and where it is) to find which one stops the others.',
-    ],
-  },
-  {
-    version: '4.1.25', date: '26/10/2026', items: [
-      'Third log of why a mission does not start. It showed the first Sweet mission (marker 462, progress variable $452 = 0, the right value for the first mission) with the player at 1.0 m on foot and the game saying yes to every condition. You also tried it without any mod, and the mission did not start there either, and the saving pickup of the house collected without opening the save menu. Reading the saved game (GTASAsf1.b) shows its script part normal: the scripts SWEET and PSAVE1 run, $409 is 0, the save pickups exist. The log (dg6 and dg7) now also writes where those two scripts are, whether they are asleep, and the handle of the player against the one the main script keeps in $3.',
-    ],
-  },
-  {
-    version: '4.1.24', date: '26/10/2026', items: [
-      'Second log of why a mission does not start: the player stood 14 seconds at 1.0 m from the marker 462 of the main script (the one of the SWEET missions), on foot, with the game saying yes to CAN_PLAYER_START_MISSION, no mission running and no cutscene, and the mission still did not start. The trigger also needs its own progress variable ($452 for that marker) to have the value of a mission (0 to 8), and the game has a limit of scripts. The log (dg5) now also writes the progress variables 448, 452, 453 and 456 and how many scripts are running.',
-    ],
-  },
-  {
-    version: '4.1.23', date: '26/10/2026', items: [
-      'The log of why a mission does not start shows the nearest mission marker of the game and the distance to it (dg4), read from the variables where the main script keeps the place of each marker. The first log showed that the mod was not the cause: the game said yes (CAN_PLAYER_START_MISSION true, no mission running, no cutscene, no wanted level) almost all the time, and only said no for a few seconds while the player had an attack task (aiming or fighting).',
     ],
   },
   {
@@ -37,13 +26,6 @@ const CHANGELOG = [
       'Fixed the crash of the Maximum muscle action (and the one of 4.1.2 with the CJ NPCs): the command that builds the body of the player again (BUILD_PLAYER_MODEL) takes the number of the player, 0, and it was given the handle of his character, which pointed to nothing. Found in a crash dump. Fat and muscle now show on the body at once, as with the cheats of the game, which also build the body again.',
       'Maximum respect and Maximum sex appeal now work like the cheats of the game (read in its code): the game computes both again all the time, and the cheats put a flag that makes the result 1000, so the actions put the same flag and the stats at the most (the respect only reached half of the bar because the total respect also depends on the missions and the other respect stats). Minimum takes the flag away and puts the stats at 0. The flags are not saved: after loading a game the natural value comes back.',
       'Maximum armour and Minimum armour: the Vigilante missions run INCREASE_PLAYER_MAX_ARMOUR 50 and then ADD_ARMOUR_TO_CHAR 150. The most armour the player can have is a byte of the game; the actions write it (150 or 100) and fill the armour up to it, so asking twice changes nothing.',
-      'The log of why a mission does not start is written at every half second (three lines: dg1, dg2 and dg3, with the place of the player and whether he is playing), not only when the game says no, because the log of the first try was empty (the game was saying yes). The file cleo/samsp_debug.txt only turns the log on; the lines go to cleo/samsp_log.txt.',
-    ],
-  },
-  {
-    version: '4.1.21', date: '26/10/2026', items: [
-      'Why a mission does not start: the main script of the game starts a mission when the player is on foot inside the marker, the flag of a mission running ($409) is 0 and the command CAN_PLAYER_START_MISSION is true (read in main.scm and in the code of the game). That command is false when a cutscene is running, the player is dead or arrested, he was knocked over, he is in an event response that does not end, his main task is not the one of walking on foot, he is attacking or aiming, or a script gave him a task. None of the scripts of the mod gives tasks to the player, so the cause was not found by reading the code.',
-      'New script (samsp_name_diag.cs, in the world folder) that finds the cause: if the file cleo/samsp_debug.txt exists in the game folder, every half second that CAN_PLAYER_START_MISSION is false (and when it changes) it writes two lines in cleo/samsp_log.txt (dg1 and dg2) with the cutscene flag, $409, the state of the player, his tasks, whether he is in a vehicle and his wanted level. Without that file it does nothing. It reads the memory of the game and is made for GTA San Andreas 1.0 US. Create the file, try to start the mission standing in its marker and send the log.',
     ],
   },
   {
@@ -117,7 +99,6 @@ const CHANGELOG = [
     version: '4.1.10', date: '26/10/2026', items: [
       'Teleports of the protectors: they were all put on exactly the same point, and the game cannot separate characters that are on the same point (the distance between them is zero), so they could get stuck there or crash the game. Each one now has a place of its own around the point, less than 2 meters apart, still grouped behind the player.',
       'A protector is only taken to the player when it is really not getting there: every 3 seconds the script checks how far it is, and one that came more than 3 meters closer since the last check is left alone. One in another area of the game (an interior) is still taken at once. Before, any protector that stayed far from the player for 3 to 8 seconds was taken, even if it was running toward him.',
-      'The scripts write a line in cleo/samsp_log.txt (in the game folder) every time a protector is taken to the player, as tp:time:npc:guard:why (why is stuck or area). The file is opened and closed each time so the line is there even if the game fails right after. Send it with the time of the crash to find what goes wrong.',
       'Hitting a NPC of the project with the car no longer brings stars: when the wanted level goes up while the player is in a moving car with a NPC of the project within 5 meters, the level is put back as it was. This can also cancel a real crime done at the same moment, near one of the NPCs. Not tested in the game.',
     ],
   },

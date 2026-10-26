@@ -15,7 +15,7 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
-import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, diagScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
+import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
 const NOT_OBJECTS = new Set(['cars', 'peds', 'weap', 'hier']);
@@ -118,7 +118,7 @@ export const usesCleo = (project) => project.vehicles.some(v => app.gd.models.ge
   || project.pickups?.length > 0 || project.actors?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0
   || project.objects.some(isMover) || worldSettings(project);
 // What stays in the world (objects, pickups, radar icons) is taken away by CLEO+ just before the game is saved: the saved games have nothing of the mod
-export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0 || project.objects.some(isMover);
+export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0 || project.objects.some(isMover) || (project.actors || []).some(n => n.role === 'guard');
 
 // A short fingerprint of what goes into the mod: the installed mod remembers it, to tell whether it is up to date
 export function projectHash(project) {
@@ -557,7 +557,6 @@ function categoryOf(path) {
     if (/_(npcs|followers)\d+\.cs$/.test(name)) return 'npcs';
     if (/_pickups\d+\.cs$/.test(name)) return 'pickups';
     if (/_checkpoints\d+\.cs$/.test(name)) return 'checkpoints';
-    if (/_diag\.cs$/.test(name)) return 'world';
     if (/_icons\d+\.cs$/.test(name)) return 'mapicons';
     if (/_world\.cs$/.test(name)) return 'world';
     if (/_movers\d+\.cs$/.test(name)) return 'objects';
@@ -660,9 +659,7 @@ async function buildFiles(project, say = () => {}) {
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
   if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());
-  // Why a mission does not start (it does nothing unless the file cleo/samsp_debug.txt exists in the game folder)
-  if (usesCleo(project)) files.set(`samsp_${base}_diag.cs`, diagScript());
-  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, blip: !!c.radarIcon })), () => 3, checkpointsScript);
+  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, blip: !!c.radarIcon })), () => 3, checkpointsScript, 21);
   const w = project.world || {};
   putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);
   if (worldSettings(project)) {
@@ -704,7 +701,15 @@ export async function warnMissing(st, needCleo = false, needPlus = false) {
   };
   const lacking = new Set([...(st?.missing || []), ...(needCleo && st && !st.hasCleo ? ['cleo'] : []), ...(needPlus && st && st.hasCleo && !st.hasCleoPlus ? ['cleoplus'] : [])]);
   const missing = Object.keys(tools).filter(k => lacking.has(k)); // in the order of the list above
-  if (!missing.length) return false;
+  if (!missing.length) {
+    // Nothing is missing: SAMPFUNCS.asi in the game folder stops the scripts of the story of the game (the missions and the saving pickups do not work)
+    if (!st?.sampfuncs) return false;
+    const go = await showConfirm(t('O SAMPFUNCS.asi está na pasta do jogo. Ele trava os scripts da história do jogo no modo Singleplayer (missões e pontos de salvamento deixam de funcionar). Remova o arquivo SAMPFUNCS.asi da pasta do jogo para o jogo funcionar normalmente.'),
+      { title: t('SAMPFUNCS encontrado'), confirmText: t('Vou continuar'), cancelText: t('Vou desinstalar') });
+    if (!go) return true;
+    await postJSON('/api/sp/sampfuncs_continue', {});
+    return false;
+  }
   const rows = missing.map((k) => {
     const x = tools[k];
     const name = x.url ? `<a href="${x.url}" data-open-url="${x.url}" style="color:#f5a623; font-weight:700;">${x.name}</a>` : `<b>${x.name}</b>`;

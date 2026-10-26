@@ -1,6 +1,6 @@
 // Singleplayer inspector parts: what a NPC carries and does, and what happens when a checkpoint or a pickup is used.
 import { app, $, esc, toast } from './common.js';
-import { makeAction } from '../editor/project.js';
+import { makeAction, STAT_RANGE } from '../editor/project.js';
 import { NPC_WEAPONS, WEAPONS, optionsHtml } from '../world/spWeapons.js';
 
 const isSp = () => app.project?.mode === 'sp';
@@ -60,10 +60,8 @@ const TYPES = [
   ['teleport', 'Teleportar o jogador'], ['vehicle', 'Dar um veículo'], ['repair', 'Consertar o veículo do jogador'], ['nitro', 'Instalar nitro no veículo'],
   ['jetpack', 'Dar um jetpack'], ['save', 'Salvar o jogo'], ['skin', 'Trocar a skin do jogador'], ['weather', 'Mudar o clima'], ['time', 'Mudar a hora'],
   ['explosion', 'Explosão (armadilha)'],
-  ['fatMax', 'Máximo de gordura'], ['fatMin', 'Mínimo de gordura'], ['muscleMax', 'Máximo de músculos'], ['muscleMin', 'Mínimo de músculos'],
-  ['staminaMax', 'Máximo de stamina'], ['staminaMin', 'Mínimo de stamina'], ['lungMax', 'Máximo de fôlego'], ['lungMin', 'Mínimo de fôlego'],
-  ['healthMax', 'Máximo de saúde'], ['healthMin', 'Mínimo de saúde'], ['respectMax', 'Máximo de respeito'], ['respectMin', 'Mínimo de respeito'],
-  ['armourMax', 'Máximo de colete'], ['armourMin', 'Mínimo de colete'], ['sexMax', 'Máximo de sex appeal'], ['sexMin', 'Mínimo de sex appeal'],
+  ['statFat', 'Alterar gordura'], ['statMuscle', 'Alterar músculos'], ['statStamina', 'Alterar stamina'], ['statLung', 'Alterar fôlego'],
+  ['statMaxHealth', 'Alterar saúde máxima'], ['statRespect', 'Alterar respeito'], ['statSex', 'Alterar sex appeal'],
   ['hungerOff', 'Remover a fome'],
 ];
 
@@ -89,6 +87,7 @@ export function actionSection(item) {
   const t = act.type;
   let params = '';
   if (t === 'health' || t === 'armour') params = field('actAmount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
+  else if (STAT_RANGE[t] || t.startsWith('stat')) params = field('actStat', STAT_RANGE[t] ? 'Valor (569 a 1000)' : 'Valor (0 a 1000)', act.statValue, { min: (STAT_RANGE[t] || [0])[0], max: 1000, step: 1 });
   else if (t === 'money') params = field('actAmount', 'Valor (US$)', act.amount, { min: 1, step: 100 });
   else if (t === 'weapon') params = `<label class="field">Arma<select id="actWeapon">${WEAPONS.map(w => `<option value="${w.id}" ${w.id === act.weapon ? 'selected' : ''}>${w.name}</option>`).join('')}</select></label>`
     + field('actAmmo', 'Munição', act.ammo, { min: 1, max: 99999, step: 10 });
@@ -125,13 +124,13 @@ export function bindAction(item, project, rerender) {
   const type = $('#actType');
   if (type) type.onchange = () => {
     const v = type.value;
-    save(() => ({ type: v }), true);
+    save(() => ({ type: v, statValue: 1000 }), true);                                          // a stat starts at the most
   };
   const bindNum = (id, key, int = true) => {
     const el = $('#' + id);
     if (el) el.onchange = () => { const v = num(id); if (Number.isFinite(v)) save(() => ({ [key]: int ? Math.round(v) : v })); };
   };
-  bindNum('actAmount', 'amount'); bindNum('actAmmo', 'ammo'); bindNum('actStars', 'stars'); bindNum('actModel', 'model');
+  bindNum('actAmount', 'amount'); bindNum('actStat', 'statValue'); bindNum('actAmmo', 'ammo'); bindNum('actStars', 'stars'); bindNum('actModel', 'model');
   bindNum('actWeather', 'weather'); bindNum('actHour', 'hour'); bindNum('actMinute', 'minute'); bindNum('actPrice', 'price');
   bindNum('actX', 'x', false); bindNum('actY', 'y', false); bindNum('actZ', 'z', false); bindNum('actRot', 'rot', false);
   for (const [id, key] of [['actWeapon', 'weapon'], ['actExplosion', 'explosion']]) {

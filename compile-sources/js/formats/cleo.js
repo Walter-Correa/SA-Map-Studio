@@ -9,8 +9,6 @@ export const lv = (i) => ({ t: 3, v: i });
 export const ref = (name) => ({ ref: name });
 // A text: up to 7 letters is the game's 8-byte text (type 9); a longer one is CLEO's own text (type 14: length, then the letters)
 export const str = (s) => ({ s: String(s) });
-// The end of the arguments of an opcode that takes a variable number of them (0AD9)
-export const endArgs = { end: true };
 // A text for the game's own opcodes (animations): up to 7 letters is type 9 (8 bytes), up to 15 is type 15 (16 bytes). Type 14 is only understood by CLEO's opcodes
 export const strn = (s) => ({ s: String(s), native: true });
 
@@ -115,162 +113,6 @@ export function taskGuardScript() {
   a.op(0x00D6, int(0)).op(0x0019, lv(2), int(TASK_PLACES - 1)).op(0x004D, ref('next'));
   a.op(0x000A, lv(0), int(1));
   a.op(0x0AB3, int(TASK_FREE), lv(0));
-  a.jump('loop');
-  return a.build();
-}
-
-// A script that watches why a mission can not start (only while the file cleo/samsp_debug.txt exists, and only for the game version of SA-MP, 1.0 US).
-// The game starts a mission when the player is on foot inside the marker AND $409 (the flag of a mission running) is 0 AND the command
-// CAN_PLAYER_START_MISSION is true. That command is false when: a cutscene is running; the player is dead or arrested; the player has a physical
-// response (he was knocked over), an event response that does not end, or a main task that is not the one of walking on foot; he is attacking or
-// aiming (the secondary task 0); or his event group holds an EVENT_SCRIPT_COMMAND (a script gave him a task). Every half second that it is false
-// every half second, three lines are written in cleo/samsp_log.txt with those values (whether the command says yes or no), the place of the player and
-// whether he is playing: the file cleo/samsp_debug.txt only turns the log on, the log is cleo/samsp_log.txt
-// The first variable of the place of each mission marker in main.scm (read from the script of the game)
-const MISSION_TRIGGERS = [459, 462, 465, 468, 471, 474, 477, 494, 547, 550, 553, 556, 559, 574, 577, 601, 604, 610, 616, 633, 666, 1742, 1745, 2352, 2367, 2370, 2373];
-export function diagScript() {
-  const a = new Asm();
-  a.op(0x0000);
-  waitPlayer(a);
-  a.label('loop').op(0x0001, int(500));
-  a.op(0x00D6, int(0)).op(0x0AAB, str('cleo\\samsp_debug.txt')).op(0x004D, ref('loop'));
-  a.op(0x0006, lv(0), int(0));
-  a.op(0x00D6, int(0)).op(0x03EE, int(0)).op(0x004D, ref('nc'));
-  a.op(0x0006, lv(0), int(1));
-  a.label('nc');
-  a.op(0x0A8D, int(0xA49960 + 409 * 4), int(4), int(0), lv(1));                                  // $409
-  a.op(0x0A8D, int(0x96A8B0), int(1), int(0), lv(2));                                            // a cutscene is running
-  a.op(0x0A96, lv(PLAYER), lv(3));                                                               // the ped of the player
-  a.op(0x00D6, int(0)).op(0x0039, lv(3), int(0)).op(0x004D, ref('p1'));
-  a.jump('loop');
-  a.label('p1');
-  a.op(0x0A8E, lv(3), int(0x530), lv(4));
-  a.op(0x0A8D, lv(4), int(4), int(0), lv(4));                                                    // state of the ped
-  a.op(0x0A8E, lv(3), int(0x47C), lv(5));
-  a.op(0x0A8D, lv(5), int(4), int(0), lv(5));                                                    // its intelligence
-  a.op(0x00D6, int(0)).op(0x0039, lv(5), int(0)).op(0x004D, ref('p2'));
-  a.jump('loop');
-  a.label('p2');
-  [[0x04, 6], [0x0C, 7], [0x10, 8], [0x18, 9]].forEach(([o, v]) => {                             // the tasks: physical, event response, main, attack
-    a.op(0x0A8E, lv(5), int(o), lv(10));
-    a.op(0x0A8D, lv(10), int(4), int(0), lv(v));
-  });
-  a.op(0x0006, lv(10), int(0));
-  a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('nv'));
-  a.op(0x0006, lv(10), int(1));
-  a.label('nv');
-  a.op(0x01C0, int(0), lv(11));
-  a.op(0x0006, lv(12), int(0));
-  a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref('np'));
-  a.op(0x0006, lv(12), int(1));
-  a.label('np');
-  a.op(0x00A0, lv(PLAYER), lv(15), lv(16), lv(17));
-  a.op(0x01BD, lv(13));
-  a.op(0x00D6, int(0)).op(0x0A9A, str(LOG_FILE), str('a'), lv(14)).op(0x004D, ref('loop'));
-  a.op(0x0AD9, lv(14), str('dg1:%d:can=%d:onmission=%d:cutscene=%d:state=%d\r\n'), lv(13), lv(0), lv(1), lv(2), lv(4), endArgs);
-  a.op(0x0AD9, lv(14), str('dg2:physical=%x:response=%x:main=%x:attack=%x:invehicle=%d:wanted=%d\r\n'), lv(6), lv(7), lv(8), lv(9), lv(10), lv(11), endArgs);
-  a.op(0x0AD9, lv(14), str('dg3:playing=%d:x=%.1f:y=%.1f:z=%.1f\r\n'), lv(12), lv(15), lv(16), lv(17), endArgs);
-  // The mission markers of the game: the main script keeps the place of each one in three variables (x, y, z). The nearest one to the player is
-  // written (the number of its first variable and the distance): the game starts the mission when the player is on foot within 1.2 m (x and y)
-  // and 2 m (z) of that place
-  a.op(0x0007, lv(20), flt(99999));
-  a.op(0x0006, lv(21), int(0));
-  MISSION_TRIGGERS.forEach((v) => {
-    [0, 1, 2].forEach((k) => a.op(0x0A8D, int(0xA49960 + (v + k) * 4), int(4), int(0), lv(22 + k)));
-    a.op(0x050A, lv(15), lv(16), lv(17), lv(22), lv(23), lv(24), lv(25));
-    a.op(0x00D6, int(0)).op(0x0025, lv(20), lv(25)).op(0x004D, ref('tn' + v));
-    a.op(0x0086, lv(20), lv(25));
-    a.op(0x0006, lv(21), int(v));
-    a.label('tn' + v);
-  });
-  a.op(0x0AD9, lv(14), str('dg4:nearest_marker_var=%d:distance=%.1f\r\n'), lv(21), lv(20), endArgs);
-  // The progress of the stories that the markers depend on (the variables that the triggers of the main script compare) and how many scripts run:
-  // a trigger only starts its mission when its variable has the value of that mission, and the game has a limit of scripts
-  [448, 452, 453, 456].forEach((v, k) => a.op(0x0A8D, int(0xA49960 + v * 4), int(4), int(0), lv(26 + k)));
-  a.op(0x0A8D, int(0xA8B42C), int(4), int(0), lv(30));                                           // the first of the scripts that run
-  a.op(0x0006, lv(25), int(0));
-  a.op(0x0006, lv(18), int(0));                                                                  // the script SWEET (the trigger of the missions) if it runs
-  a.op(0x0006, lv(19), int(0));                                                                  // the script PSAVE1 (the saving pickups) if it runs
-  a.label('sc');
-  a.op(0x00D6, int(0)).op(0x0039, lv(30), int(0)).op(0x004D, ref('sd'));
-  a.jump('se');
-  a.label('sd');
-  a.op(0x0A8E, lv(30), int(8), lv(20));
-  a.op(0x0A8D, lv(20), int(4), int(0), lv(20));                                                  // the first four letters of its name
-  a.op(0x00D6, int(0)).op(0x0039, lv(20), int(0x65657773)).op(0x004D, ref('s1'));
-  a.op(0x0085, lv(18), lv(30));
-  a.label('s1');
-  a.op(0x00D6, int(0)).op(0x0039, lv(20), int(0x76617370)).op(0x004D, ref('s2'));
-  a.op(0x0085, lv(19), lv(30));
-  a.label('s2');
-  a.op(0x000A, lv(25), int(1));
-  a.op(0x0A8D, lv(30), int(4), int(0), lv(30));                                                  // the next one (the first field of each script)
-  a.op(0x00D6, int(0)).op(0x0019, lv(25), int(300)).op(0x004D, ref('sc'));
-  a.label('se');
-  a.op(0x0AD9, lv(14), str('dg5:var448=%d:var452=%d:var453=%d:var456=%d:scripts_running=%d\r\n'), lv(26), lv(27), lv(28), lv(29), lv(25), endArgs);
-  // Where the scripts SWEET and PSAVE1 are: the place in the main script (the trigger waits at 0xF29A), how long until it wakes up (negative: it is awake) and
-  // whether it is active. -1 for the place: the script does not run
-  [[18, 'sweet'], [19, 'psave1']].forEach(([ptr, tag]) => {
-    a.op(0x00D6, int(0)).op(0x0039, lv(ptr), int(0)).op(0x004D, ref(tag + 'f'));
-    a.op(0x0006, lv(20), int(-1)).op(0x0006, lv(21), int(0)).op(0x0006, lv(22), int(0));
-    a.jump(tag + 'g');
-    a.label(tag + 'f');
-    a.op(0x0A8E, lv(ptr), int(0x14), lv(23));
-    a.op(0x0A8D, lv(23), int(4), int(0), lv(20));
-    a.op(0x0A8F, lv(20), int(0xA49960), lv(20));
-    a.op(0x0A8E, lv(ptr), int(0xCC), lv(23));
-    a.op(0x0A8D, lv(23), int(4), int(0), lv(21));
-    a.op(0x0A8F, lv(21), lv(13), lv(21));
-    a.op(0x0A8E, lv(ptr), int(0xC4), lv(23));
-    a.op(0x0A8D, lv(23), int(1), int(0), lv(22));
-    a.label(tag + 'g');
-    a.op(0x0AD9, lv(14), str('dg6:' + tag + ':place=%x:wakes_in=%d:active=%d\r\n'), lv(20), lv(21), lv(22), endArgs);
-  });
-  // The handle of the character of the player as the game gives it now, and the one the main script keeps in $3 (the triggers use $3: if they
-  // differ after loading a saved game, the triggers never see the player)
-  a.op(0x01F5, int(0), lv(20));
-  a.op(0x0A8D, int(0xA49960 + 3 * 4), int(4), int(0), lv(21));
-  a.op(0x0AD9, lv(14), str('dg7:handle_now=%d:var3=%d\r\n'), lv(20), lv(21), endArgs);
-  // The game counts the scripts it processed (0xA447F8) and the commands it ran (0xA447F4) since the start of this frame: our script runs after the
-  // scripts of the game, so the numbers say whether those ran in this frame (27 scripts and hundreds of commands, or almost nothing)
-  a.op(0x0A8D, int(0xA447F8), int(2), int(0), lv(20));
-  a.op(0x0A8D, int(0xA447F4), int(2), int(0), lv(21));
-  a.op(0x0AD9, lv(14), str('dg9:scripts_processed_this_frame=%d:commands_this_frame=%d\r\n'), lv(20), lv(21), endArgs);
-  // Every 20 cycles (10 seconds): all the scripts that run, in the order the game keeps them. The game processes them from the first one and stops at
-  // the first one that is not active, so the ones after it do not run at all: dg8 gives the number in the list, the name (the first eight letters, as
-  // two numbers), whether it is active, how long until it wakes up (negative: it should be running) and where it is
-  a.op(0x0AB4, int(1009), lv(20));
-  a.op(0x000A, lv(20), int(1));
-  a.op(0x0AB3, int(1009), lv(20));
-  a.op(0x0085, lv(21), lv(20));
-  a.op(0x0016, lv(21), int(20));
-  a.op(0x0012, lv(21), int(20));
-  a.op(0x0A8F, lv(20), lv(21), lv(22));
-  a.op(0x00D6, int(0)).op(0x0039, lv(22), int(0)).op(0x004D, ref('nodump'));
-  a.op(0x0A8D, int(0xA8B42C), int(4), int(0), lv(30));
-  a.op(0x0006, lv(25), int(0));
-  a.label('dl');
-  a.op(0x00D6, int(0)).op(0x0039, lv(30), int(0)).op(0x004D, ref('dm'));
-  a.jump('nodump');
-  a.label('dm');
-  a.op(0x0A8E, lv(30), int(8), lv(20));
-  a.op(0x0A8D, lv(20), int(4), int(0), lv(26));
-  a.op(0x0A8E, lv(30), int(12), lv(20));
-  a.op(0x0A8D, lv(20), int(4), int(0), lv(27));
-  a.op(0x0A8E, lv(30), int(0xC4), lv(20));
-  a.op(0x0A8D, lv(20), int(1), int(0), lv(28));
-  a.op(0x0A8E, lv(30), int(0xCC), lv(20));
-  a.op(0x0A8D, lv(20), int(4), int(0), lv(29));
-  a.op(0x0A8F, lv(29), lv(13), lv(29));
-  a.op(0x0A8E, lv(30), int(0x14), lv(20));
-  a.op(0x0A8D, lv(20), int(4), int(0), lv(21));
-  a.op(0x0A8F, lv(21), int(0xA49960), lv(21));
-  a.op(0x0AD9, lv(14), str('dg8:n=%d:name=%x_%x:active=%d:wakes_in=%d:place=%x\r\n'), lv(25), lv(26), lv(27), lv(28), lv(29), lv(21), endArgs);
-  a.op(0x0A8D, lv(30), int(4), int(0), lv(30));
-  a.op(0x000A, lv(25), int(1));
-  a.op(0x00D6, int(0)).op(0x0019, lv(25), int(120)).op(0x004D, ref('dl'));
-  a.label('nodump');
-  a.op(0x0A9B, lv(14));
   a.jump('loop');
   return a.build();
 }
@@ -423,28 +265,13 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
     default: {
       const st = STAT_ACTIONS[act.type];
       if (st) {
-        for (const id of [].concat(st[0])) {
-          if (st[2] === 'f') a.op(0x062A, int(id), flt(st[1])); else a.op(0x0629, int(id), int(st[1]));
+        // The value chosen (the most by default), between the least and the most the game allows for that stat
+        const v = Math.max(st.min, Math.min(1000, Math.round(Number.isFinite(+act.statValue) ? +act.statValue : 1000)));
+        for (const id of st.ids) {
+          if (st.kind === 'f') a.op(0x062A, int(id), flt(v)); else a.op(0x0629, int(id), int(v));
         }
-        if (st[4]) a.op(0x0A8C, int(st[4]), int(1), int(st[5]), int(0));                           // the flag of the cheat of the game
-        if (st[3]) a.op(0x070D, int(0));                                                           // the body is built again with the new fat or muscle (the number of the player, not the character)
-      } else if (act.type === 'armourMax' || act.type === 'armourMin') {
-        // How much armour the player can have: 100 at the start of the game and 150 after the Vigilante missions reach level 12 (the game's own script
-        // raises it with INCREASE_PLAYER_MAX_ARMOUR, which also fills the armour). Maximum: 150. Minimum: back to the 100 of the start of the game
-        // The mission does INCREASE_PLAYER_MAX_ARMOUR 50 and ADD_ARMOUR_TO_CHAR 150: the byte at 0xB7CEE8 (offset 0x150 of the player) is the most armour
-        // he can have; it is written with the value wanted so asking again changes nothing, and the armour is filled up to it
-        const goal = act.type === 'armourMax' ? 150 : 100;
-        a.op(0x0A8C, int(0xB7CEE8), int(1), int(goal), int(0));
-        if (goal === 150) {
-          a.op(0x035F, lv(PLAYER), int(150));
-        } else {
-          a.op(0x04DD, lv(PLAYER), lv(T0));                                                        // the armour he has: no more than 100 now
-          a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(100)).op(0x004D, ref(u('ae')));
-          a.op(0x0A96, lv(PLAYER), lv(T1));
-          a.op(0x0A8E, lv(T1), int(0x548), lv(T1));
-          a.op(0x0A8C, lv(T1), int(4), flt(100), int(0));
-          a.label(u('ae'));
-        }
+        if (st.flag) a.op(0x0A8C, int(st.flag), int(1), int(v >= 1000 ? 1 : 0), int(0));          // the flag of the cheat of the game (only at the most)
+        if (st.build) a.op(0x070D, int(0));                                                        // the body is built again with the new fat or muscle (the number of the player, not the character)
       }
       break;                                                                                     // none, message: only the text
     }
@@ -465,23 +292,21 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
   }
 }
 
-// The stats of the player that an action can put at the most or at the least (the id of the stat, the value, whether it is a float or an integer stat,
-// and whether the look of the player has to be built again). The values are the ones the game itself allows: fat, stamina, muscle, lung capacity and
-// max health are capped at 1000 by the game (it clamps them to 1000 when they grow); the least is 0, except the max health, which is 569 at the start
-// of a new game (100 points of health; less than that would leave the player with less than the bar of a new game, and 0 would kill him).
-// The respect and the sex appeal are not set by writing the stat: the game computes both again all the time (the total respect from the respect, the
-// girlfriend, clothes and fitness respect and the respect of the missions; the sex appeal from the clothes and the like) and the cheats for them (maximum
-// respect, maximum sex appeal) work with a flag of the game that makes the computed value 1000 (read in the code of the game: the bytes at 0x96917F and
-// 0x969180). The actions do the same: they put the flag and the stats at the most (1000), or take the flag away and the stats at 0. The flags are not
-// saved: after loading a game the natural value comes back
-// Also: sex appeal is a float stat capped at 1000 like the others (0 to 1000); the hunger is the Energy stat (165, integer): the game keeps it from 0 to
-// 1000 and what passes 1000 turns into fat, so it is put at exactly 1000 (fed)
+// The stats of the player that an action can change: the id(s) of the stat, whether it is a float or an integer stat, the least value the game allows
+// (and 1000 the most), whether the look of the player has to be built again and, for respect and sex appeal, the flag of the cheat of the game.
+// Fat, stamina, muscle, lung capacity and max health are capped at 1000 by the game (it clamps them to 1000 when they grow); the least is 0, except the
+// max health, which is 569 at the start of a new game (100 points of health; less than that would leave the player with less than the bar of a new game,
+// and 0 would kill him). The respect and the sex appeal are not set by writing the stat only: the game computes both again all the time (the total
+// respect from the respect, the girlfriend, clothes and fitness respect and the respect of the missions; the sex appeal from the clothes and the like)
+// and the cheats for them (maximum respect, maximum sex appeal) work with a flag of the game that makes the computed value 1000 (read in the code of the
+// game: the bytes at 0x96917F and 0x969180). The action puts the flag when the value is the most, and takes it away otherwise. The flags are not saved:
+// after loading a game the natural value comes back
+// Also: the hunger is the Energy stat (165, integer): the game keeps it from 0 to 1000 and what passes 1000 turns into fat, so it is put at exactly 1000
 const STAT_ACTIONS = {
-  fatMax: [21, 1000, 'f', true], fatMin: [21, 0, 'f', true], muscleMax: [23, 1000, 'f', true], muscleMin: [23, 0, 'f', true],
-  staminaMax: [22, 1000, 'f', false], staminaMin: [22, 0, 'f', false], lungMax: [225, 1000, 'i', false], lungMin: [225, 0, 'i', false],
-  healthMax: [24, 1000, 'f', false], healthMin: [24, 569, 'f', false],
-  respectMax: [[68, 65, 66, 67], 1000, 'f', false, 0x96917F, 1], respectMin: [[68, 65, 66, 67], 0, 'f', false, 0x96917F, 0],
-  sexMax: [25, 1000, 'f', false, 0x969180, 1], sexMin: [25, 0, 'f', false, 0x969180, 0], hungerOff: [165, 1000, 'i', false],
+  statFat: { ids: [21], kind: 'f', min: 0, build: true }, statMuscle: { ids: [23], kind: 'f', min: 0, build: true },
+  statStamina: { ids: [22], kind: 'f', min: 0 }, statLung: { ids: [225], kind: 'i', min: 0 }, statMaxHealth: { ids: [24], kind: 'f', min: 569 },
+  statRespect: { ids: [68, 65, 66, 67], kind: 'f', min: 0, flag: 0x96917F }, statSex: { ids: [25], kind: 'f', min: 0, flag: 0x969180 },
+  hungerOff: { ids: [165], kind: 'i', min: 1000 },
 };
 
 // pickups: { model, type, x, y, z, action }. One with an action keeps the pickup, and gives it back some seconds after it was taken
@@ -542,9 +367,46 @@ export function checkpointsScript(items) {
       a.op(0x018B, lv(e.base + 1), int(2));
     }
   });
+  const HID = items.length * 3;                                                                  // 1 while the radar points are away (the player is in an interior)
+  a.op(0x0006, lv(HID), int(0));
   saveGuard(a);
   a.label('loop');
   a.op(0x0001, int(200));
+  if (items.some(e => e.blip)) {
+    // The icons of the game never show inside an interior: the points on the radar go when the player gets into one and come back when he is out
+    a.op(0x09E8, lv(PLAYER), lv(T0));
+    a.op(0x00D6, int(0)).op(0x0039, lv(T0), int(0)).op(0x004D, ref('bi'));
+    a.op(0x00D6, int(0)).op(0x0039, lv(HID), int(1)).op(0x004D, ref('bd'));
+    items.forEach((e) => {
+      if (!e.blip) return;
+      a.op(0x00D6, int(0)).op(0x0039, lv(e.base), int(3)).op(0x004D, ref('bq' + e.base));
+      a.jump('br' + e.base);
+      a.label('bq' + e.base);
+      a.op(0x018A, flt(e.x), flt(e.y), flt(e.z), lv(e.base + 1));
+      a.op(0x018B, lv(e.base + 1), int(2));
+      a.label('br' + e.base);
+    });
+    a.op(0x0006, lv(HID), int(0)).op(0x0006, lv(FLAG), int(0));
+    a.jump('bd');
+    a.label('bi');
+    a.op(0x00D6, int(0)).op(0x0039, lv(HID), int(1)).op(0x004D, ref('bn'));
+    a.jump('bh');
+    a.label('bn');
+    a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('bg'));
+    a.jump('bh');
+    a.label('bg');
+    items.forEach((e) => {
+      if (!e.blip) return;
+      a.op(0x00D6, int(0)).op(0x0039, lv(e.base), int(3)).op(0x004D, ref('bs' + e.base));
+      a.jump('bt' + e.base);
+      a.label('bs' + e.base);
+      a.op(0x0164, lv(e.base + 1));
+      a.label('bt' + e.base);
+    });
+    a.label('bh');
+    a.op(0x0006, lv(HID), int(1)).op(0x0006, lv(FLAG), int(0));
+    a.label('bd');
+  }
   // A save was made: the points on the radar come back (the ones of checkpoints used up for good stay away)
   a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('fl'));
   items.forEach((e) => {
@@ -611,7 +473,13 @@ export function checkpointsScript(items) {
     a.op(0x00D6, int(0)).op(0x0039, lv(base), int(3)).op(0x004D, ref('sa' + i));
     a.jump('sk' + i);                                                                            // used up for good: nothing is left
     a.label('sa' + i);
-    if (e.blip) a.op(0x0164, lv(base + 1));
+    if (e.blip) {
+      a.op(0x00D6, int(0)).op(0x0039, lv(HID), int(1)).op(0x004D, ref('sh' + i));
+      a.jump('sj' + i);                                                                          // already away
+      a.label('sh' + i);
+      a.op(0x0164, lv(base + 1));
+      a.label('sj' + i);
+    }
     a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('sb' + i));
     a.op(0x03BD, lv(base + 2));
     a.op(0x0006, lv(base), int(0));
@@ -635,14 +503,37 @@ export function blipsScript(items) {
   waitPlayer(a);
   const make = () => items.forEach((b, i) => a.op(0x02A8, flt(b.x), flt(b.y), flt(b.z), int(b.sprite), lv(i)));
   make();
+  a.op(0x0006, lv(T1), int(0));                                                                  // 1 while the icons are away because the player is in an interior
   saveGuard(a);
+  // The icons of the game never show inside an interior: they go when the player gets into one (area other than 0) and come back when he is out
   a.label('loop').op(0x0001, int(500));
-  a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('loop'));
+  a.op(0x09E8, lv(PLAYER), lv(T0));
+  a.op(0x00D6, int(0)).op(0x0039, lv(T0), int(0)).op(0x004D, ref('in'));
+  a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('o1'));
+  a.jump('mk');
+  a.label('o1');
+  a.op(0x00D6, int(0)).op(0x0039, lv(T1), int(1)).op(0x004D, ref('loop'));
+  a.label('mk');
   make();
-  a.op(0x0006, lv(FLAG), int(0));
+  a.op(0x0006, lv(T1), int(0)).op(0x0006, lv(FLAG), int(0));
+  a.jump('loop');
+  a.label('in');
+  a.op(0x00D6, int(0)).op(0x0039, lv(T1), int(1)).op(0x004D, ref('i1'));
+  a.jump('i2');
+  a.label('i1');
+  a.op(0x00D6, int(0)).op(0x0039, lv(FLAG), int(1)).op(0x004D, ref('i3'));
+  a.jump('i2');
+  a.label('i3');
+  items.forEach((b, i) => a.op(0x0164, lv(i)));                                                  // (a save already took them away when the flag is 1)
+  a.label('i2');
+  a.op(0x0006, lv(T1), int(1)).op(0x0006, lv(FLAG), int(0));
   a.jump('loop');
   a.label('sv');
+  a.op(0x00D6, int(0)).op(0x0039, lv(T1), int(1)).op(0x004D, ref('sw'));
+  a.jump('sx');
+  a.label('sw');
   items.forEach((b, i) => a.op(0x0164, lv(i)));
+  a.label('sx');
   a.op(0x0006, lv(FLAG), int(1));
   a.op(0x0ED0);
   return a.build();
@@ -659,7 +550,6 @@ export const ACTORS_BUDGET = 20;
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
 export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 6 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
-const LOG_FILE = 'cleo\\samsp_log.txt'; // what the scripts write about the teleports (to find what goes wrong when the game fails)
 // The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
 // brings no stars (the civilians, type 4, do)
 const NPC_TYPE = 16;
@@ -728,17 +618,10 @@ export function actorsScript(items) {
     manage: (a, e, i, base) => {
       const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, tt = base + 4, pd = base + 5, done = 'n' + i;
       const travel = e.role === 'guard' && !!e.follow;
-      // One line in the log file (the file is opened and closed each time, so the line is there even if the game fails right after)
-      const logTp = (why) => {
-        a.op(0x01BD, lv(T8));
-        a.op(0x00D6, int(0)).op(0x0A9A, str(LOG_FILE), str('a'), lv(T9)).op(0x004D, ref(L('lg' + why)));
-        a.op(0x0AD9, lv(T9), str('tp:%d:' + i + ':' + e.gid + ':' + why + '\r\n'), lv(T8), endArgs);
-        a.op(0x0A9B, lv(T9));
-        a.label(L('lg' + why));
-      };
       // goes to where the player is, running (6) or sprinting (7): TASK_GOTO_CHAR has no speed, so this one is used (the player's coordinates are in T1..T3)
       // Each protector has its own place around the player (a ring of 5 m or more, by its number), so they never pile up on the same point
-      const gnum = Math.max(0, e.gid | 0), ring = 5 + 2 * Math.floor(gnum / 10), ang = gnum * 0.6283;
+      // (more than 300 protectors have no number of their own: the one in the list of the script is used, so two never share the same place)
+      const gnum = e.gid >= 0 ? e.gid : 300 + i, ring = 5 + 2 * Math.floor(gnum / 10), ang = gnum * 0.6283;
       const sdx = +(ring * Math.cos(ang)).toFixed(2), sdy = +(ring * Math.sin(ang)).toFixed(2);
       const slot = () => a.op(0x04C4, lv(PLAYER), flt(sdx), flt(sdy), flt(0), lv(T4), lv(T5), lv(T6));
       // When they are taken to the player, each one goes to a place of its own on a ring around him (6 m on foot, 12 m in a vehicle, more rings
@@ -750,6 +633,10 @@ export function actorsScript(items) {
       const tr = 6 + 2 * Math.floor(gnum / 10), ta = (160 + 22 * (gnum % 10) + 5 * Math.floor(gnum / 10)) * Math.PI / 180;
       const tx = +(tr * Math.cos(ta)).toFixed(2), ty = +(tr * Math.sin(ta)).toFixed(2);
       const vx = +((tr + 6) * Math.cos(ta)).toFixed(2), vy = +((tr + 6) * Math.sin(ta)).toFixed(2);
+      // When the ring place can not be seen from the player (a wall, a small room) it goes close behind him, still on a place of its own: the angle
+      // and the distance change with the number, never the same point for two of them (characters piled up on one point bring the game down)
+      const fd = (200 + (gnum * 37) % 140) * Math.PI / 180, fr = 1.5 + 0.7 * (Math.floor(gnum / 4) % 6);
+      const fx = +(fr * Math.cos(fd)).toFixed(2), fy = +(fr * Math.sin(fd)).toFixed(2);
       const speed = int(e.runFast === false ? 6 : 7);
       // A target that other protectors are already on (more than `limit` of them) goes to blocked; the candidate is in T4. The scan counter T5 is kept in cnt meanwhile
       const capCheck = (pre, blocked, limit) => {
@@ -1067,13 +954,8 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0021, lv(T8), flt(1)).op(0x004D, ref(L('fu')));
         a.jump(done);
         a.label(L('fu'));
-        logTp('stuck');
         a.jump(L('fc'));
         a.label(L('fv'));
-        // The player is inside a building: the protectors do not follow him in (the camera of the game keeps a list of 15 characters near it and writes
-        // over the memory that comes next with more, which took the game down when 19 of them appeared in a house). They wait outside
-        a.op(0x00D6, int(0)).op(0x0039, lv(T0), int(0)).op(0x004D, ref(done));
-        logTp('area');
         a.label(L('fc'));
         // each one on its own place of a ring around the player: 6 m when he is on foot, 12 m when he is in a vehicle
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fo')));
@@ -1090,7 +972,7 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x06BD, lv(T1), lv(T2), lv(T7), lv(T4), lv(T5), lv(T8), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('fl1')));
         a.jump(L('fl2'));
         a.label(L('fl1'));
-        a.op(0x04C4, lv(PLAYER), flt(0), flt(-1.5), flt(0), lv(T4), lv(T5), lv(T6));
+        a.op(0x04C4, lv(PLAYER), flt(fx), flt(fy), flt(0), lv(T4), lv(T5), lv(T6));
         a.label(L('fl2'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
         a.op(0x0792, lv(h));                                                                     // tasks and animations reset before it is moved (a swimming animation stayed)
@@ -1265,6 +1147,12 @@ export function actorsScript(items) {
           a.op(0x00D6, int(0)).op(0x051A, lv(PLAYER), lv(T4)).op(0x004D, ref(L(P + 'g2')));            // it hurt the player
           a.jump(L(P + 'gf'));
           a.label(L(P + 'g2'));
+          // Anyone who has the player as the target of its attack (shooting at him, fighting him, running to him to attack), whether it hurts him
+          // or not (with a cheat that takes no damage nobody hurts him): the kill target of the tasks of the ped, read with CLEO+
+          a.op(0x0E44, lv(T4), lv(T0));
+          a.op(0x00D6, int(0)).op(0x0039, lv(T0), lv(PLAYER)).op(0x004D, ref(L(P + 'g2b')));
+          a.jump(L(P + 'gf'));
+          a.label(L(P + 'g2b'));
           a.op(0x00D6, int(0)).op(0x02E0, lv(T4)).op(0x004D, ref(L(P + 'g3')));                         // it is shooting
           a.jump(L(P + 'gf'));
           a.label(L(P + 'g3'));

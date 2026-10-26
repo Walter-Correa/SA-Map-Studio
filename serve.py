@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.27"
+VERSION = "4.1.28"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -768,6 +768,12 @@ def sp_has_cleo_plus():
     return bool(gta) and any(resolve_ci(gta, p) for p in ("cleo/CLEO+.cleo", "cleo/CLEOPlus.cleo", "cleo/cleo_plugins/CLEO+.cleo", "cleo/cleo_plugins/CLEOPlus.cleo"))
 
 
+def sp_sampfuncs():
+    """SAMPFUNCS.asi in the game folder (it stops the scripts of the story of the game) while the user has not chosen to go on with it."""
+    gta = State.gta_path or ""
+    return bool(gta and resolve_ci(gta, "SAMPFUNCS.asi")) and not load_config().get("sampfuncs_continue")
+
+
 def sp_missing():
     """What the game folder lacks to install and run a mod: the game itself, an ASI Loader and the Modloader."""
     out = []
@@ -793,7 +799,7 @@ def sp_status(name, was=""):
     inst = inst or sp_install_dir(name)
     return {
         "ok": True,
-        "hasModloader": sp_has_modloader(), "asiLoader": sp_has_asi_loader(), "missing": sp_missing(), "hasCleo": bool(gta and resolve_ci(gta, "CLEO.asi")), "hasCleoPlus": sp_has_cleo_plus(),
+        "hasModloader": sp_has_modloader(), "asiLoader": sp_has_asi_loader(), "missing": sp_missing(), "hasCleo": bool(gta and resolve_ci(gta, "CLEO.asi")), "hasCleoPlus": sp_has_cleo_plus(), "sampfuncs": sp_sampfuncs(),
         "built": os.path.isdir(built), "builtPath": built,
         "installed": bool(inst) and os.path.isfile(os.path.join(inst, SP_MARK)),
         "installPath": inst, "renamed": renamed,
@@ -2485,6 +2491,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/anim_cache/cancel":
             AnimCacheManager.cancel_batch_download()
             return self.send_json({"ok": True, "cancelled": True})
+        if path == "/api/sp/sampfuncs_continue":
+            update_config(sampfuncs_continue=True)
+            return self.send_json({"ok": True})
         if path == "/api/language":
             body = self.read_json() or {}
             code = str(body.get("language") or "").strip().lower()

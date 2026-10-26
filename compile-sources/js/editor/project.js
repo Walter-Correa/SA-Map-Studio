@@ -220,14 +220,24 @@ export function makeLabel(data) {
 
 // What happens when the player enters a checkpoint or takes a pickup (Singleplayer): a type and its settings, a price and a message
 export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion',
-  'fatMax', 'fatMin', 'muscleMax', 'muscleMin', 'staminaMax', 'staminaMin', 'lungMax', 'lungMin', 'healthMax', 'healthMin', 'respectMax', 'respectMin',
-  'armourMax', 'armourMin', 'sexMax', 'sexMin', 'hungerOff'];
+  'statFat', 'statMuscle', 'statStamina', 'statLung', 'statMaxHealth', 'statRespect', 'statSex', 'hungerOff'];
+export const STAT_RANGE = { statMaxHealth: [569, 1000] }; // the least and the most of the stats an action changes (0 to 1000 for the others)
 export function makeAction(data) {
   const d = data || {};
   const n = (v, f) => (Number.isFinite(+v) ? +v : f);
-  const kind = d.type === 'strengthMax' ? 'healthMax' : d.type === 'strengthMin' ? 'healthMin' : d.type; // the first name of these two
+  // The old actions Maximum/Minimum of a stat are now one action that changes it, with the value chosen (the armour ones are gone)
+  const OLD = { strengthMax: ['statMaxHealth', 1000], strengthMin: ['statMaxHealth', 569], healthMax: ['statMaxHealth', 1000], healthMin: ['statMaxHealth', 569] };
+  Object.assign(OLD, {
+    fatMax: ['statFat', 1000], fatMin: ['statFat', 0], muscleMax: ['statMuscle', 1000], muscleMin: ['statMuscle', 0],
+    staminaMax: ['statStamina', 1000], staminaMin: ['statStamina', 0], lungMax: ['statLung', 1000], lungMin: ['statLung', 0],
+    respectMax: ['statRespect', 1000], respectMin: ['statRespect', 0], sexMax: ['statSex', 1000], sexMin: ['statSex', 0],
+  });
+  const old = OLD[d.type];
+  const kind = old ? old[0] : d.type;
+  const [lo, hi] = STAT_RANGE[kind] || [0, 1000];
   return {
     type: ACTION_TYPES.includes(kind) ? kind : 'none',
+    statValue: Math.max(lo, Math.min(hi, n(old ? old[1] : d.statValue, 1000) | 0)), // the value of a stat action (the most by default)
     price: Math.max(0, Math.min(99999999, n(d.price, 0) | 0)),
     once: !!d.once,
     text: String(d.text || '').slice(0, 200),
