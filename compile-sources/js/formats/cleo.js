@@ -632,11 +632,16 @@ export function actorsScript(items) {
       // side (220 degrees, from 160 to 380: the front is 90)
       const tr = 6 + 2 * Math.floor(gnum / 10), ta = (160 + 22 * (gnum % 10) + 5 * Math.floor(gnum / 10)) * Math.PI / 180;
       const tx = +(tr * Math.cos(ta)).toFixed(2), ty = +(tr * Math.sin(ta)).toFixed(2);
-      const vx = +((tr + 6) * Math.cos(ta)).toFixed(2), vy = +((tr + 6) * Math.sin(ta)).toFixed(2);
+      // In a vehicle the arc is further away (16 m or more from the player: a car is long and they were landing against it); when that place can not be
+      // seen it tries a nearer place of the same arc (60% of the distance) before the place close behind
+      const vx = +((tr + 10) * Math.cos(ta)).toFixed(2), vy = +((tr + 10) * Math.sin(ta)).toFixed(2);
+      const wx = +((tr + 10) * 0.6 * Math.cos(ta)).toFixed(2), wy = +((tr + 10) * 0.6 * Math.sin(ta)).toFixed(2);
+      const ux = +(tr * 0.6 * Math.cos(ta)).toFixed(2), uy = +(tr * 0.6 * Math.sin(ta)).toFixed(2);
       // When the ring place can not be seen from the player (a wall, a small room) it goes close behind him, still on a place of its own: the angle
       // and the distance change with the number, never the same point for two of them (characters piled up on one point bring the game down)
       const fd = (200 + (gnum * 37) % 140) * Math.PI / 180, fr = 1.5 + 0.7 * (Math.floor(gnum / 4) % 6);
       const fx = +(fr * Math.cos(fd)).toFixed(2), fy = +(fr * Math.sin(fd)).toFixed(2);
+      const gx = +((fr + 5) * Math.cos(fd)).toFixed(2), gy = +((fr + 5) * Math.sin(fd)).toFixed(2);                  // the same, in a vehicle: further from it
       const speed = int(e.runFast === false ? 6 : 7);
       // A target that other protectors are already on (more than `limit` of them) goes to blocked; the candidate is in T4. The scan counter T5 is kept in cnt meanwhile
       const capCheck = (pre, blocked, limit) => {
@@ -972,6 +977,22 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x06BD, lv(T1), lv(T2), lv(T7), lv(T4), lv(T5), lv(T8), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('fl1')));
         a.jump(L('fl2'));
         a.label(L('fl1'));
+        // second try: the same angle, nearer
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fm1')));
+        a.op(0x04C4, lv(PLAYER), flt(wx), flt(wy), flt(0), lv(T4), lv(T5), lv(T6));
+        a.jump(L('fm2'));
+        a.label(L('fm1'));
+        a.op(0x04C4, lv(PLAYER), flt(ux), flt(uy), flt(0), lv(T4), lv(T5), lv(T6));
+        a.label(L('fm2'));
+        a.op(0x0086, lv(T8), lv(T6));
+        a.op(0x000B, lv(T8), flt(0.8));
+        a.op(0x00D6, int(0)).op(0x06BD, lv(T1), lv(T2), lv(T7), lv(T4), lv(T5), lv(T8), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('fl3')));
+        a.jump(L('fl2'));
+        a.label(L('fl3'));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('fm3')));
+        a.op(0x04C4, lv(PLAYER), flt(gx), flt(gy), flt(0), lv(T4), lv(T5), lv(T6));
+        a.jump(L('fl2'));
+        a.label(L('fm3'));
         a.op(0x04C4, lv(PLAYER), flt(fx), flt(fy), flt(0), lv(T4), lv(T5), lv(T6));
         a.label(L('fl2'));
         a.op(0x09E8, lv(PLAYER), lv(T0));
