@@ -160,7 +160,7 @@ export function computeEnds(root, kind, dbg = null, floorMode = false) {
   if (kind === 'surface') {
     // The ends of a road or a ramp from the outline of its surface: the sharp corners of the outline are the corners of the ends
     const caps = outlineCaps();
-    if (dbg) dbg.push('outline caps ' + caps.length);
+    if (dbg) dbg.push('caps:' + caps.length);
     for (const c of caps) { const so = surfaceSocket(c); if (so) sockets.push(so); }
     if (sockets.length >= 2) return dedupe(sockets);
     sockets.length = 0;
