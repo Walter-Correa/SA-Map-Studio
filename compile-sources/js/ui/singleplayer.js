@@ -426,6 +426,29 @@ async function buildClones(project, files, info, say, customCols = new Map()) {
   return clones;
 }
 
+// The objects of SA-MP that the project uses (their definitions come from SAMP/SAMP.ide): the mod brings the model, the texture and the collision with
+// the names SA-MP gives them, and a model line for each, so they are mod objects like the ones imported from files
+export const isSampModel = (def) => !!def && /^samp[\/]/i.test(def.source || '');
+async function addSampModels(project, files, info, say) {
+  const ids = new Set();
+  for (const o of project.objects) if (isSampModel(app.gd.models.get(o.model))) ids.add(o.model);
+  for (const id of ids) {
+    const def = app.gd.models.get(id);
+    const model = def.model.toLowerCase(), txd = String(def.txd || '').toLowerCase();
+    const dff = await app.gd.readEntry(model + '.dff');
+    if (!dff) { info.failed++; continue; }
+    files.set(model + '.dff', new Uint8Array(dff));
+    if (txd && !files.has(txd + '.txd')) {
+      const buf = await app.gd.readEntry(txd + '.txd');
+      if (buf) files.set(txd + '.txd', new Uint8Array(buf));
+    }
+    const col = await findCollision(model, say);
+    if (col) files.set(model + '.col', cloneColBlock(col.buffer, col.block, model, id)); else info.noCol++;
+    info.ideObjs.push([id, model, txd || 'generic', def.drawDist, def.flags | 0].join(', '));
+    info.sampObjects = (info.sampObjects || 0) + 1;
+  }
+}
+
 // The models imported from files that an object of the project uses: their files go into the mod, and a model line for each
 async function addCustomModels(project, files, info) {
   const cols = new Map();
@@ -577,10 +600,11 @@ function organize(files) {
   return out;
 }
 
-async function buildFiles(project, say = () => {}) {
+export async function buildFiles(project, say = () => {}) {
   const files = new Map(); // path inside the mod -> Uint8Array
   const info = { objects: 0, vehicles: 0, skipped: 0, buried: 0, patched: 0, failed: 0, moved: 0, dataLines: [], ideObjs: [], ideParents: [], custom: 0, cloned: 0, retexed: 0, handling: 0, weapons: 0, noCol: 0, texMissing: 0 };
   const customCols = await addCustomModels(project, files, info);
+  await addSampModels(project, files, info, say);
   const clones = await buildClones(project, files, info, say, customCols);
   await addGameData(project, files, info);
   writeIde(project, files, info);

@@ -48,7 +48,8 @@ export class GameData {
     this.warnings = [];
   }
 
-  // singleplayer: only what the original game has (no SAMP/ folder, which only exists for SA-MP)
+  // singleplayer: what the original game has, plus the objects of SA-MP when it is installed (SAMP/SAMP.ide and its models: the mod brings their
+  // files, so they are mod objects; not its map, nor the custom objects of a server)
   async load(onProgress = () => {}, { singleplayer = false } = {}) {
     this.singleplayer = singleplayer;
     const fs = this.fs;
@@ -57,12 +58,12 @@ export class GameData {
     const defDat = parseDat((await fs.tryText('data/default.dat')) || '');
 
     // ---- IDE ----
-    const ideList = [...defDat.ide, ...gtaDat.ide, ...(singleplayer ? [] : ['SAMP/SAMP.ide', 'SAMP/CUSTOM.ide'])];
+    const ideList = [...defDat.ide, ...gtaDat.ide, ...(singleplayer ? ['SAMP/SAMP.ide'] : ['SAMP/SAMP.ide', 'SAMP/CUSTOM.ide'])];
     let done = 0;
     const ideTexts = new Array(ideList.length);
     await pool(ideList, 8, async (p, k) => {
       ideTexts[k] = await fs.tryText(p);
-      if (ideTexts[k] === null && !/custom/i.test(p)) this.warnings.push(`IDE não encontrado: ${p}`);
+      if (ideTexts[k] === null && !(singleplayer ? /custom|samp\//i : /custom/i).test(p)) this.warnings.push(`IDE não encontrado: ${p}`);
       onProgress('Lendo definições de objetos', 0.05 + 0.15 * (++done / ideList.length));
     });
     ideList.forEach((p, k) => {
@@ -114,7 +115,7 @@ export class GameData {
     }
 
     // ---- IMG ----
-    const imgList = ['models/gta3.img', 'models/gta_int.img', 'models/cutscene.img', ...(singleplayer ? [] : ['SAMP/SAMP.img', 'SAMP/custom.img'])];
+    const imgList = ['models/gta3.img', 'models/gta_int.img', 'models/cutscene.img', ...(singleplayer ? ['SAMP/SAMP.img', 'SAMP/SAMPCOL.img'] : ['SAMP/SAMP.img', 'SAMP/custom.img'])];
     done = 0;
     for (const img of imgList) {
       onProgress(`Indexando ${img}`, 0.2 + 0.2 * (done++ / imgList.length));
@@ -129,7 +130,7 @@ export class GameData {
         }
         this.imgFiles.push(img);
       } catch (err) {
-        if (!/custom/i.test(img)) this.warnings.push(`Não consegui ler ${img} (${err.message})`);
+        if (!(singleplayer ? /custom|samp\//i : /custom/i).test(img)) this.warnings.push(`Não consegui ler ${img} (${err.message})`);
       }
     }
 

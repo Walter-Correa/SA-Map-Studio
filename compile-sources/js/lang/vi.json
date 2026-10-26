@@ -2350,5 +2350,7 @@
  "Alterar sex appeal": "Đổi sức hấp dẫn",
  "Valor (569 a 1000)": "Giá trị (569 đến 1000)",
  "Valor (0 a 1000)": "Giá trị (0 đến 1000)",
- "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} nằm trong thư mục game, nó dành cho multiplayer và xung đột với singleplayer, gây hại cho nhiệm vụ và các mod khác! Bạn muốn tiếp tục dù vậy hay định gỡ cài đặt?"
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} nằm trong thư mục game, nó dành cho multiplayer và xung đột với singleplayer, gây hại cho nhiệm vụ và các mod khác! Bạn muốn tiếp tục dù vậy hay định gỡ cài đặt?",
+ "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Đối tượng SA-MP không được tải vì SA-MP chưa được cài đặt: {0}.",
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Đối tượng SA-MP được tải như đối tượng của mod: {0}."
 }

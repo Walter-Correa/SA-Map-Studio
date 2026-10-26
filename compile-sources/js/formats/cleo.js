@@ -1222,6 +1222,9 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(TARGET_LIMIT)).op(0x004D, ref(L('gtn')));
         a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('gt0')));
+        a.jump(done);                                                                             // sitting in a vehicle: its tasks are not cleared (it would be taken out)
+        a.label(L('gt0'));
         a.op(0x0687, lv(h));
         a.jump(done);
         a.label(L('gts'));
@@ -1251,6 +1254,10 @@ export function actorsScript(items) {
           a.op(0x05CA, lv(h), lv(T6), int(8000), int(-1));
           a.jump(done);
           a.label(L('ff'));
+          // It only gets out when the player gets out: not while he is getting into a vehicle (he is not "in" it yet)
+          a.op(0x00D6, int(0)).op(0x09DE, lv(PLAYER)).op(0x004D, ref(L('ff2')));
+          a.jump(done);
+          a.label(L('ff2'));
           a.op(0x00D6, int(0)).op(0x00DF, lv(h)).op(0x004D, ref(L('fw')));                         // the player walks and it is in a car: gets out
           a.op(0x0633, lv(h));
           a.jump(done);

@@ -2,12 +2,12 @@
 import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
 import { quatOfItem } from '../editor/editor.js';
-import { importAny } from '../editor/importers.js';
+import { importAny, sampMissing, sampInstalled } from '../editor/importers.js';
 import { t, tFallback, getLanguage } from './i18n.js';
 import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, tdBlinkActive, tdBlinkPerChar, tdBlinkColour, clampTdBlinkInterval } from '../editor/project.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
-import { toSingleplayerImport } from './singleplayer.js';
+import { toSingleplayerImport, isSampModel } from './singleplayer.js';
 import { app, $, esc, plural, store, toast, copyText, postJSON } from './common.js';
 
 // =====================================================================  exportar
@@ -144,7 +144,12 @@ export function setupImport() {
     summary.textContent = 'Analisando';
     try {
       parsed = await importAny(bytes, { filename: name, gd: app.gd, readSqlite });
+      // The objects of SA-MP: without SA-MP in the game folder they are not loaded; with it, a Singleplayer project takes them as mod objects
+      const sampLost = sampMissing(parsed.objects, app.gd, parsed.sampSkipped || 0);
+      const sampMod = app.project.mode === 'sp' && sampInstalled(app.gd) ? parsed.objects.filter(o => isSampModel(app.gd.models.get(o.model))).length : 0;
       if (app.project.mode === 'sp') parsed = toSingleplayerImport(parsed);
+      if (sampLost) parsed.notes = [...(parsed.notes || []), t('Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.', sampLost)];
+      if (sampMod) parsed.notes = [...(parsed.notes || []), t('Objetos do SA-MP carregados como objetos do mod: {0}.', sampMod)];
     }
     catch (err) { parsed = null; summary.textContent = `Não consegui ler esse arquivo: ${err.message}`; return; }
     show();

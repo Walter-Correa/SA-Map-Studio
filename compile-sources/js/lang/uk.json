@@ -2350,5 +2350,7 @@
  "Alterar sex appeal": "Змінити сексуальність",
  "Valor (569 a 1000)": "Значення (від 569 до 1000)",
  "Valor (0 a 1000)": "Значення (від 0 до 1000)",
- "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} знаходиться в папці гри, він орієнтований на мультиплеєр і конфліктує із сингплеєром, шкодячи місіям та іншим модам! Бажаєте все одно продовжити чи плануєте видалити його?"
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} знаходиться в папці гри, він орієнтований на мультиплеєр і конфліктує із сингплеєром, шкодячи місіям та іншим модам! Бажаєте все одно продовжити чи плануєте видалити його?",
+ "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Об'єкти SA-MP не завантажено, бо SA-MP не встановлено: {0}.",
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Об'єкти SA-MP завантажено як об'єкти мода: {0}."
 }

@@ -2350,5 +2350,7 @@
  "Alterar sex appeal": "Cambia sex appeal",
  "Valor (569 a 1000)": "Valore (da 569 a 1000)",
  "Valor (0 a 1000)": "Valore (da 0 a 1000)",
- "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} si trova nella cartella del gioco, è pensato per il multiplayer e causa conflitti con il singleplayer, danneggiando le missioni e altre mod! Vuoi continuare comunque o hai intenzione di disinstallarlo?"
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} si trova nella cartella del gioco, è pensato per il multiplayer e causa conflitti con il singleplayer, danneggiando le missioni e altre mod! Vuoi continuare comunque o hai intenzione di disinstallarlo?",
+ "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Oggetti SA-MP non caricati perché SA-MP non è installato: {0}.",
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Oggetti SA-MP caricati come oggetti della mod: {0}."
 }

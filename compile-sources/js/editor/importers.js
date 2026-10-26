@@ -17,6 +17,15 @@ import { isBinaryIpl, parseIplBinary } from '../formats/iplbin.js';
 const empty = () => ({ format: '', name: '', objects: [], vehicles: [], actors: [], removed: [], labels: [], pickups: [], gangZones: [], checkpoints: [], mapIcons: [], textDraws: [], cameras: { shots: [], paths: [] }, camera: null, pwnHeader: '', rawPawn: '', spawn: null, notes: [] });
 
 // Text: UTF-8 when valid, otherwise Windows-1252 (the Pawn default on Windows)
+// The objects of SA-MP have the ids from 18631 up (the original game ends at 18630). Without SA-MP in the game folder the editor does not know them
+export const SAMP_FIRST_ID = 18631;
+export const sampInstalled = (gd) => !!gd && gd.models.has(SAMP_FIRST_ID);
+// How many of the objects use a model of SA-MP that is not there because SA-MP is not installed
+export function sampMissing(objects, gd, extra = 0) {
+  if (!gd || sampInstalled(gd)) return 0;
+  return extra + (objects || []).filter(o => o.model >= SAMP_FIRST_ID && !gd.models.has(o.model)).length;
+}
+
 export function decodeBytes(bytes) {
   const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let start = 0;
@@ -201,7 +210,7 @@ function fromLooseLines(text, out, gd) {
     const rawMatches = cleanLine.match(/-?\d+(?:\.\d+)?/g) || [];
     const n = rawMatches.map(Number);
     if (n.length < 7 || !Number.isInteger(n[0])) continue;
-    if (gd && !gd.models.has(n[0])) continue;
+    if (gd && !gd.models.has(n[0])) { if (n[0] >= SAMP_FIRST_ID) out.sampSkipped = (out.sampSkipped || 0) + 1; continue; }
     const raw = {
       x: rawMatches[1], y: rawMatches[2], z: rawMatches[3],
       rx: rawMatches[4], ry: rawMatches[5], rz: rawMatches[6],

@@ -1,7 +1,8 @@
-import { uiLocale } from './i18n.js';
+import { uiLocale, t } from './i18n.js';
 // Projects: autosave, open (saving and closing the current one), create, rename and delete.
 import * as THREE from 'three';
 import { Project } from '../editor/project.js';
+import { sampMissing } from '../editor/importers.js';
 import { app, $, esc, store, toast, showConfirm } from './common.js';
 
 let currentName = null;
@@ -171,6 +172,9 @@ export function useProject(p, { keepCamera = false } = {}) {
   store.set(lastKey(), p.name);
   setSaveState('Salvo');
   app.emit('project', p);
+  // Objects of SA-MP in a project, and SA-MP is not installed: they are not loaded
+  const lost = sampMissing(p.objects, app.gd);
+  if (lost) toast(t('Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.', lost), 'warn', 12000);
 }
 
 // Opens another project: saves and closes the one that was open

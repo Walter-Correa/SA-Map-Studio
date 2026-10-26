@@ -2350,5 +2350,7 @@
  "Alterar sex appeal": "Ubah daya tarik",
  "Valor (569 a 1000)": "Nilai (569 sampai 1000)",
  "Valor (0 a 1000)": "Nilai (0 sampai 1000)",
- "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} ada di folder game, berfokus pada multiplayer dan menyebabkan konflik dengan singleplayer, merugikan misi dan mod lainnya! Ingin tetap melanjutkan atau berniat menghapusnya?"
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} ada di folder game, berfokus pada multiplayer dan menyebabkan konflik dengan singleplayer, merugikan misi dan mod lainnya! Ingin tetap melanjutkan atau berniat menghapusnya?",
+ "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Objek SA-MP tidak dimuat karena SA-MP tidak terpasang: {0}.",
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Objek SA-MP dimuat sebagai objek mod: {0}."
 }

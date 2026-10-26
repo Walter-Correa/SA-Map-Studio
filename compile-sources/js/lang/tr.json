@@ -2350,5 +2350,7 @@
  "Alterar sex appeal": "Çekiciliği değiştir",
  "Valor (569 a 1000)": "Değer (569 ile 1000)",
  "Valor (0 a 1000)": "Değer (0 ile 1000)",
- "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} oyun klasöründe, çok oyunculu moda odaklıdır ve tek oyunculu modla çakışarak görevlere ve diğer modlara zarar verir! Yine de devam etmek mi istiyorsunuz yoksa kaldırmayı mı düşünüyorsunuz?"
+ "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} oyun klasöründe, çok oyunculu moda odaklıdır ve tek oyunculu modla çakışarak görevlere ve diğer modlara zarar verir! Yine de devam etmek mi istiyorsunuz yoksa kaldırmayı mı düşünüyorsunuz?",
+ "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "SA-MP kurulu olmadığı için yüklenmeyen SA-MP nesneleri: {0}.",
+ "Objetos do SA-MP carregados como objetos do mod: {0}.": "Mod nesnesi olarak yüklenen SA-MP nesneleri: {0}."
 }
