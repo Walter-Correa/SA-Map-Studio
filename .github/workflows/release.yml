@@ -2,11 +2,8 @@ name: Release
 
 # Builds the clean single-file editor exactly like build-clean.bat does in the repository folder
 # and publishes SA Map Studio.exe as a GitHub release.
-# Start it by pushing a tag (git tag v4.1.37 && git push origin v4.1.37) or by hand in the Actions tab.
+# Releases are always started by hand: Actions > Release > Run workflow (the tag v<VERSION> is created by it).
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -29,9 +26,6 @@ jobs:
           $m = Select-String -Path serve.py -Pattern '^VERSION\s*=\s*"(\d+\.\d+\.\d+)"'
           if (-not $m) { throw "VERSION not found in serve.py" }
           $v = $m.Matches[0].Groups[1].Value
-          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -ne "v$v") {
-            throw "Tag $env:GITHUB_REF_NAME does not match VERSION $v in serve.py"
-          }
           "version=$v" >> $env:GITHUB_OUTPUT
 
       - name: Build (build-clean.bat)
