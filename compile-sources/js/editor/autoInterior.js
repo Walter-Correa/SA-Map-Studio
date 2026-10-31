@@ -109,20 +109,22 @@ function layoutOnce(order, w, d, fixed) {
     for (const sp of group) { if (sa <= sb) { ga.push(sp); sa += area(sp); } else { gb.push(sp); sb += area(sp); } }
     splitsOf.push([ga, gb]);
     for (let k = 1; k < group.length; k++) splitsOf.push([group.slice(0, k), group.slice(k)]);
-    let done = null;
-    for (const [A, B] of splitsOf) {
+    // every way to cut (the way to divide the group, the axis and the place) that leaves room for both groups; the best is the one whose rooms are the
+    // closest to a square (a room is a rectangle that is not much longer than wide), with the areas of the groups near their share
+    const aspect = (x, y) => Math.max(x, y) / Math.min(x, y);
+    let done = null, bestScore = Infinity;
+    splitsOf.forEach(([A, B], pi) => {
       const ta = A.reduce((x, sp) => x + area(sp), 0), tb = B.reduce((x, sp) => x + area(sp), 0);
       for (const alongX of (qi === 0 && fixed && fixed.firstAlongX !== undefined ? [first] : [first, !first])) {
         const len = alongX ? rw : rd, other = alongX ? rd : rw;
-        let best = -1;
         for (let at = 2; at <= len - 2; at++) {
           if (roomsHeld(at, other) < A.length || roomsHeld(len - at, other) < B.length) continue;
-          if (best < 0 || Math.abs(at - len * ta / (ta + tb)) < Math.abs(best - len * ta / (ta + tb))) best = at;
+          const side = (n, size) => (n === 1 ? 1 : 0.35) * aspect(size, other);
+          const score = side(A.length, at) + side(B.length, len - at) + Math.abs(at - len * ta / (ta + tb)) / len + (pi ? 0.2 : 0);
+          if (score < bestScore) { bestScore = score; done = { A, B, alongX, at }; }
         }
-        if (best >= 0) { done = { A, B, alongX, at: best }; break; }
       }
-      if (done) break;
-    }
+    });
     if (!done) { rect.spec = group[0]; rooms.push(rect); dropped += group.length - 1; continue; }
     const { A, B, alongX, at } = done;
     const a = alongX ? { x0: rect.x0, y0: rect.y0, x1: rect.x0 + at, y1: rect.y1 } : { x0: rect.x0, y0: rect.y0, x1: rect.x1, y1: rect.y0 + at };
@@ -139,12 +141,24 @@ export function layoutSized(specs, rng, fixed) {
   if (fixed) return layoutOnce(order, fixed.w, fixed.d, fixed);
   if (specs.length === 1) { const u = Math.max(2, Math.round(specs[0].size / UNIT)); return layoutOnce(order, u, u); }
   const total = specs.reduce((a, sp) => a + area(sp), 0) * 1.1, aspect = 1 + rng() * 0.8;
-  let w = Math.max(2, Math.round(Math.sqrt(total * aspect))), d = Math.max(2, Math.round(total / w));
-  for (let guard = 0; guard < 200; guard++) {
-    const lay = roomsHeld(w, d) >= specs.length ? layoutOnce(order, w, d) : null;
-    if (lay && !lay.dropped) return lay;
-    if (w <= d) w++; else d++;           // a unit more on the shorter side, until all the rooms fit
+  const base = Math.max(2, Math.round(Math.sqrt(total * aspect)));
+  const worst = (lay) => Math.max(...lay.rooms.map(r => Math.max(r.x1 - r.x0, r.y1 - r.y0) / Math.min(r.x1 - r.x0, r.y1 - r.y0)));
+  // several outlines around the asked one (a unit more on the shorter side until every room fits); the one with the squarest rooms stays
+  let best = null;
+  for (let dw = -2; dw <= 3; dw++) {
+    let w = Math.max(2, base + dw), d = Math.max(2, Math.round(total / w));
+    for (let guard = 0; guard < 200; guard++) {
+      const lay = roomsHeld(w, d) >= specs.length ? layoutOnce(order, w, d) : null;
+      if (lay && !lay.dropped) {
+        const score = worst(lay) + 0.02 * (w * d);
+        if (!best || score < best.score) best = { lay, score };
+        break;
+      }
+      if (w <= d) w++; else d++;
+    }
   }
+  if (best) return best.lay;
+  let w = base, d = Math.max(2, Math.round(total / base));
   return layoutOnce(order, w, d);
 }
 
