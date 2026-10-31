@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.35"
+VERSION = "4.1.36"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -1133,6 +1133,8 @@ def webp_width(path):
     return 0
 
 
+SMEAR_FIX_NS = 1793337049 * 1_000_000_000          # 2026-10-30 (see thumbs_index)
+
 def thumb_widths(files):
     """files: {id: (caminho, tamanho, mtime_ns)} -> {id: largura}. Um arquivo de cache guarda a largura de cada
     miniatura pelo tamanho e pela data, então só os arquivos novos ou alterados têm o cabeçalho lido."""
@@ -1447,6 +1449,41 @@ def samp_client():
     return samp_installed_client()
 
 
+def point_samp_to_game(client):
+    """samp.exe starts the gta_sa.exe that the registry of SA-MP names (the value gta_sa_exe in HKCU Software SAMP), not the one that is beside it. So that the game that
+    opens is the one of the same folder as the client we chose, the registry is pointed to it for a few seconds (the time the client takes to read it) and
+    put back as it was. Returns True when it was changed."""
+    if not IS_WINDOWS or not client:
+        return False
+    game = resolve_ci(os.path.dirname(client), "gta_sa.exe")
+    if not game or not os.path.isfile(game):
+        return False
+    try:
+        import winreg
+        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, r"Software\SAMP", 0, winreg.KEY_READ | winreg.KEY_SET_VALUE) as k:
+            try:
+                old = winreg.QueryValueEx(k, "gta_sa_exe")[0]
+            except OSError:
+                old = None
+            if old and os.path.normcase(os.path.normpath(str(old))) == os.path.normcase(os.path.normpath(game)):
+                return False
+            winreg.SetValueEx(k, "gta_sa_exe", 0, winreg.REG_SZ, os.path.normpath(game))
+
+        def restore():
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\SAMP", 0, winreg.KEY_SET_VALUE) as k2:
+                    if old is None:
+                        winreg.DeleteValue(k2, "gta_sa_exe")
+                    else:
+                        winreg.SetValueEx(k2, "gta_sa_exe", 0, winreg.REG_SZ, old)
+            except OSError:
+                pass
+        threading.Timer(12.0, restore).start()
+        return True
+    except Exception:
+        return False
+
+
 def samp_installed_client():
     """samp.exe of the SA-MP installed on the computer (registry of SA-MP, the list of installed programs, the usual folders)."""
     folders = []
@@ -1718,6 +1755,7 @@ def start_test(body):
     client = samp_client()
     launched = False
     if body.get("launch", True) and client:
+        point_samp_to_game(client)
         # The SA-MP client writes to the GTA folder: in a protected folder (Program Files) it
         # needs administrator. If the editor is not administrator, Windows opens the client
         # with its own prompt (UAC), as happened when the whole editor opened as administrator.
@@ -2894,6 +2932,14 @@ class Handler(SimpleHTTPRequestHandler):
                         if n.endswith(".webp") and n[:-5].isdigit() and int(n[:-5]) not in by_id:
                             st = e.stat()
                             by_id[int(n[:-5])] = (e.path, st.st_size, st.st_mtime_ns)
+        # The thumbnails of the SA-MP kit (ids 18632 and up) that were drawn before the dark smear was fixed (the colors and normals of those models were used) are
+        # deleted so that they are drawn again
+        for oid in [k for k, v in by_id.items() if k >= 18632 and v[2] < SMEAR_FIX_NS]:
+            try:
+                os.remove(by_id[oid][0])
+            except OSError:
+                pass
+            del by_id[oid]
         stale = []
         for oid, width in thumb_widths(by_id).items():
             (objs if width >= THUMB_CURRENT_WIDTH else stale).append(oid)

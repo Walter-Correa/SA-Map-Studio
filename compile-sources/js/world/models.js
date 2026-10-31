@@ -151,7 +151,7 @@ export class ModelCache {
   }
 
   // ---------- Materiais ----------
-  material(texInfo, color, flags, prelit, isVehicle) {
+  material(texInfo, color, flags, prelit, isVehicle, flat) {
     let c = color;
     let carColor = 0;
     if (isVehicle) {
@@ -160,7 +160,7 @@ export class ModelCache {
       const pc = PAINT_COLORS[c[0] + ',' + c[1] + ',' + c[2]];
       if (pc) c = [...pc, c[3]];
     }
-    const key = (texInfo ? texInfo.texture.uuid : '-') + '|' + c.join(',') + '|' + flags + '|' + (prelit ? 1 : 0) + '|' + carColor;
+    const key = (texInfo ? texInfo.texture.uuid : '-') + '|' + c.join(',') + '|' + flags + '|' + (prelit ? 1 : 0) + '|' + (flat ? 1 : 0) + '|' + carColor;
     let m = this.materials.get(key);
     if (m) return m;
     const params = {
@@ -178,6 +178,7 @@ export class ModelCache {
       params.vertexColors = true;
       m = new THREE.MeshBasicMaterial(params);
     } else {
+      if (flat) params.flatShading = true;
       m = new THREE.MeshLambertMaterial(params);
     }
     m.userData.shared = true;
@@ -249,7 +250,11 @@ export class ModelCache {
       if (g.skin) { mesh.userData.skin = g.skin; group.userData.frames = dff.frames; }
       mesh.userData.frameName = fName;
       if (isVehicle && /wheel/.test(fName)) mesh.userData.isStockWheel = true;
-      if (dff.frames[a.frame]) {
+      // The game builds an object (a model that is not a vehicle) from its atomic alone and gives it a new frame, so the position that the frame has in the file
+      // (some trees, as 738, have the trunk 4 m under their frame) is not applied: the model has its own origin at the object's coordinates
+      if (!isVehicle && !isCarMod && def.type !== 'peds' && !g.skin && atomics.length === 1 && dff.frames[a.frame]) {
+        mesh.userData.frameMatrix = new THREE.Matrix4();
+      } else if (dff.frames[a.frame]) {
         const fm = frameMatrix(a.frame);
         mesh.userData.frameMatrix = fm.clone();
         mesh.applyMatrix4(fm);
@@ -303,9 +308,12 @@ export class ModelCache {
     if (!g.groups.length) return null;
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
-    if (g.normals) geo.setAttribute('normal', new THREE.BufferAttribute(g.normals, 3));
+    const samp = /samp/i.test(def.source || '');
+    if (g.normals && !samp) geo.setAttribute('normal', new THREE.BufferAttribute(g.normals, 3));
     if (g.uvs) geo.setAttribute('uv', new THREE.BufferAttribute(g.uvs, 2));
-    const prelit = !!g.colors;
+    // The objects that SA-MP adds (SAMP.ide: the panels of the kit, the stunt pieces...) have colors painted in their vertices (a dark half) and normals that
+    // shade a panel in a diagonal wedge, but in the game they are one color: the colors and the normals are not used for them (every face is shaded flat)
+    const prelit = !!g.colors && !samp;
     if (prelit) geo.setAttribute('color', new THREE.BufferAttribute(g.colors, 4, true));
     geo.setIndex(new THREE.BufferAttribute(g.index, 1));
     const modulate = (g.flags & 0x40) !== 0 || isVehicle || !prelit;
@@ -317,10 +325,10 @@ export class ModelCache {
       geo.addGroup(gr.start, gr.count, mats.length);
       slots.push(gr.material);
       const color = modulate ? mat.color : [255, 255, 255, mat.color[3]];
-      mats.push(this.material(tex, color, def.flags, prelit, isVehicle));
+      mats.push(this.material(tex, color, def.flags, prelit, isVehicle, samp));
     }
     // Without precomputed light the material uses lighting, which needs normals
-    if (!g.normals && !prelit) geo.computeVertexNormals();
+    if (!g.normals && !prelit && !samp) geo.computeVertexNormals();
     geo.computeBoundingSphere();
     geo.computeBoundingBox();
     const mesh = new THREE.Mesh(geo, mats);

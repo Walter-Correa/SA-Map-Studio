@@ -1,4 +1,4 @@
-import { uiLocale } from './i18n.js';
+import { uiLocale, t } from './i18n.js';
 // Utilities shared by the interface and the "app" object with the main pieces.
 export const $ = (s, r = document) => r.querySelector(s);
 // Value of a CSS variable of the current theme (canvases cannot use var()), with a fallback
@@ -285,3 +285,18 @@ if (typeof window !== 'undefined') {
   window.showAlert = showAlert;
 }
 
+
+// A number typed in a field that has limits (min and max) is held inside them as soon as the field is left, and the screen says so: nothing is cut silently
+// (over the most goes to the most, under the least goes to the least). The fields without a number are left as they are.
+export function installLimitClamp() {
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (!(el instanceof HTMLInputElement) || el.type !== 'number' || el.value === '') return;
+    const lo = el.min !== '' ? +el.min : -Infinity, hi = el.max !== '' ? +el.max : Infinity;
+    const v = +el.value;
+    if (!Number.isFinite(v) || (v >= lo && v <= hi)) return;
+    const to = v > hi ? hi : lo;
+    el.value = to;
+    toast(t('Valor fora do limite: ajustado para {0}.', to), 'warn', 3500);
+  }, true);
+}

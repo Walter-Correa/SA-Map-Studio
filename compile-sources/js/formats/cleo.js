@@ -201,9 +201,12 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
       AMMO_WEAPONS.forEach((w, k) => {
         a.op(0x041A, lv(PLAYER), int(w), lv(T0));                                             // only what the player already has
         a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(u('am' + k)));
-        a.op(0x0114, lv(PLAYER), int(w), int(500));
+        a.op(0x017B, lv(PLAYER), int(w), int(9999));                                          // SET (never add): 9999 for each weapon the player has
         a.label(u('am' + k));
       });
+      break;
+    case 'skills':
+      for (let id = 69; id <= 79; id++) a.op(0x0629, int(id), int(999));                      // the skill of every weapon (stats 69 to 79) at the maximum level
       break;
     case 'wanted':
       if (act.stars > 0) a.op(0x010D, int(0), int(act.stars)); else a.op(0x0110, int(0));

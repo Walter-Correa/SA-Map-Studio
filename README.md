@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.35-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.36-f0a630)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -106,7 +106,7 @@ never changed and removing the mod is deleting its folder.
   list opens a big picture in the middle of the screen; it closes when the mouse leaves or on click.
 - Place by clicking on the map (`R` / `X` rotate 15° / 90° before dropping, `Shift` + click keeps placing), gizmo to move
   and rotate (world or object axes), movement and rotation speeds from 0.001x to 10x, **grid snapping**, **magnetic
-  snapping** to the edges of nearby objects and the **automatic snap of tracks, ramps and roads** (category *Pistas, rampas e estradas*: the tubes of SA-MP and ramps of the game join by their edges).
+  snapping** to the edges of nearby objects and the **automatic snap of tracks, ramps and roads** (category *Pistas, rampas e estradas*: the tubes of SA-MP and ramps of the game join by their edges) and **Auto Create**, which builds tracks (roads, tubes, pipes), furnished interiors (up to 4 floors) and mazes in front of the camera.
 - Multiple selection with joint movement and rotation around the common center; `Ctrl+A` selects everything.
 - **Duplicate** (`Ctrl+D`) and **Place another one** create the copy in the same spot, already with the move gizmo;
   `End` drops the selection on the surface, `X` rotates 90°, `Page Up` / `Page Down` raise and lower.
@@ -484,6 +484,48 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.36 — 31/10/2026
+- New Auto Create button in the toolbar: the editor builds a map by itself in front of the camera, in the direction it points, as one undo step, then selects it and takes the camera to its manipulator. The same seed gives the same result, and Create again undoes the last one and makes another with a new seed. The window also sets the virtual world and the interior of every object that is created (-1 by default). Nothing is cut without saying: when a value is over the limit, the window tells which limit was used.
+- Auto Create, Interior: one row for each room with its kind (living room, bedroom, kitchen, office, bathroom) and its size (3 to 10 m, 3 m by default), with doorways, an entrance door, floor, optional ceiling, wall style, a visual pattern (mixed or the same theme in every room) and furniture. Up to 10 floors, every floor with its own rooms, walls, floor, ceiling and corridor option; each floor has its own flight of stairs (the flights turn back at every landing), the door of each floor is where its stairs arrive, and the next flight never starts over a door. Floors and ceilings are one grid of tiles with no tile over another, and walls meet in clean corners.
+- Auto Create, Maze: up to 50 x 50 cells, up to 10 wall layers, shortcuts, an optional ceiling (off by default), floor and wall styles. Walls, floor and ceiling follow the same grid logic of the interiors (nothing interleaved, clean corners, what is left over stays outside).
+- Auto Create, Round map and Square map: the size (diameter or side), the height of the wall in layers, wall and floor styles, and the floor and the ceiling as options. The biggest panels that fit are used everywhere (9.63 x 3.5 m walls, and the 9.63 x 10.5 m ones for three layers) to save objects.
+- Auto Create no longer builds roads, stunt tubes and pipes.
+- The dark smear over one half of the kit objects (only in the editor) is gone: the colors baked in the models of SA-MP are not used for them any more (the thumbnails are made again on demand).
+- Everything that is selected is now outlined in red on every part of it (roads with transparent surfaces were not), and a very big selection is drawn with one box so the editor does not stutter.
+- Turning several objects at once (the buttons, the arrows of the rings, the key X and the fields) turns them together around the middle of the set, as a rigid body; the arrows no longer gather the objects in the center.
+- The editor no longer freezes with thousands of objects: the lookups by id were scanning every list, and every object that was added refreshed the selection and the manipulator again. A maze of 8000 pieces is made in about half a second, and moving or turning all of them takes about 50 ms per step. A project saved with a very big selection opens fast (that selection is not restored).
+- The manipulator that follows the camera is now on by default, goes where the camera points, never gets nearer than 2.5 m or smaller than 45 percent, and the rotation manipulator follows the camera too (the rotation still turns around the middle of the object).
+- The automatic snap of roads, ramps and tubes also works when the piece is dragged with the mouse and when it is placed for the first time from the list (the height of the surface under the pointer no longer hides the pieces around). Ramps of the game join one after the other along their own slope, and a loop of the roads no longer joins in the middle of its circle.
+- Models that are not vehicles are drawn without the position that their frame has in the file, as the game does: trees such as 738 no longer show the trunk under the ground in the editor.
+- The paintjobs of the vehicles (the files model1.txd, model2.txd and model3.txd of the game) are now visible in the editor, besides the colors and the tuning.
+- Singleplayer, actions of pickups and checkpoints: the action that gave the maximum ammo is now Maximum ammo for equipped weapons and sets 9999 for every weapon the player has (it sets, it never adds), and there is a new action, Maximum skills for all weapons (level 999 in every weapon skill).
+- Auto Create: the pieces that meet now go a little into each other (the layers of walls and the ceiling over the walls), so no crack that shows the sky is left between them, in interiors, houses, mazes and maps.
+- Auto Create: the visual pattern is the same theme by default, the furniture levels are Nothing, A few and A lot (A few is what the old Furnished level had, and A lot has more pieces of every kind of room).
+- A number typed in any field that has limits is held inside them as soon as the field is left (over the most goes to the most, under the least goes to the least) and a notice says so.
+- The thumbnails of the SA-MP kit that were drawn before the dark smear fix are deleted when the editor starts, so they are drawn again without the smear.
+- Auto Create: every doorway and passage between rooms (and the entrance of interiors and houses) is now the panel of the kit that has the doorway of the size of the door of the game (ids 19383 to 19398, one for each wall style; the styles without one use a look-alike), always two units (3.21 m) wide, instead of a cut with the full height of the wall.
+- Auto Create, Interior: new option With corridor (on by default): a corridor of 3.21 m separates the rooms, and every room that touches it has a doorway to it.
+- Auto Create, Interior: the corridor is now chosen floor by floor (every floor of a house has its own With corridor option, on by default); on a house the corridor goes between the rooms of that floor, besides the stair hall. The corridors get pictures, plants, lamps and rugs.
+- Auto Create: the ceiling has its own style (new Ceiling style field; by default a light one that goes with the theme) instead of the style of the walls, so it no longer shows the stripes of the wall panels.
+- Auto Create, furniture: a lot more variety and detail. TVs (old ones on stands, ones with a built in stand and the flat ones of the game, hung on the wall above the stand some of the times), small stereos, big hi-fi towers and speakers, pictures on the walls of rooms, bedrooms and corridors, clocks, a deer head, rugs, ceiling lamps in the middle of the ceiling (when there is a ceiling), floor lamps, table lamps on nightstands, dressers and desks, and small things over the tables and counters (magazines, plates, cereal, an ashtray, a board game, a computer).
+- Auto Create, rooms: kitchens now have a stove, washer, counters and stools; bathrooms have more toilets, basins, tubs, showers and a radiator; offices have more desks, shelves and a copier; many more couches, armchairs, dressers and wardrobes in every room.
+- Auto Create: furniture no longer ends inside the walls (the walls that belong to the neighbor room take 18 cm of the room, and the furniture now leaves that space free).
+- Auto Create: the structure of the doorways now has the texture of the walls around it when the kit has no doorway of the same style as the walls (before, it showed the texture of a look-alike style).
+- Auto Create: every floor has its own walls, floor and ceiling (also a single floor), and the global walls and floor options are gone; the walls of each floor were being ignored when the same theme was on, now each floor follows its own choice (or its own theme).
+- Auto Create: the window no longer scrolls sideways (everything fits inside it), it is now modal like the other editors (the rest of the editor waits while it is open), and With ceiling is on by default.
+- Auto Create, houses: the stair hall is wider and the stairs leave 1.5 m free on each side, so you can walk behind them.
+- The MapIcon editor title no longer shows the name of the game function.
+- Auto Create, interiors: the entrance door now always leads to the first kind that exists, in this order: living room, office, kitchen, bedroom and bathroom (if that room has no outside wall it trades kinds with the one that has, the one with the closest area); the corridor is not in the list.
+- Auto Create: every room asked for is now always created. A single floor grows its outline until all the rooms fit, and a house takes the outline from the fullest floor (not from the ground floor).
+- Auto Create, houses: the door from the stair hall of each floor stays where it always was, at the landing where the stairs arrive, and the room that has it is the first kind that exists on that floor, in this order: living room, office, kitchen, bedroom and bathroom (it trades kinds with the room of that kind, the one with the closest area).
+- Auto Create, interiors and houses: every room is now its own row with a kind and a size (3 to 10 m, 3 m by default) instead of a count for each kind, with buttons to add and remove rooms (up to 10 per floor); the rooms get an area close to the one asked for (the sizes go on the grid of 1.6 m), and the old smallest and biggest room fields are gone. In a house the floors share the outline and the stair hall, so the rooms of a floor are scaled to fill it.
+- Auto Create, houses: the free space beside the stairs is now 1.5 m on each side (the stair hall is wider).
+- Auto Create, houses: the two landings of the stair hall (in front and behind the flights) are decorated on every floor, with pictures, plants, lamps, rugs, dressers and shelves, leaving the path next to the stairs and the doors free.
+- The dark smear that the objects of SA-MP (the kit panels and the others of SAMP.ide) still showed in the editor, a dark wedge across the panels, is gone: besides the colors painted in their vertices, their normals are not used any more and every face is shaded flat, so each panel is one color as in the game. The objects of the original game are drawn as before. The thumbnails of the SA-MP objects are made again on demand.
+- Auto Create: the furniture faces the room (the front of every piece is the -y of its model: armchairs and couches were turned to the wall) and stands 4 cm from the wall; the floors of the stairs of a house no longer leave a gap under the ceiling below (the distance between floors was made 6 cm shorter, as the ceiling now goes into the walls).
+- The arrows of the rotation manipulator only work with the left button of the mouse (another button, or a second one pressed while holding, does nothing and stops the turn).
+- The test server opens the game of the chosen GTA folder: the registry of SA-MP is pointed to it for a few seconds.
 
 ### 4.1.35 — 26/10/2026
 - The arrows of the rotation manipulator are now on its rings (the red, green and blue lines), two on each one, pointing the way the ring turns on the screen and staying on the side that faces the camera: a click turns the selection 5 degrees, and holding the button turns it all the time (60 degrees a second), both multiplied by the rotation speed that is set. It replaces the panel of buttons of 4.1.34.

@@ -166,14 +166,116 @@ function tubeSockets(model) {
   return out;
 }
 
+// ---------------------------------------------------------------- ramps with a sloped surface (the waterjump, the landjump, the funbox ramps...)
+// The sloped face of the model (the faces that look up and to one side, the biggest group of them, whatever their slope: the ramps of the game are
+// curved) gives the way up, and its lowest and highest edge. Two ramps join with the highest edge of one on the lowest edge of the other and the same
+// rotation, so a ramp can be made as long as wanted (or one ramp be put before another), like putting the same ramp again along its own slope.
+// ramps: model id -> { lo, hi: Vector3 (the middle of the lowest and of the highest edge of the surface), width, slope } | null (being read) | false
+const ramps = new Map();
+
+function computeRamp(root) {
+  root.updateMatrixWorld(true);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), ab = new THREE.Vector3(), ac = new THREE.Vector3();
+  const tris = [];
+  let upArea = 0;
+  root.traverse((o) => {
+    const g = o.isMesh && o.geometry;
+    if (!g || !g.attributes.position) return;
+    const pos = g.attributes.position, idx = g.index, n = (idx ? idx.count : pos.count) / 3;
+    for (let t = 0; t < n; t++) {
+      const i0 = idx ? idx.getX(t * 3) : t * 3, i1 = idx ? idx.getX(t * 3 + 1) : t * 3 + 1, i2 = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+      a.fromBufferAttribute(pos, i0).applyMatrix4(o.matrixWorld); b.fromBufferAttribute(pos, i1).applyMatrix4(o.matrixWorld); c.fromBufferAttribute(pos, i2).applyMatrix4(o.matrixWorld);
+      const nrm = new THREE.Vector3().crossVectors(ab.subVectors(b, a), ac.subVectors(c, a));
+      const area = nrm.length() / 2;
+      if (area < 1e-5) continue;
+      nrm.normalize();
+      if (nrm.z < 0) nrm.negate();                              // (the winding of the faces is not trusted: a sloped face looks up either way)
+      if (nrm.z < 0.05) continue;
+      upArea += area;
+      tris.push({ n: nrm, area, v: [a.clone(), b.clone(), c.clone()] });
+    }
+  });
+  // the faces that slope (6 to 70 degrees), grouped by the direction they look to (10 degrees across)
+  const groups = new Map();
+  for (const t of tris) {
+    const slope = Math.acos(Math.min(1, t.n.z)) * R2D;
+    if (slope < 6 || slope > 70) continue;
+    const key = Math.round(Math.atan2(t.n.y, t.n.x) * R2D / 10);
+    if (!groups.has(key)) groups.set(key, { area: 0, list: [] });
+    const g = groups.get(key); g.area += t.area; g.list.push(t);
+  }
+  let best = null, bestKey = 0;
+  for (const [k, g] of groups) if (!best || g.area > best.area) { best = g; bestKey = k; }
+  if (!best || best.area < upArea * 0.2) return false;
+  const list = [...best.list];
+  for (const k of [bestKey - 1, bestKey + 1]) if (groups.has(k)) list.push(...groups.get(k).list);
+  const nm = new THREE.Vector3();
+  for (const t of list) nm.addScaledVector(t.n, t.area);
+  const h = Math.hypot(nm.x, nm.y);
+  if (h < 1e-3) return false;
+  const g = new THREE.Vector3(-nm.x / h, -nm.y / h, 0);                         // up the slope, on the ground plane
+  const lat = new THREE.Vector3(-g.y, g.x, 0);
+  let tmin = Infinity, tmax = -Infinity, lmin = Infinity, lmax = -Infinity;
+  for (const t of list) for (const v of t.v) { const tt = v.dot(g), ll = v.dot(lat); if (tt < tmin) tmin = tt; if (tt > tmax) tmax = tt; if (ll < lmin) lmin = ll; if (ll > lmax) lmax = ll; }
+  if (tmax - tmin < 2) return false;
+  const lm = (lmin + lmax) / 2, eps = Math.max(0.3, (tmax - tmin) * 0.04);
+  // the lowest edge: the end of the face that is lowest; the highest edge: where the face reaches its highest (a wedge can have a cliff or a drop after it)
+  let zmax = -Infinity;
+  for (const t of list) for (const v of t.v) if (v.z > zmax) zmax = v.z;
+  const mean = (test) => {
+    let zs = 0, ts = 0, n = 0;
+    for (const t of list) for (const v of t.v) if (test(v)) { zs += v.z; ts += v.dot(g); n++; }
+    return n ? { z: zs / n, t: ts / n } : null;
+  };
+  const l0 = mean((v) => v.dot(g) <= tmin + eps), h0 = mean((v) => v.z >= zmax - 0.2);
+  if (!l0 || !h0 || h0.t - l0.t < 2) return false;
+  const lo = g.clone().multiplyScalar(l0.t).addScaledVector(lat, lm).setZ(l0.z);
+  const hi = g.clone().multiplyScalar(h0.t).addScaledVector(lat, lm).setZ(h0.z);
+  if (hi.z - lo.z < 0.4) return false;
+  return { lo, hi, width: lmax - lmin, slope: Math.atan2(hi.z - lo.z, h0.t - l0.t) * R2D };
+}
+const rampOf = (id) => ramps.get(id) || null;
+
+// The places of a ramp p that goes on the highest edge of the ramp q (continuing the slope up) or on its lowest edge (continuing it down): the rotation of q
+function rampCandidates(p, q, out) {
+  const rp = rampOf(p.model), rq = rampOf(q.model);
+  if (!rp || !rq) return false;
+  const qq = quatOf(q.rx || 0, q.ry || 0, q.rz || 0);
+  const pen = Math.abs(rp.width - rq.width) / Math.max(rp.width, rq.width, 0.1) * 2;
+  const origin = new THREE.Vector3(q.x, q.y, q.z);
+  for (const [qEdge, pEdge, up] of [[rq.hi, rp.lo, true], [rq.lo, rp.hi, false]]) {
+    const w = qEdge.clone().applyQuaternion(qq).add(origin);
+    const pos = w.sub(pEdge.clone().applyQuaternion(qq));
+    const pose = poseOf(new THREE.Matrix4().compose(pos, qq, ONE), p.model, false);
+    pose.pen = pen - 1;                                                        // before the old way of joining the ends of two ramps
+    pose.ramp = up ? 'up' : 'down';
+    out.push(pose);
+  }
+  return true;
+}
+const bothRamps = (a, b) => !!(rampOf(a) && rampOf(b));
+
+// The ends that are read from some models are not all real: the loop (18801) has its road ends at the bottom of the circle, and the two extra ones that are
+// read at the sides of the circle (halfway up) are not places where a road joins, so only the two lowest are kept
+function fixSockets(id, list) {
+  if (id === 18801 && Array.isArray(list) && list.length > 2) return [...list].sort((a, b) => a.m.elements[14] - b.m.elements[14]).slice(0, 2);
+  return list;
+}
+
 // Reads the ends of the models that are not known yet (the model must be loaded: it is done while it is shown)
 export function warmRoad(models, ids) {
+  for (const id of ids) {
+    if (!ramps.has(id) && !isTubeModel(id) && !TUBE_EXTRAS.includes(id) && isRoadModel(id) && roadKind(id) === 'surface') {
+      ramps.set(id, null);
+      Promise.resolve(models.getModel(id)).then((obj) => ramps.set(id, obj ? computeRamp(obj) : false)).catch(() => ramps.set(id, false));
+    }
+  }
   for (const id of ids) {
     if (isTubeModel(id) || TUBE_EXTRAS.includes(id) || sockets.has(id) || !isRoadModel(id)) continue;
     sockets.set(id, null);
     const kind = roadKind(id);
     const read = kind === 'tube' ? computeTubeSockets : (root) => computeEnds(root, kind, null, TUNNELS.includes(id));
-    Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? read(obj) : false)).catch(() => sockets.set(id, false));
+    Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? fixSockets(id, read(obj)) : false)).catch(() => sockets.set(id, false));
   }
 }
 export const roadSockets = (id) => (isTubeModel(id) ? tubeSockets(id) : sockets.get(id)) || null;
@@ -183,20 +285,22 @@ function socketCandidates(p, q, out) {
   const sp = roadSockets(p.model), sq = roadSockets(q.model);
   if (!sp || !sq) return;
   const wq = realMatrix(q);
-  for (const b of sq) {
-    for (const a of sp) {
+  for (let bi = 0; bi < sq.length; bi++) {
+    const b = sq[bi];
+    for (let ai = 0; ai < sp.length; ai++) {
+      const a = sp[ai];
       // Any end joins any other end, whatever the model (a loop to a road, a ramp to a box): the more alike they are, the better the match
       const wa = Math.max(a.width, b.width, 0.1);
       let pen = Math.abs(a.width - b.width) / wa * 3 + (a.kind === b.kind ? 0 : 2.5);
       if (a.kind === 'rim' && b.kind === 'rim') pen += Math.abs(a.height - b.height) / Math.max(a.height, b.height, 0.1) * 3;
       // Flat: the ends meet at the same point and the piece keeps the attitude of the one it joins (a ramp does not tilt the box after it)
       const flat = poseOf(wq.clone().multiply(b.m).multiply(FLIP).multiply(a.m.clone().invert()), p.model, false);
-      flat.pen = pen;
+      flat.pen = pen; flat.qi = bi; flat.pi = ai;
       out.push(flat);
       // Continuing the slope: the surface goes on as it was (a ramp made longer): the piece is tilted as much as the slope of the ends says
       if (a.m3 || b.m3) {
         const tilted = poseOf(wq.clone().multiply(b.m3 || b.m).multiply(FLIP).multiply((a.m3 || a.m).clone().invert()), p.model, false);
-        tilted.pen = pen + 0.3;
+        tilted.pen = pen + 0.3; tilted.qi = bi; tilted.pi = ai; tilted.tilted = true;
         out.push(tilted);
       }
     }
@@ -224,7 +328,7 @@ export function roadSnap(p, others, maxDist = 8, want = null) {
     list.length = 0;
     const pt = isTubeModel(p.model), qt = isTubeModel(q.model), pe = TUBE_EXTRAS.includes(p.model);
     if (qt && (pt || pe)) tubeCandidates(p, q, list);                                         // the table of the tool
-    if (!(pt && qt) && !pe) socketCandidates(p, q, list);                                     // every other pair: by the ends of the models
+    if (!(pt && qt) && !pe) { if (!(bothRamps(p.model, q.model) && rampCandidates(p, q, list))) socketCandidates(p, q, list); }     // two ramps: slope on slope; every other pair: by the ends of the models
     for (const c of list) {
       const d = c.pos.distanceTo(here);
       if (d > maxDist) continue;
@@ -239,10 +343,53 @@ export function roadSnap(p, others, maxDist = 8, want = null) {
 }
 
 // Every place the piece p can go next to the piece q (to look at them, and for the tests)
-export function roadCandidates(p, q) {
+export function roadCandidates(p, q, socketsOnly = false) {
   const list = [];
   const pt = isTubeModel(p.model), qt = isTubeModel(q.model), pe = TUBE_EXTRAS.includes(p.model);
   if (qt && (pt || pe)) tubeCandidates(p, q, list);
-  if (!(pt && qt) && !pe) socketCandidates(p, q, list);
+  if (!(pt && qt) && !pe) { if (socketsOnly || !(bothRamps(p.model, q.model) && rampCandidates(p, q, list))) socketCandidates(p, q, list); }
   return list;
 }
+
+// ---------------------------------------------------------------- for the automatic creation (Auto Criar)
+// The tubes of the table: the places a tube of `model` can take after the tube q, whose own kind (type) is x: one for each way it can be joined
+export function tubeSuccessors(q, x, model) {
+  const out = [], wq = chainMatrix(q);
+  for (const y of TUBE_TYPES[model] || []) {
+    const pose = poseOf(wq.clone().multiply(rel(x, y)), model, true);
+    pose.type = y;
+    out.push(pose);
+  }
+  return out;
+}
+export const tubeTypesOf = (model) => TUBE_TYPES[model] || [];
+
+// The supports of a tube q (the pole 19670 under it and the two brackets 19671), where the table of the tool puts them: [{ model, x, y, z, rx, ry, rz }]
+export function tubeSupports(q) {
+  const c = TUBE_COUNTER[q.model];
+  if (c === undefined || !TUBE_TYPES[q.model]) return [];
+  const parent = realMatrix(q), out = [];
+  const put = (model, row) => {
+    if (!row) return;
+    const pose = poseOf(parent.clone().multiply(attachMatrix(row)), model, false);
+    out.push({ model, x: pose.pos.x, y: pose.pos.y, z: pose.pos.z, rx: pose.rot[0], ry: pose.rot[1], rz: pose.rot[2] });
+  };
+  put(19670, TUBE_SUPPORT_1[c]); put(19671, TUBE_SUPPORT_2[c]); put(19671, TUBE_SUPPORT_3[c]);
+  return out;
+}
+
+// The places a piece of `model` can take at the ends of the piece q that are still free (usedEnds: the ends of q that already have a piece), without
+// tilting it: for each one the end of q (qi) and the end of the new piece that touches it (pi)
+export function endSuccessors(q, usedEnds, model) {
+  const out = [];
+  const sq = roadSockets(q.model);
+  if (!sq || isTubeModel(q.model)) return out;
+  for (const c of roadCandidates({ model, x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 }, q, true)) {
+    if (c.tilted || c.qi === undefined || usedEnds.has(c.qi)) continue;
+    out.push(c);
+  }
+  return out;
+}
+export const rampsOf = rampOf;
+export const endsOf = (model) => (isTubeModel(model) ? null : roadSockets(model));
+export { poseOf as _poseOf };

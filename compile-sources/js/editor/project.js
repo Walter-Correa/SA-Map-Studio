@@ -219,7 +219,7 @@ export function makeLabel(data) {
 }
 
 // What happens when the player enters a checkpoint or takes a pickup (Singleplayer): a type and its settings, a price and a message
-export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion',
+export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'skills', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion',
   'statFat', 'statMuscle', 'statStamina', 'statLung', 'statMaxHealth', 'statRespect', 'statSex', 'hungerOff'];
 export const STAT_RANGE = { statMaxHealth: [569, 1000] }; // the least and the most of the stats an action changes (0 to 1000 for the others)
 export function makeAction(data) {
@@ -760,13 +760,24 @@ export class Project {
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   emit(change) { this.version++; for (const fn of this.listeners) fn(change); }
 
+  // uid -> [kind, item]: the lookups by uid are everywhere (every selected item, every frame...) and scanning the lists made a project with some
+  // hundreds of objects freeze; the index is made again when the project changes (its version) or when a list changes its size
+  _index() {
+    let sig = 0;
+    for (const k of KINDS) sig = sig * 31 + this[k].length;
+    if (this._idx && this._idxVersion === this.version && this._idxSig === sig) return this._idx;
+    const m = new Map();
+    for (const k of KINDS) for (const o of this[k]) if (!m.has(o.uid)) m.set(o.uid, [k, o]);
+    this._idx = m; this._idxVersion = this.version; this._idxSig = sig;
+    return m;
+  }
   kindOf(uid) {
-    for (const k of KINDS) if (this[k].some(o => o.uid === uid)) return k;
-    return null;
+    const e = this._index().get(uid);
+    return e ? e[0] : null;
   }
   find(uid) {
-    for (const k of KINDS) { const o = this[k].find(x => x.uid === uid); if (o) return o; }
-    return null;
+    const e = this._index().get(uid);
+    return e ? e[1] : null;
   }
   snapshot(uid) {
     const k = this.kindOf(uid);

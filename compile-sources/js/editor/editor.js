@@ -14,6 +14,7 @@ import { createSpawnNode } from '../world/spawn.js';
 import { roadSnap, warmRoad } from './roadSnap.js';
 import { isRoadModel } from '../world/roadPieces.js';
 
+const GIZMO_MIN_DIST = 2.5, GIZMO_MIN_SIZE = 0.45, GIZMO_FULL_DIST = 7;     // the manipulator that follows the camera: nearest to the camera (m) and smallest (the fraction of its size)
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
 export function eulerFromItem(o, kind) {
@@ -76,7 +77,7 @@ export class Editor extends EventTarget {
     });
     this.selOverlays = [];
     this.showSelectionBox = false;
-    this.gizmoToCamera = false;      // the manipulator slides over the object toward the camera, and gets smaller as the camera gets near
+    this.gizmoToCamera = true;      // the manipulator slides over the object toward the camera, and gets smaller as the camera gets near
     this.removeLodToo = true;
 
     // Gizmo
@@ -161,6 +162,8 @@ export class Editor extends EventTarget {
         };
         btn.addEventListener('pointerdown', (e) => {
           e.stopPropagation(); e.preventDefault();
+          // only the left button turns (alone: another button, or the second one pressed while holding, does nothing and stops it)
+          if (e.button !== 0 || e.buttons !== 1) { stop(); return; }
           btn.setPointerCapture?.(e.pointerId);
           before = this.beginArrowRotation();
           this.rotateAroundAxis(axis, dir * 5 * speed());
@@ -174,6 +177,8 @@ export class Editor extends EventTarget {
           }, 350);
         });
         for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) btn.addEventListener(ev, stop);
+        btn.addEventListener('pointermove', (e) => { if ((timer || tick) && e.buttons !== 1) stop(); });
+        btn.addEventListener('contextmenu', (e) => e.preventDefault());
         btn.addEventListener('mousedown', (e) => e.stopPropagation());
         btn.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); });
       }
@@ -199,12 +204,12 @@ export class Editor extends EventTarget {
     for (const { btn, axis, dir } of this.rotArrowBtns) {
       if (yawOnly && axis !== 'z') { btn.style.display = 'none'; continue; }
       const a = new THREE.Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0).applyQuaternion(q);
-      // the ring is the circle around the axis; its point that is nearest the camera, and the arrows on both sides of it
+      // the ring is the circle around the axis; its point that is nearest the camera, and the arrows at the two ends of the half circle that is drawn
       let u = eye.clone().sub(a.clone().multiplyScalar(eye.dot(a)));
       if (u.lengthSq() < 1e-4) u = new THREE.Vector3(1, 0, 0).cross(a);
       u.normalize();
       const v = new THREE.Vector3().crossVectors(a, u);
-      const ang = dir * 0.95;
+      const ang = dir * Math.PI / 2;      // the ring that is drawn is a half circle facing the camera: its two ends are 90 degrees from its nearest point
       const p = c.clone().addScaledVector(u, Math.cos(ang) * R).addScaledVector(v, Math.sin(ang) * R);
       const t = new THREE.Vector3().crossVectors(a, p.clone().sub(c)).normalize().multiplyScalar(dir);   // the way the ring turns for this arrow
       const [sx, sy, sz] = proj(p), [tx, ty] = proj(p.clone().addScaledVector(t, R * 0.2));
@@ -248,7 +253,8 @@ export class Editor extends EventTarget {
     for (const s of items) {
       const node = this.nodes.get(s.uid);
       if (!node) continue;
-      node.position.copy(c).add(node.position.clone().sub(c).applyQuaternion(Q));
+      const offset = node.position.clone().sub(c).applyQuaternion(Q);          // (taken before the position changes: it was taken after, and every object went to the center)
+      node.position.copy(c).add(offset);
       node.quaternion.premultiply(Q);
       node.updateMatrixWorld(true);
       s.item.x = round(node.position.x); s.item.y = round(node.position.y); s.item.z = round(node.position.z);
@@ -368,11 +374,61 @@ export class Editor extends EventTarget {
   }
 
   onProjectChange(ch) {
-    this.syncAll();
+    // what changed is known (an edit, an undo, a redo): only those items are looked at; the rest of the changes look at everything
+    if (ch && ch.uids && ch.uids.length && ['transact', 'undo', 'redo'].includes(ch.type)) this.syncSome(ch.uids);
+    else this.syncAll();
     this.selection = this.selection.filter(u => this.findProjectOf(u)?.find(u));
     this.attachGizmo();
     this.fixMatSel();
     this.emit('change', ch);
+  }
+
+  // The node of one item: made when it has none or when its model or what changes its look is not the one of the node; its place and rotation are set
+  syncOne(p, kind, o) {
+    let node = this.nodes.get(o.uid);
+    const modelId = kind === 'actors' ? (o.skin ?? 0) : (o.model ?? 0);
+    let sig = '';
+    if (kind === 'objects') sig = o.materials && o.materials.length ? JSON.stringify(o.materials) : '[]';
+    else if (kind === 'vehicles') sig = JSON.stringify([o.color1, o.color2, o.paintjob, o.components]);
+    else if (kind === 'actors') sig = JSON.stringify([o.skin, o.anim]);
+    else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
+    else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
+    else if (kind === 'checkpoints') sig = JSON.stringify([o.isRace, o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
+    else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
+
+    if (!node || node.userData.model !== modelId || node.userData.matSig !== sig) {
+      if (node) this.root.remove(node);
+      node = this.createNode(o, kind);
+      node.userData.matSig = sig;
+      node.userData.projectId = p.name;
+      this.nodes.set(o.uid, node);
+      this.root.add(node);
+    }
+    node.position.set(o.x, o.y, o.z);
+    node.rotation.copy(eulerFromItem(o, kind));
+    node.updateMatrixWorld(true);
+  }
+
+  // Only the items with these uids (the ones an edit changed)
+  syncSome(uids) {
+    const KINDS = ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns'];
+    const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
+    for (const p of projects) if (p.checkpoints) updateRaceCheckpointsChain(p.checkpoints);
+    for (const uid of uids) {
+      const p = this.findProjectOf(uid);
+      const item = p && p.find(uid);
+      const kind = item ? p.kindOf(uid) : null;
+      if (!item || !KINDS.includes(kind)) {
+        const node = this.nodes.get(uid);
+        if (node) { this.root.remove(node); this.nodes.delete(uid); }
+        continue;
+      }
+      this.syncOne(p, kind, item);
+    }
+    this.updateAttachedChildren();
+    this.updateHiddenWorld();
+    this.refreshSelectionBoxes();
+    this.attachGizmo();
   }
 
   syncAll() {
@@ -383,28 +439,7 @@ export class Editor extends EventTarget {
       for (const kind of ['objects', 'vehicles', 'actors', 'labels', 'pickups', 'checkpoints', 'mapIcons', 'spawns']) {   // GangZones live only in their own editor, not in the 3D map
         for (const o of (p[kind] || [])) {
           alive.add(o.uid);
-          let node = this.nodes.get(o.uid);
-          const modelId = kind === 'actors' ? (o.skin ?? 0) : (o.model ?? 0);
-          let sig = '';
-          if (kind === 'objects') sig = JSON.stringify(o.materials || []);
-          else if (kind === 'vehicles') sig = JSON.stringify([o.color1, o.color2, o.paintjob, o.components]);
-          else if (kind === 'actors') sig = JSON.stringify([o.skin, o.anim]);
-          else if (kind === 'labels') sig = JSON.stringify([o.text, o.color, o.drawDist, o.testLOS, o.scale]);
-          else if (kind === 'pickups') sig = JSON.stringify([o.model, o.type]);
-          else if (kind === 'checkpoints') sig = JSON.stringify([o.isRace, o.cpKind, o.type, o.size, o.nextx, o.nexty, o.nextz, o.x, o.y, o.z, o.hasNext]);
-          else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
-
-          if (!node || node.userData.model !== modelId || node.userData.matSig !== sig) {
-            if (node) this.root.remove(node);
-            node = this.createNode(o, kind);
-            node.userData.matSig = sig;
-            node.userData.projectId = p.name;
-            this.nodes.set(o.uid, node);
-            this.root.add(node);
-          }
-          node.position.set(o.x, o.y, o.z);
-          node.rotation.copy(eulerFromItem(o, kind));
-          node.updateMatrixWorld(true);
+          this.syncOne(p, kind, o);
         }
       }
     }
@@ -415,6 +450,21 @@ export class Editor extends EventTarget {
     this.updateHiddenWorld();
     this.refreshSelectionBoxes();
     this.attachGizmo();
+  }
+
+  // Redoes the selection boxes (and, when asked, the manipulator and the highlight of the texture slots) once, a moment later, however many nodes ask for it
+  queueRefresh(gizmo = false, slots = false) {
+    this._qGizmo = this._qGizmo || gizmo;
+    this._qSlots = this._qSlots || slots;
+    if (this._qRefresh) return;
+    this._qRefresh = setTimeout(() => {
+      this._qRefresh = null;
+      const g = this._qGizmo, sl = this._qSlots;
+      this._qGizmo = this._qSlots = false;
+      this.refreshSelectionBoxes();
+      if (g) this.attachGizmo();
+      if (sl) this.updateSlotHighlight();
+    }, 30);
   }
 
   createNode(o, kind) {
@@ -465,9 +515,8 @@ export class Editor extends EventTarget {
         }
       }
       node.traverse(c => { c.userData.uid = o.uid; c.userData.kind = kind; });
-      this.refreshSelectionBoxes();
-      if (this.selection.includes(o.uid)) this.attachGizmo();
-      if (this.matSel.length && this.selection.includes(o.uid)) this.updateSlotHighlight();
+      // (thousands of nodes get their model almost at once: the boxes, the manipulator and the highlight are redone once, not once for each node)
+      this.queueRefresh(this.selection.includes(o.uid), this.matSel.length && this.selection.includes(o.uid));
     };
     if (this.models.ready.has(modelId)) fill();
     else this.models.getModel(modelId).then(fill);
@@ -552,9 +601,18 @@ export class Editor extends EventTarget {
         `${modelName}remap${pjNum}`,
         `paintjob${pjNum}`
       ];
-      this.models.txdChain(def.txd).then(chain => {
+      // The paintjobs of the game are the files <model>1.txd, <model>2.txd and <model>3.txd (elegy1.txd...), each one with the texture that goes on the body
+      this.models.loadTxd(`${modelName}${pjNum}`).then(map => {
+        let pj = null;
+        for (const [name, info] of map) { if (/body|remap/i.test(name)) { pj = info; break; } pj = pj || info; }
+        return pj;
+      }).catch(() => null).then(async (pj) => {
+        if (pj) return [new Map([['paintjob', pj]])];
+        return this.models.txdChain(def.txd);
+      }).then(chain => {
         let foundTex = null;
-        for (const c of candidates) {
+        if (chain.length === 1 && chain[0].has('paintjob')) foundTex = chain[0].get('paintjob');
+        else for (const c of candidates) {
           for (const map of chain) {
             if (map.has(c)) { foundTex = map.get(c); break; }
           }
@@ -887,6 +945,7 @@ export class Editor extends EventTarget {
     }
 
     this.pivot.updateMatrixWorld(true);
+    this._gizmoHome = this.pivot.position.clone();      // the true center of the selection (the rotation turns around it even when the manipulator follows the camera)
     this.tc.attach(this.pivot);
     this.tc.setMode(this.mode);
     this.tc.setSpace(this.mode === 'rotate' && items.length === 1 ? this.space : this.space);
@@ -974,26 +1033,35 @@ export class Editor extends EventTarget {
     return roadSnap(p, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
   }
 
-  // The manipulator slides over the selected object toward the camera, without leaving it (the limits are the edges of the object), and its size follows
-  // the distance: the nearer the camera, the smaller it is, so it fits on the screen. Only to move (to rotate it stays at the middle of the object)
+  // The manipulator slides over the selected object to where the camera is pointing (the place where the line of sight enters the object, or the nearest
+  // place of the object to that line when it misses it), without leaving the object (the limits are its edges), and its size follows the distance: the
+  // nearer the camera, the smaller it is, so it fits on the screen. It never goes nearer to the camera than GIZMO_MIN_DIST nor gets smaller than
+  // GIZMO_MIN_SIZE, so it does not leave the screen. Also to rotate (the rotation still turns around the middle of the object)
   followCameraGizmo() {
     if (this.dragging || this.externalGizmo) return;
     const items = this.selection.length && !this.placing && this.gizmo.visible && this.tc.object === this.pivot ? this.selectedItems() : [];
-    if (!this.gizmoToCamera || !items.length || this.mode !== 'translate') {
-      if (this._camShifted) { this._camShifted = false; this.tc.setSize(0.9); this.attachGizmo(); }
+    if (!this.gizmoToCamera || !items.length || (this.mode !== 'translate' && this.mode !== 'rotate')) {
+      if (this._camShifted) { this._camShifted = false; this._gizmoSize = 0.9; this.tc.setSize(0.9); this.attachGizmo(); }
       return;
     }
-    // the box of the selection (the box of the object turned as the object is, so the limits are its edges; the box of the group of several)
     const cam = this.vp.camera.position;
+    const dir = this.vp.camera.getWorldDirection(new THREE.Vector3());
     const box = new THREE.Box3();
     let target = null, radius = 1;
+    // the place of a box (in the space of the box) that the line of sight points to
+    const aim = (lb, o, d) => {
+      const hit = new THREE.Ray(o, d).intersectBox(lb, new THREE.Vector3());
+      if (hit) return hit;
+      const t = Math.max(0, lb.getCenter(new THREE.Vector3()).sub(o).dot(d));
+      return o.clone().addScaledVector(d, t).clamp(lb.min, lb.max);
+    };
     if (items.length === 1) {
       const node = this.nodes.get(items[0].uid);
       const lb = node && getLocalBox(node);
       if (lb) {
-        const local = node.worldToLocal(cam.clone());
-        local.clamp(lb.min, lb.max);
-        target = node.localToWorld(local);
+        const o = node.worldToLocal(cam.clone());
+        const d = node.worldToLocal(cam.clone().add(dir)).sub(o).normalize();
+        target = node.localToWorld(aim(lb, o, d));
         radius = lb.getSize(new THREE.Vector3()).length() / 2;
       }
     } else {
@@ -1003,23 +1071,26 @@ export class Editor extends EventTarget {
         if (!lb) continue;
         for (const x of [lb.min.x, lb.max.x]) for (const y of [lb.min.y, lb.max.y]) for (const z of [lb.min.z, lb.max.z]) box.expandByPoint(node.localToWorld(new THREE.Vector3(x, y, z)));
       }
-      if (!box.isEmpty()) { target = cam.clone().clamp(box.min, box.max); radius = box.getSize(new THREE.Vector3()).length() / 2; }
+      if (!box.isEmpty()) { target = aim(box, cam.clone(), dir); radius = box.getSize(new THREE.Vector3()).length() / 2; }
     }
     if (!target) return;
+    // never nearer than the minimum (the camera inside the object, or touching it): the point goes forward along the line of sight
+    if (cam.distanceTo(target) < GIZMO_MIN_DIST) target = cam.clone().addScaledVector(dir, GIZMO_MIN_DIST);
     this.pivot.position.lerp(target, 0.4);
     this.pivot.updateMatrixWorld(true);
     this._camShifted = true;
+    // the size is the normal one (the manipulator keeps its size on the screen as the camera moves, as it does when it does not follow the camera); only
+    // when the camera is very near it gets smaller, down to the minimum, so that it does not fill the screen
     const dist = cam.distanceTo(this.pivot.position);
-    const k = Math.max(0.3, Math.min(1, dist / (radius * 2.5 + 8)));
-    const size = 0.9 * k;
-    if (Math.abs(size - (this._gizmoSize || 0.9)) > 0.015) { this._gizmoSize = size; this.tc.setSize(size); }
+    const size = 0.9 * Math.max(GIZMO_MIN_SIZE, Math.min(1, dist / GIZMO_FULL_DIST));
+    if (this._gizmoSize === undefined || Math.abs(size - this._gizmoSize) > 0.01) { this._gizmoSize = size; this.tc.setSize(size); }
   }
 
   beginDrag() {
     this.dragging = true;
     const items = this.selectedItems();
     this.dragStart = {
-      pivotPos: this.pivot.position.clone(),
+      pivotPos: this.mode === 'rotate' && this._gizmoHome ? this._gizmoHome.clone() : this.pivot.position.clone(),
       pivotQuat: this.pivot.quaternion.clone(),
       states: this.selection.map(u => this.findProjectOf(u).snapshot(u)),
       nodes: items.map(s => {
@@ -1191,7 +1262,7 @@ export class Editor extends EventTarget {
       if (!node) continue;
       const offset = node.position.clone().sub(c).applyQuaternion(Q);
       node.position.copy(c).add(offset);
-      node.quaternion.multiply(Q);
+      node.quaternion.premultiply(Q);              // a turn of the whole set: around the world axes, like the offset above (not the axes of each object)
       node.updateMatrixWorld(true);
 
       s.item.x = round(node.position.x); s.item.y = round(node.position.y); s.item.z = round(node.position.z);
@@ -1349,6 +1420,24 @@ export class Editor extends EventTarget {
     this.emit('move-ended', { uid });
   }
 
+  // uid of an object -> the nodes of the objects attached to it; made again only when a project changes (it was made for every node that loaded)
+  attachedMap() {
+    const projects = [this.project, ...(this.extraProjects ? [...this.extraProjects.values()].map(e => e.project) : [])];
+    const ver = projects.map(p => p.version).join(',') + '|' + this.nodes.size;
+    if (this._attachedVer === ver && this._attachedMap) return this._attachedMap;
+    const m = new Map();
+    for (const p of projects) {
+      for (const o of p.objects || []) {
+        const to = o.attach?.to;
+        if (!to) continue;
+        const n = this.nodes.get(o.uid);
+        if (n) { if (!m.has(to)) m.set(to, []); m.get(to).push(n); }
+      }
+    }
+    this._attachedVer = ver; this._attachedMap = m;
+    return m;
+  }
+
   refreshSelectionBoxes() {
     this.selBoxes.clear();
     for (const ov of this.selOverlays || []) {
@@ -1364,6 +1453,7 @@ export class Editor extends EventTarget {
         ov.userData.noPick = true;
         ov.userData.selOverlay = true;
         ov.raycast = () => {};
+        ov.renderOrder = 1000;            // after everything else, so that a surface that is transparent (a road) does not cover the red
         mesh.add(ov);
         this.selOverlays.push(ov);
       });
@@ -1380,6 +1470,17 @@ export class Editor extends EventTarget {
       }
       addHighlightOverlay(obj);
     };
+    // the objects attached to each vehicle / object (AttachObjectToObject / AttachObjectToVehicle), found once for the whole selection
+    const attachedTo = this.selection.length ? this.attachedMap() : new Map();
+    // A very big selection (thousands of objects): one box around all of it instead of a box and a copy of the mesh for each one (that doubled and tripled
+    // what the screen draws every frame and made the editor stutter)
+    if (this.selection.length > 2500) {
+      const all = new THREE.Box3();
+      for (const u of this.selection) { const n = this.nodes.get(u); if (n) all.expandByObject(n); }
+      if (!all.isEmpty() && this.showSelectionBox !== false) { const h = new THREE.Box3Helper(all, 0xff5555); h.userData.noPick = true; this.selBoxes.add(h); }
+      for (const inst of this.worldSelection) { const obj = this.streamer.shown.get(inst.index); if (obj) add(obj, 0xff5555); }
+      return;
+    }
     for (const u of this.selection) {
       const p = this.findProjectOf(u);
       if (p?.kindOf(u) === 'labels') continue;
@@ -1387,13 +1488,8 @@ export class Editor extends EventTarget {
       if (n?.userData?.isLabel || n?.userData?.kind === 'labels') continue;
       if (n) {
         add(n, 0xff5555);
-        // Also highlights objects attached to this vehicle / object (AttachObjectToObject / AttachObjectToVehicle)
-        for (const [otherUid, otherNode] of this.nodes) {
-          const otherItem = this.findProjectOf(otherUid)?.find(otherUid);
-          if (otherItem?.attach?.to === u) {
-            add(otherNode, 0xff5555);
-          }
-        }
+        // Also highlights the objects attached to this one
+        for (const otherNode of attachedTo.get(u) || []) add(otherNode, 0xff5555);
       }
     }
     for (const inst of this.worldSelection) {
@@ -1482,6 +1578,22 @@ export class Editor extends EventTarget {
                 if (node) {
                   node.position.set(curItem.x, curItem.y, curItem.z);
                   node.updateMatrixWorld(true);
+                  // Automatic snap of tracks, ramps and roads also when dragging the piece with the mouse (one piece at a time)
+                  if (directDrag.itemStarts.length === 1) {
+                    if (directDrag.rot0 === undefined) directDrag.rot0 = [curItem.rx || 0, curItem.ry || 0, curItem.rz || 0];
+                    const hit = this.roadSnapFor(it.uid, node, this.kindOf(it.uid));
+                    if (hit) {
+                      node.position.copy(hit.pos); node.quaternion.copy(hit.quat); node.updateMatrixWorld(true);
+                      curItem.x = round(hit.pos.x); curItem.y = round(hit.pos.y); curItem.z = round(hit.pos.z);
+                      curItem.rx = normDeg(hit.rot[0]); curItem.ry = normDeg(hit.rot[1]); curItem.rz = normDeg(hit.rot[2]);
+                      directDrag.roaded = true;
+                    } else if (directDrag.roaded) {
+                      [curItem.rx, curItem.ry, curItem.rz] = directDrag.rot0;                      // let go: the rotation it had
+                      node.quaternion.copy(new THREE.Quaternion().setFromEuler(eulerFromItem(curItem, 'objects')));
+                      node.updateMatrixWorld(true);
+                      directDrag.roaded = false;
+                    }
+                  }
                 }
               }
             }
@@ -1673,6 +1785,14 @@ export class Editor extends EventTarget {
     let roadHit = null;
     if (this.snap.roads !== false && !this.altDown && !pl.options?.kind && isRoadModel(pl.model)) {
       roadHit = roadSnap({ uid: 'ghost', model: pl.model, x: p.x, y: p.y, z: p.z, rx: 0, ry: 0, rz: pl.rz }, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
+      // The surface under the pointer may be far above or below the piece to join (the ground, a wall...): the same position is tried at the height of the road pieces around
+      if (!roadHit) {
+        const zs = [...new Set((this.project.objects || []).filter(o => isRoadModel(o.model) && Math.hypot(o.x - p.x, o.y - p.y) < (this.snap.roadDist || 8) * 2).map(o => Math.round(o.z * 2) / 2))].slice(0, 12);
+        for (const z of zs) {
+          roadHit = roadSnap({ uid: 'ghost', model: pl.model, x: p.x, y: p.y, z, rx: 0, ry: 0, rz: pl.rz }, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
+          if (roadHit) break;
+        }
+      }
       if (roadHit) {
         pl.ghost.position.copy(roadHit.pos);
         pl.ghost.quaternion.copy(roadHit.quat);
@@ -1872,6 +1992,8 @@ export class Editor extends EventTarget {
   rotateSelection(axis, deg) {
     const items = this.selectedItems();
     if (!items.length) return;
+    // several objects turn together, around the middle of the set (each one turning in its own place would break the map)
+    if (items.length > 1) { this.rotateSelectionTogether(axis === 'x' ? deg : 0, axis === 'y' ? deg : 0, axis === 'z' ? deg : 0); return; }
     const byProject = new Map();
     for (const s of items) {
       const p = this.findProjectOf(s.uid);
@@ -1884,6 +2006,14 @@ export class Editor extends EventTarget {
         else if (axis === 'z') o.rz = normDeg(o.rz + deg);
       });
     }
+  }
+
+  // The height of the ground (or of what is under) at x, y: a ray from above, or null when nothing is there
+  groundHeight(x, y, fromZ = 1500) {
+    const rc = new THREE.Raycaster(new THREE.Vector3(x, y, fromZ), new THREE.Vector3(0, 0, -1), 0, 3000);
+    rc.camera = this.vp.camera;
+    const hits = rc.intersectObjects(this.pickTargets(), true).filter(h => !h.object.userData.noPick && !h.object.isSprite && !h.object.userData?.isLabel && !h.object.userData?.isPickup && !h.object.userData?.isCheckpoint);
+    return hits.length ? hits[0].point.z : null;
   }
 
   // Places the object on top of the surface right below it (terrain or another object)

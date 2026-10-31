@@ -56,7 +56,7 @@ export function bindNpc(a, project, rerender) {
 // ---------------------------------------------------------------------------  actions of checkpoints and pickups
 const TYPES = [
   ['none', 'Nenhuma (só o marcador)'], ['message', 'Mostrar uma mensagem'], ['health', 'Curar o jogador'], ['armour', 'Dar colete'],
-  ['money', 'Dar dinheiro'], ['weapon', 'Dar uma arma'], ['ammo', 'Munição máxima das armas que o jogador tem'], ['wanted', 'Mudar o nível de procurado'],
+  ['money', 'Dar dinheiro'], ['weapon', 'Dar uma arma'], ['ammo', 'Máximo de munição para armas equipadas'], ['skills', 'Máximo de skills para todas as armas'], ['wanted', 'Mudar o nível de procurado'],
   ['teleport', 'Teleportar o jogador'], ['vehicle', 'Dar um veículo'], ['repair', 'Consertar o veículo do jogador'], ['nitro', 'Instalar nitro no veículo'],
   ['jetpack', 'Dar um jetpack'], ['save', 'Salvar o jogo'], ['skin', 'Trocar a skin do jogador'], ['weather', 'Mudar o clima'], ['time', 'Mudar a hora'],
   ['explosion', 'Explosão (armadilha)'],

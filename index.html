@@ -183,11 +183,12 @@
           <label class="check"><input type="checkbox" id="showWater" checked> Mostrar água</label>
           <label class="check"><input type="checkbox" id="showInteriors"> Ver só os interiores</label>
           <label class="check"><input type="checkbox" id="showSelectionBox"> Mostrar caixa de seleção</label>
-          <label class="check" title="O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver"><input type="checkbox" id="gizmoToCamera"> Mover o gizmo na direção da câmera</label>
+          <label class="check" title="O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver"><input type="checkbox" id="gizmoToCamera" checked> Mover o gizmo na direção da câmera</label>
           <label class="check"><input type="checkbox" id="removeLod" checked> Ao remover um objeto, remover o LOD junto</label>
           <label class="check"><input type="checkbox" id="autoCollapseSidebars"> Recolher menus laterais ao mover a câmera</label>
         </div>
       </div>
+      <button id="btnAutoCreate" class="btn ghost" title="Auto Criar: o editor monta pistas, tubos, canos e interiores sozinho, na frente da câmera"><svg><use href="#i-wrench"/></svg><span class="lbl2">Auto Criar</span></button>
       <button id="btnCheckpoints" class="btn ghost" title="Criar Checkpoint ou Race Checkpoint (Tipos 0 a 4)"><svg><use href="#i-flag"/></svg><span class="lbl2">Checkpoints</span></button>
       <button id="btnMapIcons" class="btn ghost" title="Criar e editar MapIcons no mapa (IDs 0 a 63)"><svg><use href="#i-pin"/></svg><span class="lbl2">MapIcons</span></button>
       <button id="btnGangZones" class="btn ghost" title="Criar e editar GangZones no mapa do radar"><svg><use href="#i-map"/></svg><span class="lbl2">GangZones</span></button>
@@ -1251,7 +1252,7 @@
 
 <dialog class="dialog wide" id="dlgMapIcons" style="max-width: 1560px; width: 96vw; height: 92vh;">
   <div class="dialog-head">
-    <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-pin"/></svg><span>Editor de MapIcons (SetPlayerMapIcon)</span></div>
+    <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-pin"/></svg><span>Editor de MapIcons</span></div>
     <button class="modal-close" aria-label="Fechar">&times;</button>
   </div>
   <div class="gz-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">

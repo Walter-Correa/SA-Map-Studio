@@ -162,8 +162,9 @@ export function useProject(p, { keepCamera = false } = {}) {
   $('#projectName').value = p.name;
   const resume = (p.lastSelection || []).filter(u => p.kindOf(u));
   if (keepCamera && p.camera) app.vp.fly.setPose(new THREE.Vector3(p.camera.x, p.camera.y, p.camera.z), p.camera.yaw, p.camera.pitch);
-  else if (resume.length && resume.length === p.lastSelection.length) {
-    // Resumes where it left off: selects the last items, turns on the gizmo and takes the camera to it
+  else if (resume.length && resume.length === p.lastSelection.length && resume.length <= 60) {
+    // Resumes where it left off: selects the last items, turns on the gizmo and takes the camera to it (a big selection, like the one that Auto Criar
+    // leaves, is not restored: it made the project take too long to open)
     app.editor.select(resume);
     app.editor.focusGizmo();
   } else positionCameraOverProject(p);

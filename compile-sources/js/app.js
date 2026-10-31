@@ -11,7 +11,7 @@ import { Thumbnails } from './editor/thumbs.js';
 import { TextureLibrary } from './editor/textures.js';
 import { WORLD_PLACES, INTERIOR_PLACES, PLACES, regionOf } from './editor/places.js';
 import { isText } from './editor/materials.js';
-import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, postJSON, showConfirm } from './ui/common.js';
+import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, postJSON, showConfirm, installLimitClamp } from './ui/common.js';
 import { setupProjects, openInitialProject, saveNow, autosaveOnClose } from './ui/projects.js';
 import { setupCatalog, renderCatalogRows } from './ui/catalog.js';
 import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.js';
@@ -24,6 +24,7 @@ import { setupAnimPicker } from './ui/animPicker.js';
 import { setupSkinPicker } from './ui/skinPicker.js';
 import { setupSpritePicker } from './ui/spritePicker.js';
 import { initGangZoneDialog, openGangZoneDialog } from './ui/gangzoneDialog.js';
+import { initAutoCreate } from './ui/autoCreate.js';
 import { initTextDrawEditor, openTextDrawEditor } from './ui/textdrawEditor.js';
 import { initMapIconDialog, openMapIconDialog } from './ui/mapiconDialog.js';
 import { initSoundDialog, openSoundDialog } from './ui/soundDialog.js';
@@ -327,6 +328,8 @@ function setupToolbar(cfg) {
   if ($('#btnSounds')) $('#btnSounds').onclick = () => openSoundDialog();
   if ($('#btnColors')) $('#btnColors').onclick = () => openColorDialog();
   if ($('#btnGangZones')) $('#btnGangZones').onclick = () => openGangZoneDialog();
+  initAutoCreate();
+  installLimitClamp();
   if ($('#btnTextDraws')) $('#btnTextDraws').onclick = () => openTextDrawEditor();
   app.on('project-change', updateUndoButtons);
   app.on('project', updateUndoButtons);
@@ -344,7 +347,7 @@ function setupToolbar(cfg) {
       water: $('#showWater').checked,
       interiors: $('#showInteriors').checked,
       showSelectionBox: $('#showSelectionBox')?.checked ?? false,
-      gizmoToCamera: $('#gizmoToCamera')?.checked ?? false,
+      gizmoToCamera: $('#gizmoToCamera')?.checked ?? true,
       removeLod: $('#removeLod').checked,
       autoCollapseSidebars: $('#autoCollapseSidebars')?.checked ?? false,
       weather: Math.max(0, Math.min(45, +($('#viewWeather')?.value ?? 10) || 10)),
@@ -385,7 +388,7 @@ function setupToolbar(cfg) {
   $('#viewDist').value = view.dist; $('#camSpeed').value = view.speed; $('#showLod').checked = view.lod;
   $('#showWater').checked = view.water; $('#showInteriors').checked = view.interiors; $('#removeLod').checked = view.removeLod;
   if ($('#showSelectionBox')) $('#showSelectionBox').checked = view.showSelectionBox === true;
-  if ($('#gizmoToCamera')) $('#gizmoToCamera').checked = view.gizmoToCamera === true;
+  if ($('#gizmoToCamera')) $('#gizmoToCamera').checked = view.gizmoToCamera !== false;
   if ($('#autoCollapseSidebars')) $('#autoCollapseSidebars').checked = view.autoCollapseSidebars ?? false;
   if ($('#viewWeather')) $('#viewWeather').value = view.weather !== undefined ? view.weather : 10;
   if ($('#viewTime')) $('#viewTime').value = view.time || '10:00';
