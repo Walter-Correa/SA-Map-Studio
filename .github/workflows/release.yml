@@ -1,0 +1,61 @@
+name: Release
+
+# Builds the clean single-file editor exactly like build-clean.bat does in the repository folder
+# and publishes SA Map Studio.exe as a GitHub release.
+# Start it by pushing a tag (git tag v4.1.37 && git push origin v4.1.37) or by hand in the Actions tab.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Read the editor version
+        id: ver
+        shell: pwsh
+        run: |
+          $m = Select-String -Path serve.py -Pattern '^VERSION\s*=\s*"(\d+\.\d+\.\d+)"'
+          if (-not $m) { throw "VERSION not found in serve.py" }
+          $v = $m.Matches[0].Groups[1].Value
+          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -ne "v$v") {
+            throw "Tag $env:GITHUB_REF_NAME does not match VERSION $v in serve.py"
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Build (build-clean.bat)
+        shell: cmd
+        env:
+          NO_PAUSE: "1"
+        run: call build-clean.bat
+
+      - name: Check the executable
+        shell: pwsh
+        run: |
+          $exe = "compiled\SA Map Studio\SA Map Studio.exe"
+          if (-not (Test-Path $exe)) { throw "Executable was not generated" }
+          "{0:N1} MB" -f ((Get-Item $exe).Length / 1MB)
+
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v${{ steps.ver.outputs.version }}"
+          $exe = "compiled\SA Map Studio\SA Map Studio.exe"
+          if (gh release view $tag 2>$null) {
+            gh release upload $tag $exe --clobber
+          } else {
+            gh release create $tag $exe --target $env:GITHUB_SHA --title "SA Map Studio $tag" --generate-notes
+          }
