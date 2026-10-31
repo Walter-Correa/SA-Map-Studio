@@ -65,7 +65,7 @@ jobs:
           $body = ($body -join "`n").Trim()
           if (-not $body) { throw "The section of version $v in readme.md is empty" }
           $repo = $env:GITHUB_REPOSITORY
-          $notes = "$body`n`n---`nFull history: https://github.com/$repo/blob/v$v/readme.md#version-history"
+          $notes = "<details>`n<summary>Changelog of v$v</summary>`n`n$body`n`n</details>`n`n---`nFull history: https://github.com/$repo/blob/v$v/readme.md#version-history"
           [System.IO.File]::WriteAllText((Join-Path $PWD "release-notes.md"), $notes, (New-Object System.Text.UTF8Encoding($false)))
 
       - name: Publish the release
