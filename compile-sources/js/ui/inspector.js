@@ -213,11 +213,6 @@ export function renderInspector() {
 }
 
 function titleThumb(model, isActor = false) {
-  if (isActor && (model === 0 || model === '0')) {
-    const img = $('#inspector .insp-title img');
-    if (img) { img.src = '/thumbs/obj/0.webp?v=4'; img.classList.remove('empty'); }
-    return;
-  }
   app.thumbs.request(model, (url) => { const img = $('#inspector .insp-title img'); if (img && url) { img.src = url; img.classList.remove('empty'); } });
 }
 
@@ -259,7 +254,7 @@ const vecInputs = (prefix, labels, values, step) => `<div class="vec">${labels.m
 
 const titleBlock = (model, sub, initialSrc = null) => {
   const isSkin0 = (model === 0 || model === '0');
-  const src = initialSrc || (isSkin0 ? '/thumbs/obj/0.webp?v=4' : '');
+  const src = initialSrc || (isSkin0 ? (app.thumbs.url(0) || '') : '');
   return `<div class="insp-title"><img class="thumb${src ? '' : ' empty'}" ${src ? `src="${src}"` : ''} alt="" width="64" height="64"><div><div class="insp-name">${esc(modelLabel(model))}</div><div class="insp-sub">${sub}</div></div></div>`;
 };
 

@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.36"
+VERSION = "4.1.37"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -1165,6 +1165,64 @@ def thumb_widths(files):
     return out
 
 
+# Images taken from the game files are not shipped with the editor: the first time it opens with a GTA folder it draws them and
+# the editor posts each one here. kind -> accepted extension
+ASSET_KINDS = {"sprites": ".png", "mapicons": ".png"}
+# Raise it when the way these images are drawn changes: on the next start the old ones are thrown away and drawn again
+ASSET_REV = 1
+
+
+def asset_stamp():
+    """What the images were made for: the drawing revision and the GTA folder they were taken from."""
+    return {"rev": ASSET_REV, "gta": os.path.normcase(os.path.abspath(State.gta_path)) if State.gta_path else ""}
+
+
+def asset_dirs(kind):
+    return [os.path.join(d, kind) for d in (CACHE_DIR, COMPILE_CACHE_DIR, os.path.join(APP_DIR, "data", "cache"))]
+
+
+def asset_status():
+    """Which generated images already exist: sprites as "lib/name" and map icons as ids."""
+    stamp_file = os.path.join(CACHE_DIR, "assets.json")
+    try:
+        with open(stamp_file, "r", encoding="utf-8") as f:
+            saved = json.load(f)
+    except (OSError, ValueError):
+        saved = None
+    if saved and saved.get("rev") != ASSET_REV:
+        for kind in ASSET_KINDS:
+            shutil.rmtree(os.path.join(CACHE_DIR, kind), ignore_errors=True)
+    sprites, icons = set(), set()
+    for d in asset_dirs("sprites"):
+        if not os.path.isdir(d):
+            continue
+        for lib in os.listdir(d):
+            sub = os.path.join(d, lib)
+            if os.path.isdir(sub):
+                for n in os.listdir(sub):
+                    if n.lower().endswith(".png"):
+                        sprites.add(lib.lower() + "/" + n[:-4].lower())
+    for d in asset_dirs("mapicons"):
+        if os.path.isdir(d):
+            for n in os.listdir(d):
+                m = re.fullmatch(r"icon(\d+)\.png", n.lower())
+                if m:
+                    icons.add(int(m.group(1)))
+    return {"sprites": sorted(sprites), "mapicons": sorted(icons), "done": bool(saved and saved == asset_stamp())}
+
+
+def asset_file(rel):
+    """Where an image posted by the editor is saved (None when the path is not valid)."""
+    parts = [x for x in rel.replace("\\", "/").split("/") if x]
+    if not parts or parts[0] not in ASSET_KINDS or len(parts) > 3:
+        return None
+    if any(not re.fullmatch(r"[\w\-. ()]+", x) or x.startswith(".") for x in parts):
+        return None
+    if not parts[-1].lower().endswith(ASSET_KINDS[parts[0]]):
+        return None
+    return os.path.join(CACHE_DIR, *parts)
+
+
 def thumb_file(kind, key):
     """Caminho da miniatura em disco. kind = obj | tex; key = id do modelo ou "txd/textura"."""
     key = str(key).lower()
@@ -1795,7 +1853,43 @@ def start_test(body):
 # ---------------------------------------------------------------------------
 # Video and Animation Cache Management
 # ---------------------------------------------------------------------------
+# The animations the editor itself downloads in the background right after the first start (the ones most people look at first); the rest
+# are downloaded when their preview is opened. lib/name pairs, nothing of the game is stored here.
+_ANIM_STARTER = (
+    "AIRPORT/thrw_barl_thrw,Attractors/Stepsit_in,Attractors/Stepsit_loop,Attractors/Stepsit_out,"
+    "BAR/BARman_idle,BAR/Barcustom_get,BAR/Barcustom_loop,BAR/Barcustom_order,BAR/Barserve_bottle,"
+    "BAR/Barserve_give,BAR/Barserve_glass,BAR/Barserve_in,BAR/Barserve_loop,BAR/Barserve_order,"
+    "BAR/dnk_stndF_loop,BAR/dnk_stndM_loop,BASEBALL/BAT_PART,BASEBALL/Bat_1,BASEBALL/Bat_2,BASEBALL/Bat_3,"
+    "BASEBALL/Bat_4,BASEBALL/Bat_Hit_1,BASEBALL/Bat_Hit_2,BASEBALL/Bat_Hit_3,BASEBALL/Bat_IDLE,"
+    "BASEBALL/Bat_M,BASEBALL/Bat_block,BD_FIRE/BD_Fire1,BD_FIRE/BD_Fire2,BD_FIRE/BD_Fire3,"
+    "BD_FIRE/BD_GF_Wave,BD_FIRE/BD_Panic_01,BD_FIRE/BD_Panic_02,BD_FIRE/BD_Panic_03,BD_FIRE/BD_Panic_04,"
+    "BD_FIRE/BD_Panic_Loop,BD_FIRE/Grlfrd_Kiss_03,BD_FIRE/M_smklean_loop,BD_FIRE/Playa_Kiss_03,"
+    "BD_FIRE/wash_up,BEACH/Lay_Bac_Loop,BEACH/ParkSit_M_loop,BEACH/ParkSit_W_loop,BEACH/SitnWait_loop_W,"
+    "BEACH/bather,BENCHPRESS/gym_bp_celebrate,BENCHPRESS/gym_bp_down,BENCHPRESS/gym_bp_getoff,"
+    "BENCHPRESS/gym_bp_geton,BENCHPRESS/gym_bp_up_A,BENCHPRESS/gym_bp_up_B,BENCHPRESS/gym_bp_up_smooth,"
+    "BF_injection/BF_getin_LHS,BF_injection/BF_getin_RHS,BF_injection/BF_getout_LHS,"
+    "BF_injection/BF_getout_RHS,BIKED/BIKEd_Back,BIKED/BIKEd_Fwd,BIKED/BIKEd_Left,BIKED/BIKEd_Ride,"
+    "BIKED/BIKEd_Right,BIKED/BIKEd_Still,BIKED/BIKEd_drivebyFT,BIKED/BIKEd_drivebyLHS,"
+    "BIKED/BIKEd_drivebyRHS,BIKED/BIKEd_getoffBACK,BIKED/BIKEd_getoffLHS,BIKED/BIKEd_getoffRHS,"
+    "BIKED/BIKEd_hit,BIKED/BIKEd_jumponL,BIKED/BIKEd_jumponR,BIKED/BIKEd_kick,BIKED/BIKEd_passenger,"
+    "BIKED/BIKEd_pushes,BIKED/BIKEd_shuffle,BIKEH/BIKEh_Back,BIKEH/BIKEh_Fwd,BIKEH/BIKEh_Left,"
+    "BIKEH/BIKEh_Ride,BIKEH/BIKEh_Right,BIKEH/BIKEh_Still,BIKEH/BIKEh_drivebyFT,BIKEH/BIKEh_drivebyLHS,"
+    "BIKEH/BIKEh_drivebyRHS,BIKEH/BIKEh_getoffBACK,BIKEH/BIKEh_getoffLHS,BIKEH/BIKEh_getoffRHS,"
+    "BIKEH/BIKEh_hit,BIKEH/BIKEh_jumponL,BIKEH/BIKEh_jumponR,BIKEH/BIKEh_kick,BIKEH/BIKEh_passenger,"
+    "BIKEH/BIKEh_pushes,BIKELEAP/bk_blnce_in,BIKELEAP/bk_blnce_out,BIKELEAP/bk_jmp,BIKELEAP/bk_rdy_in,"
+    "BIKELEAP/bk_rdy_out,BIKELEAP/struggle_cesar,BIKELEAP/struggle_driver,BLOWJOBZ/BJ_Stand_Loop_P,"
+    "COP_AMBIENT/Copbrowse_loop,COP_AMBIENT/Coplook_loop,DANCING/dance_loop,DEALER/DEALER_IDLE,"
+    "GANGS/prtial_gngtlkA,MEDIC/CPR,ON_LOOKERS/wave_loop,PED/IDLE_armed,PED/IDLE_chat,PED/WALK_drunk,"
+    "PED/cower,ROB_BANK/SHP_HandsUp_Scr,SMOKING/M_smklean_loop"
+).split(",")
+
+
 class AnimCacheManager:
+    pool_lock = threading.Lock()
+    file_locks = {}
+    queue = []
+    workers = 0
+    offline_strikes = 0
     is_downloading = False
     stop_requested = False
     downloaded = 0
@@ -1873,15 +1967,55 @@ class AnimCacheManager:
         file_path = os.path.join(folder, f"{safe_n}.webm")
         if os.path.isfile(file_path) and os.path.getsize(file_path) > 1000:
             return file_path
-        data = cls.fetch_video_bytes(lib, name)
-        if data:
-            try:
-                with open(file_path, "wb") as f:
-                    f.write(data)
+        # One download per file: a preview asked while the same animation is being fetched in the background just waits for it
+        with cls.pool_lock:
+            lock = cls.file_locks.setdefault(file_path, threading.Lock())
+        with lock:
+            if os.path.isfile(file_path) and os.path.getsize(file_path) > 1000:
                 return file_path
-            except Exception:
-                pass
+            data = cls.fetch_video_bytes(lib, name)
+            if data:
+                try:
+                    with open(file_path + ".tmp", "wb") as f:
+                        f.write(data)
+                    os.replace(file_path + ".tmp", file_path)
+                    cls.offline_strikes = 0
+                    return file_path
+                except Exception:
+                    pass
+            else:
+                cls.offline_strikes += 1
         return None
+
+    @classmethod
+    def prefetch(cls, pairs):
+        """Downloads these animations in the background (3 at a time), stopping for a while when the network is down."""
+        with cls.pool_lock:
+            for lib, name in pairs:
+                if (lib, name) not in cls.queue:
+                    cls.queue.append((lib, name))
+            start = max(0, 3 - cls.workers)
+            cls.workers += start
+
+        def work():
+            try:
+                while cls.offline_strikes < 4:
+                    with cls.pool_lock:
+                        if not cls.queue:
+                            return
+                        lib, name = cls.queue.pop(0)
+                    try:
+                        cls.get_or_download(lib, name)
+                    except Exception:
+                        pass
+            finally:
+                with cls.pool_lock:
+                    cls.workers -= 1
+                    if cls.offline_strikes >= 4:
+                        cls.queue.clear()
+
+        for _ in range(start):
+            threading.Thread(target=work, daemon=True).start()
 
     @classmethod
     def start_batch_download(cls):
@@ -2061,6 +2195,7 @@ _FRONTEND_GENRL_MAP = {
     1020: (39, 0),
     1021: (138, 18),
     1022: (60, 0),
+    1039: (143, 65),  # SOUND_PARACHUTE_OPEN
     1036: (60, 2),
     1052: (60, 1),
     1053: (60, 2),
@@ -2503,6 +2638,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.get_project(path[len("/api/projects/"):])
         if path == "/api/thumbs/index":
             return self.thumbs_index()
+        if path == "/api/assets/status":
+            return self.send_json(asset_status())
         if path == "/api/radarmap":
             png_path = ""
             for cdir in (
@@ -2579,6 +2716,11 @@ class Handler(SimpleHTTPRequestHandler):
     def do_POST(self):
         self.close_connection = True
         path = unquote(urlparse(self.path).path)
+        if path == "/api/anim_prefetch":
+            body = self.read_json() or {}
+            pairs = [(str(x.get("lib", "")), str(x.get("name", ""))) for x in (body.get("anims") or [])[:24] if isinstance(x, dict)]
+            AnimCacheManager.prefetch([p for p in pairs if p[0] and p[1]])
+            return self.send_json({"ok": True})
         if path == "/api/anim_cache/download_all":
             started = AnimCacheManager.start_batch_download()
             return self.send_json({"ok": True, "started": started})
@@ -2612,6 +2754,21 @@ class Handler(SimpleHTTPRequestHandler):
             body = self.read_body()
             os.makedirs(CACHE_DIR, exist_ok=True)
             full = os.path.join(CACHE_DIR, name + ".json")
+            with open(full + ".tmp", "wb") as f:
+                f.write(body)
+            os.replace(full + ".tmp", full)
+            return self.send_json({"ok": True})
+        if path == "/api/assets/done":
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            with open(os.path.join(CACHE_DIR, "assets.json"), "w", encoding="utf-8") as f:
+                json.dump(asset_stamp(), f)
+            return self.send_json({"ok": True})
+        if path.startswith("/api/assets/"):
+            full = asset_file(unquote(path[len("/api/assets/"):]))
+            body = self.read_body()
+            if not full or not body or len(body) > 2 * 1024 * 1024:
+                return self.send_json({"ok": False}, 400)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
             with open(full + ".tmp", "wb") as f:
                 f.write(body)
             os.replace(full + ".tmp", full)
@@ -2960,8 +3117,6 @@ class Handler(SimpleHTTPRequestHandler):
             if sid not in objs:
                 objs.append(sid)
         stale = [i for i in stale if i not in skin_ids]
-        if 0 not in objs:
-            objs.append(0)
         d_candidates_tex = [
             os.path.join(THUMBS_DIR, "textures"),
             os.path.join(COMPILE_CACHE_DIR, "thumbnails", "textures"),
@@ -3489,6 +3644,8 @@ def main():
 
     port = args.port or cfg.get("port") or 8777
     httpd = make_server(port)
+    # The animation previews most people open first are downloaded quietly in the background (a few seconds after the start)
+    threading.Timer(6.0, lambda: AnimCacheManager.prefetch([tuple(x.split('/', 1)) for x in _ANIM_STARTER if '/' in x])).start()
     url = "http://127.0.0.1:%d/" % httpd.server_address[1]
     print("=" * 60)
     print(" SA Map Studio %s" % VERSION)

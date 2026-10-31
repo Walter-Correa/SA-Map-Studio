@@ -2434,5 +2434,6 @@
  "Cômodo": "Phòng",
  "Andar {0}: cômodos": "Tầng {0}: các phòng",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Kích thước phòng {0} của tầng {1}: giới hạn là {2}, tôi đã dùng {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} phòng không vừa với đường viền và bị bỏ ra ngoài."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} phòng không vừa với đường viền và bị bỏ ra ngoài.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Đang chuẩn bị hình ảnh của trò chơi (chỉ lần đầu tiên)..."
 }

@@ -4,7 +4,8 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.36-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.37-f0a630)
+![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
 ![Three.js](https://img.shields.io/badge/Three.js-r186-36414b)
@@ -286,8 +287,9 @@ The program does not need Python, Visual C++ or any other installation: everythi
   `compile-sources\.venv-build`).
 - To run from the source code, only the Python standard library is needed; pywebview is optional (without it, the editor
   opens in the browser).
-- Everything else (gamemode, Pawn compiler, open.mp server, thumbnails, sprites, skins and sounds) is already in the
-  repository.
+- Everything else (gamemode, Pawn compiler, open.mp server and a few short sounds) is already in the repository. Apart
+  from a game screenshot used as the TextDraw background, nothing else of the game is stored in it: the thumbnails, skins, sprites, map icons, radar and CJ are drawn from the GTA folder the
+  first time the editor opens, and the animation previews are downloaded.
 - Clone into a folder with a short path (for example `C:\Projects\SA-Map-Studio`): Windows limits paths to 260
   characters and the build environment is not created in very deep folders.
 
@@ -404,8 +406,7 @@ compile-sources/
 ├── js/data/                   static catalogs (sprites)
 ├── js/vendor/                 Three.js r186
 ├── fonts/                     Barlow font (SIL Open Font License)
-├── models/                    models used by the editor
-├── cache/                     thumbnails, skins, sprites, map icons, sounds, animations and radar
+├── cache/sounds/              short sounds for the preview of some PlayerPlaySound ids
 ├── launcher.py                single executable: extracts or updates the program
 ├── launcher_frames/           frames of the launcher's animated icon
 ├── package_bundle.py          packs the program into the launcher zip
@@ -484,6 +485,15 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.37 — 01/11/2026
+- The editor is now licensed under the Mozilla Public License 2.0 (LICENSE file); the footer of the About window shows it.
+- The game material is no longer packed with the program: the thumbnails of the catalog, the skins, the sprites of the TextDraw editor, the map icons, the radar and the textures list are drawn from the GTA folder of the user the first time the editor opens (a progress bar shows it in the loading screen) and kept in the data folder. The program went from 94 MB to about 37 MB.
+- Carl Johnson (skin 0) is built from the clothes of the game itself (head, vest, torso, hands, jeans and shoes), with the idle pose of the game in the previews, instead of two loose model files.
+- The first opening no longer asks for pictures before they exist: the example project opens only after everything is ready, so the log has no errors and no picture comes out broken. If the way these pictures are drawn changes in a future version, or the GTA folder changes, they are drawn again (a mark in the cache folder records what they were made for).
+- Animation previews: the most used ones are downloaded quietly in the background right after the first start, the ones next to the animation being previewed are fetched ahead, and a preview asked while the same file is downloading waits for it instead of downloading twice.
+- Sound preview: sound 1039 (parachute) is now taken from the game; the music tracks come from the game; the 37 short sounds that cannot be found in the game files stay in the package. The splash sprites are square, as before.
+- The thumbnail of CJ no longer comes out broken: the server stopped announcing it as drawn when it was not. Updating from an older version removes the game files that older packages carried; what the editor generated on the user machine stays.
 
 ### 4.1.36 — 31/10/2026
 - New Auto Create button in the toolbar: the editor builds a map by itself in front of the camera, in the direction it points, as one undo step, then selects it and takes the camera to its manipulator. The same seed gives the same result, and Create again undoes the last one and makes another with a new seed. The window also sets the virtual world and the interior of every object that is created (-1 by default). Nothing is cut without saying: when a value is over the limit, the window tells which limit was used.
@@ -1340,3 +1350,17 @@ Tools (in `compile-sources/`, run with Python 3):
 - [@Walter-Correa](https://github.com/Walter-Correa) - Continuation and finalization of the project.
 - [Antigravity](https://antigravity.google) - Execution of the main creation, development and adjustment prompts.
 - [Claude Code](https://claude.com/product/claude-code) - Creation of new features, fixes and final adjustments.
+
+### License
+
+The editor is licensed under the **Mozilla Public License 2.0** (see `LICENSE`). Third-party parts keep their own licenses:
+three.js and TransformControls (MIT, `compile-sources/js/vendor`), the Barlow font (SIL Open Font License 1.1,
+`compile-sources/fonts/OFL.txt`), the open.mp server, its components and the `omp_*` includes (MPL 2.0, source at
+https://github.com/openmultiplayer/open.mp), the streamer plugin and `streamer.inc` (Apache License 2.0) and the Pawn compiler
+with its basic includes (license of the Pawn project).
+
+The material of the game is not covered by this license: Grand Theft Auto: San Andreas belongs to Rockstar Games / Take-Two
+Interactive. The editor draws what it shows (thumbnails, skins, sprites, map icons, radar and CJ) from the GTA folder of the
+user. Only two things of the game are in this repository, and neither is covered by the license: the short sounds in
+`compile-sources/cache/sounds` (used by the sound preview) and the screenshot `compile-sources/css/game_bg.png` (the background
+of the TextDraw editor).

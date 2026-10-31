@@ -2434,5 +2434,6 @@
  "Cômodo": "Stanza",
  "Andar {0}: cômodos": "Piano {0}: stanze",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Dimensione della stanza {0} del piano {1}: il limite è {2}, ho usato {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} stanza/e non sono entrate nel perimetro e sono state escluse."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} stanza/e non sono entrate nel perimetro e sono state escluse.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Preparazione delle immagini del gioco (solo la prima volta)..."
 }

@@ -2434,5 +2434,6 @@
  "Cômodo": "Pièce",
  "Andar {0}: cômodos": "Étage {0} : pièces",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Taille de la pièce {0} de l'étage {1} : la limite est {2}, j'ai utilisé {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} pièce(s) n'ont pas tenu dans le contour et ont été laissées de côté."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} pièce(s) n'ont pas tenu dans le contour et ont été laissées de côté.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Préparation des images du jeu (seulement la première fois)..."
 }

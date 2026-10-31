@@ -92,7 +92,7 @@ function posePed(template, pose) {
       const e = inv.elements; e[3] = 0; e[7] = 0; e[11] = 0; e[15] = 1;
       boneMats.push(fi === undefined ? new THREE.Matrix4() : worldOf(fi).clone().multiply(inv));
     }
-    const geo = mesh.geometry.clone();
+    const geo = (mesh.userData.rawGeometry || mesh.geometry).clone();
     const pos = geo.getAttribute('position'), nrm = geo.getAttribute('normal');
     const outP = new Float32Array(pos.count * 3), outN = nrm ? new Float32Array(pos.count * 3) : null;
     const v = new THREE.Vector3(), n = new THREE.Vector3(), t = new THREE.Vector3(), acc = new THREE.Vector3(), accN = new THREE.Vector3();

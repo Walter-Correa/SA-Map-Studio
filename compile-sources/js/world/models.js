@@ -198,9 +198,111 @@ export class ModelCache {
     return p;
   }
 
+  // Carl Johnson, built from the game's own clothes (player.img): [dff, txd, texture of each material]
+  static CJ_LOOK = [
+    ['head', 'player_face', ['face', 'face']],
+    ['vest', 'vest', ['vest']],
+    ['torso', 'hands', ['torso8bit']],
+    ['hands', 'hands', ['torso8bit']],
+    ['jeans', 'jeansdenim', ['legs']],
+    ['sneaker', 'sneakerbincblk', ['sneakerbincblk']],
+  ];
+
+  skinInPlace(mesh, skin, frames, root, frameMatrix) {
+    // The geometry as it is in the file stays for the preview that poses the skeleton (it skins from the original vertices)
+    mesh.userData.rawGeometry = mesh.geometry.clone();
+    const frameOfBone = new Map();
+    frames.forEach((f, i) => { if (f.boneId !== undefined && !frameOfBone.has(f.boneId)) frameOfBone.set(f.boneId, i); });
+    const boneMats = [];
+    for (let b = 0; b < skin.numBones; b++) {
+      const fi = frameOfBone.get(root.hanim[b]);
+      const inv = new THREE.Matrix4().fromArray(skin.inverse, b * 16);
+      const e = inv.elements; e[3] = 0; e[7] = 0; e[11] = 0; e[15] = 1;
+      boneMats.push(fi === undefined ? new THREE.Matrix4() : frameMatrix(fi).clone().multiply(inv));
+    }
+    const geo = mesh.geometry;
+    const pos = geo.getAttribute('position'), nrm = geo.getAttribute('normal');
+    const outP = new Float32Array(pos.count * 3), outN = nrm ? new Float32Array(pos.count * 3) : null;
+    const v = new THREE.Vector3(), n = new THREE.Vector3(), t = new THREE.Vector3(), acc = new THREE.Vector3(), accN = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      acc.set(0, 0, 0); accN.set(0, 0, 0);
+      v.fromBufferAttribute(pos, i);
+      if (nrm) n.fromBufferAttribute(nrm, i);
+      let sum = 0;
+      for (let k = 0; k < 4; k++) {
+        const w = skin.weights[i * 4 + k], bm = boneMats[skin.indices[i * 4 + k]];
+        if (!(w > 0) || !bm) continue;
+        sum += w;
+        acc.addScaledVector(t.copy(v).applyMatrix4(bm), w);
+        if (nrm) accN.addScaledVector(t.copy(n).transformDirection(bm), w);
+      }
+      if (sum <= 0) acc.copy(v);
+      outP.set([acc.x, acc.y, acc.z], i * 3);
+      if (outN) { if (accN.lengthSq() > 0) accN.normalize(); else accN.copy(n); outN.set([accN.x, accN.y, accN.z], i * 3); }
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(outP, 3));
+    if (outN) geo.setAttribute('normal', new THREE.BufferAttribute(outN, 3));
+    geo.computeBoundingSphere();
+    geo.computeBoundingBox();
+  }
+
+  async buildCj(id, def) {
+    const parts = this.gd.cjParts;
+    const group = new THREE.Group();
+    group.name = def.model;
+    for (const [dffName, txdName, texNames] of ModelCache.CJ_LOOK) {
+      const [dff, texMap] = await Promise.all([
+        this.pool.run('dff', parts.get(dffName + '.dff'), { ambient: this.ambient }),
+        this.loadTxdEntry('cj:' + txdName, parts.get(txdName + '.txd')),
+      ]);
+      const world = dff.frames.map(() => null);
+      const frameMatrix = (i) => {
+        if (world[i]) return world[i];
+        const f = dff.frames[i];
+        const m = new THREE.Matrix4().set(
+          f.rot[0], f.rot[3], f.rot[6], f.pos[0],
+          f.rot[1], f.rot[4], f.rot[7], f.pos[1],
+          f.rot[2], f.rot[5], f.rot[8], f.pos[2],
+          0, 0, 0, 1);
+        world[i] = (f.parent >= 0 && f.parent !== i && f.parent < dff.frames.length) ? frameMatrix(f.parent).clone().multiply(m) : m;
+        return world[i];
+      };
+      for (const a of dff.atomics) {
+        const g = dff.geometries[a.geometry];
+        if (!g || !g.positions) continue;
+        g.materials.forEach((mt, i) => { mt.texture = texNames[i] || texNames[0]; });
+        const mesh = this.buildMesh(g, def, (n) => texMap.get(n) || null, false);
+        if (!mesh) continue;
+        mesh.name = (dff.frames[a.frame]?.name || '').toLowerCase();
+        if (g.skin) { mesh.userData.skin = g.skin; group.userData.frames = dff.frames; }
+        mesh.userData.frameName = mesh.name;
+        const fm = frameMatrix(a.frame);
+        mesh.userData.frameMatrix = fm.clone();
+        // The clothes are skinned: each vertex goes through the bones of the skeleton in the file (its own rest pose)
+        const root = dff.frames.find(f => f.hanim);
+        if (g.skin && root) this.skinInPlace(mesh, g.skin, dff.frames, root, frameMatrix);
+        else mesh.applyMatrix4(fm);
+        // The clothes sit over the skin of the same body part: they win the depth test where both are at the same place
+        if (dffName === 'vest' || dffName === 'sneaker') {
+          mesh.material = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map(m => Object.assign(m.clone(), { polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+        }
+        group.add(mesh);
+      }
+    }
+    const box = new THREE.Box3().setFromObject(group);
+    group.userData.box = box;
+    group.userData.radius = box.getBoundingSphere(new THREE.Sphere()).radius || 1;
+    group.userData.def = def;
+    group.userData.txds = [];
+    group.userData.slotInfo = [{ texture: '', txd: '' }];
+    group.userData.lastUsed = performance.now();
+    return group;
+  }
+
   async buildModel(id) {
     const def = this.gd.models.get(id);
     if (!def) return null;
+    if (this.gd.cjParts && String(def.model).toLowerCase() === 'cj') return this.buildCj(id, def);
     const entry = this.gd.entry(def.model + '.dff');
     if (!entry) return null;
     const isVehicle = def.type === 'cars';

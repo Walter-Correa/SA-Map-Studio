@@ -2434,5 +2434,6 @@
  "Cômodo": "Habitación",
  "Andar {0}: cômodos": "Piso {0}: habitaciones",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Tamaño de la habitación {0} del piso {1}: el límite es {2}, usé {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} habitación(es) no cupieron en el contorno y quedaron fuera."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} habitación(es) no cupieron en el contorno y quedaron fuera.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Preparando las imágenes del juego (solo la primera vez)..."
 }

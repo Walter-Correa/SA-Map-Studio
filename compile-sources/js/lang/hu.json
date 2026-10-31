@@ -2434,5 +2434,6 @@
  "Cômodo": "Szoba",
  "Andar {0}: cômodos": "{0}. emelet: szobák",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "A(z) {1}. emelet {0}. szobájának mérete: a határ {2}, {3} értéket használtam.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} szoba nem fért el a körvonalban, ezért kimaradt."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} szoba nem fért el a körvonalban, ezért kimaradt.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "A játék képeinek előkészítése (csak első alkalommal)..."
 }

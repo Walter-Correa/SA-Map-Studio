@@ -8,6 +8,7 @@ import { Viewport, buildWater, isTyping } from './editor/viewport.js';
 import { Editor } from './editor/editor.js';
 import { Project } from './editor/project.js';
 import { Thumbnails } from './editor/thumbs.js';
+import { prepareGameAssets } from './editor/gameAssets.js';
 import { TextureLibrary } from './editor/textures.js';
 import { WORLD_PLACES, INTERIOR_PLACES, PLACES, regionOf } from './editor/places.js';
 import { isText } from './editor/materials.js';
@@ -217,6 +218,8 @@ async function start(cfg) {
     showSetup(cfg.gtaPath || '', `Erro ao ler os arquivos do jogo: ${err.message}`, false);
     return;
   }
+  // The pictures made from the game files (first run only) are ready before the editor and its example project ask for them
+  await prepareGameAssets((msg, p) => { status.textContent = msg; bar.style.width = Math.round(p * 100) + '%'; setBootProgress(p); });
   setBootProgress(null);
   status.textContent = 'Abrindo o editor';
   $('#app').hidden = false;

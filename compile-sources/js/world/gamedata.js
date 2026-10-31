@@ -134,6 +134,18 @@ export class GameData {
       }
     }
 
+    // Carl Johnson (skin 0) is not a model of gta3.img: the game builds him from the clothes in player.img (head, vest, arms, legs and
+    // shoes of his default look). Their entries are kept apart, so the clothes' TXDs do not enter the textures catalog.
+    this.cjParts = null;
+    try {
+      const head = await fs.read('models/player.img', 0, 8);
+      const count = parseImgHeader(head);
+      const dir = await fs.read('models/player.img', 0, 8 + count * 32);
+      const parts = new Map();
+      for (const e of parseImgDirectory(dir, count)) if (e.size && e.name) parts.set(e.name.toLowerCase(), { img: 'models/player.img', offset: e.offset, size: e.size });
+      if (['head.dff', 'vest.dff', 'torso.dff', 'hands.dff', 'jeans.dff', 'sneaker.dff', 'player_face.txd', 'vest.txd', 'hands.txd', 'jeansdenim.txd', 'sneakerbincblk.txd'].every(k => parts.has(k))) this.cjParts = parts;
+    } catch { /* no player.img: CJ uses the loose models/cj files, if any */ }
+
     // Registers Carl Johnson's default model and texture (Skin 0 / CJ)
     this.entries.set('cj.dff', { img: 'models/cj.dff', offset: 0, size: 0 });
     this.entries.set('cj.txd', { img: 'models/cj.txd', offset: 0, size: 0 });

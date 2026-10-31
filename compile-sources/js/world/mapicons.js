@@ -82,7 +82,7 @@ export function getMapIconInfo(id) {
 
 export function getMapIconUrl(id) {
   const safeId = Math.max(0, Math.min(63, id | 0));
-  return `/cache/mapicons/icon${safeId}.gif`;
+  return `/cache/mapicons/icon${safeId}.png`;
 }
 
 const iconTexCache = new Map();
@@ -145,6 +145,8 @@ export function createMapIconNode(mi) {
         iconTexCache.set(mType, img);
         drawBadge(img);
       };
+      // On the very first run the icons are still being drawn from the game files: tries again when they are ready
+      img.onerror = () => window.addEventListener('game-assets-ready', () => { img.src = getMapIconUrl(mType) + '?r=1'; }, { once: true });
       img.src = getMapIconUrl(mType);
     }
   }

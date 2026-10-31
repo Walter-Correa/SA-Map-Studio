@@ -2434,5 +2434,6 @@
  "Cômodo": "Raum",
  "Andar {0}: cômodos": "Etage {0}: Räume",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Größe von Raum {0} der Etage {1}: Das Limit ist {2}, ich habe {3} verwendet.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} Raum/Räume passten nicht in den Grundriss und wurden weggelassen."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} Raum/Räume passten nicht in den Grundriss und wurden weggelassen.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Spielbilder werden vorbereitet (nur beim ersten Mal)..."
 }

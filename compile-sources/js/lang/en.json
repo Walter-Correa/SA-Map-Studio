@@ -2434,5 +2434,6 @@
  "Cômodo": "Room",
  "Andar {0}: cômodos": "Floor {0}: rooms",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Size of room {0} of floor {1}: the limit is {2}, I used {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} room(s) did not fit in the outline and were left out."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} room(s) did not fit in the outline and were left out.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Preparing the game images (only the first time)..."
 }

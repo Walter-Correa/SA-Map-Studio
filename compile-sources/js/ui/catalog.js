@@ -207,7 +207,7 @@ export function renderCatalogRows(force = true) {
     const displayTitle = alias || baseLabel;
     const catLabel = pkDef ? 'Pickups' : c.category;
     const displaySub = alias ? `${esc(baseLabel)} · ${c.id} · ${esc(catLabel)}` : `${c.id} · ${esc(catLabel)}`;
-    const known = (c.def?.type === 'peds' && (c.id === 0 || c.id === '0')) ? '/thumbs/obj/0.webp?v=4' : app.thumbs.url(c.id);
+    const known = app.thumbs.url(c.id);
     row.innerHTML = `<img class="thumb${known ? '' : ' empty'}" alt="" width="72" height="72" ${known ? `src="${known}"` : ''} decoding="async">
       <div class="row-text">
         <div class="row-name" title="${esc(baseLabel)}">${esc(displayTitle)}</div>
@@ -217,6 +217,14 @@ export function renderCatalogRows(force = true) {
         <button type="button" class="btn-alias${alias ? ' has-alias' : ''}" data-act="alias" title="${alias ? 'Apelido: ' + esc(alias) : 'Definir apelido'}" aria-label="Definir apelido"><svg><use href="#i-edit"/></svg></button>
         <button type="button" class="fav${favs.has(c.id) ? ' on' : ''}" title="Favoritar" aria-label="Favoritar ${esc(c.name)}"><svg><use href="#i-star"/></svg></button>
       </div>`;
+    // A picture that fails to load (on the very first run it may be asked for before it is drawn) is drawn and loaded again
+    const thumbImg = row.firstElementChild;
+    thumbImg.onerror = () => {
+      thumbImg.onerror = null;
+      app.thumbs.have.delete(c.id);
+      app.thumbs.failed.delete(c.id);
+      app.thumbs.request(c.id, (url) => { if (url && thumbImg.isConnected) { thumbImg.src = url + (url.includes('?') ? '&' : '?') + 'r=1'; thumbImg.classList.remove('empty'); } });
+    };
     if (!known || app.thumbs.stale.has(c.id)) {
       // No thumbnail yet, or only an old low resolution one: draws it (again) and swaps it in when ready
       const img = row.firstElementChild;

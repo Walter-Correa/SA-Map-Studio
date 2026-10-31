@@ -118,6 +118,8 @@ function getSpriteImage(lib, name) {
   img.onload = () => {
     if (dialogEl && dialogEl.classList.contains('open')) redrawCanvas();
   };
+  // On the very first run the sprites are still being drawn from the game files: tries again when they are ready
+  img.onerror = () => window.addEventListener('game-assets-ready', () => { img.src = primaryUrl + '?r=1'; }, { once: true });
   spriteImageCache.set(key, img);
   return img;
 }

@@ -1,11 +1,22 @@
 // "Novidades e documentação": version history, all the editor's features,
-// date and time of the last build and the rights reserved.
+// date and time of the last build and the license.
 import { app, $, esc } from './common.js';
 
 export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
+  {
+    version: '4.1.37', date: '01/11/2026', items: [
+      'The editor is now licensed under the Mozilla Public License 2.0 (LICENSE file); the footer of the About window shows it.',
+      'The game material is no longer packed with the program: the thumbnails of the catalog, the skins, the sprites of the TextDraw editor, the map icons, the radar and the textures list are drawn from the GTA folder of the user the first time the editor opens (a progress bar shows it in the loading screen) and kept in the data folder. The program went from 94 MB to about 37 MB.',
+      'Carl Johnson (skin 0) is built from the clothes of the game itself (head, vest, torso, hands, jeans and shoes), with the idle pose of the game in the previews, instead of two loose model files.',
+      'The first opening no longer asks for pictures before they exist: the example project opens only after everything is ready, so the log has no errors and no picture comes out broken. If the way these pictures are drawn changes in a future version, or the GTA folder changes, they are drawn again (a mark in the cache folder records what they were made for).',
+      'Animation previews: the most used ones are downloaded quietly in the background right after the first start, the ones next to the animation being previewed are fetched ahead, and a preview asked while the same file is downloading waits for it instead of downloading twice.',
+      'Sound preview: sound 1039 (parachute) is now taken from the game; the music tracks come from the game; the 37 short sounds that cannot be found in the game files stay in the package. The splash sprites are square, as before.',
+      'The thumbnail of CJ no longer comes out broken: the server stopped announcing it as drawn when it was not. Updating from an older version removes the game files that older packages carried; what the editor generated on the user machine stays.',
+    ],
+  },
   {
     version: '4.1.36', date: '31/10/2026', items: [
       'New Auto Create button in the toolbar: the editor builds a map by itself in front of the camera, in the direction it points, as one undo step, then selects it and takes the camera to its manipulator. The same seed gives the same result, and Create again undoes the last one and makes another with a new seed. The window also sets the virtual world and the interior of every object that is created (-1 by default). Nothing is cut without saying: when a value is over the limit, the window tells which limit was used.',
@@ -871,5 +882,5 @@ function render() {
       ${CHANGELOG.map(v => `<div class="cl-version"><div class="cl-head"><b>${esc(v.version)}</b><span>${esc(v.date)}</span></div>
         <ul>${v.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}
     </section>`;
-  $('#aboutFoot').textContent = `© ${year} ${AUTHORS}. All rights reserved.`;
+  $('#aboutFoot').textContent = `© ${year} ${AUTHORS} · Mozilla Public License 2.0`;
 }

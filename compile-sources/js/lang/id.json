@@ -2434,5 +2434,6 @@
  "Cômodo": "Ruangan",
  "Andar {0}: cômodos": "Lantai {0}: ruangan",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Ukuran ruangan {0} di lantai {1}: batasnya {2}, saya pakai {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} ruangan tidak muat di denah dan ditinggalkan."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} ruangan tidak muat di denah dan ditinggalkan.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Menyiapkan gambar game (hanya saat pertama kali)..."
 }

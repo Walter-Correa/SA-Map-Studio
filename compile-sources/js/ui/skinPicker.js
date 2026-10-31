@@ -1,6 +1,6 @@
 // Skin Picker Modal for Actors with Visual Preview and Categories
 // Supports all 312 game skins (IDs 0 to 311)
-import { $, $$, esc, plural, toast } from './common.js';
+import { app, $, $$, esc, plural, toast } from './common.js';
 import { ALL_SKINS, POPULAR_SKINS, getSkinLabel } from '../world/actors.js';
 
 let selectedSkinId = 0;
@@ -145,11 +145,11 @@ function renderSkinGrid() {
 
   container.innerHTML = list.map(s => {
     const isSel = s.id === selectedSkinId;
-    const thumbUrl = `/cache/skins/${s.id}.png`;
+    const thumbUrl = app.thumbs?.url(s.id) || '';
     return `
       <div class="skin-card${isSel ? ' selected' : ''}" data-skin-id="${s.id}" title="${esc(s.name)} (ID ${s.id})">
         <div class="skin-card-thumb-wrap">
-          <img src="${thumbUrl}" alt="Skin ${s.id}" loading="lazy" onerror="this.onerror=null; this.src='/thumbs/obj/${s.id}.webp?v=3';">
+          <img ${thumbUrl ? `src="${thumbUrl}"` : ''} alt="Skin ${s.id}" loading="lazy">
         </div>
         <div class="skin-card-badge">ID ${s.id}</div>
         <div class="skin-card-name">${esc(s.name)}</div>
@@ -157,6 +157,11 @@ function renderSkinGrid() {
       </div>
     `;
   }).join('');
+
+  container.querySelectorAll('.skin-card img').forEach(img => {
+    img.onerror = () => skinFallback(img, +img.closest('.skin-card').dataset.skinId);
+    if (!img.getAttribute('src')) skinFallback(img, +img.closest('.skin-card').dataset.skinId);
+  });
 
   container.onclick = (e) => {
     const card = e.target.closest('.skin-card');
@@ -175,6 +180,13 @@ function renderSkinGrid() {
   };
 }
 
+// The picture of a skin that is not in the cache folder is drawn from the game's model, like the thumbnails of the catalog
+function skinFallback(img, id) {
+  img.onerror = null;
+  if (!app.thumbs) { img.src = `/thumbs/obj/${id}.webp?v=3`; return; }
+  app.thumbs.request(id, (url) => { if (url) img.src = url; });
+}
+
 function updateSkinPreview(id) {
   const skin = ALL_SKINS[id] || { id, name: `Skin ${id}`, model: 'unknown' };
   const prevImg = $('#prevSkinImg');
@@ -185,11 +197,9 @@ function updateSkinPreview(id) {
   const btnApply = $('#btnApplySelectedSkin');
 
   if (prevImg) {
-    prevImg.src = `/cache/skins/${id}.png`;
-    prevImg.onerror = () => {
-      prevImg.onerror = null;
-      prevImg.src = `/thumbs/obj/${id}.webp?v=3`;
-    };
+    prevImg.onerror = () => skinFallback(prevImg, id);
+    const known = app.thumbs?.url(id);
+    if (known) prevImg.src = known; else skinFallback(prevImg, id);
   }
   if (prevTitle) prevTitle.textContent = skin.name;
   if (prevSub) prevSub.textContent = `Modelo DFF: ${skin.model} · TXD: ${skin.txd || skin.model}`;

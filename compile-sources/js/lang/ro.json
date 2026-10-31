@@ -2434,5 +2434,6 @@
  "Cômodo": "Cameră",
  "Andar {0}: cômodos": "Etajul {0}: camere",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Dimensiunea camerei {0} de la etajul {1}: limita este {2}, am folosit {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} cameră/camere nu au încăput în contur și au fost lăsate deoparte."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} cameră/camere nu au încăput în contur și au fost lăsate deoparte.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Se pregătesc imaginile jocului (doar prima dată)..."
 }

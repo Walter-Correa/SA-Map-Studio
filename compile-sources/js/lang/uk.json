@@ -2434,5 +2434,6 @@
  "Cômodo": "Кімната",
  "Andar {0}: cômodos": "Поверх {0}: кімнати",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Розмір кімнати {0} поверху {1}: межа {2}, використано {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "Кімнат не вмістилося в контур і їх пропущено: {0}."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "Кімнат не вмістилося в контур і їх пропущено: {0}.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Підготовка зображень гри (лише вперше)..."
 }

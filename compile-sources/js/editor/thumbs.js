@@ -48,7 +48,7 @@ export class Thumbnails extends EventTarget {
   }
 
   url(id) {
-    if (id === 0 || id === '0') return '/thumbs/obj/0.webp?v=4';
+    if ((id === 0 || id === '0') && this.have.has(0)) return '/thumbs/obj/0.webp?v=4';
     if (this.custom.has(id)) return this.custom.get(id);
     if (this.have.has(id)) return `/thumbs/obj/${id}.webp?v=5`;
     return this.stale.has(id) ? `/thumbs/obj/${id}.webp?v=3` : null;
@@ -65,7 +65,7 @@ export class Thumbnails extends EventTarget {
   }
 
   request(id, cb) {
-    if (id === 0 || id === '0') { cb('/thumbs/obj/0.webp?v=4'); return; }
+    if ((id === 0 || id === '0') && this.have.has(0)) { cb('/thumbs/obj/0.webp?v=4'); return; }
     if (this.custom.has(id)) { cb(this.custom.get(id)); return; }
     if (this.have.has(id)) { cb(`/thumbs/obj/${id}.webp?v=5`); return; }
     if (this.failed.has(id)) { cb(null); return; }

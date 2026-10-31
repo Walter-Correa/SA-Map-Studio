@@ -2434,5 +2434,6 @@
  "Cômodo": "Pokój",
  "Andar {0}: cômodos": "Piętro {0}: pokoje",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Rozmiar pokoju {0} piętra {1}: limit to {2}, użyłem {3}.",
- "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} pokój/pokoje nie zmieściły się w obrysie i zostały pominięte."
+ "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} pokój/pokoje nie zmieściły się w obrysie i zostały pominięte.",
+ "Preparando as imagens do jogo (só na primeira vez)...": "Przygotowywanie obrazów z gry (tylko za pierwszym razem)..."
 }

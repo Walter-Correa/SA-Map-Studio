@@ -164,6 +164,14 @@ function setPreview(anim, activeCard = null) {
 
   // Loads the video in the player
   playVideo(anim.lib, anim.name);
+  // The ones right after it in the list are already being downloaded when the user goes to the next
+  const list = getFilteredList();
+  const at = list.findIndex(it => it.lib === anim.lib && it.name === anim.name);
+  if (at >= 0) prefetchAnims(list.slice(Math.max(0, at - 1), at + 6));
+}
+
+function prefetchAnims(items) {
+  fetch('/api/anim_prefetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ anims: items.map(it => ({ lib: it.lib, name: it.name })) }) }).catch(() => {});
 }
 
 function playVideo(lib, name) {
@@ -301,6 +309,8 @@ function renderList() {
       </div>
     `;
   }).join('');
+
+  prefetchAnims(items.slice(0, 12));
 
   // Pre-selects the first animation if none is active
   if (!previewedAnim && items.length > 0) {

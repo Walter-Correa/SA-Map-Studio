@@ -106,7 +106,8 @@ set "ARGS=%ARGS% --add-data "%SRC%compile-sources\js;js""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\fonts;fonts""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\anim-list.json;.""
 set "ARGS=%ARGS% --add-data "%SRC%compile-sources\example-map.json;.""
-set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
+rem The loose CJ files are only a fallback (the game's own clothes build him): the folder may not exist or be empty
+if exist "%SRC%compile-sources\models\*.*" set "ARGS=%ARGS% --add-data "%SRC%compile-sources\models;models""
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
 "%VPY%" -m PyInstaller %ARGS% "%SRC%serve.py"
@@ -181,74 +182,16 @@ if not exist "%ST%\scriptfiles\samapstudio\mapa.txt" (
     echo S^|0.0^|0.0^|3.0^|0.0^|0^|0^|1> "%ST%\scriptfiles\samapstudio\mapa.txt"
 )
 
-rem ---------------- 3. Thumbnails and Catalog Data
-set "THUMBSRC="
-if exist "%SRC%compile-sources\cache\thumbnails\objects" set "THUMBSRC=%SRC%compile-sources\cache\thumbnails"
-if not defined THUMBSRC if exist "%SRC%compile-sources\cache\miniaturas\objetos" set "THUMBSRC=%SRC%compile-sources\cache\miniaturas"
-if not defined THUMBSRC if exist "%BASE%\data\cache\thumbnails\objects" set "THUMBSRC=%BASE%\data\cache\thumbnails"
-if defined THUMBSRC (
-    echo Copiando miniaturas do catalogo de: "%THUMBSRC%"...
-    if not exist "%STAGE%\data\cache\thumbnails" mkdir "%STAGE%\data\cache\thumbnails"
-    robocopy "%THUMBSRC%" "%STAGE%\data\cache\thumbnails" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
-)
-
-set "TEXSRC="
-if exist "%SRC%compile-sources\cache\textures.json" set "TEXSRC=%SRC%compile-sources\cache\textures.json"
-if not defined TEXSRC if exist "%SRC%compile-sources\cache\texturas.json" set "TEXSRC=%SRC%compile-sources\cache\texturas.json"
-if not defined TEXSRC if exist "%BASE%\data\cache\textures.json" set "TEXSRC=%BASE%\data\cache\textures.json"
-if defined TEXSRC (
-    copy /y "%TEXSRC%" "%STAGE%\data\cache\textures.json" >nul
-)
-
-set "SPRITESRC="
-if exist "%SRC%compile-sources\cache\sprites" set "SPRITESRC=%SRC%compile-sources\cache\sprites"
-if not defined SPRITESRC if exist "%BASE%\data\cache\sprites" set "SPRITESRC=%BASE%\data\cache\sprites"
-if defined SPRITESRC (
-    echo Copiando sprites de: "%SPRITESRC%"...
-    if not exist "%STAGE%\data\cache\sprites" mkdir "%STAGE%\data\cache\sprites"
-    robocopy "%SPRITESRC%" "%STAGE%\data\cache\sprites" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
-)
-
-set "SKINSRC="
-if exist "%SRC%compile-sources\cache\skins" set "SKINSRC=%SRC%compile-sources\cache\skins"
-if not defined SKINSRC if exist "%BASE%\data\cache\skins" set "SKINSRC=%BASE%\data\cache\skins"
-if defined SKINSRC (
-    echo Copiando skins de: "%SKINSRC%"...
-    if not exist "%STAGE%\data\cache\skins" mkdir "%STAGE%\data\cache\skins"
-    robocopy "%SKINSRC%" "%STAGE%\data\cache\skins" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
-)
-
-set "ANIMSRC="
-if exist "%SRC%compile-sources\cache\animations" set "ANIMSRC=%SRC%compile-sources\cache\animations"
-if not defined ANIMSRC if exist "%BASE%\data\cache\animations" set "ANIMSRC=%BASE%\data\cache\animations"
-if defined ANIMSRC (
-    echo Copiando animacoes do catalogo de: "%ANIMSRC%"...
-    if not exist "%STAGE%\data\cache\animations" mkdir "%STAGE%\data\cache\animations"
-    robocopy "%ANIMSRC%" "%STAGE%\data\cache\animations" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
-)
-
-set "MAPICONSRC="
-if exist "%SRC%compile-sources\cache\mapicons" set "MAPICONSRC=%SRC%compile-sources\cache\mapicons"
-if not defined MAPICONSRC if exist "%BASE%\data\cache\mapicons" set "MAPICONSRC=%BASE%\data\cache\mapicons"
-if defined MAPICONSRC (
-    echo Copiando mapicons de: "%MAPICONSRC%"...
-    if not exist "%STAGE%\data\cache\mapicons" mkdir "%STAGE%\data\cache\mapicons"
-    robocopy "%MAPICONSRC%" "%STAGE%\data\cache\mapicons" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
-)
-
-set "RADARSRC="
-if exist "%SRC%compile-sources\cache\radarmap.png" set "RADARSRC=%SRC%compile-sources\cache\radarmap.png"
-if not defined RADARSRC if exist "%BASE%\data\cache\radarmap.png" set "RADARSRC=%BASE%\data\cache\radarmap.png"
-if defined RADARSRC (
-    copy /y "%RADARSRC%" "%STAGE%\data\cache\radarmap.png" >nul
-)
-
+rem ---------------- 3. Sounds of the catalog
+rem Nothing else of the game is packed: the thumbnails, skins, sprites, map icons, radar and animations are made on the
+rem first run (from the GTA folder of the user or downloaded). Only these short sounds go along: the preview of a few
+rem PlayerPlaySound ids (1000-1190) has no source in the game files. Only what is in compile-sources\cache\sounds is
+rem used here, never what an earlier build left in the data folder.
 set "SOUNDSRC="
-if exist "%SRC%compile-sources\cache\sounds" set "SOUNDSRC=%SRC%compile-sources\cache\sounds"
-if not defined SOUNDSRC if exist "%BASE%\data\cache\sounds" set "SOUNDSRC=%BASE%\data\cache\sounds"
+if exist "%SRC%compile-sources\cache\sounds\*.wav" set "SOUNDSRC=%SRC%compile-sources\cache\sounds"
 if defined SOUNDSRC (
     if not exist "%STAGE%\data\cache\sounds" mkdir "%STAGE%\data\cache\sounds"
-    robocopy "%SOUNDSRC%" "%STAGE%\data\cache\sounds" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
+    robocopy "%SOUNDSRC%" "%STAGE%\data\cache\sounds" *.wav /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul
 )
 
 rem Removes any unwanted stray file in staging
