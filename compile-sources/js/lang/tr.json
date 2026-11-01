@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Kat {0}: odalar",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "{1}. kattaki {0}. odanın boyutu: sınır {2}, {3} kullandım.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} oda dış hatta sığmadı ve dışarıda bırakıldı.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Oyun görselleri hazırlanıyor (yalnızca ilk seferde)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Oyun görselleri hazırlanıyor (yalnızca ilk seferde)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "SA Map Studio {0} sürümü yayınlandı (siz {1} sürümünü kullanıyorsunuz). Şimdi indirmek ister misiniz?",
+ "Baixar agora": "Şimdi indir",
+ "Baixar depois": "Daha sonra indir",
+ "Nova versão disponível": "Yeni sürüm mevcut",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "Hangi seçeneği seçerseniz seçin bu uyarı tekrar görünmez: yeni sürüm olduğu sürece sürüm geçmişi düğmesinde bir uyarı kalır."
 }

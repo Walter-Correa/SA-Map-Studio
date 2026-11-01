@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Lantai {0}: ruangan",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Ukuran ruangan {0} di lantai {1}: batasnya {2}, saya pakai {3}.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} ruangan tidak muat di denah dan ditinggalkan.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Menyiapkan gambar game (hanya saat pertama kali)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Menyiapkan gambar game (hanya saat pertama kali)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "SA Map Studio versi {0} sudah tersedia (Anda memakai versi {1}). Ingin mengunduhnya sekarang?",
+ "Baixar agora": "Unduh sekarang",
+ "Baixar depois": "Unduh nanti",
+ "Nova versão disponível": "Versi baru tersedia",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "Dengan pilihan apa pun, pemberitahuan ini tidak muncul lagi: tombol riwayat versi akan menampilkan peringatan selama ada versi baru."
 }

@@ -1606,3 +1606,27 @@ body:not(:has(.app.mode-sp)) #dlgImport .sp-only, body:has(.app.mode-sp) #dlgImp
 .color-codes .btn { padding: 2px 6px; background: #1a1d22; font-weight: 700; font-family: monospace; }
 .msg-preview { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(0, 0, 0, .55); font-weight: 700; text-shadow: 0 0 2px #000; word-break: break-word; }
 .msg-preview.box { background: #000; border: 1px solid #555; font-weight: 400; text-shadow: none; }
+
+/* Newer release: alert on the version history button and highlight inside the history */
+#btnAbout { position: relative; }
+#btnAbout.has-update::after {
+  content: '!'; position: absolute; top: 1px; right: 1px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--sodium); color: var(--sodium-ink); font: 700 10px/14px var(--font-cond, sans-serif); text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+#updLater { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+#updLater:hover { background: var(--danger); filter: brightness(1.12); }
+.upd-hint { color: var(--paper-dim); font-size: 13px; }
+.update-banner {
+  display: flex; gap: 14px; align-items: center; padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--sodium); background: linear-gradient(135deg, rgba(240, 166, 48, .22), rgba(240, 166, 48, .06));
+}
+.update-banner .ub-icon {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--sodium); color: var(--sodium-ink);
+  display: grid; place-items: center; font: 700 20px/1 var(--font-cond, sans-serif);
+}
+.update-banner .ub-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.update-banner .ub-text b { font-family: var(--font-cond); font-size: 17px; color: var(--paper); }
+.update-banner .ub-text span { color: var(--paper-dim); font-size: 12.5px; }
+.update-banner a.btn { text-decoration: none; flex: none; }
+

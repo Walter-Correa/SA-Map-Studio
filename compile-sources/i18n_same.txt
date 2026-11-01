@@ -388,3 +388,8 @@ Version history
 © {0} {1} · Mozilla Public License 2.0
 Multiplayer
 Singleplayer
+Download
+New version {0} available
+Update History - version {0} available
+You are using {0}{1}
+· released {0}

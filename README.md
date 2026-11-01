@@ -254,6 +254,7 @@ never changed and removing the mod is deleting its folder.
 - Side menus collapse independently from the buttons on their inner edges (or with `F10`) and can collapse by themselves
   while the camera moves.
 - **Update History** button: the version history and the build date and time, always in English and never translated.
+- **New release notice**: on opening, the editor checks the latest release of the project on GitHub (at most once every 6 hours, in the background, never delaying the editor). If it is newer than the running version, a box offers *Baixar agora* / *Baixar depois*; either answer is saved and the box does not appear again for that version, while the Update History button keeps a "!" alert and the top of the history shows the new version with a Download button. Offline or private repository: nothing is shown. To test without a release, start the program with `SAMAP_UPDATE_API` set to the address of a JSON like the GitHub release (it also accepts `file:///` paths) and clear `update_ack` in `data/config.json` to see the box again.
 - **Diagnostics and logs** window with the errors found, a button to copy the report and another to open the log folder.
 - Shortcuts window (`?`).
 
@@ -492,6 +493,7 @@ Tools (in `compile-sources/`, run with Python 3):
 - The TextDraw editor draws the inner part of a progress bar with the same color as the new include (30% of the alpha, at least 0x20), and imported CreatePlayerProgressBar calls without size or color use the include defaults (60 x 8, color 0xE74C3CFF).
 - Sound preview: an id that has no sound no longer plays another one (the ids 1 and 1020-1022, the stop events and the ids with no source in the game files are silent); the preview says it has no audio, inside the sound window.
 - Notices (toasts) shown while a dialog is open now appear inside the dialog instead of behind it.
+- New release notice: when the editor opens it looks for the latest published release of the project on GitHub; if its version is higher than the editor, a box offers Download now or Download later (either choice is remembered and the box does not come back for that version), the Update History button keeps an alert while the new version exists, and the top of the history highlights it with a Download button. A failed check (offline, private repository) shows nothing.
 
 ### 4.1.37 — 01/11/2026
 - The editor is now licensed under the Mozilla Public License 2.0 (LICENSE file); the footer of the About window shows it.

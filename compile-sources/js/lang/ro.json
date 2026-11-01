@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Etajul {0}: camere",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Dimensiunea camerei {0} de la etajul {1}: limita este {2}, am folosit {3}.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} cameră/camere nu au încăput în contur și au fost lăsate deoparte.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Se pregătesc imaginile jocului (doar prima dată)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Se pregătesc imaginile jocului (doar prima dată)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "Versiunea {0} din SA Map Studio este disponibilă (folosești versiunea {1}). Vrei s-o descarci acum?",
+ "Baixar agora": "Descarcă acum",
+ "Baixar depois": "Descarcă mai târziu",
+ "Nova versão disponível": "Versiune nouă disponibilă",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "Indiferent de opțiune, această notificare nu mai apare: butonul istoricului versiunilor păstrează o alertă cât timp există o versiune nouă."
 }

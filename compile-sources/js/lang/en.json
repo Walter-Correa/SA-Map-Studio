@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Floor {0}: rooms",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Size of room {0} of floor {1}: the limit is {2}, I used {3}.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} room(s) did not fit in the outline and were left out.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Preparing the game images (only the first time)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Preparing the game images (only the first time)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "Version {0} of SA Map Studio is now available (you are using {1}). Do you want to download it now?",
+ "Baixar agora": "Download now",
+ "Baixar depois": "Download later",
+ "Nova versão disponível": "New version available",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "With either option this notice will not appear again: the version history button keeps an alert while there is a newer version."
 }

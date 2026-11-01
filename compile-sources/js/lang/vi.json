@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Tầng {0}: các phòng",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Kích thước phòng {0} của tầng {1}: giới hạn là {2}, tôi đã dùng {3}.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} phòng không vừa với đường viền và bị bỏ ra ngoài.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Đang chuẩn bị hình ảnh của trò chơi (chỉ lần đầu tiên)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Đang chuẩn bị hình ảnh của trò chơi (chỉ lần đầu tiên)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "Đã có phiên bản {0} của SA Map Studio (bạn đang dùng {1}). Bạn có muốn tải xuống ngay bây giờ không?",
+ "Baixar agora": "Tải xuống ngay",
+ "Baixar depois": "Tải xuống sau",
+ "Nova versão disponível": "Có phiên bản mới",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "Dù chọn cách nào, thông báo này sẽ không hiện lại: nút lịch sử phiên bản sẽ có biểu tượng cảnh báo khi còn phiên bản mới."
 }

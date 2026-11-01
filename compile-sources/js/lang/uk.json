@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Поверх {0}: кімнати",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Розмір кімнати {0} поверху {1}: межа {2}, використано {3}.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "Кімнат не вмістилося в контур і їх пропущено: {0}.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Підготовка зображень гри (лише вперше)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Підготовка зображень гри (лише вперше)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "Доступна версія {0} SA Map Studio (ви використовуєте {1}). Завантажити її зараз?",
+ "Baixar agora": "Завантажити зараз",
+ "Baixar depois": "Завантажити пізніше",
+ "Nova versão disponível": "Доступна нова версія",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "За будь-якого вибору це сповіщення більше не з'явиться: на кнопці історії версій залишиться попередження, поки є нова версія."
 }

@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "Etage {0}: Räume",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "Größe von Raum {0} der Etage {1}: Das Limit ist {2}, ich habe {3} verwendet.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} Raum/Räume passten nicht in den Grundriss und wurden weggelassen.",
- "Preparando as imagens do jogo (só na primeira vez)...": "Spielbilder werden vorbereitet (nur beim ersten Mal)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "Spielbilder werden vorbereitet (nur beim ersten Mal)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "Version {0} von SA Map Studio ist jetzt verfügbar (Sie verwenden {1}). Möchten Sie sie jetzt herunterladen?",
+ "Baixar agora": "Jetzt herunterladen",
+ "Baixar depois": "Später herunterladen",
+ "Nova versão disponível": "Neue Version verfügbar",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "Bei beiden Optionen erscheint dieser Hinweis nicht erneut: Die Schaltfläche des Versionsverlaufs zeigt eine Warnung, solange eine neuere Version verfügbar ist."
 }

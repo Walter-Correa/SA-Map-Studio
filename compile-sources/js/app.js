@@ -20,6 +20,7 @@ import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel } from
 import { setupCameras, stopPreview } from './ui/cameras.js';
 import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
 import { setupAbout } from './ui/about.js';
+import { initUpdateCheck } from './ui/updateCheck.js';
 import { setupLogsDialog } from './ui/logger.js';
 import { setupAnimPicker } from './ui/animPicker.js';
 import { setupSkinPicker } from './ui/skinPicker.js';
@@ -276,6 +277,7 @@ async function start(cfg) {
   autosaveOnClose($('#dlgGangZones'), 'gangZones');
   await openInitialProject();
   $('#overlay').hidden = true;
+  initUpdateCheck();                                                                              // in the background, never delays the editor
   for (const w of gd.warnings) toast(w, 'warn', 6000);
   setInterval(updateHud, 250);
 

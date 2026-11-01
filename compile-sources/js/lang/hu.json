@@ -2434,5 +2434,10 @@
  "Andar {0}: cômodos": "{0}. emelet: szobák",
  "Tamanho do cômodo {0} do andar {1}: o limite é {2}, usei {3}.": "A(z) {1}. emelet {0}. szobájának mérete: a határ {2}, {3} értéket használtam.",
  "{0} cômodo(s) não couberam no contorno e ficaram de fora.": "{0} szoba nem fért el a körvonalban, ezért kimaradt.",
- "Preparando as imagens do jogo (só na primeira vez)...": "A játék képeinek előkészítése (csak első alkalommal)..."
+ "Preparando as imagens do jogo (só na primeira vez)...": "A játék képeinek előkészítése (csak első alkalommal)...",
+ "A versão {0} do SA Map Studio já está disponível (você usa a {1}). Deseja baixar agora?": "Elérhető az SA Map Studio {0} verziója (a(z) {1} verziót használod). Letöltöd most?",
+ "Baixar agora": "Letöltés most",
+ "Baixar depois": "Letöltés később",
+ "Nova versão disponível": "Új verzió érhető el",
+ "Em qualquer uma das opções este aviso não aparece de novo: o botão do histórico de versões fica com um alerta enquanto houver versão nova.": "Bármelyik lehetőséget választod, ez az értesítés nem jelenik meg újra: a verziótörténet gombja figyelmeztetést mutat, amíg van újabb verzió."
 }

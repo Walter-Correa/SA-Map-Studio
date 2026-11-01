@@ -2348,6 +2348,62 @@ def extract_gta_sound(gta_path, soundid):
 
 
 # ---------------------------------------------------------------------------
+# Check for a newer release (only reads the latest published release of the project)
+# ---------------------------------------------------------------------------
+UPDATE_REPO_URL = "https://github.com/Walter-Correa/SA-Map-Studio/"
+UPDATE_API = os.environ.get("SAMAP_UPDATE_API") or "https://api.github.com/repos/Walter-Correa/SA-Map-Studio/releases/latest"
+_update_lock = threading.Lock()
+_update_cache = {"at": 0.0, "data": None}
+
+
+def _version_tuple(text):
+    m = re.match(r"\s*v?(\d+(?:\.\d+)*)", str(text or ""))
+    return tuple(int(x) for x in m.group(1).split(".")) if m else ()
+
+
+def check_update():
+    """Latest release of the project and whether it is newer than this editor. Never raises; asks GitHub at most once
+    every 6 hours (30 minutes after a failure, as when offline or while the repository is private)."""
+    with _update_lock:
+        cache = _update_cache
+        ttl = 6 * 3600 if (cache["data"] or {}).get("ok") else 1800
+        if cache["data"] is not None and time.time() - cache["at"] < ttl:
+            return cache["data"]
+        data = {"ok": False}
+        try:
+            import urllib.request
+            req = urllib.request.Request(UPDATE_API, headers={"User-Agent": "SAMapStudio/" + VERSION, "Accept": "application/vnd.github+json"})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                rel = json.loads(resp.read().decode("utf-8"))
+            latest = _version_tuple(rel.get("tag_name") or rel.get("name"))
+            if latest and not rel.get("draft") and not rel.get("prerelease"):
+                trusted = lambda u: isinstance(u, str) and (u.startswith(UPDATE_REPO_URL) or UPDATE_API != _DEFAULT_UPDATE_API)
+                page = rel.get("html_url") or ""
+                download = ""
+                for asset in rel.get("assets") or []:
+                    url = asset.get("browser_download_url") or ""
+                    if str(asset.get("name", "")).lower().endswith(".exe") and trusted(url):
+                        download = url
+                        break
+                data = {
+                    "ok": True,
+                    "version": ".".join(str(n) for n in latest),
+                    "newer": latest > _version_tuple(VERSION),
+                    "url": page if trusted(page) else UPDATE_REPO_URL + "releases/latest",
+                    "download": download,
+                    "published": str(rel.get("published_at") or "")[:10],
+                }
+        except Exception:
+            pass
+        cache["at"] = time.time()
+        cache["data"] = data
+        return data
+
+
+_DEFAULT_UPDATE_API = "https://api.github.com/repos/Walter-Correa/SA-Map-Studio/releases/latest"
+
+
+# ---------------------------------------------------------------------------
 # Servidor HTTP
 # ---------------------------------------------------------------------------
 class Handler(SimpleHTTPRequestHandler):
@@ -2565,6 +2621,11 @@ class Handler(SimpleHTTPRequestHandler):
                     update_config(example_shown=True)
                     return self.send_json({"ok": True, "project": project})
             return self.send_json({"ok": False})
+        if path == "/api/update_check":
+            info = dict(check_update())
+            info["current"] = VERSION
+            info["acknowledged"] = str(load_config().get("update_ack") or "")
+            return self.send_json(info)
         if path == "/api/config":
             cfg = load_config()
             inside_path = is_editor_inside_gta()
@@ -2708,6 +2769,13 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json({"ok": False}, 400)
             update_config(language=code)
             return self.send_json({"ok": True, "language": code})
+        if path == "/api/update_ack":
+            body = self.read_json() or {}
+            ver = str(body.get("version") or "").strip()
+            if not re.fullmatch(r"\d+(\.\d+){0,3}", ver):
+                return self.send_json({"ok": False}, 400)
+            update_config(update_ack=ver)
+            return self.send_json({"ok": True})
         if path == "/api/config":
             body = self.read_json() or {}
             p = (body.get("gtaPath") or body.get("gta_path") or "").strip().strip('"')

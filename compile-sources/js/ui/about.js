@@ -1,6 +1,7 @@
 // "Novidades e documentação": version history, all the editor's features,
 // date and time of the last build and the license.
 import { app, $, esc } from './common.js';
+import { getUpdate, updateDownloadUrl } from './updateCheck.js';
 
 export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 
@@ -9,10 +10,11 @@ const CHANGELOG = [
   {
     version: '4.1.38', date: '01/11/2026', items: [
       'The progress bar include is now ProgressBar.inc (SA Progress Bar Pro, https://github.com/Walter-Correa/SA-Progress-Bar-Pro, #include <ProgressBar>); it replaces progressbarpro.inc in the test server, and the test server gamemode was recompiled with it.',
-      'The exported code and the TextDraw copy now list the required includes with their address: 'Requires the streamer plugin (#include <streamer>) - https://github.com/samp-incognito/samp-streamer-plugin' and 'Requires the SA Progress Bar Pro include (#include <ProgressBar>) - https://github.com/Walter-Correa/SA-Progress-Bar-Pro'.',
+      'The exported code and the TextDraw copy now list the required includes with their address: "Requires the streamer plugin (#include <streamer>) - https://github.com/samp-incognito/samp-streamer-plugin" and "Requires the SA Progress Bar Pro include (#include <ProgressBar>) - https://github.com/Walter-Correa/SA-Progress-Bar-Pro".',
       'The TextDraw editor draws the inner part of a progress bar with the same color as the new include (30% of the alpha, at least 0x20), and imported CreatePlayerProgressBar calls without size or color use the include defaults (60 x 8, color 0xE74C3CFF).',
       'Sound preview: an id that has no sound no longer plays another one (the ids 1 and 1020-1022, the stop events and the ids with no source in the game files are silent); the preview says it has no audio, inside the sound window.',
       'Notices (toasts) shown while a dialog is open now appear inside the dialog instead of behind it.',
+      'New release notice: when the editor opens it looks for the latest published release of the project on GitHub; if its version is higher than the editor, a box offers Download now or Download later (either choice is remembered and the box does not come back for that version), the Update History button keeps an alert while the new version exists, and the top of the history highlights it with a Download button. A failed check (offline, private repository) shows nothing.',
     ],
   },
   {
@@ -887,9 +889,22 @@ function render() {
       <div><div class="about-title">SA Map Studio <span class="tag">version ${esc(cfg.version || CHANGELOG[0].version)}</span></div>
         <div class="about-sub">${when}</div></div>
     </div>
+    ${updateBanner(cfg.version || CHANGELOG[0].version)}
     <section><h3>Version history</h3>
       ${CHANGELOG.map(v => `<div class="cl-version"><div class="cl-head"><b>${esc(v.version)}</b><span>${esc(v.date)}</span></div>
         <ul>${v.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}
     </section>`;
   $('#aboutFoot').textContent = `© ${year} ${AUTHORS} · Mozilla Public License 2.0`;
+}
+
+// Highlight at the top of the history when the project has a newer release than this editor
+function updateBanner(current) {
+  const u = getUpdate();
+  if (!u) return '';
+  const when = u.published ? ` · released ${esc(u.published)}` : '';
+  return `<div class="update-banner">
+      <div class="ub-icon" aria-hidden="true">!</div>
+      <div class="ub-text"><b>New version ${esc(u.version)} available</b><span>You are using ${esc(current)}${when}</span></div>
+      <a class="btn primary" href="${esc(updateDownloadUrl(u))}" target="_blank" rel="noopener">Download</a>
+    </div>`;
 }
