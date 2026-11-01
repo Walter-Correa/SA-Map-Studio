@@ -339,10 +339,10 @@ function normalizeSpriteName(text) {
   return text;
 }
 
-// Progress bar (SA Progress Bar Pro, progressbarpro.inc): calls to create, set the value and show to the player
+// Progress bar (SA Progress Bar Pro, ProgressBar.inc): calls to create, set the value and show to the player
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
 
-// progressbarpro.inc limits (the same PB_BORDER_MIN/MAX and PB_BLINK_MIN/MAX as the include)
+// ProgressBar.inc limits (the same PB_BORDER_MIN/MAX and PB_BLINK_MIN/MAX as the include)
 export const PB_LIMITS = { borderMin: 0.5, borderMax: 5, borderDefault: 1, borderYRatio: 1.25, minInner: 1, blinkMin: 50, blinkMax: 60000, blinkDefault: 250 };
 const clampNum = (v, min, max, def) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : def; };
 export const clampPbBorder = (v) => clampNum(v, PB_LIMITS.borderMin, PB_LIMITS.borderMax, PB_LIMITS.borderDefault);

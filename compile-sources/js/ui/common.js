@@ -45,7 +45,14 @@ export function toast(msg, kind = 'ok', ms = 2800) {
   const el = document.createElement('div');
   el.className = 'toast ' + kind;
   el.textContent = msg;
-  $('#toasts').appendChild(el);
+  // A modal dialog sits in the top layer above #toasts, so while one is open the notice goes inside it.
+  const dlg = document.querySelector('dialog[open]');
+  let box = $('#toasts');
+  if (dlg) {
+    box = [...dlg.children].find(c => c.classList.contains('toasts'));
+    if (!box) { box = document.createElement('div'); box.className = 'toasts'; dlg.appendChild(box); }
+  }
+  box.appendChild(el);
   setTimeout(() => el.remove(), ms);
 }
 

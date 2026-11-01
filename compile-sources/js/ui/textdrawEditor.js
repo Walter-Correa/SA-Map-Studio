@@ -1916,7 +1916,7 @@ function copyTextDrawsPawn() {
 
   const lines = ['// TextDraws exportados pelo SA Map Studio'];
   const usesBlink = tds.some(tdBlinkActive);
-  if (tds.some(td => td.type === 'progress')) lines.push(`// ${t('Requer a include SA Progress Bar Pro ({0}) por causa das barras de progresso.', '#include <progressbarpro>')}`);
+  if (tds.some(td => td.type === 'progress')) lines.push(`// ${t('Requer a include SA Progress Bar Pro ({0}) - {1}', '#include <ProgressBar>', 'https://github.com/Walter-Correa/SA-Progress-Bar-Pro')}`);
   if (usesBlink) lines.push(`// ${t('Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.', '#include <textdrawblink>')}`);
   const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const num = (v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; };

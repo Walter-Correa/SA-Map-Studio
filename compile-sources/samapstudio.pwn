@@ -6,7 +6,7 @@
 #define SAMP_COMPAT
 #include <open.mp>
 #include <streamer>
-#include <progressbarpro>
+#include <ProgressBar>
 #include <textdrawblink>
 
 #define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
@@ -182,7 +182,7 @@ enum E_SAMSP_MAPICON
 new gMapIcons[SAMSP_MAX_MAPICONS][E_SAMSP_MAPICON];
 new gTotalMapIcons;
 
-// Progress bars (SA Progress Bar Pro, progressbarpro.inc): created for each player on spawn
+// Progress bars (SA Progress Bar Pro, ProgressBar.inc): created for each player on spawn
 enum E_SAMSP_PBAR
 {
     Float:bar_x,
@@ -1271,7 +1271,7 @@ public OnPlayerDisconnect(playerid, reason)
     gPlayerSpawned[playerid] = false;
     gSpawnRequested[playerid] = false;
     gHudShown[playerid] = false;
-    gPlayerPBarCount[playerid] = 0; // progressbarpro.inc frees the player's bars on exit
+    gPlayerPBarCount[playerid] = 0; // ProgressBar.inc frees the player's bars on exit
     return 1;
 }
 

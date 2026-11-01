@@ -1485,20 +1485,20 @@ export const SOUND_IDS = [
   },
   {
     "id": 1020,
-    "name": "SOUND_MACHINERY_LOOP",
-    "desc": "Ruído constante de maquinário",
+    "name": "SOUND_CRANE_MOVE_START",
+    "desc": "Guindaste em movimento (Iniciar)",
     "cat": "Efeitos e Interface"
   },
   {
     "id": 1021,
-    "name": "SOUND_MACHINERY",
-    "desc": "Maquinário em operação",
+    "name": "SOUND_CRANE_MOVE_STOP",
+    "desc": "Guindaste em movimento (Parar)",
     "cat": "Efeitos e Interface"
   },
   {
     "id": 1022,
-    "name": "SOUND_MOTOR_STOP",
-    "desc": "Motor parando",
+    "name": "SOUND_CRANE_EXIT",
+    "desc": "Saída do guindaste",
     "cat": "Efeitos e Interface"
   },
   {

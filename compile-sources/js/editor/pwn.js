@@ -852,7 +852,7 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // progressbarpro.inc: CreatePlayerProgressBar(playerid, x, y, width, height, color, maximum, direction, border, border color, style, segments).
+      // ProgressBar.inc: CreatePlayerProgressBar(playerid, x, y, width, height, color, maximum, direction, border, border color, style, segments).
       // The previous order of the include had the style and segments right after the direction (border and border color at the end; the segment scale is the argument after the segments):
       // it is recognized by the 9th argument being a PB_STYLE_/PB_RING_SEGMENTS or by the 11th being a number with decimals (the border).
       // also with named arguments (.colour = ...) and expressions (the leading number is used)
@@ -874,11 +874,11 @@ export function parsePwn(source) {
           tdv: 2, type: 'progress', isPlayer: true, text: 'Barra de progresso',
           name: String(inlineComment || '').replace(/^\/\/\s*/, '').trim() || (/^progress_?\d+$/i.test(nameFromVar(variable)) ? '' : nameFromVar(variable)),
           x: num(a[1]), y: num(a[2]),
-          pbWidth: num(arg(3, 'width'), 55.5), pbHeight: num(arg(4, 'height'), 3.2),
-          color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xFF1C1CFF,
+          pbWidth: num(arg(3, 'width'), 60), pbHeight: num(arg(4, 'height'), 8),
+          color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xE74C3CFF,
           pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
           pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
-          pbBorder: fitPbBorder(num(arg(iBorder, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 55.5), num(arg(4, 'height'), 3.2)),
+          pbBorder: fitPbBorder(num(arg(iBorder, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 60), num(arg(4, 'height'), 8)),
           pbBorderColor: colorArgOrZero(arg(iBorderCol, 'bordercolour', 'bordercolor')),
           pbStyle: (() => { const st = String(arg(iStyle, 'style') ?? '0').trim().toUpperCase(); const i = PB_STYLE_NAMES.indexOf(st); return i >= 0 ? i : clampPbStyle(int(st, 0)); })(),
           pbSegments: clampPbSegments(int(arg(iSeg, 'segments'), 24)),
@@ -1346,7 +1346,7 @@ export function exportPawn(project, options = {}) {
       }
     }
     if (td.type === 'progress') {
-      // Progress bar: needs #include <progressbarpro>
+      // Progress bar: needs #include <ProgressBar>
       textDrawLines.push(...progressBarPawn(td, progressBarVar(td, textDraws), (v) => formatCoord(v, null)));
       continue;
     }
@@ -1447,8 +1447,8 @@ export function exportPawn(project, options = {}) {
   lines.push(`// ${tr('Como usar:')}`);
   lines.push(`//   OnGameModeInit():   Map_${id}_Load();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
-  if (opt.objectFn === 'CreateDynamicObject') lines.push(`//   ${tr('Requer o plugin streamer ({0}).', '#include <streamer>')}`);
-  if (textDraws.some(td => td.type === 'progress')) lines.push(`//   ${tr('Requer a include SA Progress Bar Pro ({0}) por causa das barras de progresso.', '#include <progressbarpro>')}`);
+  if (opt.objectFn === 'CreateDynamicObject') lines.push(`//   ${tr('Requer o plugin streamer ({0}) - {1}', '#include <streamer>', 'https://github.com/samp-incognito/samp-streamer-plugin')}`);
+  if (textDraws.some(td => td.type === 'progress')) lines.push(`//   ${tr('Requer a include SA Progress Bar Pro ({0}) - {1}', '#include <ProgressBar>', 'https://github.com/Walter-Correa/SA-Progress-Bar-Pro')}`);
   if (textDraws.some(tdBlinkActive)) lines.push(`//   ${tr('Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.', '#include <textdrawblink>')}`);
   if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   ${tr('Posições relativas: some ({0}) ou passe a origem.', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);

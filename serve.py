@@ -42,7 +42,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.37"
+VERSION = "4.1.38"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
@@ -2191,53 +2191,24 @@ _FRONTEND_STREAM_MAP = {
     1187: 161,  # SOUND_PILOT_AWARD_TRACK_START
 }
 
+# Frontend events (1000-1199) have no table in the game files: their mapping lives inside gta_sa.exe. Only the ones whose
+# source was matched against the game are here; any other id has no preview (it is silent, never a guessed sound).
 _FRONTEND_GENRL_MAP = {
-    1020: (39, 0),
-    1021: (138, 18),
-    1022: (60, 0),
     1039: (143, 65),  # SOUND_PARACHUTE_OPEN
-    1036: (60, 2),
-    1052: (60, 1),
-    1053: (60, 2),
-    1054: (60, 3),
-    1055: (60, 4),
-    1056: (60, 0),
-    1057: (60, 1),
-    1058: (60, 0),
-    1063: (60, 0),
-    1069: (60, 0),
-    1083: (60, 5),
-    1084: (60, 6),
-    1085: (60, 7),
-    1095: (138, 16),
-    1098: (60, 0),
-    1130: (74, 0),
-    1131: (39, 0),
-    1132: (60, 8),
-    1133: (138, 12),
-    1134: (138, 18),
-    1135: (74, 2),
-    1136: (74, 1),
-    1137: (60, 0),
-    1138: (60, 1),
-    1139: (60, 2),
-    1140: (138, 0),
-    1141: (138, 4),
-    1143: (60, 0),
-    1147: (60, 3),
-    1148: (138, 6),
-    1149: (60, 1),
-    1150: (60, 0),
-    1153: (138, 19),
-    1163: (74, 5),
-    1165: (138, 19),
-    1166: (138, 16),
-    1169: (145, 12),
-    1184: (60, 0),
-    1186: (60, 0),
-    1188: (60, 0),
-    1190: (74, 3),
 }
+
+# Ids below 1000 are the music/radio/ambient tracks listed in the catalog (0 stops and 1 only switches ambience off).
+_STREAM_SOUND_RANGES = ((2, 59), (66, 185), (315, 315), (470, 470), (534, 534), (669, 670), (743, 743), (767, 767), (946, 999))
+
+
+def _silent_wav(seconds=0.4, rate=8000):
+    pcm = b"\x00\x00" * int(seconds * rate)
+    hdr = struct.pack("<4sI4s4sIHHIIHH4sI", b"RIFF", 36 + len(pcm), b"WAVE", b"fmt ", 16, 1, 1, rate, rate * 2, 2, 16, b"data", len(pcm))
+    return hdr + pcm
+
+
+# Played for an id that has no sound, so the preview neither fails with a 404 nor plays something unrelated.
+SILENT_WAV = _silent_wav()
 
 
 def _extract_sfx_bank_slot(gta_path, global_bank_id, slot_id):
@@ -2364,16 +2335,15 @@ def extract_gta_sound(gta_path, soundid):
         slot_id = (soundid - 2000) % 200
         return _extract_sfx_bank_slot(gta_path, bank_id, slot_id)
     if 1 <= soundid <= 999:
-        return _extract_stream_track(gta_path, soundid)
+        if any(lo <= soundid <= hi for lo, hi in _STREAM_SOUND_RANGES):
+            return _extract_stream_track(gta_path, soundid)
+        return None
     if 1000 <= soundid <= 1199:
         if soundid in _FRONTEND_STREAM_MAP:
             return _extract_stream_track(gta_path, _FRONTEND_STREAM_MAP[soundid])
         if soundid in _FRONTEND_GENRL_MAP:
             bs = _FRONTEND_GENRL_MAP[soundid]
-            res = _extract_sfx_bank_slot(gta_path, bs[0], bs[1])
-            if res:
-                return res
-        return _extract_sfx_bank_slot(gta_path, 60, soundid % 9)
+            return _extract_sfx_bank_slot(gta_path, bs[0], bs[1])
     return None
 
 
@@ -2513,13 +2483,14 @@ class Handler(SimpleHTTPRequestHandler):
             except ValueError:
                 return self.send_error(400, "Sound ID invalido")
             res = extract_gta_sound(State.gta_path, sid)
-            if not res:
-                return self.send_error(404, "Áudio não encontrado")
-            audio_bytes, ctype = res
+            silent = not res
+            audio_bytes, ctype = res or (SILENT_WAV, "audio/wav")
             self.send_response(200)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(audio_bytes)))
             self.send_header("Cache-Control", "public, max-age=86400")
+            if silent:
+                self.send_header("X-Sound-Silent", "1")
             self.end_headers()
             try:
                 self.wfile.write(audio_bytes)

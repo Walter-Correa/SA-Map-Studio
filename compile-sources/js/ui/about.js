@@ -7,6 +7,15 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.38', date: '01/11/2026', items: [
+      'The progress bar include is now ProgressBar.inc (SA Progress Bar Pro, https://github.com/Walter-Correa/SA-Progress-Bar-Pro, #include <ProgressBar>); it replaces progressbarpro.inc in the test server, and the test server gamemode was recompiled with it.',
+      'The exported code and the TextDraw copy now list the required includes with their address: 'Requires the streamer plugin (#include <streamer>) - https://github.com/samp-incognito/samp-streamer-plugin' and 'Requires the SA Progress Bar Pro include (#include <ProgressBar>) - https://github.com/Walter-Correa/SA-Progress-Bar-Pro'.',
+      'The TextDraw editor draws the inner part of a progress bar with the same color as the new include (30% of the alpha, at least 0x20), and imported CreatePlayerProgressBar calls without size or color use the include defaults (60 x 8, color 0xE74C3CFF).',
+      'Sound preview: an id that has no sound no longer plays another one (the ids 1 and 1020-1022, the stop events and the ids with no source in the game files are silent); the preview says it has no audio, inside the sound window.',
+      'Notices (toasts) shown while a dialog is open now appear inside the dialog instead of behind it.',
+    ],
+  },
+  {
     version: '4.1.37', date: '01/11/2026', items: [
       'The editor is now licensed under the Mozilla Public License 2.0 (LICENSE file); the footer of the About window shows it.',
       'The game material is no longer packed with the program: the thumbnails of the catalog, the skins, the sprites of the TextDraw editor, the map icons, the radar and the textures list are drawn from the GTA folder of the user the first time the editor opens (a progress bar shows it in the loading screen) and kept in the data folder. The program went from 94 MB to about 37 MB.',

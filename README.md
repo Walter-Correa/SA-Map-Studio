@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.37-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.38-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -171,7 +171,7 @@ never changed and removing the mod is deleting its folder.
 - **Sprites** (Font 4) from a gallery of 567 game sprites, with the Pawn line of each one.
 - **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom, drawn
   as the SA-MP client does.
-- **Progress bars** (SA Progress Bar Pro, `progressbarpro.inc`, included in the test server) in the four directions,
+- **Progress bars** (SA Progress Bar Pro, `ProgressBar.inc`, included in the test server) in the four directions,
   drawn as in the game, as a bar, a ring of segments or a growing circle, with border, blinking, auto fill and a segment
   scale for rings. Parameter order:
   `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments, segmentscale)`.
@@ -412,7 +412,7 @@ compile-sources/
 ├── package_bundle.py          packs the program into the launcher zip
 ├── i18n_check.py, i18n_same.txt, i18n_extra.txt  translation check used by the build
 ├── i18n_tool.py               batch translation, plural forms and key rename for the language files
-├── samapstudio.pwn / .amx     test server gamemode (uses progressbarpro.inc and textdrawblink.inc)
+├── samapstudio.pwn / .amx     test server gamemode (uses ProgressBar.inc and textdrawblink.inc)
 ├── anim-list.json             animation list
 └── version_info.txt           .exe version metadata
 omp-server-source/             base open.mp server used by "Test in game"
@@ -485,6 +485,13 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.38 — 01/11/2026
+- The progress bar include is now ProgressBar.inc (SA Progress Bar Pro, https://github.com/Walter-Correa/SA-Progress-Bar-Pro, #include <ProgressBar>); it replaces progressbarpro.inc in the test server, and the test server gamemode was recompiled with it.
+- The exported code and the TextDraw copy now list the required includes with their address: 'Requires the streamer plugin (#include <streamer>) - https://github.com/samp-incognito/samp-streamer-plugin' and 'Requires the SA Progress Bar Pro include (#include <ProgressBar>) - https://github.com/Walter-Correa/SA-Progress-Bar-Pro'.
+- The TextDraw editor draws the inner part of a progress bar with the same color as the new include (30% of the alpha, at least 0x20), and imported CreatePlayerProgressBar calls without size or color use the include defaults (60 x 8, color 0xE74C3CFF).
+- Sound preview: an id that has no sound no longer plays another one (the ids 1 and 1020-1022, the stop events and the ids with no source in the game files are silent); the preview says it has no audio, inside the sound window.
+- Notices (toasts) shown while a dialog is open now appear inside the dialog instead of behind it.
 
 ### 4.1.37 — 01/11/2026
 - The editor is now licensed under the Mozilla Public License 2.0 (LICENSE file); the footer of the About window shows it.
@@ -1356,7 +1363,7 @@ Tools (in `compile-sources/`, run with Python 3):
 The editor is licensed under the **Mozilla Public License 2.0** (see `LICENSE`). Third-party parts keep their own licenses:
 three.js and TransformControls (MIT, `compile-sources/js/vendor`), the Barlow font (SIL Open Font License 1.1,
 `compile-sources/fonts/OFL.txt`), the open.mp server, its components and the `omp_*` includes (MPL 2.0, source at
-https://github.com/openmultiplayer/open.mp), the streamer plugin and `streamer.inc` (Apache License 2.0) and the Pawn compiler
+https://github.com/openmultiplayer/open.mp), the streamer plugin and `streamer.inc` (Apache License 2.0), `ProgressBar.inc` (SA Progress Bar Pro, MPL 2.0, https://github.com/Walter-Correa/SA-Progress-Bar-Pro) and the Pawn compiler
 with its basic includes (license of the Pawn project).
 
 The material of the game is not covered by this license: Grand Theft Auto: San Andreas belongs to Rockstar Games / Take-Two

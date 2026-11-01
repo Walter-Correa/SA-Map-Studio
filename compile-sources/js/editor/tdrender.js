@@ -225,7 +225,15 @@ export function textDrawRect(td) {
   return { x: left / UX, y: top / UY, w: Math.max(4, (right - left) / UX), h: Math.max(4, (bottom - top) / UY) };
 }
 
-// Progress bar (SA Progress Bar Pro, progressbarpro.inc): the same 3 LD_SPAC:white sprites the include creates,
+// Same inner colour as PB_BackgroundColour in the include: 30% of the alpha, at least 0x20 when the bar is not transparent
+function pbDim(c) {
+  const a = c & 0xFF;
+  let al = Math.floor(a * 30 / 100);
+  if (al < 0x20 && a > 0) al = 0x20;
+  return ((c & 0xFFFFFF00) | al) >>> 0;
+}
+
+// Progress bar (SA Progress Bar Pro, ProgressBar.inc): the same 3 LD_SPAC:white sprites the include creates,
 // in 640x448 units: background, track inside the border and the filled part according to value and direction.
 // Border: pbBorder horizontally and 1.25 times that vertically (1 unit is 3.00 px x 2.41 px at 1920x1080),
 // limited as in the include (0.5 to 5). blinkOn: lit phase of the blink (blink color or interior off;
@@ -246,7 +254,7 @@ function ringParts(bar, blinkOn) {
   const blinking = Boolean(bar.pbBlink) && blinkOn;
   const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
   const c = blinking && blinkColor ? blinkColor : base;
-  const dim = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
+  const dim = pbDim(c);
   const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
   const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || (base & 0xFF));
   const nb = Number(bar.pbBorder ?? 1);
@@ -284,7 +292,7 @@ export function progressBarParts(bar, blinkOn = false) {
   const blinking = Boolean(bar.pbBlink) && blinkOn;
   const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
   const c = blinking && blinkColor ? blinkColor : base;
-  const fillColor = ((c & 0xFFFFFF00) | (0x66 & Math.floor((c & 0xFF) / 2))) >>> 0;
+  const fillColor = pbDim(c);
   // Border limited as in the include: from 0.5 to 5, never larger than what fits (1 unit of interior left over)
   // and never smaller than the minimum
   const n = Number(bar.pbBorder ?? 1);

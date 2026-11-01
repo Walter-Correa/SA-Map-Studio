@@ -20,8 +20,18 @@ export function playSoundPreview(soundid) {
   playingSoundId = id;
   updatePlayingStateUI();
 
-  const audio = new Audio(`/api/sound/${id}`);
+  const audio = new Audio();
   currentAudio = audio;
+  // An id without a sound comes back flagged as silent: say so instead of "playing" nothing.
+  fetch(`/api/sound/${id}?v=2`).then(r => {
+    if (r.headers.get('X-Sound-Silent')) return null;
+    return r.blob();
+  }).then(blob => {
+    if (currentAudio !== audio) return;
+    if (!blob) return audio.onerror();
+    audio.src = URL.createObjectURL(blob);
+    audio.play().catch(() => audio.onerror());
+  }).catch(() => { if (currentAudio === audio) audio.onerror(); });
   audio.volume = 0.85;
   audio.onended = () => {
     if (currentAudio === audio) {
@@ -38,13 +48,6 @@ export function playSoundPreview(soundid) {
       toast(`Prévia de áudio não disponível para o Sound ID ${id}.`, 'warn');
     }
   };
-  audio.play().catch(() => {
-    if (currentAudio === audio) {
-      playingSoundId = null;
-      currentAudio = null;
-      updatePlayingStateUI();
-    }
-  });
 }
 
 export function stopSoundPreview() {
