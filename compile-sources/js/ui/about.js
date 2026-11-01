@@ -15,6 +15,7 @@ const CHANGELOG = [
       'Sound preview: an id that has no sound no longer plays another one (the ids 1 and 1020-1022, the stop events and the ids with no source in the game files are silent); the preview says it has no audio, inside the sound window.',
       'Notices (toasts) shown while a dialog is open now appear inside the dialog instead of behind it.',
       'New release notice: when the editor opens it looks for the latest published release of the project on GitHub; if its version is higher than the editor, a box offers Download now or Download later (either choice is remembered and the box does not come back for that version), the Update History button keeps an alert while the new version exists, and the top of the history highlights it with a Download button. A failed check (offline, private repository) shows nothing.',
+      'Test server: it no longer listens only on the local machine, so other people on the network can connect to it by your IP (the editor still opens the game on 127.0.0.1), and it now accepts up to 10 players instead of 8.',
     ],
   },
   {

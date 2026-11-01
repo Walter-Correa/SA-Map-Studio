@@ -386,6 +386,7 @@ Rafael_Hurley and Walter_Correa
 Built on
 Version history
 © {0} {1} · Mozilla Public License 2.0
+SA Map Studio · Mozilla Public License 2.0
 Multiplayer
 Singleplayer
 Download

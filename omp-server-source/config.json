@@ -1,11 +1,10 @@
 {
   "name": "SA Map Studio - Testing server",
-  "max_players": 8,
+  "max_players": 10,
   "announce": false,
   "enable_query": true,
   "network": {
-    "port": 7777,
-    "bind": "127.0.0.1"
+    "port": 7777
   },
   "pawn": {
     "main_scripts": [

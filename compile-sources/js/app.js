@@ -19,7 +19,7 @@ import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.
 import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel } from './ui/inspector.js';
 import { setupCameras, stopPreview } from './ui/cameras.js';
 import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
-import { setupAbout } from './ui/about.js';
+import { setupAbout, AUTHORS } from './ui/about.js';
 import { initUpdateCheck } from './ui/updateCheck.js';
 import { setupLogsDialog } from './ui/logger.js';
 import { setupAnimPicker } from './ui/animPicker.js';
@@ -105,6 +105,8 @@ function setupTheme() {
 // =====================================================================  abertura
 async function boot() {
   const status = $('#bootStatus');
+  // Same copyright line as the About dialog footer (never translated)
+  $('#bootRights').textContent = `© ${new Date().getFullYear()} ${AUTHORS} · Mozilla Public License 2.0`;
   let cfg;
   try { cfg = await (await fetch('/api/config')).json(); }
   catch {

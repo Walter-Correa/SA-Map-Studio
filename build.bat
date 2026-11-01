@@ -70,7 +70,7 @@ if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no na
 echo Fechando o SA Map Studio, se estiver aberto...
 rem Only closes what runs from this repository (the program and its test server): a game server or another copy
 rem of the editor running from somewhere else is left alone
-powershell -NoProfile -Command "Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith('%SRC%', [StringComparison]::OrdinalIgnoreCase) -and ($_.Name -in 'SA Map Studio','sa-map-studio','SA Map Studio','sa-map-studio','omp-server','samp-server') } | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>nul
+powershell -NoProfile -Command "Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith('%SRC%', [StringComparison]::OrdinalIgnoreCase) -and ($_.Name -in 'SA Map Studio','sa-map-studio','omp-server','samp-server') } | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>nul
 ping 127.0.0.1 -n 3 >nul
 
 rem Date and time of this build (shown in "Novidades" inside the program)
@@ -158,7 +158,7 @@ if not exist "%ST%\server.cfg" (
         echo echo Executing Server Config...
         echo lanmode 1
         echo rcon_password changeme1
-        echo maxplayers 8
+        echo maxplayers 10
         echo port 7777
         echo hostname SA Map Studio - teste
         echo gamemode0 samapstudio 1
