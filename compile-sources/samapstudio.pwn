@@ -7,7 +7,7 @@
 #include <open.mp>
 #include <streamer>
 #include <ProgressBar>
-#include <textdrawblink>
+#include <TextDrawFX>
 
 #define SAMSP_ARQUIVO        "samapstudio/mapa.txt"
 #define SAMSP_MAX_OBJETOS    5000
@@ -141,14 +141,11 @@ enum E_SAMSP_TD
     Float:td_rotY,
     Float:td_rotZ,
     Float:td_zoom,
-    td_blink,
-    td_blinkInterval,
-    td_blinkDuration,
-    td_blinkPerChar,
-    td_blinkColor,
     td_text[128]
 }
 new gTd[SAMSP_MAX_TEXTDRAWS][E_SAMSP_TD];
+// TextDrawFX effect of each TextDraw: the whole DF line of the map, read when the TextDraw is shown (empty = no effect)
+new gTdFx[SAMSP_MAX_TEXTDRAWS][320];
 new PlayerText:gPlayerTds[MAX_PLAYERS][SAMSP_MAX_TEXTDRAWS];
 new gTotalTextDraws;
 
@@ -182,7 +179,7 @@ enum E_SAMSP_MAPICON
 new gMapIcons[SAMSP_MAX_MAPICONS][E_SAMSP_MAPICON];
 new gTotalMapIcons;
 
-// Progress bars (SA Progress Bar Pro, ProgressBar.inc): created for each player on spawn
+// Progress bars (Progress Bar Plus, ProgressBar.inc): created for each player on spawn
 enum E_SAMSP_PBAR
 {
     Float:bar_x,
@@ -204,7 +201,27 @@ enum E_SAMSP_PBAR
     bar_segments,
     bar_autoFill,
     Float:bar_autoFillMax,
-    Float:bar_segmentScale
+    Float:bar_segmentScale,
+    Float:bar_min,
+    bar_gradient,
+    bar_gradEmpty,
+    bar_gradMid,
+    bar_gradFull,
+    bar_gradInverted,
+    bar_lerp,
+    Float:bar_lerpFrom,
+    bar_lerpMs,
+    bar_label,
+    bar_labelColor,
+    bar_labelAlign,
+    bar_labelFont,
+    Float:bar_labelScaleX,
+    Float:bar_labelScaleY,
+    Float:bar_labelOffX,
+    Float:bar_labelOffY,
+    bar_labelFollow,
+    bar_labelOrient,
+    bar_labelText[32]
 }
 new gPBars[SAMSP_MAX_PBARS][E_SAMSP_PBAR];
 new gTotalPBars;
@@ -889,24 +906,40 @@ stock SAMSP_CarregarMapa()
                 gPBars[gTotalPBars][bar_autoFill] = SAMSP_Int(linha, 18);
                 gPBars[gTotalPBars][bar_autoFillMax] = SAMSP_Float(linha, 19);
                 gPBars[gTotalPBars][bar_segmentScale] = SAMSP_Float(linha, 20); // 0 (an old map file) is the default size
+                // Progress Bar Plus: minimum, gradient, smooth change and label (an old map file has none of them)
+                gPBars[gTotalPBars][bar_min] = SAMSP_Float(linha, 21);
+                gPBars[gTotalPBars][bar_gradient] = SAMSP_Int(linha, 22);
+                gPBars[gTotalPBars][bar_gradEmpty] = SAMSP_HexOrInt(linha, 23);
+                gPBars[gTotalPBars][bar_gradMid] = SAMSP_HexOrInt(linha, 24);
+                gPBars[gTotalPBars][bar_gradFull] = SAMSP_HexOrInt(linha, 25);
+                gPBars[gTotalPBars][bar_gradInverted] = SAMSP_Int(linha, 26);
+                gPBars[gTotalPBars][bar_lerp] = SAMSP_Int(linha, 27);
+                gPBars[gTotalPBars][bar_lerpFrom] = SAMSP_Float(linha, 28);
+                gPBars[gTotalPBars][bar_lerpMs] = SAMSP_Int(linha, 29);
+                gPBars[gTotalPBars][bar_label] = SAMSP_Int(linha, 30);
+                gPBars[gTotalPBars][bar_labelColor] = SAMSP_HexOrInt(linha, 31);
+                gPBars[gTotalPBars][bar_labelAlign] = SAMSP_Int(linha, 32);
+                gPBars[gTotalPBars][bar_labelFont] = SAMSP_Int(linha, 33);
+                gPBars[gTotalPBars][bar_labelScaleX] = SAMSP_Float(linha, 34);
+                gPBars[gTotalPBars][bar_labelScaleY] = SAMSP_Float(linha, 35);
+                gPBars[gTotalPBars][bar_labelOffX] = SAMSP_Float(linha, 36);
+                gPBars[gTotalPBars][bar_labelOffY] = SAMSP_Float(linha, 37);
+                gPBars[gTotalPBars][bar_labelFollow] = SAMSP_Int(linha, 38);
+                gPBars[gTotalPBars][bar_labelOrient] = SAMSP_Int(linha, 39);
+                SAMSP_Resto(linha, 40, texto, sizeof(texto));
+                strmid(gPBars[gTotalPBars][bar_labelText], texto, 0, strlen(texto), 32);
                 gTotalPBars++;
             }
             case 'D':
             {
-                if (tipo[1] == 'B')
+                if (tipo[1] == 'F')
                 {
-                    // Blink of a TextDraw: DB|number of the TextDraw|interval|duration|character by character|colour (0 = it vanishes)
-                    new bidx = SAMSP_Int(linha, 1);
-                    if (bidx >= 0 && bidx < gTotalTextDraws)
-                    {
-                        gTd[bidx][td_blink] = 1;
-                        gTd[bidx][td_blinkInterval] = SAMSP_Int(linha, 2);
-                        gTd[bidx][td_blinkDuration] = SAMSP_Int(linha, 3);
-                        gTd[bidx][td_blinkPerChar] = SAMSP_Int(linha, 4);
-                        gTd[bidx][td_blinkColor] = SAMSP_HexOrInt(linha, 5);
-                    }
+                    // TextDrawFX effect: DF|number of the TextDraw|effect|other TextDraw|parameters...|text
+                    new fidx = SAMSP_Int(linha, 1);
+                    if (fidx >= 0 && fidx < gTotalTextDraws) strmid(gTdFx[fidx], linha, 0, strlen(linha), sizeof(gTdFx[]));
                     continue;
                 }
+                if (tipo[1] != EOS) continue;
                 if (gTotalTextDraws >= SAMSP_MAX_TEXTDRAWS) continue;
                 new tdi = gTotalTextDraws;
                 gTd[tdi][td_x] = SAMSP_Float(linha, 1);
@@ -930,7 +963,7 @@ stock SAMSP_CarregarMapa()
                 gTd[tdi][td_rotY] = SAMSP_Float(linha, 19);
                 gTd[tdi][td_rotZ] = SAMSP_Float(linha, 20);
                 gTd[tdi][td_zoom] = SAMSP_Float(linha, 21);
-                gTd[tdi][td_blink] = 0;
+                gTdFx[tdi][0] = EOS;
                 SAMSP_Resto(linha, 22, texto, sizeof(texto));
                 if (gTd[tdi][td_font] == 4) SAMSP_NormalizeSprite(texto, sizeof(texto));
                 strmid(gTd[tdi][td_text], texto, 0, strlen(texto), 128);
@@ -1340,8 +1373,17 @@ stock SAMSP_ShowProgressBars(playerid)
             gPBars[i][bar_color], gPBars[i][bar_max], gPBars[i][bar_direction], gPBars[i][bar_border], gPBars[i][bar_borderColor],
             gPBars[i][bar_style], gPBars[i][bar_segments], gPBars[i][bar_segmentScale]);
         if (bar == INVALID_PLAYER_BAR_ID) continue;
-        SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_value]);
+        if (gPBars[i][bar_min] != 0.0) SetPlayerProgressBarMinValue(playerid, bar, gPBars[i][bar_min]);
+        if (gPBars[i][bar_gradient])
+            SetPlayerProgressBarGradient(playerid, bar, true, gPBars[i][bar_gradEmpty], gPBars[i][bar_gradFull], gPBars[i][bar_gradMid], bool:gPBars[i][bar_gradInverted]);
+        if (gPBars[i][bar_label])
+            SetPlayerProgressBarLabel(playerid, bar, true, gPBars[i][bar_labelText], gPBars[i][bar_labelColor], gPBars[i][bar_labelAlign], gPBars[i][bar_labelFont],
+                gPBars[i][bar_labelScaleX], gPBars[i][bar_labelScaleY], gPBars[i][bar_labelOffX], gPBars[i][bar_labelOffY], bool:gPBars[i][bar_labelFollow], gPBars[i][bar_labelOrient]);
+        // The smooth change starts from its first value and goes to the value of the bar
+        SetPlayerProgressBarValue(playerid, bar, gPBars[i][bar_lerp] ? gPBars[i][bar_lerpFrom] : gPBars[i][bar_value]);
         ShowPlayerProgressBar(playerid, bar);
+        if (gPBars[i][bar_lerp])
+            InterpolatePlayerProgressBarValue(playerid, bar, gPBars[i][bar_value], gPBars[i][bar_lerpMs]);
         if (gPBars[i][bar_autoFill])
             AutoFillPlayerProgressBar(playerid, bar, gPBars[i][bar_autoFillMax]);
         if (gPBars[i][bar_blink])
@@ -1430,6 +1472,112 @@ stock SAMSP_CreatePlayerTd(playerid, i)
     return 1;
 }
 
+// Empty tags of the effects are written as "_" in the map file
+stock SAMSP_FxTag(const linha[], campo, destino[], tamanho)
+{
+    SAMSP_Campo(linha, campo, destino, tamanho);
+    if (destino[0] == '_' && destino[1] == EOS) destino[0] = EOS;
+}
+
+// Starts the TextDrawFX effect of the TextDraw number i for the player (same call as in the exported code).
+// DF line: 1 TextDraw, 2 effect, 3 other TextDraw, 4... the parameters in the order of the function, and the text at the end.
+stock SAMSP_ApplyFx(playerid, i)
+{
+    if (gTdFx[i][0] == EOS) return 0;
+    new PlayerText:td = gPlayerTds[playerid][i];
+    if (td == PlayerText:INVALID_PLAYER_TEXT_DRAW) return 0;
+    new l[320], s1[64], s2[64], txt[256];
+    strmid(l, gTdFx[i], 0, strlen(gTdFx[i]), sizeof(l));
+    #define FI(%0) SAMSP_Int(l, %0)
+    #define FF(%0) SAMSP_Float(l, %0)
+    #define FH(%0) SAMSP_HexOrInt(l, %0)
+    #define FB(%0) bool:(SAMSP_Int(l, %0) != 0)
+    #define FT(%0) SAMSP_Resto(l, %0, txt, sizeof(txt))
+    switch (SAMSP_Int(l, 2))
+    {
+        case 0:
+        {
+            // Blink: the text and the original colour make the character by character and the colour work
+            new font = gTd[i][td_font];
+            new base = (font == 5) ? gTd[i][td_bgColor] : gTd[i][td_color];
+            if (font == 4 && (base == 0 || base == 0xFF)) base = 0xFFFFFFFF;
+            BlinkPlayerTextDraw(playerid, td, FI(4), FI(5), FB(6) && font != 4 && font != 5, FH(7), gTd[i][td_text], base);
+        }
+        case 1: FadeInPlayerTextDraw(playerid, td, FI(4), FB(5), FI(6), 0, "", FB(7));
+        case 2: FadeOutPlayerTextDraw(playerid, td, FI(4), FB(5), 0, "", FB(6));
+        case 3: FadeColorPlayerTextDraw(playerid, td, FH(4), FH(5), FI(6), FB(7), FH(8), FH(9), FI(10));
+        case 4: ScalePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8), FI(9));
+        case 5: PulsePlayerTextDraw(playerid, td, FF(4), FI(5), FI(6));
+        case 6: SlidePlayerTextDraw(playerid, td, FF(4), FF(5), FI(6), FI(7));
+        case 7:
+        {
+            SAMSP_FxTag(l, 7, s1, sizeof(s1));
+            SAMSP_FxTag(l, 8, s2, sizeof(s2));
+            CountPlayerTextDrawNumber(playerid, td, FI(4), FI(5), FI(6), s1, s2, FB(9), FI(10));
+        }
+        case 8: { FT(5); ScramblePlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 9: BouncePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FF(9), FB(10), FI(11));
+        case 10: BounceCirclePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FB(9), FI(10));
+        case 11: OrbitPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FF(9), FI(10));
+        case 12: ShakePlayerTextDraw(playerid, td, FF(4), FI(5));
+        case 13: NeonFlickerPlayerTextDraw(playerid, td, FI(4), FI(5));
+        case 14: WaveDriftPlayerTextDraw(playerid, td, FF(4), FF(5), FI(6), FI(7));
+        case 15: FillPlayerTextDrawProgress(playerid, td, FF(4), FF(5), FI(6), FI(7), FF(8));
+        case 16: FireworkPlayerTextDraw(playerid, td, FI(4), FI(5), FI(6), FF(7), FF(8), FI(9));
+        case 17: { FT(6); GlitchPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 18: SpinPreviewPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8));
+        case 19: FloatPreviewPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FI(7), FI(8));
+        case 20:
+        {
+            SAMSP_FxTag(l, 4, s1, sizeof(s1));
+            SAMSP_FxTag(l, 5, s2, sizeof(s2));
+            FT(9);
+            ShimmerPlayerTextDraw(playerid, td, txt, s1, s2, FI(6), FI(7), FI(8));
+        }
+        case 21: { FT(6); RainbowPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 22: { FT(5); SlotMachinePlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 23: PendulumPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FI(9));
+        case 24: GravityDropPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6));
+        case 25: VortexPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8));
+        case 26:
+        {
+            // Letterbox: this TextDraw is the top bar and the other one of the line the bottom bar
+            new other = SAMSP_Int(l, 3);
+            new PlayerText:bottom = PlayerText:INVALID_PLAYER_TEXT_DRAW;
+            if (other >= 0 && other < gTotalTextDraws) bottom = gPlayerTds[playerid][other];
+            LetterboxPlayerTextDraw(playerid, td, bottom, FF(4), FI(5), FB(6), FI(7));
+        }
+        case 27: SonarPingPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FI(7), FI(8));
+        case 28:
+        {
+            SAMSP_FxTag(l, 4, s1, sizeof(s1));
+            SAMSP_FxTag(l, 5, s2, sizeof(s2));
+            FT(10);
+            WaveSweepPlayerTextDraw(playerid, td, txt, s1, s2, FI(6), FI(7), FI(8), FI(9));
+        }
+        case 29: { FT(8); LetterRainPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FI(7)); }
+        case 30:
+        {
+            SAMSP_FxTag(l, 4, s1, sizeof(s1));
+            SAMSP_FxTag(l, 5, s2, sizeof(s2));
+            FT(8);
+            ScannerSweepPlayerTextDraw(playerid, td, txt, s1, s2, FI(6), FI(7));
+        }
+        case 31: { FT(5); ElectricArcPlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 32: { FT(6); SplitFlapPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 33: { FT(5); HologramPlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 34: ShockwaveSlamPlayerTextDraw(playerid, td, FF(4), FF(5), FI(6));
+        case 35: { FT(11); WaveMotionPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FF(7), FI(8), FI(9), FB(10)); }
+        case 36: { FT(12); HopLetterPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FI(7), FI(8), FI(9), FI(10), FB(11)); }
+    }
+    #undef FI
+    #undef FF
+    #undef FH
+    #undef FB
+    #undef FT
+    return 1;
+}
+
 stock SAMSP_ShowHud(playerid)
 {
     if (gHudShown[playerid]) return 0;
@@ -1438,16 +1586,10 @@ stock SAMSP_ShowHud(playerid)
     {
         gPlayerTds[playerid][i] = PlayerText:INVALID_PLAYER_TEXT_DRAW;
         if (!SAMSP_CreatePlayerTd(playerid, i)) continue;
-        if (gTd[i][td_blink])
-        {
-            // BlinkPlayerTextDraw (textdrawblink.inc) shows it and makes it blink; the original colour is given because the colours were set above
-            new bool:perChar = (gTd[i][td_blinkPerChar] != 0 && gTd[i][td_font] != 4 && gTd[i][td_font] != 5);
-            new base = (gTd[i][td_font] == 5) ? gTd[i][td_bgColor] : gTd[i][td_color];
-            if (gTd[i][td_font] == 4 && (base == 0 || base == 0xFF)) base = 0xFFFFFFFF;
-            BlinkPlayerTextDraw(playerid, gPlayerTds[playerid][i], gTd[i][td_blinkInterval], gTd[i][td_blinkDuration], perChar, gTd[i][td_blinkColor], gTd[i][td_text], base);
-        }
-        else PlayerTextDrawShow(playerid, gPlayerTds[playerid][i]);
+        PlayerTextDrawShow(playerid, gPlayerTds[playerid][i]);
     }
+    // The effects start after every TextDraw exists (the letterbox moves a second TextDraw)
+    for (new i = 0; i < gTotalTextDraws; i++) SAMSP_ApplyFx(playerid, i);
     SAMSP_ShowProgressBars(playerid);
     return 1;
 }

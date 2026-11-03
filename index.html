@@ -1092,7 +1092,7 @@
         <button type="button" class="btn small" id="tdBtnAddBox" style="justify-content: center;">+ Caixa</button>
         <button type="button" class="btn small" id="tdBtnAddModel" style="justify-content: center;">+ Modelo 3D</button>
         <button type="button" class="btn small" id="tdBtnAddSprite" style="justify-content: center;">+ Sprite</button>
-        <button type="button" class="btn small" id="tdBtnAddProgress" style="justify-content: center; grid-column: span 2;" title="Barra de progresso (SA Progress Bar Pro, ProgressBar.inc)">+ Barra de Progresso</button>
+        <button type="button" class="btn small" id="tdBtnAddProgress" style="justify-content: center; grid-column: span 2;" title="Barra de progresso (Progress Bar Plus, ProgressBar.inc)">+ Barra de Progresso</button>
       </div>
 
       <div class="pop-title" style="margin: 4px 0 2px 0; flex-shrink: 0;" title="O SA-MP desenha na ordem de criação: o primeiro fica por baixo e o último por cima. TextDraws de jogador (e barras) ficam sempre por cima das globais.">Elementos <span style="font-weight: 400; color: var(--paper-dim); font-size: 11px;">(ordem de criação: o de baixo na lista fica por cima)</span></div>
@@ -1167,18 +1167,13 @@
           <label class="check"><input type="checkbox" id="tdIsPlayer"> PlayerTextDraw</label>
         </div>
 
-        <div class="td-std">
-          <label class="check" style="font-size: 12px;" title="Só para PlayerTextDraw (BlinkPlayerTextDraw, include textdrawblink.inc)"><input type="checkbox" id="tdBlink"> Piscar (BlinkPlayerTextDraw)</label>
-          <div id="tdBlinkFields" style="display: none; flex-direction: column; gap: 6px; margin-top: 4px;">
-            <div class="pair">
-              <label title="Tempo entre cada troca, de 50 a 60000 ms">Intervalo (ms)<input type="number" id="tdBlinkInterval" step="10" min="50" max="60000"></label>
-              <label title="Tempo total da piscada; 0 pisca até ser parada">Duração (ms, 0 = sem fim)<input type="number" id="tdBlinkDuration" step="100" min="0" max="86400000"></label>
-            </div>
-            <label class="check" style="font-size: 12px;" title="Só para texto: esconde tudo e mostra os caracteres um a um, um por intervalo. Com duração, o intervalo se adapta para todos caberem nela."><input type="checkbox" id="tdBlinkPerChar"> Mostrar caractere por caractere</label>
-            <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdBlinkOwn" checked> Piscar sumindo e aparecendo</label>
-            <label id="tdBlinkColorRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;" title="O TextDraw não some: fica nesta cor e depois volta à original. Trechos coloridos por tags (~y~...) mantêm a cor.">Cor da piscada<input type="color" id="tdBlinkColor" value="#ffffff"></label>
-            <div style="font-size: 11px; opacity: 0.8;">Requer a include textdrawblink.inc no servidor.</div>
-          </div>
+        <div class="td-std" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Animação do TextDraw no jogo (include TextDrawFX). Ela começa quando o TextDraw aparece.">Efeito (TextDrawFX)
+            <select id="tdFx"></select>
+          </label>
+          <div id="tdFxNote" class="insp-note" style="display: none; font-size: 11px; margin: 0;"></div>
+          <div id="tdFxFields" style="display: none; grid-template-columns: 1fr 1fr; gap: 6px;"></div>
+          <button type="button" class="btn small" id="tdFxReplay" style="display: none;" title="Começa o efeito de novo na pré-visualização"><svg><use href="#i-play"/></svg><span>Ver de novo</span></button>
         </div>
 
         <div id="tdProgressPanel" style="display: none; background: color-mix(in srgb, var(--sodium) 8%, transparent); border: 1px solid color-mix(in srgb, var(--sodium) 30%, transparent); border-radius: 4px; padding: 6px; flex-direction: column; gap: 6px;">
@@ -1193,7 +1188,7 @@
               </select>
             </label>
             <label id="tdPbSegmentsRow" style="display: none;" title="Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)">Segmentos (4 a 60)<input type="number" id="tdPbSegments" step="1" min="4" max="60"></label>
-            <label id="tdPbSegScaleRow" style="display: none;" title="Tamanho de cada segmento do anel: 1 é o padrão, 2 o dobro, 0,5 a metade">Escala dos segmentos (0,2 a 3)<input type="number" id="tdPbSegScale" step="0.05" min="0.2" max="3"></label>
+            <label id="tdPbSegScaleRow" style="display: none;" title="Tamanho de cada segmento do anel: 1 é o padrão, 2 o dobro, 0,5 a metade">Escala dos segmentos (0,1 a 3)<input type="number" id="tdPbSegScale" step="0.05" min="0.1" max="3"></label>
           </div>
           <div id="tdPbStyleNote" class="insp-note" style="display: none; font-size: 11px; margin: 0;"></div>
           <div class="pair">
@@ -1201,8 +1196,16 @@
             <label>Altura<input type="number" id="tdPbHeight" step="0.1" min="2.25"></label>
           </div>
           <div class="pair">
+            <label title="Valor da barra vazia (SetPlayerProgressBarMinValue)">Valor mínimo<input type="number" id="tdPbMin" step="1"></label>
             <label>Valor máximo<input type="number" id="tdPbMax" step="1" min="1"></label>
-            <label>Valor atual<input type="number" id="tdPbValue" step="1" min="0"></label>
+          </div>
+          <div class="pair">
+            <label>Valor atual<input type="number" id="tdPbValue" step="1"></label>
+          </div>
+          <label class="check" style="font-size: 12px;" title="InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual"><input type="checkbox" id="tdPbLerp"> Encher suavemente ao aparecer</label>
+          <div id="tdPbLerpFields" class="pair" style="display: none;">
+            <label>Começar em<input type="number" id="tdPbLerpFrom" step="1"></label>
+            <label>Duração (ms)<input type="number" id="tdPbLerpMs" step="50" min="0" max="600000"></label>
           </div>
           <div class="pair" style="align-items: end;">
             <button type="button" class="btn small pb-autofill" id="tdPbAutoFill" title="AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado."><svg><use href="#i-play"/></svg><span>Auto preencher</span></button>
@@ -1219,6 +1222,55 @@
           <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra."><span id="tdPbBorderLabel">Borda (0,5 a 5,0)</span><input type="number" id="tdPbBorder" step="0.1" min="0.5" max="5"></label>
           <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBorderDefault" checked> Borda na cor padrão (preta)</label>
           <label id="tdPbBorderColorRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;">Cor da borda<input type="color" id="tdPbBorderColor" value="#000000"></label>
+          <label class="check" style="font-size: 12px;" title="SetPlayerProgressBarGradient: a cor muda com o valor"><input type="checkbox" id="tdPbGrad"> Cor pelo valor (gradiente)</label>
+          <div id="tdPbGradFields" style="display: none; flex-direction: column; gap: 6px;">
+            <div class="pair">
+              <label>Cor vazia<input type="color" id="tdPbGradEmpty" value="#e74c3c"></label>
+              <label>Cor cheia<input type="color" id="tdPbGradFull" value="#2ecc71"></label>
+            </div>
+            <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbGradMidOn"> Cor no meio</label>
+            <label id="tdPbGradMidRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;">Cor do meio<input type="color" id="tdPbGradMid" value="#f1c40f"></label>
+            <label class="check" style="font-size: 12px;" title="A cor cheia fica no começo e a vazia no fim"><input type="checkbox" id="tdPbGradInv"> Inverter</label>
+          </div>
+          <label class="check" style="font-size: 12px;" title="SetPlayerProgressBarLabel: um texto sobre a barra que mostra o valor"><input type="checkbox" id="tdPbLabel"> Texto na barra</label>
+          <div id="tdPbLabelFields" style="display: none; flex-direction: column; gap: 6px;">
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Use {PERCENT}, {VALUE}, {MAX} e {MIN}; até 31 caracteres">Texto<input type="text" id="tdPbLabelText" spellcheck="false" maxlength="31" placeholder="{PERCENT}%"></label>
+            <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbLabelFollow"> Na cor da barra</label>
+            <label id="tdPbLabelColorRow" style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Cor do texto<input type="color" id="tdPbLabelColor" value="#ffffff"></label>
+            <div class="pair">
+              <label>Alinhamento
+                <select id="tdPbLabelAlign">
+                  <option value="1">Esquerda</option>
+                  <option value="2">Centro</option>
+                  <option value="3">Direita</option>
+                </select>
+              </label>
+              <label translate="no">Fonte
+                <select id="tdPbLabelFont">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+              </label>
+            </div>
+            <label id="tdPbLabelOrientRow" style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Automática: numa barra alta e estreita, as letras ficam uma embaixo da outra">Orientação
+              <select id="tdPbLabelOrient">
+                <option value="0">Automática</option>
+                <option value="1">Horizontal</option>
+                <option value="2">Vertical</option>
+              </select>
+            </label>
+            <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbLabelAuto" checked> Tamanho automático</label>
+            <div id="tdPbLabelScaleRow" class="pair" style="display: none;">
+              <label>Tamanho X<input type="number" id="tdPbLabelScaleX" step="0.01" min="0"></label>
+              <label>Tamanho Y<input type="number" id="tdPbLabelScaleY" step="0.01" min="0"></label>
+            </div>
+            <div class="pair">
+              <label>Deslocar X<input type="number" id="tdPbLabelOffX" step="0.5"></label>
+              <label>Deslocar Y<input type="number" id="tdPbLabelOffY" step="0.5"></label>
+            </div>
+          </div>
           <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBlink"> Piscar (BlinkPlayerProgressBar)</label>
           <div id="tdPbBlinkFields" style="display: none; flex-direction: column; gap: 6px;">
             <div class="pair">

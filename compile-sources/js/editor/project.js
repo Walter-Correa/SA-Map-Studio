@@ -3,6 +3,7 @@ import { isVehicleModel } from './pwn.js';
 import { normalizeMaterial } from './materials.js';
 import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
 import { t as tr } from '../ui/i18n.js';
+import { makeFx, migrateBlink, tdfxPawn } from './tdfx.js';
 
 let uidCounter = 1;
 let _globalOpSeq = 0;
@@ -339,7 +340,8 @@ function normalizeSpriteName(text) {
   return text;
 }
 
-// Progress bar (SA Progress Bar Pro, ProgressBar.inc): calls to create, set the value and show to the player
+// Progress bar (Progress Bar Plus, ProgressBar.inc): calls to create, set the value and show to the player
+export const PB_INCLUDE = '#include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus';
 export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
 
 // ProgressBar.inc limits (the same PB_BORDER_MIN/MAX and PB_BLINK_MIN/MAX as the include)
@@ -364,7 +366,7 @@ export const PB_STYLE_NAMES = ['PB_STYLE_BAR', 'PB_STYLE_RING', 'PB_STYLE_CIRCLE
 export const clampPbStyle = (v) => { const n = Number(v) | 0; return n >= 0 && n <= 2 ? n : 0; };
 export const clampPbSegments = (v) => Math.round(clampNum(v, 4, 60, 24));
 // Size of each ring segment, 1 = the default (SetPlayerProgressBarRingScale in the include)
-export const clampPbSegmentScale = (v) => Math.round(clampNum(v, 0.2, 3, 1) * 100) / 100;
+export const clampPbSegmentScale = (v) => Math.round(clampNum(v, 0.1, 3, 1) * 100) / 100;
 // Auto fill (AutoFillPlayerProgressBar): how far it fills, from 0 to the bar's maximum value
 export const clampPbAutoFillMax = (v, max) => clampNum(v, 0, Math.max(0, Number(max) || 0), Math.max(0, Number(max) || 0));
 // Cycle time, same as PB_AUTOFILL_RISE / HOLD_TOP / FALL / HOLD_BASE in the include
@@ -381,6 +383,141 @@ export function pbAutoFillValue(td, elapsed) {
   else if (t < rise + holdTop + fall) f = 1 - (t - rise - holdTop) / fall;
   else f = 0;
   return value + (target - value) * f;
+}
+
+// Lower limit of the bar (SetPlayerProgressBarMinValue): the fill goes from the minimum to the maximum
+export const pbMinOf = (td) => Math.min(Number(td.pbMin) || 0, Number(td.pbMax) || 0);
+export const pbRatio = (td, value) => {
+  const min = pbMinOf(td), range = (Number(td.pbMax) || 0) - min;
+  return range > 0 ? Math.max(0, Math.min(1, ((Number(value) || 0) - min) / range)) : 0;
+};
+
+// Gradient (SetPlayerProgressBarGradient): colour from empty to full, through the middle one when it is not 0
+export const PB_GRADIENT_DEFAULT = { empty: 0xE74C3CFF, full: 0x2ECC71FF, mid: 0xF1C40FFF };
+function lerpRgba(c1, c2, f) {
+  if (f <= 0) return c1 >>> 0;
+  if (f >= 1) return c2 >>> 0;
+  const ch = (c, s) => (c >>> s) & 0xFF;
+  const m = (s) => (ch(c1, s) + Math.round((ch(c2, s) - ch(c1, s)) * f)) & 0xFF;
+  return ((m(24) << 24) | (m(16) << 16) | (m(8) << 8) | m(0)) >>> 0;
+}
+// Colour of the fill with this value (the bar colour without a gradient), like PB_GetCurrentColour
+export function pbCurrentColour(td, value) {
+  if (!td.pbGradient) return Number(td.color ?? 0xE74C3CFF) >>> 0;
+  let part = pbRatio(td, value);
+  if (td.pbGradInverted) part = 1 - part;
+  const empty = Number(td.pbGradEmpty ?? PB_GRADIENT_DEFAULT.empty) >>> 0, full = Number(td.pbGradFull ?? PB_GRADIENT_DEFAULT.full) >>> 0;
+  const mid = Number(td.pbGradMid ?? 0) >>> 0;
+  if (mid) return part < 0.5 ? lerpRgba(empty, mid, part * 2) : lerpRgba(mid, full, (part - 0.5) * 2);
+  return lerpRgba(empty, full, part);
+}
+
+// Smooth change of the value when the bar appears (InterpolatePlayerProgressBarValue): from pbLerpFrom to the value
+export const clampPbLerpMs = (v) => Math.round(clampNum(v, 0, 600000, 500));
+export function pbLerpValue(td, elapsed) {
+  const to = Number(td.pbValue) || 0, from = Math.max(pbMinOf(td), Math.min(Number(td.pbMax) || 0, Number(td.pbLerpFrom) || 0));
+  const ms = clampPbLerpMs(td.pbLerpMs);
+  if (ms <= 0 || elapsed >= ms) return to;
+  const t = Math.max(0, elapsed) / ms;
+  return from + (to - from) * t * (2 - t);
+}
+
+// Label of the bar (SetPlayerProgressBarLabel): text with {PERCENT}, {VALUE}, {MAX} and {MIN}, drawn as a TextDraw
+export const PB_LABEL_DEFAULT = '{PERCENT}%';
+export const PB_LABEL_ORIENTS = ['PB_LABEL_ORIENT_AUTO', 'PB_LABEL_ORIENT_HORIZONTAL', 'PB_LABEL_ORIENT_VERTICAL'];
+export const clampPbLabelText = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').slice(0, 31);
+const PB_TOKENS = [['{PERCENT}', 'p'], ['{PCT}', 'p'], ['{VALUE}', 'v'], ['{VAL}', 'v'], ['{MAX}', 'x'], ['{MIN}', 'n']];
+function pbLabelVisibleLen(tmpl) {
+  let n = 0;
+  for (let i = 0; i < tmpl.length;) {
+    if (tmpl[i] === '{') {
+      const tok = PB_TOKENS.find(([k]) => tmpl.startsWith(k, i));
+      if (tok) { n += 3; i += tok[0].length; continue; }
+      const close = tmpl.indexOf('}', i + 1);
+      if (close !== -1 && close - i <= 10) { i = close + 1; continue; }
+    }
+    n++; i++;
+  }
+  return Math.max(1, n);
+}
+function pbLabelVertical(td, tmpl) {
+  if ((td.pbStyle | 0) !== 0) return false;
+  const o = td.pbLabelOrient | 0;
+  if (o === 1) return false;
+  if (o === 2) return true;
+  const w = +td.pbWidth || 0, h = +td.pbHeight || 0;
+  if (h <= w) return false;
+  const len = pbLabelVisibleLen(tmpl), border = fitPbBorder(td.pbBorder, w, h);
+  const needW = Math.max(16, len * 4.2 + border * 2 + 4), needH = (len - 1) * 7.5 + 8 + border * 2;
+  return w < needW && h >= needH;
+}
+function pbVerticalText(src) {
+  let out = '', first = true;
+  for (let i = 0; i < src.length;) {
+    if (src[i] === '{') {
+      const close = src.indexOf('}', i + 1);
+      if (close !== -1 && close - i <= 10) { out += src.slice(i, close + 1); i = close + 1; continue; }
+    }
+    if (src[i] === '~' && /^~[nN]~/.test(src.slice(i, i + 3))) { out += '~n~'; i += 3; first = true; continue; }
+    if (src[i] !== ' ') { if (!first) out += '~n~'; first = false; }
+    out += src[i++];
+  }
+  return out;
+}
+// The label TextDraw of the bar for this value and fill colour, or null (same position, size and colour as the include)
+export function pbLabelTextDraw(td, value, colour) {
+  if (!td.pbLabel) return null;
+  const tmpl = clampPbLabelText(td.pbLabelText) || PB_LABEL_DEFAULT;
+  const min = pbMinOf(td), max = Number(td.pbMax) || 0;
+  const pct = Math.round(pbRatio(td, value) * 100);
+  let text = '';
+  for (let i = 0; i < tmpl.length;) {
+    const tok = tmpl[i] === '{' && PB_TOKENS.find(([k]) => tmpl.startsWith(k, i));
+    if (tok) {
+      text += String(tok[1] === 'p' ? pct : Math.round(tok[1] === 'v' ? value : tok[1] === 'x' ? max : min));
+      i += tok[0].length;
+    } else text += tmpl[i++];
+  }
+  const vert = pbLabelVertical(td, tmpl);
+  if (vert) text = pbVerticalText(text);
+  const lines = text.split(/~[nN]~/).length;
+  const w = +td.pbWidth || 0, h = +td.pbHeight || 0, border = fitPbBorder(td.pbBorder, w, h), style = td.pbStyle | 0;
+  let sx = +td.pbLabelScaleX || 0, sy = +td.pbLabelScaleY || 0;
+  if (sx <= 0 || sy <= 0) {
+    // PB_CalculateLabelScale
+    if (style !== 0) {
+      sy = Math.max(0.2, Math.min(1.2, w * 0.024)); sx = sy * 0.26;
+      const aw = text.length * sx * 22, mw = w * 0.65;
+      if (text.length && w > 8 && aw > mw) { const r = mw / aw; sx = Math.max(0.08, sx * r); sy = Math.max(0.18, sy * r); }
+    } else if (vert) {
+      let iw = w - border * 2; if (iw < 2) iw = w * 0.75;
+      let ih = h - border * 2; if (ih < 4) ih = h * 0.85;
+      const aw = iw * 0.85, ah = ih * 0.9;
+      const mxw = Math.max(0.05, aw > 1.8 ? (aw - 1.8) / 26 : aw / 30);
+      const lf = Math.max(8.5, (lines - 1) * 16 + 8.5);
+      const myh = ah > 1.5 ? (ah - 1.5) / lf : ah / lf;
+      sy = Math.max(0.18, Math.min(1.1, Math.min(mxw / 0.27, myh)));
+      sx = Math.max(0.05, Math.min(0.28, sy * 0.27));
+    } else {
+      let ih = h - border * 2; if (ih < 2) ih = h * 0.8;
+      let iw = w - border * 2; if (iw < 2) iw = w * 0.85;
+      const ah = ih * 0.82, aw = iw * 0.88;
+      if (w >= h) sy = Math.max(0.18, Math.min(1.15, ah * 0.1));
+      else { sy = 0.75; if (sy * 8.5 > ah) sy = ah / 8.5; sy = Math.max(0.18, sy); }
+      sx = sy * 0.27;
+      const aw2 = text.length * sx * 22 + text.length * 1.5;
+      if (text.length && aw2 > aw) { const r = aw / aw2; sx = Math.max(0.06, sx * r); sy = Math.max(0.16, sy * r); }
+    }
+  }
+  const align = [1, 2, 3].includes(td.pbLabelAlign | 0) ? (td.pbLabelAlign | 0) : 2;
+  const ox = +td.pbLabelOffX || 0, oy = +td.pbLabelOffY || 0, bx = +td.x || 0, by = +td.y || 0;
+  const pad = vert ? 1.5 : 2.5;
+  const y = vert ? by + (h - ((lines - 1) * 16 + 8.5) * sy) / 2 + oy : by + (h - sy * 8.5) / 2 + oy;
+  const x = (align === 1 ? bx + pad : align === 3 ? bx + w - pad : bx + w / 2) + ox;
+  let col = Number(td.pbLabelColor ?? 0xFFFFFFFF) >>> 0;
+  if (td.pbLabelFollow) { col = Number(colour) >>> 0; if ((col & 0xFF) === 0) col = (col | 0xFF) >>> 0; }
+  return { x, y, text, font: Math.max(0, Math.min(3, td.pbLabelFont ?? 1)), align, alignment: align, letterSizeX: sx, letterSizeY: sy, color: col,
+    outline: 1, shadow: 0, backgroundColor: 0x000000AA, useBox: 0, proportional: 1, textSizeX: 1280, textSizeY: 1280 };
 }
 
 // Bar variable in the code: progress_0, progress_1... in the order of the project's bars
@@ -407,9 +544,21 @@ export function progressBarPawn(td, varName, fmt) {
   const segScale = style === 1 ? f(clampPbSegmentScale(td.pbSegmentScale)) : 'PB_RING_SEGMENT_SCALE';
   const lines = [
     `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}, ${borderCol ? hexOf(borderCol) : '0'}, ${PB_STYLE_NAMES[style]}, ${segs}, ${segScale});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
-    `SetPlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)});`,
-    `ShowPlayerProgressBar(playerid, ${varName});`,
   ];
+  if (pbMinOf(td) !== 0) lines.push(`SetPlayerProgressBarMinValue(playerid, ${varName}, ${f(pbMinOf(td))});`);
+  if (td.pbGradient) {
+    const mid = Number(td.pbGradMid ?? 0) >>> 0;
+    lines.push(`SetPlayerProgressBarGradient(playerid, ${varName}, true, ${hexOf(td.pbGradEmpty ?? PB_GRADIENT_DEFAULT.empty)}, ${hexOf(td.pbGradFull ?? PB_GRADIENT_DEFAULT.full)}, ${mid ? hexOf(mid) : '0'}, ${td.pbGradInverted ? 'true' : 'false'});`);
+  }
+  if (td.pbLabel) {
+    const auto = !(+td.pbLabelScaleX > 0 && +td.pbLabelScaleY > 0);
+    lines.push(`SetPlayerProgressBarLabel(playerid, ${varName}, true, ${JSON.stringify(clampPbLabelText(td.pbLabelText) || PB_LABEL_DEFAULT)}, ${hexOf(td.pbLabelColor ?? 0xFFFFFFFF)}, ${[1, 2, 3].includes(td.pbLabelAlign | 0) ? td.pbLabelAlign | 0 : 2}, ${Math.max(0, Math.min(3, td.pbLabelFont ?? 1))}, ${auto ? '0.0' : f(td.pbLabelScaleX)}, ${auto ? '0.0' : f(td.pbLabelScaleY)}, ${f(td.pbLabelOffX || 0)}, ${f(td.pbLabelOffY || 0)}, ${td.pbLabelFollow ? 'true' : 'false'}, ${PB_LABEL_ORIENTS[td.pbLabelOrient | 0] || PB_LABEL_ORIENTS[0]});`);
+  }
+  // The smooth change starts from pbLerpFrom; the auto fill would stop it, so it is only written without the auto fill
+  const lerp = td.pbLerp && !td.pbAutoFill;
+  lines.push(`SetPlayerProgressBarValue(playerid, ${varName}, ${f(lerp ? Math.max(pbMinOf(td), Math.min(td.pbMax, Number(td.pbLerpFrom) || 0)) : td.pbValue)});`);
+  lines.push(`ShowPlayerProgressBar(playerid, ${varName});`);
+  if (lerp) lines.push(`InterpolatePlayerProgressBarValue(playerid, ${varName}, ${f(td.pbValue)}, ${clampPbLerpMs(td.pbLerpMs)});`);
   if (td.pbAutoFill) lines.push(`AutoFillPlayerProgressBar(playerid, ${varName}, ${f(clampPbAutoFillMax(td.pbAutoFillMax ?? td.pbMax, td.pbMax))});`);
   if (td.pbBlink) {
     const col = Number(td.pbBlinkColor || 0) >>> 0;
@@ -447,38 +596,12 @@ export function textDrawNative(td) {
   };
 }
 
-// Blink of a TextDraw (BlinkPlayerTextDraw, textdrawblink.inc): only for PlayerTextDraws
-export const TD_BLINK_DEFAULT = 500;
-export const clampTdBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, TD_BLINK_DEFAULT));
-export const tdBlinkActive = (td) => td.type !== 'progress' && Boolean(td.isPlayer) && Boolean(td.blink);
-// A sprite (font 4) and a preview model (font 5) blink as a whole: the character by character mode is only for texts
-// The blink colour only counts in the "colour" mode: vanishing and typing character by character are modes of their own
-export const tdBlinkColour = (td) => (tdBlinkPerChar(td) ? 0 : Number(td.blinkColor || 0) >>> 0);
-export const tdBlinkPerChar = (td) => Boolean(td.blinkPerChar) && ![4, 5].includes(td.font ?? 1);
-
-// The BlinkPlayerTextDraw call (with only the arguments that are not the default of the include); n = textDrawNative(td)
-export function textDrawBlinkPawn(td, varName, n) {
-  const hexOf = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-  const perChar = tdBlinkPerChar(td);
-  const colour = tdBlinkColour(td);
-  const args = [`playerid`, varName, String(clampTdBlinkInterval(td.blinkInterval)), String(clampPbBlinkDuration(td.blinkDuration))];
-  if (perChar || colour) {
-    args.push(perChar ? 'true' : 'false');
-    if (colour) {
-      args.push(hexOf(colour));
-      // the text (needed to type it) and the original colour that comes back (a preview model blinks its background)
-      args.push(perChar ? JSON.stringify(n.text) : '""');
-      args.push(hexOf(n.font === 5 ? n.backgroundColor : n.color));
-    } else {
-      args.push('0', JSON.stringify(n.text));
-    }
-  }
-  return `BlinkPlayerTextDraw(${args.join(', ')});`;
-}
+// Effect of a TextDraw (TextDrawFX include, editor/tdfx.js): td.fx = { type, ...parameters of the function }
+export { tdfxActive, TDFX_INCLUDE } from './tdfx.js';
 
 // The lines that create and style a TextDraw (PlayerTextDraw* with playerid for the ones of a player, TextDraw* for the global ones),
-// and the blink when it has one
-export function textDrawPawn(td, varName, fmt, createText, comment = '') {
+// and its TextDrawFX effect. refVar(uid) = variable of another TextDraw (the bottom bar of the letterbox).
+export function textDrawPawn(td, varName, fmt, createText, comment = '', refVar = () => null) {
   const n = textDrawNative(td);
   const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const player = Boolean(td.isPlayer);
@@ -504,8 +627,9 @@ export function textDrawPawn(td, varName, fmt, createText, comment = '') {
     lines.push(call('setPreviewRot', fmt(td.previewRotX ?? -16), fmt(td.previewRotY ?? 0), fmt(td.previewRotZ ?? -55), fmt(td.previewZoom || 1)));
     lines.push(call('setPreviewVehCol', td.previewColor1 ?? 1, td.previewColor2 ?? 1));
   }
-  if (tdBlinkActive(td)) lines.push(textDrawBlinkPawn(td, varName, n));
-  else if (player) lines.push(`PlayerTextDrawShow(playerid, ${varName});`);
+  if (player) lines.push(`PlayerTextDrawShow(playerid, ${varName});`);
+  const fx = tdfxPawn(td, varName, n.text, refVar);
+  if (fx) lines.push(fx);
   return lines;
 }
 
@@ -542,11 +666,8 @@ export function makeTextDraw(data) {
     previewZoom: data.previewZoom !== undefined ? +data.previewZoom : 1.0,
     previewColor1: data.previewColor1 !== undefined ? (data.previewColor1 | 0) : 1,
     previewColor2: data.previewColor2 !== undefined ? (data.previewColor2 | 0) : 1,
-    blink: Boolean(data.blink),
-    blinkInterval: clampTdBlinkInterval(data.blinkInterval ?? TD_BLINK_DEFAULT),
-    blinkDuration: clampPbBlinkDuration(data.blinkDuration ?? 0),
-    blinkPerChar: Boolean(data.blinkPerChar),
-    blinkColor: Number(data.blinkColor || 0) >>> 0,
+    // TextDrawFX effect; the blink of older projects (blink*) becomes the blink effect
+    fx: data.type === 'progress' ? null : (data.fx !== undefined ? makeFx(data.fx, data) : migrateBlink(data)),
     comment: data.comment ? String(data.comment) : '',
     ...(data.type === 'progress' ? {
       type: 'progress', isPlayer: true,
@@ -568,6 +689,26 @@ export function makeTextDraw(data) {
       pbSegments: clampPbSegments(data.pbSegments ?? 24),
       pbSegmentScale: clampPbSegmentScale(data.pbSegmentScale ?? 1),
       pbBlinkBorderColor: Number(data.pbBlinkBorderColor || 0) >>> 0,
+      pbMin: data.pbMin !== undefined ? +data.pbMin || 0 : 0,
+      pbGradient: Boolean(data.pbGradient),
+      pbGradEmpty: data.pbGradEmpty !== undefined ? Number(data.pbGradEmpty) >>> 0 : PB_GRADIENT_DEFAULT.empty,
+      pbGradMid: data.pbGradMid !== undefined ? Number(data.pbGradMid) >>> 0 : PB_GRADIENT_DEFAULT.mid,
+      pbGradFull: data.pbGradFull !== undefined ? Number(data.pbGradFull) >>> 0 : PB_GRADIENT_DEFAULT.full,
+      pbGradInverted: Boolean(data.pbGradInverted),
+      pbLabel: Boolean(data.pbLabel),
+      pbLabelText: data.pbLabelText !== undefined ? clampPbLabelText(data.pbLabelText) : PB_LABEL_DEFAULT,
+      pbLabelColor: data.pbLabelColor !== undefined ? Number(data.pbLabelColor) >>> 0 : 0xFFFFFFFF,
+      pbLabelFollow: Boolean(data.pbLabelFollow),
+      pbLabelAlign: [1, 2, 3].includes(data.pbLabelAlign | 0) ? data.pbLabelAlign | 0 : 2,
+      pbLabelFont: data.pbLabelFont !== undefined ? Math.max(0, Math.min(3, data.pbLabelFont | 0)) : 1,
+      pbLabelScaleX: Math.max(0, +data.pbLabelScaleX || 0),
+      pbLabelScaleY: Math.max(0, +data.pbLabelScaleY || 0),
+      pbLabelOffX: +data.pbLabelOffX || 0,
+      pbLabelOffY: +data.pbLabelOffY || 0,
+      pbLabelOrient: Math.max(0, Math.min(2, data.pbLabelOrient | 0)),
+      pbLerp: Boolean(data.pbLerp),
+      pbLerpFrom: +data.pbLerpFrom || 0,
+      pbLerpMs: clampPbLerpMs(data.pbLerpMs ?? 500),
     } : {}),
   };
 }

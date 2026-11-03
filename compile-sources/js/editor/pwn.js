@@ -2,7 +2,8 @@
 // Compatible with what Map Construction, Texture Studio and similar editors export.
 import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampTdBlinkInterval, TD_BLINK_DEFAULT, textDrawPawn, tdBlinkActive } from './project.js';
+import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, textDrawPawn, PB_INCLUDE, PB_LABEL_ORIENTS } from './project.js';
+import { TDFX_FUNCTIONS, TDFX_INCLUDE, tdfxActive, tdfxFromCall } from './tdfx.js';
 
 import { t as tr, uiLocale } from '../ui/i18n.js';
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
@@ -95,7 +96,7 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = /(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|BlinkPlayerTextDraw|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(/g;
+const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(`, 'g');
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 // Color written as a number (0xRRGGBBAA or decimal); anything else is 0 (default color)
@@ -166,6 +167,8 @@ export function cleanPwnHeader(headerText) {
         t.startsWith('//   Requer a include progress2') ||
         t.startsWith('//   Requer a include progress3') ||
         t.startsWith('//   Requer a include SA Progress Bar Pro') ||
+        t.startsWith('//   Requer a include de piscar TextDraws') ||
+        /^#include\s*<(ProgressBar|TextDrawFX)>/i.test(t) ||
         t.startsWith('//   Posições relativas') ||
         t.startsWith('//   Câmeras')) {
       continue;
@@ -248,6 +251,7 @@ export function parsePwn(source) {
   const shots = [], paths = [];
   let spawn = null, interior = null;
   const vars = new Map();
+  const fxRefs = []; // TextDrawFX effects that name another TextDraw
   let last = null, lastVeh = null, lastActor = null, pendingShot = null, pendingMove = null;
 
   // Objects exported "as an array": new Float:Name[][7] = { { model, x, y, z, rx, ry, rz }, ... };
@@ -281,7 +285,9 @@ export function parsePwn(source) {
     'TextDrawLetterSize', 'TextDrawTextSize', 'TextDrawSetOutline', 'TextDrawSetShadow',
     'TextDrawAlignment', 'TextDrawSetSelectable', 'TextDrawSetProportional',
     'TextDrawSetPreviewModel', 'TextDrawSetPreviewRot', 'TextDrawSetPreviewVehCol', 'TextDrawUseBox',
-    'PlayerTextDrawFont', 'PlayerTextDrawColor', 'PlayerTextDrawBoxColor', 'PlayerTextDrawBackgroundColor', 'PlayerTextDrawLetterSize', 'PlayerTextDrawTextSize', 'PlayerTextDrawSetOutline', 'PlayerTextDrawSetShadow', 'PlayerTextDrawAlignment', 'PlayerTextDrawSetSelectable', 'PlayerTextDrawSetProportional', 'PlayerTextDrawSetPreviewModel', 'PlayerTextDrawSetPreviewRot', 'PlayerTextDrawSetPreviewVehCol', 'PlayerTextDrawUseBox', 'BlinkPlayerTextDraw'
+    'PlayerTextDrawFont', 'PlayerTextDrawColor', 'PlayerTextDrawBoxColor', 'PlayerTextDrawBackgroundColor', 'PlayerTextDrawLetterSize', 'PlayerTextDrawTextSize', 'PlayerTextDrawSetOutline', 'PlayerTextDrawSetShadow', 'PlayerTextDrawAlignment', 'PlayerTextDrawSetSelectable', 'PlayerTextDrawSetProportional', 'PlayerTextDrawSetPreviewModel', 'PlayerTextDrawSetPreviewRot', 'PlayerTextDrawSetPreviewVehCol', 'PlayerTextDrawUseBox',
+    'SetPlayerProgressBarMinValue', 'SetPlayerProgressBarRange', 'SetPlayerProgressBarGradient', 'SetPlayerProgressBarLabel', 'InterpolatePlayerProgressBarValue',
+    ...TDFX_FUNCTIONS,
   ]);
 
   // Pre-parse of batch camera movement callbacks with switch(step) and cases
@@ -912,17 +918,64 @@ export function parsePwn(source) {
         target.pbBlinkColor = colorArgOrZero(col);
         target.pbBlinkBorderColor = colorArgOrZero(arg(5, 'bordercolour', 'bordercolor'));
       }
-    } else if (fn === 'BlinkPlayerTextDraw') {
-      // BlinkPlayerTextDraw(playerid, textdraw, interval = 500, duration = 0, perChar = false, colour = 0, text = "", baseColour = 0)
+    } else if (fn === 'SetPlayerProgressBarMinValue' || fn === 'SetPlayerProgressBarRange') {
+      // Lower limit of the bar (and the maximum, in SetPlayerProgressBarRange)
       const target = vars.get(varKey(a[1]));
-      if (target && target.type !== 'progress') {
+      if (target && target.type === 'progress') {
+        target.pbMin = num(named.min ?? a[2], 0);
+        if (fn === 'SetPlayerProgressBarRange' && (named.max ?? a[3]) !== undefined) target.pbMax = num(named.max ?? a[3], target.pbMax);
+      }
+    } else if (fn === 'SetPlayerProgressBarGradient') {
+      // SetPlayerProgressBarGradient(playerid, bar, enable, empty colour, full colour, middle colour, inverted)
+      const target = vars.get(varKey(a[1]));
+      if (target && target.type === 'progress') {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
-        target.blink = true;
-        target.isPlayer = true;
-        target.blinkInterval = clampTdBlinkInterval(num(arg(2, 'interval'), TD_BLINK_DEFAULT));
-        target.blinkDuration = clampPbBlinkDuration(num(arg(3, 'duration'), 0));
-        target.blinkPerChar = /^(true|1)$/i.test(String(arg(4, 'perchar') ?? '').trim());
-        target.blinkColor = colorArgOrZero(arg(5, 'colour', 'color'));
+        const on = String(arg(2, 'enable') ?? 'true').trim();
+        target.pbGradient = /^(true|1)$/i.test(on);
+        const c = (i, name, def) => { const v = arg(i, name); return v === undefined ? def : colorArgOrZero(v); };
+        target.pbGradEmpty = c(3, 'colour_empty', 0xE74C3CFF);
+        target.pbGradFull = c(4, 'colour_full', 0x2ECC71FF);
+        target.pbGradMid = c(5, 'colour_mid', 0xF1C40FFF);
+        target.pbGradInverted = /^(true|1|PB_GRAD_INVERTED)$/i.test(String(arg(6, 'inverted') ?? '').trim());
+      }
+    } else if (fn === 'SetPlayerProgressBarLabel') {
+      // SetPlayerProgressBarLabel(playerid, bar, enable, template, colour, alignment, font, scaleX, scaleY, offsetX, offsetY, followColour, orientation)
+      const target = vars.get(varKey(a[1]));
+      if (target && target.type === 'progress') {
+        const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
+        target.pbLabel = /^(true|1)$/i.test(String(arg(2, 'enable') ?? 'true').trim());
+        if (arg(3, 'template') !== undefined) target.pbLabelText = unquote(arg(3, 'template'));
+        const col = arg(4, 'colour', 'color');
+        if (col !== undefined) { const c = colorArgOrZero(col); if (c) target.pbLabelColor = c; else target.pbLabelFollow = true; }
+        target.pbLabelAlign = int(arg(5, 'alignment'), 2);
+        target.pbLabelFont = int(arg(6, 'font'), 1);
+        target.pbLabelScaleX = num(arg(7, 'scalex'), 0);
+        target.pbLabelScaleY = num(arg(8, 'scaley'), 0);
+        target.pbLabelOffX = num(arg(9, 'offsetx'), 0);
+        target.pbLabelOffY = num(arg(10, 'offsety'), 0);
+        if (/^(true|1)$/i.test(String(arg(11, 'followcolour', 'followcolor') ?? '').trim())) target.pbLabelFollow = true;
+        const o = String(arg(12, 'orientation') ?? '0').trim().toUpperCase();
+        const oi = PB_LABEL_ORIENTS.indexOf(o);
+        target.pbLabelOrient = oi >= 0 ? oi : o === 'PB_LABEL_ORIENT_HORIZ' ? 1 : o === 'PB_LABEL_ORIENT_VERT' ? 2 : int(o, 0);
+      }
+    } else if (fn === 'InterpolatePlayerProgressBarValue') {
+      // InterpolatePlayerProgressBarValue(playerid, bar, value, ms): the value set before is where it starts
+      const target = vars.get(varKey(a[1]));
+      if (target && target.type === 'progress' && (named.target_value ?? a[2]) !== undefined) {
+        target.pbLerp = true;
+        target.pbLerpFrom = target.pbValue;
+        target.pbValue = num(named.target_value ?? a[2], 0);
+        target.pbLerpMs = int(named.duration_ms ?? a[3], 500);
+      }
+    } else if (TDFX_FUNCTIONS.includes(fn)) {
+      // TextDrawFX effect (BlinkPlayerTextDraw of the old textdrawblink.inc included: same name and arguments)
+      const call = tdfxFromCall(fn, a, named, { num, int, unquote, color: (v) => colorArgOrZero(v) });
+      const target = call && vars.get(varKey(call.varArg));
+      if (target && target.type !== 'progress') {
+        if (call.player) target.isPlayer = true;
+        // The other TextDraw (bottom bar of the letterbox) may be created after the call: it is found at the end
+        if (call.refArg !== null) fxRefs.push({ fx: call.data, ref: varKey(call.refArg) });
+        target.fx = call.data;
       }
     } else if (fn === 'TextDrawFont') {
       const target = vars.get(varKey(a[0])) || textDraws[textDraws.length - 1];
@@ -978,6 +1031,10 @@ export function parsePwn(source) {
     } else if (fn === 'SetPlayerInterior') {
       if (a.length >= 1) interior = int(a[0]);
     }
+  }
+  for (const { fx, ref } of fxRefs) {
+    const o = vars.get(ref);
+    if (o && o.type !== 'progress') { if (!o.uid) o.uid = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); fx.bottomBarTD = o.uid; }
   }
   return { objects, vehicles, actors, removed, labels, pickups, gangZones, checkpoints, mapIcons, textDraws, cameras: { shots, paths }, spawn, preservedHeader, rawPawn: source };
 }
@@ -1351,7 +1408,7 @@ export function exportPawn(project, options = {}) {
       continue;
     }
     const cmt = commentSuffix(td);
-    textDrawLines.push(...textDrawPawn(td, textDrawVar(td, textDraws), (v) => formatCoord(v, null), undefined, cmt));
+    textDrawLines.push(...textDrawPawn(td, textDrawVar(td, textDraws), (v) => formatCoord(v, null), undefined, cmt, (uid) => { const o = textDraws.find(t => t.uid === uid && t.type !== 'progress'); return o ? textDrawVar(o, textDraws) : null; }));
   }
 
   const cams = opt.includeCameras ? cameraFunctions(project.cameras) : { code: '', usage: [] };
@@ -1392,9 +1449,15 @@ export function exportPawn(project, options = {}) {
     arrayLines.push('};');
   }
 
+  // Includes the code needs (Progress Bar Plus and TextDrawFX), each with the link to download it
+  const incs = [];
+  if (textDraws.some(td => td.type === 'progress')) incs.push(PB_INCLUDE);
+  if (textDraws.some(tdfxActive)) incs.push(TDFX_INCLUDE);
+
   if (opt.layout === 'lines') {
     const cleanHeader = cleanPwnHeader(project.pwnHeader);
     if (cleanHeader) lines.push(cleanHeader, '');
+    if (incs.length) lines.push(...incs, '');
     if (opt.relative) lines.push(`// ${tr('Posições relativas ao centro ({0})', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
     if (opt.exportArray && arrayObjs.length) {
       lines.push(...arrayLines);
@@ -1436,6 +1499,7 @@ export function exportPawn(project, options = {}) {
   const date = new Date().toLocaleDateString(uiLocale());
   const cleanHeader = cleanPwnHeader(project.pwnHeader);
   if (cleanHeader) lines.push(cleanHeader, '');
+  if (incs.length) lines.push(...incs, '');
   lines.push('// ================================================================');
   lines.push(`// ${tr('Mapa: {0}', project.name)}`);
   lines.push(`// ${tr('Gerado pelo SA Map Studio em {0}', date)}`);
@@ -1448,8 +1512,6 @@ export function exportPawn(project, options = {}) {
   lines.push(`//   OnGameModeInit():   Map_${id}_Load();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
   if (opt.objectFn === 'CreateDynamicObject') lines.push(`//   ${tr('Requer o plugin streamer ({0}) - {1}', '#include <streamer>', 'https://github.com/samp-incognito/samp-streamer-plugin')}`);
-  if (textDraws.some(td => td.type === 'progress')) lines.push(`//   ${tr('Requer a include SA Progress Bar Pro ({0}) - {1}', '#include <ProgressBar>', 'https://github.com/Walter-Correa/SA-Progress-Bar-Pro')}`);
-  if (textDraws.some(tdBlinkActive)) lines.push(`//   ${tr('Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.', '#include <textdrawblink>')}`);
   if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   ${tr('Posições relativas: some ({0}) ou passe a origem.', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
   lines.push('// ================================================================');

@@ -8,6 +8,16 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.39', date: '03/11/2026', items: [
+      'Progress bars now use Progress Bar Plus (ProgressBar.inc 2.2.0, https://github.com/Walter-Correa/Progress-Bar-Plus) in the test server, the export and the preview.',
+      'Progress bars: new minimum value (SetPlayerProgressBarMinValue), colour by value with an empty, middle and full colour and an inverted mode (SetPlayerProgressBarGradient), a text on the bar with {PERCENT}, {VALUE}, {MAX} and {MIN}, its colour or the bar colour, alignment, font, orientation, automatic or own size and offset (SetPlayerProgressBarLabel), and a smooth fill when the bar appears (InterpolatePlayerProgressBarValue). The editor previews all of them, exports them, imports them back and the test server shows them. The segment scale of rings now goes down to 0.1.',
+      'TextDraw effects: the blink include was replaced by TextDrawFX (https://github.com/Walter-Correa/TextDrawFX). The TextDraw editor has an Effect list with its 37 effects (blink, fades, colour change, size, pulse, slide, number counter, decrypt, bounces, orbit, shake, broken neon, float, box fill, fireworks, glitch, model spin and sway, shine, rainbow, slot machine, pendulum, bouncing drop, whirlpool, cinema bars, sonar, colour wave, letter rain, scanner, short circuit, airport board, hologram, impact, wave and hopping letters), with the fields of each one and a live preview that follows the include timings.',
+      'TextDrawFX effects work on global TextDraws too (except the colour change, which the include only has for PlayerTextDraws); the export writes the call of each effect, the import reads every TextDrawFX function back (positional or named arguments), and the test server starts the effect when the TextDraw appears.',
+      'Projects saved with the old TextDraw blink open with the TextDrawFX blink, and Pawn code with the old BlinkPlayerTextDraw still imports.',
+      'The exported code and the TextDraw copy start with the includes they need and their address: #include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus and #include <TextDrawFX>//https://github.com/Walter-Correa/TextDrawFX.',
+    ],
+  },
+  {
     version: '4.1.38', date: '01/11/2026', items: [
       'The progress bar include is now ProgressBar.inc (SA Progress Bar Pro, https://github.com/Walter-Correa/SA-Progress-Bar-Pro, #include <ProgressBar>); it replaces progressbarpro.inc in the test server, and the test server gamemode was recompiled with it.',
       'The exported code and the TextDraw copy now list the required includes with their address: "Requires the streamer plugin (#include <streamer>) - https://github.com/samp-incognito/samp-streamer-plugin" and "Requires the SA Progress Bar Pro include (#include <ProgressBar>) - https://github.com/Walter-Correa/SA-Progress-Bar-Pro".',

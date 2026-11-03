@@ -4,7 +4,8 @@ import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pw
 import { quatOfItem } from '../editor/editor.js';
 import { importAny, sampMissing, sampInstalled } from '../editor/importers.js';
 import { t, tFallback, getLanguage } from './i18n.js';
-import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, tdBlinkActive, tdBlinkPerChar, tdBlinkColour, clampTdBlinkInterval } from '../editor/project.js';
+import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, pbMinOf, clampPbLerpMs, clampPbLabelText, PB_LABEL_DEFAULT } from '../editor/project.js';
+import { tdfxMapLine } from '../editor/tdfx.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
 import { toSingleplayerImport, isSampModel } from './singleplayer.js';
@@ -409,11 +410,18 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       lines.push(`MI|${mi.iconid !== undefined ? mi.iconid : miIdx}|${mi.x.toFixed(4)}|${mi.y.toFixed(4)}|${mi.z.toFixed(4)}|${mi.type ?? 0}|${colorInt}|${mi.style ?? 0}`);
       miIdx++;
     }
-    let tdIdx = 0; // order of the D lines (the DB lines say which TextDraw blinks)
+    // Order of the D lines: the DF lines (TextDrawFX effect) say which TextDraw has the effect, after every D line
+    const plainTds = (p.textDraws || []).filter(t => t.type !== 'progress');
+    const fxLines = [];
+    let tdIdx = 0;
     for (const td of p.textDraws || []) {
       if (td.type === 'progress') {
         const f = (v) => (+v || 0).toFixed(4);
-        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}|${td.pbStyle | 0}|${td.pbSegments || 24}|${td.pbAutoFill ? 1 : 0}|${f(td.pbAutoFillMax ?? td.pbMax)}|${f(clampPbSegmentScale(td.pbSegmentScale))}`);
+        lines.push(`B|${f(td.x)}|${f(td.y)}|${f(td.pbWidth)}|${f(td.pbHeight)}|${signed(td.color ?? 0xFF1C1CFF)}|${f(td.pbMax)}|${f(td.pbValue)}|${td.pbDir | 0}|${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}|${td.pbBlink ? 1 : 0}|${clampPbBlinkInterval(td.pbBlinkInterval)}|${clampPbBlinkDuration(td.pbBlinkDuration)}|${signed(td.pbBlinkColor || 0)}|${signed(td.pbBorderColor || 0)}|${signed(td.pbBlinkBorderColor || 0)}|${td.pbStyle | 0}|${td.pbSegments || 24}|${td.pbAutoFill ? 1 : 0}|${f(td.pbAutoFillMax ?? td.pbMax)}|${f(clampPbSegmentScale(td.pbSegmentScale))}`
+          // Progress Bar Plus: minimum, gradient, smooth change and label (the label text goes last, it may have a |)
+          + `|${f(pbMinOf(td))}|${td.pbGradient ? 1 : 0}|${signed(td.pbGradEmpty ?? 0)}|${signed(td.pbGradMid ?? 0)}|${signed(td.pbGradFull ?? 0)}|${td.pbGradInverted ? 1 : 0}`
+          + `|${td.pbLerp && !td.pbAutoFill ? 1 : 0}|${f(td.pbLerpFrom)}|${clampPbLerpMs(td.pbLerpMs)}`
+          + `|${td.pbLabel ? 1 : 0}|${signed(td.pbLabelColor ?? 0xFFFFFFFF)}|${td.pbLabelAlign || 2}|${td.pbLabelFont ?? 1}|${f(td.pbLabelScaleX)}|${f(td.pbLabelScaleY)}|${f(td.pbLabelOffX)}|${f(td.pbLabelOffY)}|${td.pbLabelFollow ? 1 : 0}|${td.pbLabelOrient | 0}|${clampPbLabelText(td.pbLabelText) || PB_LABEL_DEFAULT}`);
         continue;
       }
       const n = textDrawNative(td);
@@ -423,10 +431,11 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       const rotZ = (n.font === 5 && !hasRot) ? -55.0 : (td.previewRotZ || 0);
       const f = (v) => (+v || 0).toFixed(4);
       lines.push(`D|${f(td.x)}|${f(td.y)}|${n.font}|${f(n.letterSizeX)}|${f(n.letterSizeY)}|${f(n.textSizeX)}|${f(n.textSizeY)}|${signed(n.color)}|${signed(n.boxColor)}|${signed(n.backgroundColor)}|${n.outline}|${n.shadow}|${n.align}|${n.useBox}|${n.proportional}|${td.selectable ? 1 : 0}|${td.previewModel ?? 0}|${rotX.toFixed(2)}|${rotY.toFixed(2)}|${rotZ.toFixed(2)}|${(td.previewZoom || 1.0).toFixed(2)}|${n.text}`);
-      // Blink (BlinkPlayerTextDraw): DB|TextDraw number|interval|duration|character by character|blink colour (0 = it vanishes)
-      if (tdBlinkActive(td)) lines.push(`DB|${tdIdx}|${clampTdBlinkInterval(td.blinkInterval)}|${clampPbBlinkDuration(td.blinkDuration)}|${tdBlinkPerChar(td) ? 1 : 0}|${signed(tdBlinkColour(td))}`);
+      const fx = tdfxMapLine(td, tdIdx, n.text, (uid) => plainTds.findIndex(t => t.uid === uid));
+      if (fx) fxLines.push(fx);
       tdIdx++;
     }
+    lines.push(...fxLines);
   }
   return lines.join('\n') + '\n';
 }

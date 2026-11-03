@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.38-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.39-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -171,18 +171,31 @@ never changed and removing the mod is deleting its folder.
 - **Sprites** (Font 4) from a gallery of 567 game sprites, with the Pawn line of each one.
 - **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom, drawn
   as the SA-MP client does.
-- **Progress bars** (SA Progress Bar Pro, `ProgressBar.inc`, included in the test server) in the four directions,
-  drawn as in the game, as a bar, a ring of segments or a growing circle, with border, blinking, auto fill and a segment
-  scale for rings. Parameter order:
-  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments, segmentscale)`.
-  With open.mp the filled part is resized in place and is created together with the bar, so TextDraws made after the bar
-  stay on top of it.
-- **TextDraw blink** (`textdrawblink.inc`, included in the test server): `BlinkPlayerTextDraw(playerid, textdraw, interval,
-  duration, perChar, colour, text, baseColour)` makes a PlayerTextDraw vanish and show up, be painted in a colour (parts
-  coloured by tags keep theirs) or type its text character by character (the interval adapts to the duration; tags and
-  spaces are never a step of their own). It works on texts, sprites, preview models and boxes, and hooks the functions that
-  would break the blink (`Hide`, `Destroy`, `SetString`, colours, font, box). The editor previews it, exports the call
-  with a note that the include is required and imports it back. New TextDraws are PlayerTextDraws by default.
+- **Progress bars** (Progress Bar Plus, `ProgressBar.inc`, https://github.com/Walter-Correa/Progress-Bar-Plus, included in
+  the test server) in the four directions, drawn as in the game, as a bar, a ring of segments or a growing circle, with
+  border, minimum and maximum value, blinking, auto fill, a segment scale for rings, colour by value (gradient with an
+  empty, middle and full colour, normal or inverted), a text on the bar (`{PERCENT}`, `{VALUE}`, `{MAX}`, `{MIN}`, with its
+  own colour or the bar colour, alignment, font, orientation, automatic or own size and offset) and a smooth fill when the
+  bar appears. Parameter order:
+  `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments, segmentscale)`,
+  followed by `SetPlayerProgressBarMinValue`, `SetPlayerProgressBarGradient`, `SetPlayerProgressBarLabel`,
+  `SetPlayerProgressBarValue`, `ShowPlayerProgressBar`, `InterpolatePlayerProgressBarValue`, `AutoFillPlayerProgressBar` and
+  `BlinkPlayerProgressBar`. With open.mp the filled part is resized in place and is created together with the bar, so
+  TextDraws made after the bar stay on top of it.
+- **TextDraw effects** (TextDrawFX, `TextDrawFX.inc`, https://github.com/Walter-Correa/TextDrawFX, included in the test
+  server): each TextDraw can have one of the 37 effects of the include, chosen in the Effect list of the editor with the
+  fields of its function and a live preview with the same timings as the game: blink (vanish, colour or character by
+  character), fade in, fade out, colour change, size change, pulse, slide, number counter, decrypt, bounce in an area or a
+  circle, orbit, shake, broken neon, float, box fill, fireworks, digital glitch, model spin and sway (font 5), passing
+  shine, rainbow, slot machine, pendulum, bouncing drop, whirlpool, cinema bars (with a second TextDraw as the bottom bar),
+  sonar ping, colour wave, letter rain, scanner, short circuit, airport board, hologram, impact, wave on the letters and
+  hopping letters. They work on PlayerTextDraws and global TextDraws (the colour change only exists for PlayerTextDraws).
+  The editor exports the call (for example `RainbowPlayerTextDraw(playerid, textdraw_0, "TEXT", 100, 0);`), imports every
+  TextDrawFX function back and the test server runs the effect when the TextDraw appears. Projects and Pawn code with the
+  old `BlinkPlayerTextDraw` are converted to the TextDrawFX blink. New TextDraws are PlayerTextDraws by default.
+- The exported code starts with the includes it needs and their address:
+  `#include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus` and
+  `#include <TextDrawFX>//https://github.com/Walter-Correa/TextDrawFX`.
 - Clean export of a Pawn script ready to compile.
 
 ### SA-MP materials
@@ -413,7 +426,7 @@ compile-sources/
 ├── package_bundle.py          packs the program into the launcher zip
 ├── i18n_check.py, i18n_same.txt, i18n_extra.txt  translation check used by the build
 ├── i18n_tool.py               batch translation, plural forms and key rename for the language files
-├── samapstudio.pwn / .amx     test server gamemode (uses ProgressBar.inc and textdrawblink.inc)
+├── samapstudio.pwn / .amx     test server gamemode (uses ProgressBar.inc and TextDrawFX.inc)
 ├── anim-list.json             animation list
 └── version_info.txt           .exe version metadata
 omp-server-source/             base open.mp server used by "Test in game"
@@ -486,6 +499,14 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.39 — 03/11/2026
+- Progress bars now use Progress Bar Plus (ProgressBar.inc 2.2.0, https://github.com/Walter-Correa/Progress-Bar-Plus) in the test server, the export and the preview.
+- Progress bars: new minimum value (SetPlayerProgressBarMinValue), colour by value with an empty, middle and full colour and an inverted mode (SetPlayerProgressBarGradient), a text on the bar with {PERCENT}, {VALUE}, {MAX} and {MIN}, its colour or the bar colour, alignment, font, orientation, automatic or own size and offset (SetPlayerProgressBarLabel), and a smooth fill when the bar appears (InterpolatePlayerProgressBarValue). The editor previews all of them, exports them, imports them back and the test server shows them. The segment scale of rings now goes down to 0.1.
+- TextDraw effects: the blink include was replaced by TextDrawFX (https://github.com/Walter-Correa/TextDrawFX). The TextDraw editor has an Effect list with its 37 effects (blink, fades, colour change, size, pulse, slide, number counter, decrypt, bounces, orbit, shake, broken neon, float, box fill, fireworks, glitch, model spin and sway, shine, rainbow, slot machine, pendulum, bouncing drop, whirlpool, cinema bars, sonar, colour wave, letter rain, scanner, short circuit, airport board, hologram, impact, wave and hopping letters), with the fields of each one and a live preview that follows the include timings.
+- TextDrawFX effects work on global TextDraws too (except the colour change, which the include only has for PlayerTextDraws); the export writes the call of each effect, the import reads every TextDrawFX function back (positional or named arguments), and the test server starts the effect when the TextDraw appears.
+- Projects saved with the old TextDraw blink open with the TextDrawFX blink, and Pawn code with the old BlinkPlayerTextDraw still imports.
+- The exported code and the TextDraw copy start with the includes they need and their address: #include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus and #include <TextDrawFX>//https://github.com/Walter-Correa/TextDrawFX.
 
 ### 4.1.38 — 01/11/2026
 - The progress bar include is now ProgressBar.inc (SA Progress Bar Pro, https://github.com/Walter-Correa/SA-Progress-Bar-Pro, #include <ProgressBar>); it replaces progressbarpro.inc in the test server, and the test server gamemode was recompiled with it.
@@ -1366,7 +1387,7 @@ Tools (in `compile-sources/`, run with Python 3):
 The editor is licensed under the **Mozilla Public License 2.0** (see `LICENSE`). Third-party parts keep their own licenses:
 three.js and TransformControls (MIT, `compile-sources/js/vendor`), the Barlow font (SIL Open Font License 1.1,
 `compile-sources/fonts/OFL.txt`), the open.mp server, its components and the `omp_*` includes (MPL 2.0, source at
-https://github.com/openmultiplayer/open.mp), the streamer plugin and `streamer.inc` (Apache License 2.0), `ProgressBar.inc` (SA Progress Bar Pro, MPL 2.0, https://github.com/Walter-Correa/SA-Progress-Bar-Pro) and the Pawn compiler
+https://github.com/openmultiplayer/open.mp), the streamer plugin and `streamer.inc` (Apache License 2.0), `ProgressBar.inc` (Progress Bar Plus, MPL 2.0, https://github.com/Walter-Correa/Progress-Bar-Plus), `TextDrawFX.inc` (TextDrawFX, MPL 2.0, https://github.com/Walter-Correa/TextDrawFX) and the Pawn compiler
 with its basic includes (license of the Pawn project).
 
 The material of the game is not covered by this license: Grand Theft Auto: San Andreas belongs to Rockstar Games / Take-Two

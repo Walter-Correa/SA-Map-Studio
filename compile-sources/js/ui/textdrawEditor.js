@@ -1,7 +1,8 @@
 // Visual, interactive TextDraw editor (TextDrawCreate / CreatePlayerTextDraw)
 // SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, tdBlinkActive, tdBlinkPerChar, tdBlinkColour, clampTdBlinkInterval, TD_BLINK_DEFAULT } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE } from '../editor/project.js';
+import { TDFX_EFFECTS, TDFX_BY_ID, TDFX_INCLUDE, tdfxActive, tdfxAllowed, tdfxParams, tdfxFrame, tdfxLength, makeFx, newFx } from '../editor/tdfx.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep, themeVar } from './common.js';
 import { modelPreviewImage } from '../editor/modelPreview.js';
@@ -385,7 +386,8 @@ function bindFieldInputs() {
       updateSidebarList();
     };
   }
-  for (const [id, prop, isInt] of [['#tdPbWidth', 'pbWidth'], ['#tdPbHeight', 'pbHeight'], ['#tdPbMax', 'pbMax'], ['#tdPbValue', 'pbValue'], ['#tdPbDir', 'pbDir', true]]) {
+  bindPbPlusFields();
+  for (const [id, prop, isInt] of [['#tdPbWidth', 'pbWidth'], ['#tdPbHeight', 'pbHeight'], ['#tdPbMax', 'pbMax'], ['#tdPbMin', 'pbMin'], ['#tdPbValue', 'pbValue'], ['#tdPbDir', 'pbDir', true]]) {
     const el = dialogEl.querySelector(id);
     if (!el) continue;
     el.onfocus = () => tdPushUndo();
@@ -517,6 +519,7 @@ function bindFieldInputs() {
     autoFillStart.set(td, performance.now());
     appRef.project.modified = true;
     syncAutoFillControls(td);
+    syncPbPlusFields(td);
     restartBlinkPreview();
   };
   const autoMax = dialogEl.querySelector('#tdPbAutoFillMax');
@@ -711,89 +714,19 @@ function bindFieldInputs() {
     if (b) b.onclick = () => moveSelectedTd(where);
   }
 
-  // Blink of a PlayerTextDraw (BlinkPlayerTextDraw)
-  const tdBlinkBox = dialogEl.querySelector('#tdBlink');
-  const tdBlinkOwn = dialogEl.querySelector('#tdBlinkOwn');
-  const tdBlinkColor = dialogEl.querySelector('#tdBlinkColor');
-  const tdBlinkColorValue = () => ((parseInt((tdBlinkColor?.value || '#ffffff').slice(1), 16) << 8) | 0xFF) >>> 0;
-  syncTdBlinkFields = (td) => {
-    const player = Boolean(td?.isPlayer);
-    if (tdBlinkBox) tdBlinkBox.disabled = !player;
-    const fields = dialogEl.querySelector('#tdBlinkFields');
-    if (fields) fields.style.display = player && td?.blink ? 'flex' : 'none';
-    const row = dialogEl.querySelector('#tdBlinkColorRow');
-    if (row) row.style.display = td?.blinkColor && !tdBlinkPerChar(td) ? 'flex' : 'none';
-    const pc = dialogEl.querySelector('#tdBlinkPerChar');
-    if (pc) pc.disabled = [4, 5].includes(td?.font ?? 1);
-  };
-  if (tdBlinkBox) tdBlinkBox.onchange = () => {
+  // TextDrawFX effect: the list of effects and the fields of the chosen one (made from the table in tdfx.js)
+  const fxSel = dialogEl.querySelector('#tdFx');
+  if (fxSel) fxSel.onchange = () => {
     const td = getSelectedTd();
     if (!td || td.type === 'progress') return;
     tdPushUndo();
-    td.blink = tdBlinkBox.checked && Boolean(td.isPlayer);
-    syncTdBlinkFields(td);
+    td.fx = fxSel.value ? newFx(fxSel.value, td) : null;
     appRef.project.modified = true;
+    syncFxFields(td);
     restartBlinkPreview();
   };
-  for (const [id, prop, clamp] of [['#tdBlinkInterval', 'blinkInterval', clampTdBlinkInterval], ['#tdBlinkDuration', 'blinkDuration', clampPbBlinkDuration]]) {
-    const el = dialogEl.querySelector(id);
-    if (!el) continue;
-    el.onfocus = () => tdPushUndo();
-    // Typing: only already valid values are used; the limit is applied when leaving the field
-    const apply = (fix) => {
-      const td = getSelectedTd();
-      if (!td || td.type === 'progress') return;
-      const typed = Number(String(el.value).replace(',', '.'));
-      const v = clamp(el.value);
-      if (!fix && (el.value === '' || !Number.isFinite(typed) || v !== typed)) return;
-      td[prop] = v;
-      if (fix) el.value = v;
-      appRef.project.modified = true;
-      restartBlinkPreview();
-    };
-    el.oninput = () => apply(false);
-    el.onchange = () => apply(true);
-  }
-  const tdBlinkPerCharBox = dialogEl.querySelector('#tdBlinkPerChar');
-  if (tdBlinkPerCharBox) tdBlinkPerCharBox.onchange = () => {
-    const td = getSelectedTd();
-    if (!td || td.type === 'progress') return;
-    tdPushUndo();
-    // Character by character and vanishing exclude each other (checking one unchecks the other); with neither, the TextDraw is painted in a colour
-    td.blinkPerChar = tdBlinkPerCharBox.checked;
-    if (td.blinkPerChar) {
-      td.blinkColor = 0;
-      if (tdBlinkOwn) tdBlinkOwn.checked = false;
-    } else if (tdBlinkOwn && !tdBlinkOwn.checked) {
-      td.blinkColor = tdBlinkColorValue();
-    }
-    syncTdBlinkFields(td);
-    appRef.project.modified = true;
-    restartBlinkPreview();
-  };
-  if (tdBlinkOwn) tdBlinkOwn.onchange = () => {
-    const td = getSelectedTd();
-    if (!td || td.type === 'progress') return;
-    tdPushUndo();
-    if (tdBlinkOwn.checked) {
-      td.blinkPerChar = false;
-      if (tdBlinkPerCharBox) tdBlinkPerCharBox.checked = false;
-    }
-    td.blinkColor = tdBlinkOwn.checked || td.blinkPerChar ? 0 : tdBlinkColorValue();
-    syncTdBlinkFields(td);
-    appRef.project.modified = true;
-    restartBlinkPreview();
-  };
-  if (tdBlinkColor) {
-    tdBlinkColor.onfocus = () => tdPushUndo();
-    tdBlinkColor.oninput = () => {
-      const td = getSelectedTd();
-      if (!td || td.type === 'progress' || tdBlinkOwn?.checked || tdBlinkPerCharBox?.checked) return;
-      td.blinkColor = tdBlinkColorValue();
-      appRef.project.modified = true;
-      redrawCanvas();
-    };
-  }
+  const fxReplay = dialogEl.querySelector('#tdFxReplay');
+  if (fxReplay) fxReplay.onclick = () => restartBlinkPreview();
 
   const chkPlayer = dialogEl.querySelector('#tdIsPlayer');
   if (chkPlayer) {
@@ -801,9 +734,7 @@ function bindFieldInputs() {
       const td = getSelectedTd();
       if (!td) return;
       td.isPlayer = chkPlayer.checked;
-      if (!td.isPlayer) td.blink = false; // only a PlayerTextDraw can blink
-      syncTdBlinkFields?.(td);
-      if (tdBlinkBox) tdBlinkBox.checked = Boolean(td.blink);
+      syncFxFields(td); // an effect that only exists for PlayerTextDraws is off for a global one
       normalizeTdOrder();
       updateSidebarList();
       redrawCanvas();
@@ -1140,7 +1071,6 @@ function moveSelectedTd(where) {
 // Same as the include: starts lit and toggles every interval; with a duration, stops at the end and the preview
 // restarts after 1 s so it can be seen again.
 let syncPbBlinkFields = null;
-let syncTdBlinkFields = null;
 
 // ---------- Auto preencher (AutoFillPlayerProgressBar) ----------
 // When on, it is saved in the bar and goes into the code; the preview animates with the same timing as the include:
@@ -1162,6 +1092,225 @@ function syncAutoFillControls(td) {
   if (inp && td && document.activeElement !== inp) {
     inp.max = String(Number(td.pbMax) || 0);
     inp.value = clampPbAutoFillMax(td.pbAutoFillMax ?? td.pbMax, td.pbMax);
+  }
+}
+
+// ---------- Progress Bar Plus: gradient, label and the smooth change of the value ----------
+const tdColorValue = (el) => ((parseInt((el?.value || '#ffffff').slice(1), 16) << 8) | 0xFF) >>> 0;
+const colorHexOf = (v) => '#' + ((Number(v) >>> 8) & 0xFFFFFF).toString(16).padStart(6, '0');
+// [element, property, kind]: check = on/off, color, int/float (number), text, select
+const PB_PLUS_FIELDS = [
+  ['#tdPbGrad', 'pbGradient', 'check'], ['#tdPbGradEmpty', 'pbGradEmpty', 'color'], ['#tdPbGradFull', 'pbGradFull', 'color'],
+  ['#tdPbGradMid', 'pbGradMid', 'color'], ['#tdPbGradInv', 'pbGradInverted', 'check'],
+  ['#tdPbLabel', 'pbLabel', 'check'], ['#tdPbLabelText', 'pbLabelText', 'text'], ['#tdPbLabelColor', 'pbLabelColor', 'color'],
+  ['#tdPbLabelFollow', 'pbLabelFollow', 'check'], ['#tdPbLabelAlign', 'pbLabelAlign', 'select'], ['#tdPbLabelFont', 'pbLabelFont', 'select'],
+  ['#tdPbLabelOrient', 'pbLabelOrient', 'select'], ['#tdPbLabelScaleX', 'pbLabelScaleX', 'float'], ['#tdPbLabelScaleY', 'pbLabelScaleY', 'float'],
+  ['#tdPbLabelOffX', 'pbLabelOffX', 'float'], ['#tdPbLabelOffY', 'pbLabelOffY', 'float'],
+  ['#tdPbLerp', 'pbLerp', 'check'], ['#tdPbLerpFrom', 'pbLerpFrom', 'float'], ['#tdPbLerpMs', 'pbLerpMs', 'int'],
+];
+function bindPbPlusFields() {
+  for (const [id, prop, kind] of PB_PLUS_FIELDS) {
+    const el = dialogEl.querySelector(id);
+    if (!el) continue;
+    el.onfocus = () => tdPushUndo();
+    const apply = (ev) => {
+      const td = getSelectedTd();
+      if (!td || td.type !== 'progress') return;
+      if (kind === 'check') { tdPushUndo(); td[prop] = el.checked; }
+      else if (kind === 'color') td[prop] = tdColorValue(el);
+      else if (kind === 'text') td[prop] = clampPbLabelText(el.value);
+      else if (kind === 'select') td[prop] = Number(el.value) | 0;
+      else {
+        const v = Number(String(el.value).replace(',', '.'));
+        if (!Number.isFinite(v)) return;
+        td[prop] = kind === 'int' ? clampPbLerpMs(v) : Math.max(prop.startsWith('pbLabelScale') ? 0 : -10000, v);
+        if (ev?.type === 'change') el.value = td[prop];
+      }
+      appRef.project.modified = true;
+      syncPbPlusFields(td);
+      if (kind === 'check' || prop.startsWith('pbLerp')) restartBlinkPreview(); else redrawCanvas();
+    };
+    el.oninput = (ev) => { if (kind !== 'check') apply(ev); };
+    el.onchange = apply;
+  }
+  // The middle colour and the automatic label size are switches over fields of the bar
+  const midOn = dialogEl.querySelector('#tdPbGradMidOn');
+  if (midOn) midOn.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type !== 'progress') return;
+    tdPushUndo();
+    td.pbGradMid = midOn.checked ? tdColorValue(dialogEl.querySelector('#tdPbGradMid')) : 0;
+    appRef.project.modified = true;
+    syncPbPlusFields(td);
+    redrawCanvas();
+  };
+  const auto = dialogEl.querySelector('#tdPbLabelAuto');
+  if (auto) auto.onchange = () => {
+    const td = getSelectedTd();
+    if (!td || td.type !== 'progress') return;
+    tdPushUndo();
+    if (auto.checked) { td.pbLabelScaleX = 0; td.pbLabelScaleY = 0; } else { td.pbLabelScaleX = 0.2; td.pbLabelScaleY = 0.8; }
+    appRef.project.modified = true;
+    syncPbPlusFields(td);
+    redrawCanvas();
+  };
+}
+function syncPbPlusFields(td) {
+  if (!dialogEl || !td || td.type !== 'progress') return;
+  for (const [id, prop, kind] of PB_PLUS_FIELDS) {
+    const el = dialogEl.querySelector(id);
+    if (!el || document.activeElement === el) continue;
+    if (kind === 'check') el.checked = Boolean(td[prop]);
+    else if (kind === 'color') { if (td[prop]) el.value = colorHexOf(td[prop]); }
+    else el.value = td[prop] ?? '';
+  }
+  const show = (id, on) => { const el = dialogEl.querySelector(id); if (el) el.style.display = on ? 'flex' : 'none'; };
+  show('#tdPbGradFields', td.pbGradient);
+  show('#tdPbGradMidRow', Boolean(td.pbGradMid));
+  const midOn = dialogEl.querySelector('#tdPbGradMidOn');
+  if (midOn) midOn.checked = Boolean(td.pbGradMid);
+  show('#tdPbLabelFields', td.pbLabel);
+  show('#tdPbLabelColorRow', !td.pbLabelFollow);
+  const autoScale = !(+td.pbLabelScaleX > 0 && +td.pbLabelScaleY > 0);
+  const auto = dialogEl.querySelector('#tdPbLabelAuto');
+  if (auto) auto.checked = autoScale;
+  show('#tdPbLabelScaleRow', !autoScale);
+  show('#tdPbLabelOrientRow', (td.pbStyle | 0) === 0);
+  show('#tdPbLerpFields', td.pbLerp);
+  const lerp = dialogEl.querySelector('#tdPbLerp');
+  if (lerp) lerp.disabled = Boolean(td.pbAutoFill);
+}
+
+// ---------- TextDrawFX: fields of the effect ----------
+// Built from the parameter table of the effect (tdfx.js); every change goes straight into td.fx and restarts the preview
+function fxTypeOptions(td) {
+  const sel = dialogEl?.querySelector('#tdFx');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const none = document.createElement('option');
+  none.value = ''; none.textContent = t('Nenhum');
+  sel.appendChild(none);
+  for (const e of TDFX_EFFECTS) {
+    const o = document.createElement('option');
+    o.value = e.id;
+    o.textContent = t(e.label);
+    o.disabled = !tdfxAllowed(e, td);
+    sel.appendChild(o);
+  }
+  sel.value = td?.fx?.type || '';
+}
+// A colour parameter whose default is a real colour (not 0) is always on
+const defaultIsColour = (p, td) => Boolean(typeof p.def === 'function' ? p.def(td) : p.def);
+const FX_CHOICES = {
+  ease: ['Linear', 'Acelerando', 'Freando', 'Acelera e freia', 'Quicando'],
+  dir: ['Da esquerda para a direita', 'Da direita para a esquerda', 'Vai e volta'],
+  fw: ['Esfera', 'Leque', 'Foguete', 'Anel', 'Chafariz'],
+};
+function syncFxFields(td) {
+  const box = dialogEl?.querySelector('#tdFxFields');
+  if (!box || !td || td.type === 'progress') return;
+  fxTypeOptions(td);
+  const e = td.fx ? TDFX_BY_ID[td.fx.type] : null;
+  const note = dialogEl.querySelector('#tdFxNote');
+  const replay = dialogEl.querySelector('#tdFxReplay');
+  box.innerHTML = '';
+  box.style.display = e ? 'grid' : 'none';
+  if (replay) replay.style.display = e ? '' : 'none';
+  if (note) {
+    const off = e && !tdfxAllowed(e, td);
+    const msg = !e ? '' : off ? (!td.isPlayer && !e.gfn ? 'Este efeito só existe para PlayerTextDraw.' : 'Este efeito não funciona com esta fonte.')
+      : e.box && !td.useBox ? 'Este efeito usa a caixa do TextDraw: ligue a caixa.' : '';
+    note.textContent = msg ? t(msg) : '';
+    note.style.display = msg ? 'block' : 'none';
+  }
+  if (!e) return;
+  const changed = (restart = true) => { appRef.project.modified = true; if (restart) restartBlinkPreview(); else redrawCanvas(); };
+  for (const p of tdfxParams(e)) {
+    if (e.id === 'blink' && p.k === 'perChar' && (td.font ?? 1) > 3) continue;
+    const wrap = document.createElement('label');
+    const wide = p.type === 'text' || p.type === 'td' || p.type === 'color';
+    wrap.style.cssText = `display: flex; flex-direction: column; gap: 2px; font-size: 12px;${wide ? ' grid-column: 1 / -1;' : ''}`;
+    let input;
+    if (p.type === 'bool') {
+      wrap.className = 'check';
+      wrap.style.cssText = 'grid-column: 1 / -1; font-size: 12px;';
+      input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = Boolean(td.fx[p.k]);
+      input.onchange = () => { tdPushUndo(); td.fx[p.k] = input.checked; changed(); };
+      wrap.append(input, ' ' + t(p.label));
+      box.appendChild(wrap);
+      continue;
+    }
+    wrap.append(t(p.label));
+    if (p.type === 'color') {
+      // A colour that may be 0 (blink that vanishes, box colours) has a switch; the others are always a colour
+      const optional = !defaultIsColour(p, td);
+      const row = document.createElement('span');
+      row.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+      input = document.createElement('input');
+      input.type = 'color';
+      input.value = td.fx[p.k] ? colorHexOf(td.fx[p.k]) : '#ffffff';
+      input.disabled = optional && !td.fx[p.k];
+      input.onfocus = () => tdPushUndo();
+      input.oninput = () => { td.fx[p.k] = tdColorValue(input); changed(false); };
+      input.onchange = () => changed();
+      if (optional) {
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = Boolean(td.fx[p.k]);
+        chk.onchange = () => { tdPushUndo(); td.fx[p.k] = chk.checked ? tdColorValue(input) : 0; input.disabled = !chk.checked; changed(); };
+        row.append(chk, input);
+      } else row.append(input);
+      wrap.appendChild(row);
+      box.appendChild(wrap);
+      continue;
+    }
+    if (FX_CHOICES[p.type] || p.type === 'td') {
+      input = document.createElement('select');
+      if (FX_CHOICES[p.type]) {
+        FX_CHOICES[p.type].forEach((label, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = t(label); input.appendChild(o); });
+      } else {
+        const o = document.createElement('option'); o.value = ''; o.textContent = t('Nenhum'); input.appendChild(o);
+        for (const other of appRef.project.textDraws || []) {
+          if (other === td || other.type === 'progress' || Boolean(other.isPlayer) !== Boolean(td.isPlayer)) continue;
+          const oo = document.createElement('option');
+          oo.value = other.uid; oo.textContent = String(other.name || other.text || other.uid).slice(0, 40);
+          input.appendChild(oo);
+        }
+      }
+      input.value = String(td.fx[p.k] ?? '');
+      input.onchange = () => { tdPushUndo(); td.fx[p.k] = p.type === 'td' ? input.value : Number(input.value) | 0; changed(); };
+    } else if (p.type === 'text' || p.type === 'tag') {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.spellcheck = false;
+      input.value = td.fx[p.k] ?? '';
+      if (p.type === 'text') input.placeholder = textDrawNative(td).text;
+      input.onfocus = () => tdPushUndo();
+      input.oninput = () => { td.fx[p.k] = input.value.slice(0, 255); changed(); };
+    } else {
+      input = document.createElement('input');
+      input.type = 'number';
+      input.step = p.type === 'int' ? '1' : '0.01';
+      if (p.min !== undefined) input.min = String(p.min);
+      if (p.max !== undefined) input.max = String(p.max);
+      input.value = td.fx[p.k];
+      input.onfocus = () => tdPushUndo();
+      // Typing: only already valid values are used; the limit is applied when leaving the field
+      const apply = (fix) => {
+        const fx = makeFx({ ...td.fx, [p.k]: String(input.value).replace(',', '.') }, td);
+        const typed = Number(String(input.value).replace(',', '.'));
+        if (!fix && (input.value === '' || !Number.isFinite(typed) || fx[p.k] !== typed)) return;
+        td.fx[p.k] = fx[p.k];
+        if (fix) input.value = fx[p.k];
+        changed();
+      };
+      input.oninput = () => apply(false);
+      input.onchange = () => apply(true);
+    }
+    wrap.appendChild(input);
+    box.appendChild(wrap);
   }
 }
 
@@ -1209,7 +1358,7 @@ function syncPbBorderLimit(td) {
   const lbl = dialogEl.querySelector('#tdPbBorderLabel');
   if (lbl) lbl.textContent = `Borda (${decimalText(PB_LIMITS.borderMin).replace('.', ',')} a ${decimalText(max).replace('.', ',')})`;
 }
-let blinkStart = 0, blinkTimer = null, blinkLastKey = '';
+let blinkStart = 0, blinkTimer = null;
 function blinkPhaseOf(td) {
   if (!td?.pbBlink || !dialogEl?.open) return false;
   const interval = clampPbBlinkInterval(td.pbBlinkInterval);
@@ -1221,84 +1370,46 @@ function blinkPhaseOf(td) {
   }
   return Math.floor(t / interval) % 2 === 0;
 }
-// ---------- Blink of the TextDraws (BlinkPlayerTextDraw): the same as the include, to see it in the editor ----------
-// Index after the ~x~ tag that starts at i (~k~ also takes the ~KEY~ that follows it)
-function tagEnd(text, i) {
-  let j = i + 1;
-  while (j < text.length && text[j] !== '~') j++;
-  if (text[j] !== '~') return j;
-  const key = j === i + 2 && /k/i.test(text[i + 1]);
-  j++;
-  if (key && text[j] === '~') {
-    j++;
-    while (j < text.length && text[j] !== '~') j++;
-    if (text[j] === '~') j++;
-  }
-  return j;
-}
-function visibleCount(text) {
-  let i = 0, seen = 0;
-  while (i < text.length) { if (text[i] === '~') { i = tagEnd(text, i); continue; } if (text[i] === ' ' || text[i] === '_') { i++; continue; } i++; seen++; }
-  return seen;
-}
-function cutVisible(text, chars) {
-  if (chars <= 0) return '';
-  let i = 0, seen = 0;
-  while (i < text.length) {
-    if (text[i] === '~') { i = tagEnd(text, i); continue; }
-    if (text[i] === ' ' || text[i] === '_') { i++; continue; } // a space goes with the character after it (a text ending in a space is not drawn in game)
-    i++; seen++;
-    if (seen === chars) return text.slice(0, i);
-  }
-  return text;
-}
-// What the TextDraw looks like now: null when it is off, or a copy with the blink colour / the text typed so far
-function tdBlinkView(td) {
-  const n = textDrawNative(td);
-  const duration = clampPbBlinkDuration(td.blinkDuration);
-  const colour = tdBlinkColour(td);
-  let interval = clampTdBlinkInterval(td.blinkInterval);
-  let perChar = tdBlinkPerChar(td);
-  const count = perChar ? visibleCount(n.text) : 0;
-  if (perChar && count === 0) perChar = false;
-  if (perChar && duration > 0 && count * interval > duration) interval = Math.max(50, Math.floor(duration / count));
+// ---------- TextDrawFX effects: the same as the include (tdfx.js), to see them in the editor ----------
+// A finite effect stops at its end like in the game and the preview starts it again 1.5 s later.
+function fxElapsed(td) {
+  const len = tdfxLength(td.fx, td);
   let t = performance.now() - blinkStart;
-  if (duration > 0) {
-    t %= duration + 1000;
-    if (t >= duration) return td; // it ended: the TextDraw stays as it is (the preview restarts after 1 s)
-  }
-  const v = { ...td };
-  let lit = true;
-  if (perChar) {
-    const step = Math.floor(t / interval) % (count + 1);
-    v.text = step === 0 ? ' ' : cutVisible(n.text, step);
-  } else {
-    lit = Math.floor(t / interval) % 2 === 0;
-    if (!colour && !lit) return null;
-  }
-  if (colour && lit) {
-    if (n.font === 5) { v.useBox = 1; v.boxColor = colour; } // a preview model: the colour goes to its background
-    else {
-      v.color = colour;
-      if (n.useBox) v.boxColor = colour;
-    }
-  }
-  return v;
+  if (len > 0 && !((td.fx.type === 'waveMotion' || td.fx.type === 'hopLetter') && td.fx.loop)) t %= len + 1500;
+  return t;
 }
+// Frames of this moment: uid -> { view, extras } of every TextDraw with an effect, and the positions an effect gives
+// to another TextDraw (the bottom bar of the letterbox)
+let fxFrames = new Map(), fxMoved = new Map();
+function computeFxFrames() {
+  fxFrames = new Map(); fxMoved = new Map();
+  if (!dialogEl?.open) return;
+  const tds = appRef.project?.textDraws || [];
+  for (const td of tds) {
+    if (!tdfxActive(td)) continue;
+    const fr = tdfxFrame(td, textDrawNative(td).text, fxElapsed(td), (uid) => tds.find(o => o.uid === uid && o.type !== 'progress') || null);
+    fxFrames.set(td, fr);
+    for (const [uid, m] of Object.entries(fr.moved || {})) fxMoved.set(uid, m);
+  }
+}
+// Bars: the value of this moment (auto fill or the smooth change when it appears)
+function barPreviewValue(td) {
+  if (td.pbAutoFill) return autoFillPreviewValue(td);
+  if (td.pbLerp) {
+    const ms = clampPbLerpMs(td.pbLerpMs);
+    return pbLerpValue(td, (performance.now() - blinkStart) % (ms + 1500));
+  }
+  return Math.max(pbMinOf(td), Math.min(Number(td.pbMax) || 0, Number(td.pbValue) || 0));
+}
+const isAnimated = (td) => (td.type === 'progress' ? Boolean(td.pbAutoFill || td.pbBlink || td.pbLerp) : tdfxActive(td));
 
 function restartBlinkPreview() {
   blinkStart = performance.now();
-  blinkLastKey = '';
   if (!blinkTimer) {
     blinkTimer = setInterval(() => {
       if (!dialogEl?.open) { clearInterval(blinkTimer); blinkTimer = null; return; }
-      if ((appRef.project?.textDraws || []).some(t => t.type === 'progress' && t.pbAutoFill)) { redrawCanvas(); return; }
-      const bars = (appRef.project?.textDraws || []).filter(t => t.type === 'progress' && t.pbBlink);
-      const blinking = (appRef.project?.textDraws || []).filter(tdBlinkActive);
-      if (!bars.length && !blinking.length) return;
-      const key = bars.map(b => blinkPhaseOf(b) ? 1 : 0).join('') + '|' + blinking.map(b => { const v = tdBlinkView(b); return v ? `${v.text}~${v.color}~${v.boxColor}` : 'off'; }).join('|');
-      if (key !== blinkLastKey) { blinkLastKey = key; redrawCanvas(); }
-    }, 25);
+      if ((appRef.project?.textDraws || []).some(isAnimated)) redrawCanvas();
+    }, 40);
   }
   redrawCanvas();
 }
@@ -1350,6 +1461,7 @@ function redrawCanvas() {
   if (showGrid) drawGrid();
 
   const tds = appRef.project?.textDraws || [];
+  computeFxFrames();
   for (let i = 0; i < tds.length; i++) {
     renderTextDraw(tds[i], i === selectedIdx);
   }
@@ -1406,30 +1518,48 @@ function drawGrid() {
 
 function renderTextDraw(real, isSelected) {
   const bounds = getTextDrawBounds(real);
-  // A blinking TextDraw is drawn as it is at this moment of the blink (null: off)
-  const td = tdBlinkActive(real) ? tdBlinkView(real) : real;
+  // A TextDraw with an effect is drawn as it is at this moment of the effect (null: hidden), plus what the effect
+  // adds (sparks, letters); a TextDraw moved by the effect of another one (letterbox) goes to that position
+  const fr = fxFrames.get(real);
+  const moved = fxMoved.get(real.uid);
+  let td = fr ? fr.view : real;
+  if (moved) td = moved.hidden ? null : { ...(td || real), x: moved.x, y: moved.y };
+  const vb = td && td !== real ? getTextDrawBounds(td) : bounds;
 
   if (real.type === 'progress') {
+    // Value of this moment, gradient colour (the blink colour wins in the lit phase) and the label
+    const value = barPreviewValue(real);
+    const colour = pbCurrentColour(real, value);
+    const blinkOn = blinkPhaseOf(real);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    drawProgressBar(ctx, td.pbAutoFill ? { ...td, pbValue: autoFillPreviewValue(td) } : td, blinkPhaseOf(td));
+    drawProgressBar(ctx, { ...real, pbValue: value, pbMax: real.pbMax, pbMin: pbMinOf(real), color: colour, pbBorderColor: real.pbBorderColor || ((Number(real.color) >>> 0) & 0xFF) }, blinkOn);
+    const label = pbLabelTextDraw(real, value, blinkOn && real.pbBlinkColor ? real.pbBlinkColor : colour);
+    if (label) drawTextDraw(ctx, label);
     ctx.restore();
     useLogicalUnits();
   } else if (!td) {
-    // off in this phase of the blink: only the selection is drawn
+    // hidden at this moment of the effect: only the selection is drawn
   } else if (td.font === 5) {
     if (td.useBox) {
       ctx.fillStyle = toHexRgba(td.boxColor ?? 0x00000080).css;
-      ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+      ctx.fillRect(vb.x, vb.y, vb.w, vb.h);
     }
-    renderModelPreview(td, bounds, isSelected);
+    renderModelPreview(td, vb, isSelected);
   } else if (td.font === 4) {
-    renderSpriteTextDraw(td, bounds);
+    renderSpriteTextDraw(td, vb);
   } else {
     // Text and box with GTA SA's calculations and fonts, in reference screen pixels
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     drawTextDraw(ctx, td);
+    ctx.restore();
+    useLogicalUnits();
+  }
+  if (fr?.extras?.length) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const ex of fr.extras) drawTextDraw(ctx, ex);
     ctx.restore();
     useLogicalUnits();
   }
@@ -1670,13 +1800,7 @@ function updateSidebarFields() {
   setChk('#tdProportional', td.proportional);
   setChk('#tdSelectable', td.selectable);
   setChk('#tdIsPlayer', td.isPlayer);
-  setChk('#tdBlink', td.type !== 'progress' && td.isPlayer && td.blink);
-  setVal('#tdBlinkInterval', clampTdBlinkInterval(td.blinkInterval ?? TD_BLINK_DEFAULT));
-  setVal('#tdBlinkDuration', clampPbBlinkDuration(td.blinkDuration));
-  setChk('#tdBlinkPerChar', td.type !== 'progress' && tdBlinkPerChar(td));
-  setChk('#tdBlinkOwn', !td.blinkColor && !tdBlinkPerChar(td));
-  if (td.blinkColor) setVal('#tdBlinkColor', '#' + ((Number(td.blinkColor) >>> 8) & 0xFFFFFF).toString(16).padStart(6, '0'));
-  syncTdBlinkFields?.(td);
+  syncFxFields(td);
 
   // Cores
   const textCol = toHexRgba(td.color ?? 0xE1E1E1FF);
@@ -1700,7 +1824,9 @@ function updateSidebarFields() {
     setVal('#tdPbWidth', td.pbWidth);
     setVal('#tdPbHeight', td.pbHeight);
     setVal('#tdPbMax', td.pbMax);
+    setVal('#tdPbMin', td.pbMin ?? 0);
     setVal('#tdPbValue', td.pbValue);
+    syncPbPlusFields(td);
     setVal('#tdPbDir', td.pbDir);
     syncPbBorderLimit(td);
     setVal('#tdPbBlinkInterval', clampPbBlinkInterval(td.pbBlinkInterval));
@@ -1914,10 +2040,12 @@ function copyTextDrawsPawn() {
     return;
   }
 
-  const lines = ['// TextDraws exportados pelo SA Map Studio'];
-  const usesBlink = tds.some(tdBlinkActive);
-  if (tds.some(td => td.type === 'progress')) lines.push(`// ${t('Requer a include SA Progress Bar Pro ({0}) - {1}', '#include <ProgressBar>', 'https://github.com/Walter-Correa/SA-Progress-Bar-Pro')}`);
-  if (usesBlink) lines.push(`// ${t('Requer a include de piscar TextDraws ({0}) por causa do piscar dos TextDraws.', '#include <textdrawblink>')}`);
+  const lines = [];
+  // Includes the code needs, each with the link to download it
+  if (tds.some(td => td.type === 'progress')) lines.push(PB_INCLUDE);
+  if (tds.some(tdfxActive)) lines.push(TDFX_INCLUDE);
+  if (lines.length) lines.push('');
+  lines.push('// TextDraws exportados pelo SA Map Studio');
   const hex = (v) => '0x' + (Number(v) >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const num = (v) => { const t = String(+(+v || 0).toFixed(4)); return t.includes('.') ? t : t + '.0'; };
   tds.forEach((td, i) => {
@@ -1926,13 +2054,12 @@ function copyTextDrawsPawn() {
       lines.push('');
       return;
     }
-    lines.push(...textDrawPawn(td, textDrawVar(td, tds), num));
+    lines.push(...textDrawPawn(td, textDrawVar(td, tds), num, undefined, '', (uid) => { const o = tds.find(x => x.uid === uid && x.type !== 'progress'); return o ? textDrawVar(o, tds) : null; }));
     lines.push('');
   });
 
   const fullText = lines.join('\n');
   navigator.clipboard.writeText(fullText).then(() => {
     toast(`${tds.length} TextDraw(s) copiados em formato Pawn`, 'ok');
-    if (usesBlink) toast('O código usa o piscar de TextDraws: inclua textdrawblink.inc no servidor.', 'warn');
   });
 }

@@ -233,7 +233,7 @@ function pbDim(c) {
   return ((c & 0xFFFFFF00) | al) >>> 0;
 }
 
-// Progress bar (SA Progress Bar Pro, ProgressBar.inc): the same 3 LD_SPAC:white sprites the include creates,
+// Progress bar (Progress Bar Plus, ProgressBar.inc): the same 3 LD_SPAC:white sprites the include creates,
 // in 640x448 units: background, track inside the border and the filled part according to value and direction.
 // Border: pbBorder horizontally and 1.25 times that vertically (1 unit is 3.00 px x 2.41 px at 1920x1080),
 // limited as in the include (0.5 to 5). blinkOn: lit phase of the blink (blink color or interior off;
@@ -248,8 +248,8 @@ function ringParts(bar, blinkOn) {
   const x = +bar.x || 0, y = +bar.y || 0;
   const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
   const n = Math.max(4, Math.min(60, (bar.pbSegments | 0) || 24));
-  const max = +bar.pbMax || 0;
-  const v = Math.max(0, Math.min(max, +bar.pbValue || 0));
+  const max = +bar.pbMax || 0, min = Math.min(+bar.pbMin || 0, max);
+  const v = Math.max(min, Math.min(max, +bar.pbValue || 0));
   const base = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
   const blinking = Boolean(bar.pbBlink) && blinkOn;
   const blinkColor = Number(bar.pbBlinkColor || 0) >>> 0;
@@ -268,7 +268,7 @@ function ringParts(bar, blinkOn) {
   const px = Math.max(0, rx - dx / 2 - bx), py = Math.max(0, ry - dy / 2 - by);
   const dir = bar.pbDir | 0;
   const step = (dir === 1 || dir === 2 ? -1 : 1) * 360 / n;
-  const part = max > 0 ? Math.min(1, v / max) : 0;
+  const part = max > min ? Math.min(1, (v - min) / (max - min)) : 0;
   const lit = part > 0 ? Math.floor(part * n + 0.0001) : 0;
   const hidden = blinking && !blinkColor;
   const centers = Array.from({ length: n }, (_, i) => {
@@ -285,8 +285,8 @@ export function progressBarParts(bar, blinkOn = false) {
   const shape = (bar.pbStyle | 0) === 2 ? 'circle' : 'rect';
   const x = +bar.x || 0, y = +bar.y || 0;
   const w = Math.max(0, +bar.pbWidth || 0), h = Math.max(0, +bar.pbHeight || 0);
-  const max = +bar.pbMax || 0;
-  const v = Math.max(0, Math.min(max, +bar.pbValue || 0));
+  const max = +bar.pbMax || 0, min = Math.min(+bar.pbMin || 0, max);
+  const v = Math.max(min, Math.min(max, +bar.pbValue || 0));
   const base = Number(bar.color ?? 0xFF1C1CFF) >>> 0;
   const alpha = base & 0xFF;
   const blinking = Boolean(bar.pbBlink) && blinkOn;
@@ -305,7 +305,7 @@ export function progressBarParts(bar, blinkOn = false) {
   const parts = [{ shape, x, y, w, h, color: borderColor }];
   if (blinking && !blinkColor) return parts; // no color: the interior goes off
   parts.push({ shape, x: ix, y: iy, w: iw, h: ih, color: fillColor });
-  const part = max > 0 ? Math.min(1, v / max) : 0;
+  const part = max > min ? Math.min(1, (v - min) / (max - min)) : 0;
   if (part > 0 && iw > 0 && ih > 0 && shape === 'circle') {
     // Circle: grows from the center
     parts.push({ shape, x: ix + iw * (1 - part) / 2, y: iy + ih * (1 - part) / 2, w: iw * part, h: ih * part, color: c });
