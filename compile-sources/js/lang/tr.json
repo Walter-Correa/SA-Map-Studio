@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Halka bölümü sayısı, 4 ile 60 arası (her bölüm 2 PlayerTextDraw kullanır)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: çubuk mevcut değerden seçilen değere kadar dolar, bekler, geri döner ve tekrarlar. Projeye kaydedilir ve dışa aktarılan koda girer.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Otomatik doldurmanın gideceği yer (en fazla çubuğun en yüksek değeri)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Kenarlık kalınlığı (ekranda aynı görünmesi için üst ve alt 1,25 kat daha büyüktür). En yüksek değer çubuğun genişliğine ve yüksekliğine bağlıdır.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Her değişim arasındaki süre, 50 ile 60000 ms arası",
  "Tempo total da piscada; 0 pisca até ser parada": "Toplam yanıp sönme süresi; 0 durdurulana kadar yanıp söner",
  "Duplicar": "Çoğalt",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Dış çizgi",
  "Sombra (Shadow)": "Gölge",
  "Segmentos (4 a 60)": "Bölümler (4 ile 60 arası)",
- "Borda (0,5 a 5,0)": "Kenarlık (0.5 ile 5.0 arası)",
  "Piscar (BlinkPlayerProgressBar)": "Yanıp sönme (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Aralık (ms)",
  "Duração (ms, 0 = sem fim)": "Süre (ms, 0 = sonsuz)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Parıltı rengi (etiket)",
  "Cor da onda (tag)": "Dalga rengi (etiket)",
  "Cor do laser (tag)": "Lazer rengi (etiket)",
- "Cor do rastro (tag)": "İz rengi (etiket)"
+ "Cor do rastro (tag)": "İz rengi (etiket)",
+ "Máquina de escrever": "Daktilo",
+ "Borda (0 ou {0} a {1})": "Kenarlık (0 veya {0} ile {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Kenarlık (0 veya 0,5 ile 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Kenarlık kalınlığı (üst ve alt kenar ekranda aynı görünmesi için 1,25 kat büyüktür); 0 çubuğu kenarlıksız bırakır. En büyük değer çubuğun genişliğine ve yüksekliğine bağlıdır.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Yatay bir çubukta (sağ veya sol), 4,5'e kadar olan yükseklik oyunda 2,5 kat büyür (en az 6): editör zaten oyundaki yüksekliği gösterir"
 }

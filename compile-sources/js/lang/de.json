@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Anzahl der Ringsegmente, von 4 bis 60 (jedes Segment nutzt 2 PlayerTextDraws)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: Der Balken füllt sich vom aktuellen Wert bis zum gewählten Wert, hält an, geht zurück und wiederholt. Wird im Projekt gespeichert und kommt in den exportierten Code.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Wie weit das automatische Füllen geht (höchstens der Maximalwert des Balkens)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Randstärke (oben und unten 1,25-mal größer, damit sie auf dem Bildschirm gleich aussehen). Das Maximum hängt von Breite und Höhe des Balkens ab.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Zeit zwischen jedem Wechsel, von 50 bis 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Gesamte Blinkdauer; 0 blinkt, bis es gestoppt wird",
  "Duplicar": "Duplizieren",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Kontur",
  "Sombra (Shadow)": "Schatten",
  "Segmentos (4 a 60)": "Segmente (4 bis 60)",
- "Borda (0,5 a 5,0)": "Rand (0.5 bis 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Blinken (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Intervall (ms)",
  "Duração (ms, 0 = sem fim)": "Dauer (ms, 0 = endlos)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Glanzfarbe (Tag)",
  "Cor da onda (tag)": "Wellenfarbe (Tag)",
  "Cor do laser (tag)": "Laserfarbe (Tag)",
- "Cor do rastro (tag)": "Spurfarbe (Tag)"
+ "Cor do rastro (tag)": "Spurfarbe (Tag)",
+ "Máquina de escrever": "Schreibmaschine",
+ "Borda (0 ou {0} a {1})": "Rand (0 oder {0} bis {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Rand (0 oder 0,5 bis 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Randstärke (oben und unten 1,25-mal größer, damit er auf dem Bildschirm gleich aussieht); 0 lässt den Balken ohne Rand. Das Maximum hängt von Breite und Höhe des Balkens ab.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Bei einem liegenden Balken (rechts oder links) wird eine Höhe bis 4,5 im Spiel 2,5-mal größer (mindestens 6): Der Editor zeigt schon die Höhe im Spiel"
 }

@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Количество сегментов кольца, от 4 до 60 (каждый сегмент использует 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: полоса заполняется от текущего значения до выбранного, задерживается, возвращается и повторяет. Сохраняется в проекте и попадает в экспортированный код.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "До какого значения идёт автозаполнение (не больше максимума полосы)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Толщина рамки (сверху и снизу в 1,25 раза больше, чтобы на экране выглядеть одинаково). Максимум зависит от ширины и высоты полосы.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Время между переключениями, от 50 до 60000 мс",
  "Tempo total da piscada; 0 pisca até ser parada": "Общее время мигания; 0 — мигает до остановки",
  "Duplicar": "Дублировать",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Обводка",
  "Sombra (Shadow)": "Тень",
  "Segmentos (4 a 60)": "Сегменты (от 4 до 60)",
- "Borda (0,5 a 5,0)": "Рамка (от 0.5 до 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Мигание (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Интервал (мс)",
  "Duração (ms, 0 = sem fim)": "Длительность (мс, 0 = бесконечно)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Цвет блика (тег)",
  "Cor da onda (tag)": "Цвет волны (тег)",
  "Cor do laser (tag)": "Цвет лазера (тег)",
- "Cor do rastro (tag)": "Цвет следа (тег)"
+ "Cor do rastro (tag)": "Цвет следа (тег)",
+ "Máquina de escrever": "Пишущая машинка",
+ "Borda (0 ou {0} a {1})": "Рамка (0 или {0} до {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Рамка (0 или 0,5 до 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Толщина рамки (верхняя и нижняя в 1,25 раза больше, чтобы на экране выглядеть одинаково); 0 оставляет полосу без рамки. Максимум зависит от ширины и высоты полосы.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "У лежачей полосы (вправо или влево) высота до 4,5 в игре становится в 2,5 раза больше (минимум 6): редактор уже показывает высоту из игры"
 }

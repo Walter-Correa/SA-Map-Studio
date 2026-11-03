@@ -164,10 +164,6 @@ export function cleanPwnHeader(headerText) {
         t.startsWith('//   OnGameModeInit') ||
         t.startsWith('//   OnPlayerConnect') ||
         t.startsWith('//   Requer o plugin streamer') ||
-        t.startsWith('//   Requer a include progress2') ||
-        t.startsWith('//   Requer a include progress3') ||
-        t.startsWith('//   Requer a include SA Progress Bar Pro') ||
-        t.startsWith('//   Requer a include de piscar TextDraws') ||
         /^#include\s*<(ProgressBar|TextDrawFX)>/i.test(t) ||
         t.startsWith('//   Posições relativas') ||
         t.startsWith('//   Câmeras')) {
@@ -858,19 +854,14 @@ export function parsePwn(source) {
         if (variable) vars.set(variable, td);
       }
     } else if (fn === 'CreatePlayerProgressBar') {
-      // ProgressBar.inc: CreatePlayerProgressBar(playerid, x, y, width, height, color, maximum, direction, border, border color, style, segments).
-      // The previous order of the include had the style and segments right after the direction (border and border color at the end; the segment scale is the argument after the segments):
-      // it is recognized by the 9th argument being a PB_STYLE_/PB_RING_SEGMENTS or by the 11th being a number with decimals (the border).
+      // ProgressBar.inc: CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments, segmentscale),
       // also with named arguments (.colour = ...) and expressions (the leading number is used)
       if (a.length >= 3) {
         const arg = (i, ...names) => { for (const n of names) if (named[n] !== undefined) return named[n]; return a[i]; };
         const dirArg = String(arg(7, 'direction') ?? '0').trim();
         const dirIdx = PB_DIRECTIONS.indexOf(dirArg.toUpperCase());
         const colArg = arg(5, 'colour', 'color');
-        const a8 = String(a[8] ?? '').trim(), a10 = String(a[10] ?? '').trim();
-        const isBorder = (s) => /^-?\d*\.\d*$|PB_BORDER/i.test(s);
-        const styleFirst = /PB_STYLE_|PB_RING_SEGMENTS/i.test(a8) || (a8 !== '' && !isBorder(a8) && isBorder(a10));
-        const [iStyle, iSeg, iBorder, iBorderCol] = styleFirst ? [8, 9, 10, 11] : [10, 11, 8, 9];
+        const [iBorder, iBorderCol, iStyle, iSeg] = [8, 9, 10, 11];
         const nameFromVar = (v) => {
           if (!v) return '';
           const idx = [...v.matchAll(/\[\s*([A-Za-z_@][\w@]*)\s*\]/g)].map(m => m[1]).filter(s => !/^(playerid|i|j|id|pid)$/i.test(s));
@@ -884,7 +875,7 @@ export function parsePwn(source) {
           color: colArg !== undefined && /^-?(0x[0-9a-f]+|\d+)$/i.test(String(colArg).trim()) ? parseColor(colArg) : 0xE74C3CFF,
           pbMax: num(arg(6, 'max'), 100) || 100, pbValue: 0,
           pbDir: dirIdx >= 0 ? dirIdx : Math.max(0, Math.min(3, int(dirArg, 0))),
-          pbBorder: fitPbBorder(num(arg(iBorder, 'border'), PB_LIMITS.borderDefault), num(arg(3, 'width'), 60), num(arg(4, 'height'), 8)),
+          pbBorder: /PB_BORDER_NONE/i.test(String(arg(iBorder, 'border') ?? '')) ? 0 : num(arg(iBorder, 'border'), PB_LIMITS.borderDefault),
           pbBorderColor: colorArgOrZero(arg(iBorderCol, 'bordercolour', 'bordercolor')),
           pbStyle: (() => { const st = String(arg(iStyle, 'style') ?? '0').trim().toUpperCase(); const i = PB_STYLE_NAMES.indexOf(st); return i >= 0 ? i : clampPbStyle(int(st, 0)); })(),
           pbSegments: clampPbSegments(int(arg(iSeg, 'segments'), 24)),
@@ -968,7 +959,7 @@ export function parsePwn(source) {
         target.pbLerpMs = int(named.duration_ms ?? a[3], 500);
       }
     } else if (TDFX_FUNCTIONS.includes(fn)) {
-      // TextDrawFX effect (BlinkPlayerTextDraw of the old textdrawblink.inc included: same name and arguments)
+      // TextDrawFX effect
       const call = tdfxFromCall(fn, a, named, { num, int, unquote, color: (v) => colorArgOrZero(v) });
       const target = call && vars.get(varKey(call.varArg));
       if (target && target.type !== 'progress') {

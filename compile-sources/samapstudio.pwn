@@ -1503,43 +1503,44 @@ stock SAMSP_ApplyFx(playerid, i)
             if (font == 4 && (base == 0 || base == 0xFF)) base = 0xFFFFFFFF;
             BlinkPlayerTextDraw(playerid, td, FI(4), FI(5), FB(6) && font != 4 && font != 5, FH(7), gTd[i][td_text], base);
         }
-        case 1: FadeInPlayerTextDraw(playerid, td, FI(4), FB(5), FI(6), 0, "", FB(7));
-        case 2: FadeOutPlayerTextDraw(playerid, td, FI(4), FB(5), 0, "", FB(6));
-        case 3: FadeColorPlayerTextDraw(playerid, td, FH(4), FH(5), FI(6), FB(7), FH(8), FH(9), FI(10));
-        case 4: ScalePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8), FI(9));
-        case 5: PulsePlayerTextDraw(playerid, td, FF(4), FI(5), FI(6));
-        case 6: SlidePlayerTextDraw(playerid, td, FF(4), FF(5), FI(6), FI(7));
-        case 7:
+        case 1: { FT(6); TypewriterPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 2: FadeInPlayerTextDraw(playerid, td, FI(4), FB(5), FI(6), 0, "", FB(7));
+        case 3: FadeOutPlayerTextDraw(playerid, td, FI(4), FB(5), 0, "", FB(6));
+        case 4: FadeColorPlayerTextDraw(playerid, td, FH(4), FH(5), FI(6), FB(7), FH(8), FH(9), FI(10));
+        case 5: ScalePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8), FI(9));
+        case 6: PulsePlayerTextDraw(playerid, td, FF(4), FI(5), FI(6));
+        case 7: SlidePlayerTextDraw(playerid, td, FF(4), FF(5), FI(6), FI(7));
+        case 8:
         {
             SAMSP_FxTag(l, 7, s1, sizeof(s1));
             SAMSP_FxTag(l, 8, s2, sizeof(s2));
             CountPlayerTextDrawNumber(playerid, td, FI(4), FI(5), FI(6), s1, s2, FB(9), FI(10));
         }
-        case 8: { FT(5); ScramblePlayerTextDraw(playerid, td, txt, FI(4)); }
-        case 9: BouncePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FF(9), FB(10), FI(11));
-        case 10: BounceCirclePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FB(9), FI(10));
-        case 11: OrbitPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FF(9), FI(10));
-        case 12: ShakePlayerTextDraw(playerid, td, FF(4), FI(5));
-        case 13: NeonFlickerPlayerTextDraw(playerid, td, FI(4), FI(5));
-        case 14: WaveDriftPlayerTextDraw(playerid, td, FF(4), FF(5), FI(6), FI(7));
-        case 15: FillPlayerTextDrawProgress(playerid, td, FF(4), FF(5), FI(6), FI(7), FF(8));
-        case 16: FireworkPlayerTextDraw(playerid, td, FI(4), FI(5), FI(6), FF(7), FF(8), FI(9));
-        case 17: { FT(6); GlitchPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
-        case 18: SpinPreviewPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8));
-        case 19: FloatPreviewPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FI(7), FI(8));
-        case 20:
+        case 9: { FT(5); ScramblePlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 10: BouncePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FF(9), FB(10), FI(11));
+        case 11: BounceCirclePlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FB(9), FI(10));
+        case 12: OrbitPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FF(9), FI(10));
+        case 13: ShakePlayerTextDraw(playerid, td, FF(4), FI(5));
+        case 14: NeonFlickerPlayerTextDraw(playerid, td, FI(4), FI(5));
+        case 15: WaveDriftPlayerTextDraw(playerid, td, FF(4), FF(5), FI(6), FI(7));
+        case 16: FillPlayerTextDrawProgress(playerid, td, FF(4), FF(5), FI(6), FI(7), FF(8));
+        case 17: FireworkPlayerTextDraw(playerid, td, FI(4), FI(5), FI(6), FF(7), FF(8), FI(9));
+        case 18: { FT(6); GlitchPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 19: Spin3DPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8));
+        case 20: Hover3DPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FI(7), FI(8));
+        case 21:
         {
             SAMSP_FxTag(l, 4, s1, sizeof(s1));
             SAMSP_FxTag(l, 5, s2, sizeof(s2));
             FT(9);
             ShimmerPlayerTextDraw(playerid, td, txt, s1, s2, FI(6), FI(7), FI(8));
         }
-        case 21: { FT(6); RainbowPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
-        case 22: { FT(5); SlotMachinePlayerTextDraw(playerid, td, txt, FI(4)); }
-        case 23: PendulumPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FI(9));
-        case 24: GravityDropPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6));
-        case 25: VortexPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8));
-        case 26:
+        case 22: { FT(6); RainbowPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 23: { FT(5); SlotMachinePlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 24: PendulumPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FF(8), FI(9));
+        case 25: GravityDropPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6));
+        case 26: VortexPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FF(7), FI(8));
+        case 27:
         {
             // Letterbox: this TextDraw is the top bar and the other one of the line the bottom bar
             new other = SAMSP_Int(l, 3);
@@ -1547,28 +1548,28 @@ stock SAMSP_ApplyFx(playerid, i)
             if (other >= 0 && other < gTotalTextDraws) bottom = gPlayerTds[playerid][other];
             LetterboxPlayerTextDraw(playerid, td, bottom, FF(4), FI(5), FB(6), FI(7));
         }
-        case 27: SonarPingPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FI(7), FI(8));
-        case 28:
+        case 28: SonarPingPlayerTextDraw(playerid, td, FF(4), FF(5), FF(6), FI(7), FI(8));
+        case 29:
         {
             SAMSP_FxTag(l, 4, s1, sizeof(s1));
             SAMSP_FxTag(l, 5, s2, sizeof(s2));
             FT(10);
             WaveSweepPlayerTextDraw(playerid, td, txt, s1, s2, FI(6), FI(7), FI(8), FI(9));
         }
-        case 29: { FT(8); LetterRainPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FI(7)); }
-        case 30:
+        case 30: { FT(8); LetterRainPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FI(7)); }
+        case 31:
         {
             SAMSP_FxTag(l, 4, s1, sizeof(s1));
             SAMSP_FxTag(l, 5, s2, sizeof(s2));
             FT(8);
             ScannerSweepPlayerTextDraw(playerid, td, txt, s1, s2, FI(6), FI(7));
         }
-        case 31: { FT(5); ElectricArcPlayerTextDraw(playerid, td, txt, FI(4)); }
-        case 32: { FT(6); SplitFlapPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
-        case 33: { FT(5); HologramPlayerTextDraw(playerid, td, txt, FI(4)); }
-        case 34: ShockwaveSlamPlayerTextDraw(playerid, td, FF(4), FF(5), FI(6));
-        case 35: { FT(11); WaveMotionPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FF(7), FI(8), FI(9), FB(10)); }
-        case 36: { FT(12); HopLetterPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FI(7), FI(8), FI(9), FI(10), FB(11)); }
+        case 32: { FT(5); ElectricArcPlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 33: { FT(6); SplitFlapPlayerTextDraw(playerid, td, txt, FI(4), FI(5)); }
+        case 34: { FT(5); HologramPlayerTextDraw(playerid, td, txt, FI(4)); }
+        case 35: ShockwaveSlamPlayerTextDraw(playerid, td, FF(4), FF(5), FI(6));
+        case 36: { FT(11); WaveMotionPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FF(7), FI(8), FI(9), FB(10)); }
+        case 37: { FT(12); HopLetterPlayerTextDraw(playerid, td, txt, FF(4), FF(5), FF(6), FI(7), FI(8), FI(9), FI(10), FB(11)); }
     }
     #undef FI
     #undef FF

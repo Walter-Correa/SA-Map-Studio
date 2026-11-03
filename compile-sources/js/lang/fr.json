@@ -100,7 +100,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Nombre de segments de l'anneau, de 4 à 60 (chaque segment utilise 2 PlayerTextDraws)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar : la barre se remplit de la valeur actuelle jusqu'à la valeur choisie, reste, revient et recommence. C'est enregistré dans le projet et va dans le code exporté.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Jusqu'où va le remplissage auto (au plus, la valeur maximale de la barre)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Épaisseur de la bordure (celles du haut et du bas sont 1,25 fois plus grandes pour paraître égales à l'écran). Le maximum dépend de la largeur et de la hauteur de la barre.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Temps entre chaque changement, de 50 à 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Durée totale du clignotement ; 0 clignote jusqu'à l'arrêt",
  "Duplicar": "Dupliquer",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Contour (Outline)",
  "Sombra (Shadow)": "Ombre (Shadow)",
  "Segmentos (4 a 60)": "Segments (4 à 60)",
- "Borda (0,5 a 5,0)": "Bordure (0,5 à 5,0)",
  "Piscar (BlinkPlayerProgressBar)": "Clignoter (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Intervalle (ms)",
  "Duração (ms, 0 = sem fim)": "Durée (ms, 0 = sans fin)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Couleur du reflet (tag)",
  "Cor da onda (tag)": "Couleur de la vague (tag)",
  "Cor do laser (tag)": "Couleur du laser (tag)",
- "Cor do rastro (tag)": "Couleur de la traînée (tag)"
+ "Cor do rastro (tag)": "Couleur de la traînée (tag)",
+ "Máquina de escrever": "Machine à écrire",
+ "Borda (0 ou {0} a {1})": "Bordure (0 ou {0} à {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Bordure (0 ou 0,5 à 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Épaisseur de la bordure (celle du haut et du bas est 1,25 fois plus grande pour paraître égale à l'écran) ; 0 laisse la barre sans bordure. Le maximum dépend de la largeur et de la hauteur de la barre.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Sur une barre horizontale (droite ou gauche), une hauteur jusqu'à 4,5 devient 2,5 fois plus grande dans le jeu (au moins 6) : l'éditeur affiche déjà la hauteur du jeu"
 }

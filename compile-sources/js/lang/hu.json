@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "A gyűrű szegmenseinek száma 4 és 60 között (minden szegmens 2 PlayerTextDraw-t használ)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: a sáv az aktuális értéktől a választott értékig töltődik, megáll, visszamegy és ismétlődik. A projektbe mentődik, és bekerül az exportált kódba.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Meddig tart az automatikus töltés (legfeljebb a sáv maximális értéke)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "A keret vastagsága (fent és lent 1,25-ször nagyobb, hogy a képernyőn egyformának tűnjön). A maximum a sáv szélességétől és magasságától függ.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Az egyes váltások közötti idő, 50 és 60000 ms között",
  "Tempo total da piscada; 0 pisca até ser parada": "A villogás teljes ideje; 0 esetén a leállításig villog",
  "Duplicar": "Duplikálás",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Körvonal",
  "Sombra (Shadow)": "Árnyék",
  "Segmentos (4 a 60)": "Szegmensek (4–60)",
- "Borda (0,5 a 5,0)": "Keret (0.5–5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Villogás (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Időköz (ms)",
  "Duração (ms, 0 = sem fim)": "Időtartam (ms, 0 = végtelen)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Csillogás színe (tag)",
  "Cor da onda (tag)": "Hullám színe (tag)",
  "Cor do laser (tag)": "Lézer színe (tag)",
- "Cor do rastro (tag)": "Nyom színe (tag)"
+ "Cor do rastro (tag)": "Nyom színe (tag)",
+ "Máquina de escrever": "Írógép",
+ "Borda (0 ou {0} a {1})": "Keret (0 vagy {0}–{1})",
+ "Borda (0 ou 0,5 a 5,0)": "Keret (0 vagy 0,5–5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Keret vastagsága (a felső és alsó 1,25-ször nagyobb, hogy a képernyőn egyformának tűnjön); 0 esetén a sáv keret nélküli. A maximum a sáv szélességétől és magasságától függ.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Fekvő sávnál (jobbra vagy balra) a legfeljebb 4,5-ös magasság a játékban 2,5-szer nagyobb lesz (legalább 6): a szerkesztő már a játékbeli magasságot mutatja"
 }

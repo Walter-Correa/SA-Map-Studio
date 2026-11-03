@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Кількість сегментів кільця, від 4 до 60 (кожен сегмент використовує 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: смуга заповнюється від поточного значення до вибраного, затримується, повертається й повторює. Зберігається в проєкті та потрапляє в експортований код.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "До якого значення йде автозаповнення (не більше максимуму смуги)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Товщина рамки (зверху й знизу в 1,25 раза більша, щоб на екрані виглядати однаково). Максимум залежить від ширини та висоти смуги.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Час між перемиканнями, від 50 до 60000 мс",
  "Tempo total da piscada; 0 pisca até ser parada": "Загальний час блимання; 0 — блимає до зупинки",
  "Duplicar": "Дублювати",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Обведення",
  "Sombra (Shadow)": "Тінь",
  "Segmentos (4 a 60)": "Сегменти (від 4 до 60)",
- "Borda (0,5 a 5,0)": "Рамка (від 0.5 до 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Блимання (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Інтервал (мс)",
  "Duração (ms, 0 = sem fim)": "Тривалість (мс, 0 = безкінечно)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Колір відблиску (тег)",
  "Cor da onda (tag)": "Колір хвилі (тег)",
  "Cor do laser (tag)": "Колір лазера (тег)",
- "Cor do rastro (tag)": "Колір сліду (тег)"
+ "Cor do rastro (tag)": "Колір сліду (тег)",
+ "Máquina de escrever": "Друкарська машинка",
+ "Borda (0 ou {0} a {1})": "Рамка (0 або {0} до {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Рамка (0 або 0,5 до 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Товщина рамки (верхня й нижня в 1,25 раза більша, щоб на екрані виглядати однаково); 0 залишає смугу без рамки. Максимум залежить від ширини й висоти смуги.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "У лежачої смуги (праворуч або ліворуч) висота до 4,5 у грі стає в 2,5 раза більшою (щонайменше 6): редактор уже показує висоту з гри"
 }

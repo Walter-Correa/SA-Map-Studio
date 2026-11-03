@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.39-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.40-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -16,6 +16,8 @@ folder for the Modloader (the game's own files are never changed).
 
 ---
 
+![SA Map Studio interface](images/editor_interface.webp)
+
 ## Contents
 
 - [Features](#features)
@@ -26,7 +28,7 @@ folder for the Modloader (the game's own files are never changed).
 - [Code structure](#code-structure)
 - [Languages](#languages)
 - [Version history](#version-history)
-- [Credits and licenses](#credits-and-licenses)
+- [Author & Credits](#author--credits)
 
 ---
 
@@ -176,23 +178,23 @@ never changed and removing the mod is deleting its folder.
   border, minimum and maximum value, blinking, auto fill, a segment scale for rings, colour by value (gradient with an
   empty, middle and full colour, normal or inverted), a text on the bar (`{PERCENT}`, `{VALUE}`, `{MAX}`, `{MIN}`, with its
   own colour or the bar colour, alignment, font, orientation, automatic or own size and offset) and a smooth fill when the
-  bar appears. Parameter order:
+  bar appears; a border of 0 (`PB_BORDER_NONE`) leaves the bar without a border, and a lying bar up to 4.5 high is
+  shown with the height the include gives it in the game (2.5 times, at least 6). Parameter order:
   `CreatePlayerProgressBar(playerid, x, y, width, height, colour, max, direction, border, bordercolour, style, segments, segmentscale)`,
   followed by `SetPlayerProgressBarMinValue`, `SetPlayerProgressBarGradient`, `SetPlayerProgressBarLabel`,
   `SetPlayerProgressBarValue`, `ShowPlayerProgressBar`, `InterpolatePlayerProgressBarValue`, `AutoFillPlayerProgressBar` and
   `BlinkPlayerProgressBar`. With open.mp the filled part is resized in place and is created together with the bar, so
   TextDraws made after the bar stay on top of it.
 - **TextDraw effects** (TextDrawFX, `TextDrawFX.inc`, https://github.com/Walter-Correa/TextDrawFX, included in the test
-  server): each TextDraw can have one of the 37 effects of the include, chosen in the Effect list of the editor with the
+  server): each TextDraw can have one of the 38 effects of the include, chosen in the Effect list of the editor with the
   fields of its function and a live preview with the same timings as the game: blink (vanish, colour or character by
-  character), fade in, fade out, colour change, size change, pulse, slide, number counter, decrypt, bounce in an area or a
-  circle, orbit, shake, broken neon, float, box fill, fireworks, digital glitch, model spin and sway (font 5), passing
+  character), typewriter, fade in, fade out, colour change, size change, pulse, slide, number counter, decrypt, bounce in an area or a
+  circle, orbit, shake, broken neon, float, box fill, fireworks, digital glitch, 3D model spin and hover (font 5, `Spin3D` and `Hover3D`), passing
   shine, rainbow, slot machine, pendulum, bouncing drop, whirlpool, cinema bars (with a second TextDraw as the bottom bar),
   sonar ping, colour wave, letter rain, scanner, short circuit, airport board, hologram, impact, wave on the letters and
-  hopping letters. They work on PlayerTextDraws and global TextDraws (the colour change only exists for PlayerTextDraws).
+  hopping letters. They work on PlayerTextDraws and global TextDraws.
   The editor exports the call (for example `RainbowPlayerTextDraw(playerid, textdraw_0, "TEXT", 100, 0);`), imports every
-  TextDrawFX function back and the test server runs the effect when the TextDraw appears. Projects and Pawn code with the
-  old `BlinkPlayerTextDraw` are converted to the TextDrawFX blink. New TextDraws are PlayerTextDraws by default.
+  TextDrawFX function back and the test server runs the effect when the TextDraw appears. New TextDraws are PlayerTextDraws by default.
 - The exported code starts with the includes it needs and their address:
   `#include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus` and
   `#include <TextDrawFX>//https://github.com/Walter-Correa/TextDrawFX`.
@@ -499,6 +501,13 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.40 — 03/11/2026
+- Progress Bar Plus and TextDrawFX updated to their latest versions in the test server, the export and the preview.
+- Progress bars: a border of 0 now means no border (PB_BORDER_NONE); a lying bar (right or left) up to 4.5 high gets the height the include gives it in the game (2.5 times, at least 6), and new bars start with the include size (60 x 8). The export uses the PB_DIR_* names and always shows the bar with ShowPlayerProgressBar.
+- TextDraw effects: new typewriter effect (TypewriterPlayerTextDraw / TypewriterTextDraw), the 3D model effects are now Spin3D and Hover3D, the colour change also works on global TextDraws (FadeColorTextDraw), and the preview ends the size change, the slide, the counter and the pendulum where the include now leaves them.
+- The import and the export only use the current functions of both includes; the example project already uses the effects and the new bar options.
+- Readme: picture of the editor, new Author and Credits section.
 
 ### 4.1.39 — 03/11/2026
 - Progress bars now use Progress Bar Plus (ProgressBar.inc 2.2.0, https://github.com/Walter-Correa/Progress-Bar-Plus) in the test server, the export and the preview.
@@ -1375,12 +1384,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 </details>
 
-## Credits and licenses
+## Author & Credits
 
-- [@rafaelnepomucenno-lgtm](https://github.com/rafaelnepomucenno-lgtm) - Idea and initial development of the project.
-- [@Walter-Correa](https://github.com/Walter-Correa) - Continuation and finalization of the project.
-- [Antigravity](https://antigravity.google) - Execution of the main creation, development and adjustment prompts.
-- [Claude Code](https://claude.com/product/claude-code) - Creation of new features, fixes and final adjustments.
+- [@Walter-Correa](https://github.com/Walter-Correa) - Completion and maintenance of **SA Map Studio** with the assistance of **Artificial Intelligence**.
+- [@rafaelnepomucenno-lgtm](https://github.com/rafaelnepomucenno-lgtm) - Idea and initial development of **SA Map Studio**.
 
 ### License
 

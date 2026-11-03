@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Liczba segmentów pierścienia, od 4 do 60 (każdy segment używa 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: pasek wypełnia się od bieżącej wartości do wybranej, zatrzymuje się, wraca i powtarza. Jest zapisywany w projekcie i trafia do eksportowanego kodu.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Jak daleko sięga automatyczne wypełnianie (najwyżej maksymalna wartość paska)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Grubość obramowania (góra i dół są 1,25 razy większe, aby na ekranie wyglądały tak samo). Maksimum zależy od szerokości i wysokości paska.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Czas między kolejnymi zmianami, od 50 do 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Całkowity czas migania; 0 miga do zatrzymania",
  "Duplicar": "Duplikuj",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Kontur",
  "Sombra (Shadow)": "Cień",
  "Segmentos (4 a 60)": "Segmenty (4 do 60)",
- "Borda (0,5 a 5,0)": "Obramowanie (0.5 do 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Miganie (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Interwał (ms)",
  "Duração (ms, 0 = sem fim)": "Czas trwania (ms, 0 = bez końca)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Kolor blasku (tag)",
  "Cor da onda (tag)": "Kolor fali (tag)",
  "Cor do laser (tag)": "Kolor lasera (tag)",
- "Cor do rastro (tag)": "Kolor smugi (tag)"
+ "Cor do rastro (tag)": "Kolor smugi (tag)",
+ "Máquina de escrever": "Maszyna do pisania",
+ "Borda (0 ou {0} a {1})": "Obramowanie (0 lub {0} do {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Obramowanie (0 lub 0,5 do 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Grubość obramowania (górne i dolne jest 1,25 raza większe, by na ekranie wyglądało tak samo); 0 zostawia pasek bez obramowania. Maksimum zależy od szerokości i wysokości paska.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Na leżącym pasku (w prawo lub w lewo) wysokość do 4,5 staje się w grze 2,5 raza większa (co najmniej 6): edytor już pokazuje wysokość z gry"
 }

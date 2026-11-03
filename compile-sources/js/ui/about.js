@@ -8,6 +8,15 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.40', date: '03/11/2026', items: [
+      'Progress Bar Plus and TextDrawFX updated to their latest versions in the test server, the export and the preview.',
+      'Progress bars: a border of 0 now means no border (PB_BORDER_NONE); a lying bar (right or left) up to 4.5 high gets the height the include gives it in the game (2.5 times, at least 6), and new bars start with the include size (60 x 8). The export uses the PB_DIR_* names and always shows the bar with ShowPlayerProgressBar.',
+      'TextDraw effects: new typewriter effect (TypewriterPlayerTextDraw / TypewriterTextDraw), the 3D model effects are now Spin3D and Hover3D, the colour change also works on global TextDraws (FadeColorTextDraw), and the preview ends the size change, the slide, the counter and the pendulum where the include now leaves them.',
+      'The import and the export only use the current functions of both includes; the example project already uses the effects and the new bar options.',
+      'Readme: picture of the editor, new Author and Credits section.',
+    ],
+  },
+  {
     version: '4.1.39', date: '03/11/2026', items: [
       'Progress bars now use Progress Bar Plus (ProgressBar.inc 2.2.0, https://github.com/Walter-Correa/Progress-Bar-Plus) in the test server, the export and the preview.',
       'Progress bars: new minimum value (SetPlayerProgressBarMinValue), colour by value with an empty, middle and full colour and an inverted mode (SetPlayerProgressBarGradient), a text on the bar with {PERCENT}, {VALUE}, {MAX} and {MIN}, its colour or the bar colour, alignment, font, orientation, automatic or own size and offset (SetPlayerProgressBarLabel), and a smooth fill when the bar appears (InterpolatePlayerProgressBarValue). The editor previews all of them, exports them, imports them back and the test server shows them. The segment scale of rings now goes down to 0.1.',

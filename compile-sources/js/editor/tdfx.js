@@ -27,12 +27,14 @@ export const TDFX_EFFECTS = [
   { id: 'blink', fn: 'BlinkPlayerTextDraw', gfn: 'BlinkTextDraw', label: 'Piscar', fonts: 'any', params: [
     P('interval', 'int', 500, 'Intervalo (ms)', TDFX_MIN_INTERVAL, 60000), dur(),
     P('perChar', 'bool', false, 'Mostrar caractere por caractere'), P('colour', 'color', 0, 'Cor da piscada (vazio = some)')] },
+  { id: 'typewriter', fn: 'TypewriterPlayerTextDraw', gfn: 'TypewriterTextDraw', label: 'Máquina de escrever', fonts: 'text', params: [
+    txt(), P('interval', 'int', 50, 'Intervalo (ms)', TDFX_MIN_INTERVAL, 60000), dur()] },
   { id: 'fadeIn', fn: 'FadeInPlayerTextDraw', gfn: 'FadeInTextDraw', label: 'Aparecer aos poucos', fonts: 'any', params: [
     dur(1000), P('fadeBox', 'bool', true, 'Também a caixa'), P('targetAlpha', 'int', 255, 'Opacidade final (0 a 255)', 0, 255)],
     named: [P('autoHide', 'bool', false, 'Esconder no fim')] },
   { id: 'fadeOut', fn: 'FadeOutPlayerTextDraw', gfn: 'FadeOutTextDraw', label: 'Sumir aos poucos', fonts: 'any', params: [
     dur(1000), P('fadeBox', 'bool', true, 'Também a caixa')], named: [P('autoHide', 'bool', true, 'Esconder no fim')] },
-  { id: 'fadeColor', fn: 'FadeColorPlayerTextDraw', gfn: null, label: 'Trocar de cor', fonts: 'any', params: [
+  { id: 'fadeColor', fn: 'FadeColorPlayerTextDraw', gfn: 'FadeColorTextDraw', label: 'Trocar de cor', fonts: 'any', params: [
     P('fromColor', 'color', (td) => (Number(td.color ?? 0xFFFFFFFF) >>> 0), 'Cor inicial'), P('toColor', 'color', 0xE74C3CFF, 'Cor final'), dur(1000),
     P('fadeBox', 'bool', false, 'Também a caixa'), P('fromBox', 'color', 0, 'Cor inicial da caixa'), P('toBox', 'color', 0, 'Cor final da caixa'), ease()] },
   { id: 'scale', fn: 'ScalePlayerTextDraw', gfn: 'ScaleTextDraw', label: 'Mudar de tamanho', fonts: 'text', params: [
@@ -67,10 +69,10 @@ export const TDFX_EFFECTS = [
     P('pattern', 'fw', 0, 'Explosão'), P('fuseDuration', 'int', 1500, 'Pavio (ms)', TDFX_MIN_INTERVAL, 600000), P('explodeDuration', 'int', 1200, 'Explosão (ms)', TDFX_MIN_INTERVAL, 600000),
     P('shakeIntensity', 'float', 6, 'Tremor', 0, 100), P('burstSpeed', 'float', 6, 'Velocidade das faíscas', 0, 100), P('particleCount', 'int', 10, 'Faíscas (1 a 12)', 1, 12)] },
   { id: 'glitch', fn: 'GlitchPlayerTextDraw', gfn: 'GlitchTextDraw', label: 'Falha digital', fonts: 'text', params: [txt(), P('intensity', 'int', 2, 'Intensidade (1 a 5)', 1, 5), dur(3000)] },
-  { id: 'spinPreview', fn: 'SpinPreviewPlayerTextDraw', gfn: 'SpinPreviewTextDraw', label: 'Girar o modelo', fonts: 'model', params: [
+  { id: 'spin3D', fn: 'Spin3DPlayerTextDraw', gfn: 'Spin3DTextDraw', label: 'Girar o modelo', fonts: 'model', params: [
     P('speedX', 'float', 0, 'Graus por segundo X', -3600, 3600), P('speedY', 'float', 0, 'Graus por segundo Y', -3600, 3600), P('speedZ', 'float', 45, 'Graus por segundo Z', -3600, 3600),
     P('zoom', 'float', (td) => round2(td.previewZoom || 1), 'Zoom', 0.1, 50), dur()] },
-  { id: 'floatPreview', fn: 'FloatPreviewPlayerTextDraw', gfn: 'FloatPreviewTextDraw', label: 'Balançar o modelo', fonts: 'model', params: [
+  { id: 'hover3D', fn: 'Hover3DPlayerTextDraw', gfn: 'Hover3DTextDraw', label: 'Balançar o modelo', fonts: 'model', params: [
     P('tiltX', 'float', 8, 'Inclinação X', -180, 180), P('tiltZ', 'float', 12, 'Inclinação Z', -180, 180), P('zoomAmp', 'float', 0.06, 'Variação do zoom', 0, 10),
     P('speedMs', 'int', 2400, 'Tempo de cada volta (ms)', 100, 600000), dur()] },
   { id: 'shimmer', fn: 'ShimmerPlayerTextDraw', gfn: 'ShimmerTextDraw', label: 'Brilho passando', fonts: 'text', params: [
@@ -154,12 +156,6 @@ export function makeFx(data, td) {
 
 // A new effect with the include defaults, the positions taken from the TextDraw
 export const newFx = (type, td) => makeFx({ type }, td);
-
-// Old projects: blink, blinkInterval, blinkDuration, blinkPerChar and blinkColor become the TextDrawFX blink
-export function migrateBlink(data) {
-  if (!data.blink) return null;
-  return makeFx({ type: 'blink', interval: data.blinkInterval ?? 500, duration: data.blinkDuration ?? 0, perChar: Boolean(data.blinkPerChar), colour: data.blinkColor || 0 }, data);
-}
 
 // The effect that really runs: off when the font or the kind of TextDraw does not take it
 export const tdfxActive = (td) => Boolean(td?.fx && tdfxAllowed(TDFX_BY_ID[td.fx.type], td));
@@ -350,11 +346,24 @@ const FW_PALETTE = [0xF1C40FFF, 0xE74C3CFF, 0xE67E22FF, 0x00FFFFFF, 0x9B59B6FF, 
 const FW_GLYPHS = ['*', '+', '#', 'o', 'x', '^', '!', '*', '+', 'o', 'x', '*'];
 const RAINBOW = ['~r~', '~y~', '~g~', '~b~', '~p~', '~w~'];
 
+// Interval of the typewriter: with a duration it shrinks so every character fits (like the blink character by character)
+function typewriterInterval(p, td) {
+  const count = countChars(String(p.text || td.text || ''));
+  let iv = Math.max(TDFX_MIN_INTERVAL, p.interval);
+  if (p.duration > 0 && count > 0 && count * iv > p.duration) iv = Math.max(TDFX_MIN_INTERVAL, Math.floor(p.duration / count));
+  return iv;
+}
+
 // How long the effect runs in the game (ms); 0 = until it is stopped
 export function tdfxLength(fx, td) {
   const p = fx;
   switch (fx.type) {
     case 'pulse': return p.cycles > 0 ? p.cycles * p.interval : 0;
+    case 'typewriter': {
+      // Without a duration it stops one step after the last character; with one, it ends at the duration
+      if (p.duration > 0) return p.duration;
+      return (countChars(String(p.text || td.text || '')) + 1) * typewriterInterval(p, td);
+    }
     case 'firework': return p.fuseDuration + p.explodeDuration;
     case 'slotMachine': return Math.max(50, p.spinDuration);
     case 'gravityDrop': return 4000;
@@ -413,6 +422,15 @@ export function tdfxFrame(td, text, t, other = () => null) {
       } else if (!lit) r.view = null;
       return r;
     }
+    case 'typewriter': {
+      const s = p.text || text;
+      const count = countChars(s);
+      if (done || !count) { view.text = s; return r; }
+      const step = Math.min(count, Math.floor(t / typewriterInterval(p, td)));
+      const cut = step >= count ? s.length : cutChars(s, step);
+      view.text = cut > 0 ? s.slice(0, cut) : ' ';
+      return r;
+    }
     case 'fadeIn': case 'fadeOut': {
       const box = Number(td.boxColor ?? 0x000000AA) >>> 0 || 0x000000AA;
       const base = baseCol || 0xFFFFFFFF;
@@ -435,8 +453,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       return r;
     }
     case 'scale': {
-      // At the end the include puts back the starting size
-      if (done) { view.letterSizeX = p.startSizeX; view.letterSizeY = p.startSizeY; return r; }
+      if (done) { view.letterSizeX = p.targetSizeX; view.letterSizeY = p.targetSizeY; return r; }
       const f = tdfxEase(prog, p.easing);
       view.letterSizeX = p.startSizeX + (p.targetSizeX - p.startSizeX) * f;
       view.letterSizeY = p.startSizeY + (p.targetSizeY - p.startSizeY) * f;
@@ -567,7 +584,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       view.text = buf.join(''); setCol(withAlpha(baseCol, alpha));
       return r;
     }
-    case 'spinPreview': {
+    case 'spin3D': {
       const s = (done ? len : Math.floor(t / TDFX_FRAME) * TDFX_FRAME + TDFX_FRAME) / 1000;
       const wrap = (v) => ((v % 360) + 360) % 360;
       view.previewRotX = wrap((td.previewRotX ?? -16) + p.speedX * s);
@@ -576,7 +593,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       view.previewZoom = p.zoom;
       return r;
     }
-    case 'floatPreview': {
+    case 'hover3D': {
       if (done) return r;
       const sp = p.speedMs > 0 ? p.speedMs : 2000, th = (t % sp) / sp * 360;
       view.previewRotX = (td.previewRotX ?? -16) + p.tiltX * sinD(th);
@@ -614,7 +631,8 @@ export function tdfxFrame(td, text, t, other = () => null) {
       return r;
     }
     case 'pendulum': {
-      if (done) return r;
+      // At the end it rests under the pivot
+      if (done) { view.x = p.pivotX; view.y = p.pivotY + p.armLength; return r; }
       const s = t / 1000, th = p.maxAngle * Math.exp(-p.damping * s) * cosD(4.5 * s * 57.2958);
       view.x = p.pivotX + p.armLength * sinD(th); view.y = p.pivotY + p.armLength * cosD(th);
       return r;

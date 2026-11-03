@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Number of ring segments, from 4 to 60 (each segment uses 2 PlayerTextDraws)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: the bar fills from the current value up to the chosen value, holds, goes back and repeats. It is saved in the project and goes into the exported code.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "How far auto fill goes (at most, the bar's maximum value)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Border thickness (top and bottom are 1.25 times larger to look the same on screen). The maximum depends on the bar width and height.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Time between each switch, from 50 to 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Total blink time; 0 blinks until stopped",
  "Duplicar": "Duplicate",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Outline",
  "Sombra (Shadow)": "Shadow",
  "Segmentos (4 a 60)": "Segments (4 to 60)",
- "Borda (0,5 a 5,0)": "Border (0.5 to 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Blink (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Interval (ms)",
  "Duração (ms, 0 = sem fim)": "Duration (ms, 0 = endless)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Shine colour (tag)",
  "Cor da onda (tag)": "Wave colour (tag)",
  "Cor do laser (tag)": "Laser colour (tag)",
- "Cor do rastro (tag)": "Trail colour (tag)"
+ "Cor do rastro (tag)": "Trail colour (tag)",
+ "Máquina de escrever": "Typewriter",
+ "Borda (0 ou {0} a {1})": "Border (0 or {0} to {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Border (0 or 0.5 to 5.0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Border thickness (the top and bottom one is 1.25 times larger to look the same on screen); 0 leaves the bar without a border. The maximum depends on the width and height of the bar.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "On a lying bar (right or left), a height up to 4.5 becomes 2.5 times larger in the game (at least 6): the editor already shows the game height"
 }

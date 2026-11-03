@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Số đoạn của vòng, từ 4 đến 60 (mỗi đoạn dùng 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: thanh đầy dần từ giá trị hiện tại đến giá trị đã chọn, dừng lại, quay về và lặp lại. Được lưu trong dự án và đưa vào mã xuất.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Mức tự động đổ đầy đi tới (tối đa là giá trị lớn nhất của thanh)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Độ dày viền (trên và dưới lớn hơn 1,25 lần để trông bằng nhau trên màn hình). Mức tối đa phụ thuộc vào chiều rộng và chiều cao của thanh.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Thời gian giữa mỗi lần chuyển, từ 50 đến 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Tổng thời gian nhấp nháy; 0 sẽ nhấp nháy đến khi dừng",
  "Duplicar": "Nhân bản",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Viền chữ",
  "Sombra (Shadow)": "Bóng",
  "Segmentos (4 a 60)": "Phân đoạn (4 đến 60)",
- "Borda (0,5 a 5,0)": "Viền (0.5 đến 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Nhấp nháy (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Khoảng thời gian (ms)",
  "Duração (ms, 0 = sem fim)": "Thời lượng (ms, 0 = vô tận)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Màu ánh sáng (thẻ)",
  "Cor da onda (tag)": "Màu sóng (thẻ)",
  "Cor do laser (tag)": "Màu tia laser (thẻ)",
- "Cor do rastro (tag)": "Màu vệt (thẻ)"
+ "Cor do rastro (tag)": "Màu vệt (thẻ)",
+ "Máquina de escrever": "Máy đánh chữ",
+ "Borda (0 ou {0} a {1})": "Viền (0 hoặc {0} đến {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Viền (0 hoặc 0,5 đến 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Độ dày viền (viền trên và dưới lớn hơn 1,25 lần để trông bằng nhau trên màn hình); 0 để thanh không có viền. Mức tối đa tùy theo chiều rộng và chiều cao của thanh.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Với thanh nằm ngang (phải hoặc trái), chiều cao đến 4,5 sẽ lớn gấp 2,5 lần trong game (tối thiểu 6): trình chỉnh sửa đã hiển thị chiều cao trong game"
 }

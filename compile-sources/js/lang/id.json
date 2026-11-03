@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Jumlah segmen cincin, dari 4 sampai 60 (setiap segmen memakai 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: bilah terisi dari nilai saat ini sampai nilai yang dipilih, berhenti sejenak, kembali, lalu mengulang. Disimpan di proyek dan masuk ke kode yang diekspor.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Sejauh mana isi otomatis berjalan (paling banyak nilai maksimum bilah)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Ketebalan tepi (atas dan bawah 1,25 kali lebih besar agar tampak sama di layar). Maksimumnya bergantung pada lebar dan tinggi bilah.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Waktu di antara setiap pergantian, dari 50 sampai 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Total waktu berkedip; 0 berkedip sampai dihentikan",
  "Duplicar": "Duplikat",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Garis luar",
  "Sombra (Shadow)": "Bayangan",
  "Segmentos (4 a 60)": "Segmen (4 sampai 60)",
- "Borda (0,5 a 5,0)": "Bingkai (0.5 sampai 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Kedip (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Interval (ms)",
  "Duração (ms, 0 = sem fim)": "Durasi (ms, 0 = tanpa akhir)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Warna kilau (tag)",
  "Cor da onda (tag)": "Warna gelombang (tag)",
  "Cor do laser (tag)": "Warna laser (tag)",
- "Cor do rastro (tag)": "Warna jejak (tag)"
+ "Cor do rastro (tag)": "Warna jejak (tag)",
+ "Máquina de escrever": "Mesin ketik",
+ "Borda (0 ou {0} a {1})": "Tepi (0 atau {0} sampai {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Tepi (0 atau 0,5 sampai 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Tebal tepi (tepi atas dan bawah 1,25 kali lebih besar agar terlihat sama di layar); 0 membuat bilah tanpa tepi. Maksimum tergantung lebar dan tinggi bilah.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Pada bilah mendatar (kanan atau kiri), tinggi hingga 4,5 menjadi 2,5 kali lebih besar di game (minimal 6): editor sudah menampilkan tinggi di game"
 }

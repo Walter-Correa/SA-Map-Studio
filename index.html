@@ -1193,7 +1193,7 @@
           <div id="tdPbStyleNote" class="insp-note" style="display: none; font-size: 11px; margin: 0;"></div>
           <div class="pair">
             <label>Largura<input type="number" id="tdPbWidth" step="0.1" min="2"></label>
-            <label>Altura<input type="number" id="tdPbHeight" step="0.1" min="2.25"></label>
+            <label title="Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo">Altura<input type="number" id="tdPbHeight" step="0.1" min="2.25"></label>
           </div>
           <div class="pair">
             <label title="Valor da barra vazia (SetPlayerProgressBarMinValue)">Valor mínimo<input type="number" id="tdPbMin" step="1"></label>
@@ -1219,7 +1219,7 @@
               <option value="3">Para baixo</option>
             </select>
           </label>
-          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra."><span id="tdPbBorderLabel">Borda (0,5 a 5,0)</span><input type="number" id="tdPbBorder" step="0.1" min="0.5" max="5"></label>
+          <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra."><span id="tdPbBorderLabel">Borda (0 ou 0,5 a 5,0)</span><input type="number" id="tdPbBorder" step="0.1" min="0" max="5"></label>
           <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbBorderDefault" checked> Borda na cor padrão (preta)</label>
           <label id="tdPbBorderColorRow" style="display: none; flex-direction: column; gap: 2px; font-size: 12px;">Cor da borda<input type="color" id="tdPbBorderColor" value="#000000"></label>
           <label class="check" style="font-size: 12px;" title="SetPlayerProgressBarGradient: a cor muda com o valor"><input type="checkbox" id="tdPbGrad"> Cor pelo valor (gradiente)</label>

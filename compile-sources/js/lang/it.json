@@ -100,7 +100,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Numero di segmenti dell'anello, da 4 a 60 (ogni segmento usa 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: la barra si riempie dal valore attuale fino al valore scelto, resta, torna indietro e ripete. Viene salvato nel progetto e va nel codice esportato.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Fin dove arriva il riempimento automatico (al massimo, il valore massimo della barra)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Spessore del bordo (quello sopra e sotto è 1,25 volte più grande per sembrare uguale sullo schermo). Il massimo dipende da larghezza e altezza della barra.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Tempo tra ogni cambio, da 50 a 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Tempo totale del lampeggio; 0 lampeggia finché non viene fermato",
  "Duplicar": "Duplica",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Contorno (Outline)",
  "Sombra (Shadow)": "Ombra (Shadow)",
  "Segmentos (4 a 60)": "Segmenti (da 4 a 60)",
- "Borda (0,5 a 5,0)": "Bordo (da 0,5 a 5,0)",
  "Piscar (BlinkPlayerProgressBar)": "Lampeggia (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Intervallo (ms)",
  "Duração (ms, 0 = sem fim)": "Durata (ms, 0 = senza fine)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Colore del riflesso (tag)",
  "Cor da onda (tag)": "Colore dell'onda (tag)",
  "Cor do laser (tag)": "Colore del laser (tag)",
- "Cor do rastro (tag)": "Colore della scia (tag)"
+ "Cor do rastro (tag)": "Colore della scia (tag)",
+ "Máquina de escrever": "Macchina da scrivere",
+ "Borda (0 ou {0} a {1})": "Bordo (0 o da {0} a {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Bordo (0 o da 0,5 a 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Spessore del bordo (quello sopra e sotto è 1,25 volte più grande per sembrare uguale sullo schermo); 0 lascia la barra senza bordo. Il massimo dipende dalla larghezza e dall'altezza della barra.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "In una barra orizzontale (destra o sinistra), un'altezza fino a 4,5 diventa 2,5 volte più grande nel gioco (almeno 6): l'editor mostra già l'altezza del gioco"
 }

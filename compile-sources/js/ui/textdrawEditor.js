@@ -1,7 +1,7 @@
 // Visual, interactive TextDraw editor (TextDrawCreate / CreatePlayerTextDraw)
 // SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE, pbRealHeight } from '../editor/project.js';
 import { TDFX_EFFECTS, TDFX_BY_ID, TDFX_INCLUDE, tdfxActive, tdfxAllowed, tdfxParams, tdfxFrame, tdfxLength, makeFx, newFx } from '../editor/tdfx.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep, themeVar } from './common.js';
@@ -404,7 +404,13 @@ function bindFieldInputs() {
       }
       const oldMax = Number(td.pbMax) || 0;
       td[prop] = isInt ? (v | 0) : v;
-      if (prop === 'pbWidth' || prop === 'pbHeight') syncPbBorderLimit(td);
+      // A low horizontal bar gets the height the include gives it (when the typing is over)
+      if ((prop === 'pbHeight' && ev?.type === 'change') || prop === 'pbDir') {
+        td.pbHeight = pbRealHeight(td.pbHeight, td.pbStyle, td.pbDir);
+        const hEl = dialogEl.querySelector('#tdPbHeight');
+        if (hEl && Number(hEl.value) !== td.pbHeight) hEl.value = td.pbHeight;
+      }
+      if (prop === 'pbWidth' || prop === 'pbHeight' || prop === 'pbDir') syncPbBorderLimit(td);
       if (prop === 'pbMax') {
         const cur = Number(td.pbAutoFillMax ?? oldMax);
         td.pbAutoFillMax = (cur === oldMax || cur > td.pbMax) ? Math.max(0, Number(td.pbMax) || 0) : cur;
@@ -551,6 +557,7 @@ function bindFieldInputs() {
     if (before === 0 && td.pbStyle !== 0 && td.pbHeight < td.pbWidth * 0.6) { td.pbWidth = 40; td.pbHeight = 50; }
     if (td.pbStyle === 0 && before !== 0 && td.pbHeight > td.pbWidth * 0.6) { td.pbWidth = 120; td.pbHeight = 12; }
     if (!td.pbSegments) td.pbSegments = 24;
+    td.pbHeight = pbRealHeight(td.pbHeight, td.pbStyle, td.pbDir);
     appRef.project.modified = true;
     updateSidebarFields();
     updateSidebarList();
@@ -933,7 +940,7 @@ function setupCanvasEvents() {
         // Bar: dragging changes width and height in the same proportion as the rectangle
         const rx = newW / Math.max(4, isDraggingTd.origW), ry = newH / Math.max(4, isDraggingTd.origH);
         td.pbWidth = Number(Math.max(PB_MIN_WIDTH, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
-        td.pbHeight = Number(Math.max(PB_MIN_HEIGHT, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(2));
+        td.pbHeight = pbRealHeight(Number(Math.max(PB_MIN_HEIGHT, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(2)), td.pbStyle, td.pbDir);
         syncPbBorderLimit(td);
       } else if (td.font === 4 || td.font === 5) {
         // Sprite (Font 4) and 3D model preview (Font 5): textSizeX and textSizeY are width and height
@@ -1354,9 +1361,9 @@ function syncPbBorderLimit(td) {
   const fitted = fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight);
   if (fitted !== td.pbBorder) td.pbBorder = fitted;
   const el = dialogEl.querySelector('#tdPbBorder');
-  if (el) { el.max = String(max); if (document.activeElement !== el) el.value = decimalText(fitted); }
+  if (el) { el.max = String(max); if (document.activeElement !== el) el.value = fitted > 0 ? decimalText(fitted) : '0'; }
   const lbl = dialogEl.querySelector('#tdPbBorderLabel');
-  if (lbl) lbl.textContent = `Borda (${decimalText(PB_LIMITS.borderMin).replace('.', ',')} a ${decimalText(max).replace('.', ',')})`;
+  if (lbl) lbl.textContent = t('Borda (0 ou {0} a {1})', decimalText(PB_LIMITS.borderMin).replace('.', ','), decimalText(max).replace('.', ','));
 }
 let blinkStart = 0, blinkTimer = null;
 function blinkPhaseOf(td) {

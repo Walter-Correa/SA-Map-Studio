@@ -105,7 +105,6 @@
  "Quantidade de segmentos do anel, de 4 a 60 (cada segmento usa 2 PlayerTextDraws)": "Numărul de segmente ale inelului, de la 4 la 60 (fiecare segment folosește 2 PlayerTextDraw)",
  "AutoFillPlayerProgressBar: a barra enche do valor atual até o valor escolhido, segura, volta e repete. Fica salvo no projeto e vai para o código exportado.": "AutoFillPlayerProgressBar: bara se umple de la valoarea curentă până la valoarea aleasă, se oprește, revine și se repetă. Este salvată în proiect și intră în codul exportat.",
  "Até onde o auto preencher enche (no máximo, o valor máximo da barra)": "Până unde ajunge umplerea automată (cel mult valoarea maximă a barei)",
- "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela). O máximo depende da largura e da altura da barra.": "Grosimea marginii (sus și jos sunt de 1,25 ori mai mari ca să arate la fel pe ecran). Maximul depinde de lățimea și înălțimea barei.",
  "Tempo entre cada troca, de 50 a 60000 ms": "Timpul dintre fiecare schimbare, de la 50 la 60000 ms",
  "Tempo total da piscada; 0 pisca até ser parada": "Durata totală a clipirii; 0 clipește până la oprire",
  "Duplicar": "Duplică",
@@ -1566,7 +1565,6 @@
  "Contorno (Outline)": "Contur",
  "Sombra (Shadow)": "Umbră",
  "Segmentos (4 a 60)": "Segmente (4 până la 60)",
- "Borda (0,5 a 5,0)": "Margine (0.5 până la 5.0)",
  "Piscar (BlinkPlayerProgressBar)": "Clipire (BlinkPlayerProgressBar)",
  "Intervalo (ms)": "Interval (ms)",
  "Duração (ms, 0 = sem fim)": "Durată (ms, 0 = fără sfârșit)",
@@ -2601,5 +2599,10 @@
  "Cor do brilho (tag)": "Culoarea strălucirii (tag)",
  "Cor da onda (tag)": "Culoarea valului (tag)",
  "Cor do laser (tag)": "Culoarea laserului (tag)",
- "Cor do rastro (tag)": "Culoarea dârei (tag)"
+ "Cor do rastro (tag)": "Culoarea dârei (tag)",
+ "Máquina de escrever": "Mașină de scris",
+ "Borda (0 ou {0} a {1})": "Bordură (0 sau {0} la {1})",
+ "Borda (0 ou 0,5 a 5,0)": "Bordură (0 sau 0,5 la 5,0)",
+ "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Grosimea bordurii (cea de sus și de jos e de 1,25 ori mai mare ca să arate la fel pe ecran); 0 lasă bara fără bordură. Maximul depinde de lățimea și înălțimea barei.",
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Pe o bară culcată (dreapta sau stânga), o înălțime de până la 4,5 devine de 2,5 ori mai mare în joc (cel puțin 6): editorul arată deja înălțimea din joc"
 }

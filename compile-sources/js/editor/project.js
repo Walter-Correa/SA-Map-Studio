@@ -3,7 +3,7 @@ import { isVehicleModel } from './pwn.js';
 import { normalizeMaterial } from './materials.js';
 import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
 import { t as tr } from '../ui/i18n.js';
-import { makeFx, migrateBlink, tdfxPawn } from './tdfx.js';
+import { makeFx, tdfxPawn } from './tdfx.js';
 
 let uidCounter = 1;
 let _globalOpSeq = 0;
@@ -342,12 +342,12 @@ function normalizeSpriteName(text) {
 
 // Progress bar (Progress Bar Plus, ProgressBar.inc): calls to create, set the value and show to the player
 export const PB_INCLUDE = '#include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus';
-export const PB_DIRECTIONS = ['BAR_DIRECTION_RIGHT', 'BAR_DIRECTION_LEFT', 'BAR_DIRECTION_UP', 'BAR_DIRECTION_DOWN'];
+export const PB_DIRECTIONS = ['PB_DIR_RIGHT', 'PB_DIR_LEFT', 'PB_DIR_UP', 'PB_DIR_DOWN'];
 
-// ProgressBar.inc limits (the same PB_BORDER_MIN/MAX and PB_BLINK_MIN/MAX as the include)
+// ProgressBar.inc limits (the same PB_BORDER_MIN/MAX and PB_BLINK_MIN/MAX as the include); a border of 0 (PB_BORDER_NONE) has no border
 export const PB_LIMITS = { borderMin: 0.5, borderMax: 5, borderDefault: 1, borderYRatio: 1.25, minInner: 1, blinkMin: 50, blinkMax: 60000, blinkDefault: 250 };
 const clampNum = (v, min, max, def) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : def; };
-export const clampPbBorder = (v) => clampNum(v, PB_LIMITS.borderMin, PB_LIMITS.borderMax, PB_LIMITS.borderDefault);
+export const clampPbBorder = (v) => { const n = Number(v); return Number.isFinite(n) && n <= 0 ? 0 : clampNum(v, PB_LIMITS.borderMin, PB_LIMITS.borderMax, PB_LIMITS.borderDefault); };
 // Largest border that fits in the bar (like PB_FitBorder in the include): leaves PB_MIN_INNER of interior,
 // remembering that the top and bottom border is 1.25 times the sides. Every bar has at least the minimum.
 export function maxPbBorder(width, height) {
@@ -359,6 +359,14 @@ export function maxPbBorder(width, height) {
 export const PB_MIN_WIDTH = PB_LIMITS.borderMin * 2 + PB_LIMITS.minInner;
 export const PB_MIN_HEIGHT = PB_LIMITS.borderMin * 2 * PB_LIMITS.borderYRatio + PB_LIMITS.minInner;
 export const fitPbBorder = (v, width, height) => Math.min(clampPbBorder(v), maxPbBorder(width, height));
+// A horizontal bar (style bar, right or left) up to 4.5 high is made 2.5 times higher by the include, with at least 6
+// (CreatePlayerProgressBar and SetPlayerProgressBarSize/Height): the editor keeps the height the game really draws
+export const PB_LEGACY_HEIGHT = 4.5;
+export function pbRealHeight(height, style, dir) {
+  const h = Number(height) || 0;
+  if (h <= PB_LEGACY_HEIGHT && (style | 0) === 0 && ((dir | 0) === 0 || (dir | 0) === 1)) return Math.max(6, Math.round(h * 2.5 * 100) / 100);
+  return h;
+}
 export const clampPbBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, PB_LIMITS.blinkDefault));
 export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0));
 // Bar styles (the same PB_STYLE_* as the include) and ring segments (PB_RING_MIN to PB_RING_MAX)
@@ -447,7 +455,7 @@ function pbLabelVertical(td, tmpl) {
   if (o === 2) return true;
   const w = +td.pbWidth || 0, h = +td.pbHeight || 0;
   if (h <= w) return false;
-  const len = pbLabelVisibleLen(tmpl), border = fitPbBorder(td.pbBorder, w, h);
+  const len = pbLabelVisibleLen(tmpl), border = clampPbBorder(td.pbBorder);
   const needW = Math.max(16, len * 4.2 + border * 2 + 4), needH = (len - 1) * 7.5 + 8 + border * 2;
   return w < needW && h >= needH;
 }
@@ -481,7 +489,7 @@ export function pbLabelTextDraw(td, value, colour) {
   const vert = pbLabelVertical(td, tmpl);
   if (vert) text = pbVerticalText(text);
   const lines = text.split(/~[nN]~/).length;
-  const w = +td.pbWidth || 0, h = +td.pbHeight || 0, border = fitPbBorder(td.pbBorder, w, h), style = td.pbStyle | 0;
+  const w = +td.pbWidth || 0, h = +td.pbHeight || 0, border = clampPbBorder(td.pbBorder), style = td.pbStyle | 0;
   let sx = +td.pbLabelScaleX || 0, sy = +td.pbLabelScaleY || 0;
   if (sx <= 0 || sy <= 0) {
     // PB_CalculateLabelScale
@@ -543,7 +551,7 @@ export function progressBarPawn(td, varName, fmt) {
   const segs = style === 1 ? clampPbSegments(td.pbSegments) : 'PB_RING_SEGMENTS';
   const segScale = style === 1 ? f(clampPbSegmentScale(td.pbSegmentScale)) : 'PB_RING_SEGMENT_SCALE';
   const lines = [
-    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight))}, ${borderCol ? hexOf(borderCol) : '0'}, ${PB_STYLE_NAMES[style]}, ${segs}, ${segScale});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
+    `new ${varName} = CreatePlayerProgressBar(playerid, ${f(td.x)}, ${f(td.y)}, ${f(td.pbWidth)}, ${f(td.pbHeight)}, ${hex}, ${f(td.pbMax)}, ${PB_DIRECTIONS[td.pbDir | 0] || PB_DIRECTIONS[0]}, ${fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight) > 0 ? f(fitPbBorder(td.pbBorder, td.pbWidth, td.pbHeight)) : 'PB_BORDER_NONE'}, ${borderCol ? hexOf(borderCol) : '0'}, ${PB_STYLE_NAMES[style]}, ${segs}, ${segScale});${td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''}`,
   ];
   if (pbMinOf(td) !== 0) lines.push(`SetPlayerProgressBarMinValue(playerid, ${varName}, ${f(pbMinOf(td))});`);
   if (td.pbGradient) {
@@ -635,6 +643,9 @@ export function textDrawPawn(td, varName, fmt, createText, comment = '', refVar 
 
 export function makeTextDraw(data) {
   if (data.tdv === undefined && data.uid) data = migrateLegacyTextDraw(data);
+  // Size of a bar as the include draws it (defaults 60 x 8, like CreatePlayerProgressBar)
+  const pbW = data.pbWidth !== undefined ? +data.pbWidth : 60;
+  const pbH = pbRealHeight(data.pbHeight !== undefined ? +data.pbHeight : 8, data.pbStyle ?? 0, data.pbDir ?? 0);
   const alignVal = data.align !== undefined ? (data.align | 0) : (data.alignment !== undefined ? (data.alignment | 0) : 1);
   return {
     tdv: TD_VERSION,
@@ -666,18 +677,18 @@ export function makeTextDraw(data) {
     previewZoom: data.previewZoom !== undefined ? +data.previewZoom : 1.0,
     previewColor1: data.previewColor1 !== undefined ? (data.previewColor1 | 0) : 1,
     previewColor2: data.previewColor2 !== undefined ? (data.previewColor2 | 0) : 1,
-    // TextDrawFX effect; the blink of older projects (blink*) becomes the blink effect
-    fx: data.type === 'progress' ? null : (data.fx !== undefined ? makeFx(data.fx, data) : migrateBlink(data)),
+    // TextDrawFX effect (null = none)
+    fx: data.type === 'progress' ? null : makeFx(data.fx, data),
     comment: data.comment ? String(data.comment) : '',
     ...(data.type === 'progress' ? {
       type: 'progress', isPlayer: true,
       name: data.name && data.name !== 'Textdraw0' ? String(data.name) : '',
-      pbWidth: data.pbWidth !== undefined ? +data.pbWidth : 55.5,
-      pbHeight: data.pbHeight !== undefined ? +data.pbHeight : 3.2,
+      pbWidth: pbW,
+      pbHeight: pbH,
       pbMax: data.pbMax !== undefined ? +data.pbMax : 100,
       pbValue: data.pbValue !== undefined ? +data.pbValue : 50,
       pbDir: data.pbDir !== undefined ? (data.pbDir | 0) : 0,
-      pbBorder: fitPbBorder(data.pbBorder ?? PB_LIMITS.borderDefault, data.pbWidth !== undefined ? +data.pbWidth : 55.5, data.pbHeight !== undefined ? +data.pbHeight : 3.2),
+      pbBorder: fitPbBorder(data.pbBorder ?? PB_LIMITS.borderDefault, pbW, pbH),
       pbBlink: Boolean(data.pbBlink),
       pbBlinkInterval: clampPbBlinkInterval(data.pbBlinkInterval ?? PB_LIMITS.blinkDefault),
       pbBlinkDuration: clampPbBlinkDuration(data.pbBlinkDuration ?? 0),

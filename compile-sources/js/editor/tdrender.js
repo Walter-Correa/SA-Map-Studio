@@ -236,7 +236,7 @@ function pbDim(c) {
 // Progress bar (Progress Bar Plus, ProgressBar.inc): the same 3 LD_SPAC:white sprites the include creates,
 // in 640x448 units: background, track inside the border and the filled part according to value and direction.
 // Border: pbBorder horizontally and 1.25 times that vertically (1 unit is 3.00 px x 2.41 px at 1920x1080),
-// limited as in the include (0.5 to 5). blinkOn: lit phase of the blink (blink color or interior off;
+// limited as in the include (0.5 to 5, 0 = no border). blinkOn: lit phase of the blink (blink color or interior off;
 // the border switches to pbBlinkBorderColor if there is one).
 export const PB_BORDER_Y_RATIO = 1.25;
 // Include styles: 0 bar, 1 segment ring, 2 circle that grows from the center
@@ -258,7 +258,7 @@ function ringParts(bar, blinkOn) {
   const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
   const borderColor = blinking && blinkBorder ? blinkBorder : ((Number(bar.pbBorderColor || 0) >>> 0) || (base & 0xFF));
   const nb = Number(bar.pbBorder ?? 1);
-  const rawBorder = Number.isFinite(nb) ? Math.max(0.5, Math.min(5, nb)) : 1;
+  const rawBorder = !Number.isFinite(nb) ? 1 : nb <= 0 ? 0 : Math.max(0.5, Math.min(5, nb)); // 0 = no border
   // Size of each segment (and of its outline), like the segment scale of the include
   const scale = Number(bar.pbSegmentScale) > 0 ? Number(bar.pbSegmentScale) : 1;
   const bx = rawBorder * scale, by = bx * PB_BORDER_Y_RATIO;
@@ -297,7 +297,7 @@ export function progressBarParts(bar, blinkOn = false) {
   // and never smaller than the minimum
   const n = Number(bar.pbBorder ?? 1);
   const fit = Math.max(0.5, Math.min((w - 1) / 2, (h - 1) / (2 * PB_BORDER_Y_RATIO)));
-  const bx = Math.min(Number.isFinite(n) ? Math.max(0.5, Math.min(5, n)) : 1, fit), by = bx * PB_BORDER_Y_RATIO;
+  const bx = Math.min(!Number.isFinite(n) ? 1 : n <= 0 ? 0 : Math.max(0.5, Math.min(5, n)), fit), by = bx * PB_BORDER_Y_RATIO;
   const ix = x + bx, iy = y + by;
   const iw = Math.max(0, w - bx * 2), ih = Math.max(0, h - by * 2);
   const blinkBorder = Number(bar.pbBlinkBorderColor || 0) >>> 0;
