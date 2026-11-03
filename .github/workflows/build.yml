@@ -50,7 +50,7 @@ jobs:
           "{0:N1} MB" -f ((Get-Item $exe).Length / 1MB)
 
       - name: Keep the executable for download
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: SA Map Studio (${{ github.sha }})
           path: compiled/SA Map Studio/SA Map Studio.exe
