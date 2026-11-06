@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.40-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.41-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -192,10 +192,12 @@ never changed and removing the mod is deleting its folder.
   circle, orbit, shake, broken neon, float, box fill, fireworks, digital glitch, 3D model spin and hover (font 5, `Spin3D` and `Hover3D`), passing
   shine, rainbow, slot machine, pendulum, bouncing drop, whirlpool, cinema bars (with a second TextDraw as the bottom bar),
   sonar ping, colour wave, letter rain, scanner, short circuit, airport board, hologram, impact, wave on the letters and
-  hopping letters. They work on PlayerTextDraws and global TextDraws.
+  hopping letters, each with a Repeat option. They work on PlayerTextDraws and global TextDraws. In the test server the
+  TextDraws, bars and effects start a moment after the player spawns.
   The editor exports the call (for example `RainbowPlayerTextDraw(playerid, textdraw_0, "TEXT", 100, 0);`), imports every
   TextDrawFX function back and the test server runs the effect when the TextDraw appears. New TextDraws are PlayerTextDraws by default.
 - The exported code starts with the includes it needs and their address:
+  `#include <streamer>//https://github.com/samp-incognito/samp-streamer-plugin` (when it uses dynamic items),
   `#include <ProgressBar>//https://github.com/Walter-Correa/Progress-Bar-Plus` and
   `#include <TextDrawFX>//https://github.com/Walter-Correa/TextDrawFX`.
 - Clean export of a Pawn script ready to compile.
@@ -501,6 +503,15 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.41 — 07/11/2026
+- Progress Bar Plus and TextDrawFX updated again in the test server, the export and the preview.
+- TextDraw effects: every effect has the new Repeat option (loop parameter of the include), exported, imported back and used by the test server.
+- Box fill effect: the values are now the box size of the include (the X where the box ends when aligned left or right, the box width when centred), with defaults taken from the box of the TextDraw; the preview turns the box on like the include does.
+- Cinema bars effect: choosing it turns the TextDraw into the top bar and creates the bottom bar, both black full-width boxes with the letter size of the bar height, as the include expects.
+- Test server: the TextDraws, the progress bars and their effects only appear a moment after the player spawns, so short effects are seen from the start.
+- The exported code starts with #include <streamer> and its address when it uses dynamic items, instead of the old note in the header.
+- The export window is much larger.
 
 ### 4.1.40 — 03/11/2026
 - Progress Bar Plus and TextDrawFX updated to their latest versions in the test server, the export and the preview.

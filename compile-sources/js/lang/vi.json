@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Đối tượng đã gỡ: {0}",
  "Textos 3D: {0}": "Văn bản 3D: {0}",
  "Como usar:": "Cách dùng:",
- "Requer o plugin streamer ({0}) - {1}": "Yêu cầu plugin streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Camera (gọi bất cứ lúc nào, khi người chơi đã spawn):",
  "Posições relativas: some ({0}) ou passe a origem.": "Vị trí tương đối: cộng thêm ({0}) hoặc truyền gốc tọa độ.",
  "Gerado pelo SA Map Studio": "Tạo bởi SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Khoảng cách chữ (0 = tự động)",
  "Este efeito não funciona com esta fonte.": "Hiệu ứng này không hoạt động với phông này.",
  "Este efeito só existe para PlayerTextDraw.": "Hiệu ứng này chỉ có cho PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Hiệu ứng này dùng hộp của TextDraw: hãy bật hộp.",
  "Explosão": "Vụ nổ",
  "Explosão (ms)": "Vụ nổ (ms)",
  "Faixa de baixo": "Dải dưới",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: khi xuất hiện, thanh đi từ giá trị đầu đến giá trị hiện tại",
  "Inverter": "Đảo ngược",
  "Largura da onda": "Độ rộng sóng",
- "Largura final": "Độ rộng cuối",
- "Largura inicial": "Độ rộng đầu",
  "Leque": "Hình quạt",
  "Letras pulando": "Chữ nhảy",
  "Linear": "Tuyến tính",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Viền (0 hoặc {0} đến {1})",
  "Borda (0 ou 0,5 a 5,0)": "Viền (0 hoặc 0,5 đến 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Độ dày viền (viền trên và dưới lớn hơn 1,25 lần để trông bằng nhau trên màn hình); 0 để thanh không có viền. Mức tối đa tùy theo chiều rộng và chiều cao của thanh.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Với thanh nằm ngang (phải hoặc trái), chiều cao đến 4,5 sẽ lớn gấp 2,5 lần trong game (tối thiểu 6): trình chỉnh sửa đã hiển thị chiều cao trong game"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Với thanh nằm ngang (phải hoặc trái), chiều cao đến 4,5 sẽ lớn gấp 2,5 lần trong game (tối thiểu 6): trình chỉnh sửa đã hiển thị chiều cao trong game",
+ "Caixa no começo": "Hộp lúc đầu",
+ "Caixa no fim": "Hộp lúc cuối",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include sẽ bật hộp. Căn trái hoặc phải, giá trị là X nơi hộp kết thúc; căn giữa, đó là chiều rộng của hộp.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Các dải là hộp đen rộng bằng màn hình; hiệu ứng chỉ di chuyển chúng. Chiều cao lấy từ cỡ chữ Y."
 }

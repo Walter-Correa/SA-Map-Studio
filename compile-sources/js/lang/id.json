@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Objek dihapus: {0}",
  "Textos 3D: {0}": "Teks 3D: {0}",
  "Como usar:": "Cara pakai:",
- "Requer o plugin streamer ({0}) - {1}": "Membutuhkan plugin streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Kamera (panggil kapan saja, setelah pemain sudah spawn):",
  "Posições relativas: some ({0}) ou passe a origem.": "Posisi relatif: tambahkan ({0}) atau berikan titik asalnya.",
  "Gerado pelo SA Map Studio": "Dibuat oleh SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Jarak antar huruf (0 = otomatis)",
  "Este efeito não funciona com esta fonte.": "Efek ini tidak bekerja dengan font ini.",
  "Este efeito só existe para PlayerTextDraw.": "Efek ini hanya ada untuk PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Efek ini memakai kotak TextDraw: aktifkan kotaknya.",
  "Explosão": "Ledakan",
  "Explosão (ms)": "Ledakan (ms)",
  "Faixa de baixo": "Pita bawah",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: saat muncul, bilah bergerak dari nilai awal ke nilai saat ini",
  "Inverter": "Balik",
  "Largura da onda": "Lebar gelombang",
- "Largura final": "Lebar akhir",
- "Largura inicial": "Lebar awal",
  "Leque": "Kipas",
  "Letras pulando": "Huruf melompat",
  "Linear": "Linear",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Tepi (0 atau {0} sampai {1})",
  "Borda (0 ou 0,5 a 5,0)": "Tepi (0 atau 0,5 sampai 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Tebal tepi (tepi atas dan bawah 1,25 kali lebih besar agar terlihat sama di layar); 0 membuat bilah tanpa tepi. Maksimum tergantung lebar dan tinggi bilah.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Pada bilah mendatar (kanan atau kiri), tinggi hingga 4,5 menjadi 2,5 kali lebih besar di game (minimal 6): editor sudah menampilkan tinggi di game"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Pada bilah mendatar (kanan atau kiri), tinggi hingga 4,5 menjadi 2,5 kali lebih besar di game (minimal 6): editor sudah menampilkan tinggi di game",
+ "Caixa no começo": "Kotak di awal",
+ "Caixa no fim": "Kotak di akhir",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include menyalakan kotak. Rata kiri atau kanan, nilainya adalah X tempat kotak berakhir; rata tengah, nilainya lebar kotak.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Pita adalah kotak hitam selebar layar; efek hanya menggerakkannya. Tingginya berasal dari ukuran huruf Y."
 }

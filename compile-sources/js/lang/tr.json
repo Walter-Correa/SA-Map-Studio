@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Kaldırılmış nesneler: {0}",
  "Textos 3D: {0}": "3D metinler: {0}",
  "Como usar:": "Nasıl kullanılır:",
- "Requer o plugin streamer ({0}) - {1}": "Streamer eklentisi gerekir ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Kameralar (oyuncu doğduktan sonra istediğin zaman çağır):",
  "Posições relativas: some ({0}) ou passe a origem.": "Göreli konumlar: ({0}) ekle veya başlangıç noktasını ver.",
  "Gerado pelo SA Map Studio": "SA Map Studio tarafından oluşturuldu",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Harf aralığı (0 = otomatik)",
  "Este efeito não funciona com esta fonte.": "Bu efekt bu yazı tipiyle çalışmaz.",
  "Este efeito só existe para PlayerTextDraw.": "Bu efekt yalnızca PlayerTextDraw için var.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Bu efekt TextDraw'ın kutusunu kullanır: kutuyu açın.",
  "Explosão": "Patlama",
  "Explosão (ms)": "Patlama (ms)",
  "Faixa de baixo": "Alt bant",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: göründüğünde çubuk başlangıç değerinden mevcut değere gider",
  "Inverter": "Ters çevir",
  "Largura da onda": "Dalga genişliği",
- "Largura final": "Son genişlik",
- "Largura inicial": "Başlangıç genişliği",
  "Leque": "Yelpaze",
  "Letras pulando": "Zıplayan harfler",
  "Linear": "Doğrusal",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Kenarlık (0 veya {0} ile {1})",
  "Borda (0 ou 0,5 a 5,0)": "Kenarlık (0 veya 0,5 ile 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Kenarlık kalınlığı (üst ve alt kenar ekranda aynı görünmesi için 1,25 kat büyüktür); 0 çubuğu kenarlıksız bırakır. En büyük değer çubuğun genişliğine ve yüksekliğine bağlıdır.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Yatay bir çubukta (sağ veya sol), 4,5'e kadar olan yükseklik oyunda 2,5 kat büyür (en az 6): editör zaten oyundaki yüksekliği gösterir"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Yatay bir çubukta (sağ veya sol), 4,5'e kadar olan yükseklik oyunda 2,5 kat büyür (en az 6): editör zaten oyundaki yüksekliği gösterir",
+ "Caixa no começo": "Başta kutu",
+ "Caixa no fim": "Sonda kutu",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include kutuyu açar. Sola veya sağa hizalıyken değer kutunun bittiği X'tir; ortalıyken kutunun genişliğidir.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Bantlar ekran genişliğinde siyah kutulardır; efekt yalnızca onları hareket ettirir. Yükseklikleri harf boyutu Y'den gelir."
 }

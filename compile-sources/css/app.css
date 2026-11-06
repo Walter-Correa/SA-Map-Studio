@@ -615,6 +615,10 @@ dialog:focus-visible,
 .code.tall { height: 300px; }
 .export-grid { display: grid; grid-template-columns: 270px 1fr; gap: 16px; min-height: 0; }
 .export-grid .code { height: 440px; }
+/* Export window: almost the whole editor area, so the code is easy to read */
+#dlgExport { width: min(1680px, 88vw); max-height: 94vh; }
+#dlgExport .export-grid { grid-template-columns: 290px 1fr; }
+#dlgExport .export-grid .code { height: max(440px, calc(92vh - 190px)); }
 .export-options { display: grid; gap: 14px; align-content: start; }
 fieldset { border: none; padding: 0; margin: 0; display: grid; gap: 7px; }
 legend { color: var(--paper-mute); font-size: 12.5px; font-weight: 600; padding: 0; margin-bottom: 2px; }

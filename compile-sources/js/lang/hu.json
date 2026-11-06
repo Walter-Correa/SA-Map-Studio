@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Eltávolított objektumok: {0}",
  "Textos 3D: {0}": "3D szövegek: {0}",
  "Como usar:": "Használat:",
- "Requer o plugin streamer ({0}) - {1}": "A streamer plugin szükséges ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Kamerák (hívd meg, amikor akarod, ha a játékos már megjelent):",
  "Posições relativas: some ({0}) ou passe a origem.": "Relatív pozíciók: add hozzá ({0}), vagy add át az origót.",
  "Gerado pelo SA Map Studio": "Készítette a SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Betűköz (0 = automatikus)",
  "Este efeito não funciona com esta fonte.": "Ez az effektus nem működik ezzel a betűtípussal.",
  "Este efeito só existe para PlayerTextDraw.": "Ez az effektus csak PlayerTextDraw-hoz létezik.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Ez az effektus a TextDraw dobozát használja: kapcsold be a dobozt.",
  "Explosão": "Robbanás",
  "Explosão (ms)": "Robbanás (ms)",
  "Faixa de baixo": "Alsó sáv",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: megjelenéskor a sáv a kezdőértéktől a jelenlegi értékig megy",
  "Inverter": "Megfordítás",
  "Largura da onda": "Hullám szélessége",
- "Largura final": "Végső szélesség",
- "Largura inicial": "Kezdő szélesség",
  "Leque": "Legyező",
  "Letras pulando": "Ugráló betűk",
  "Linear": "Lineáris",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Keret (0 vagy {0}–{1})",
  "Borda (0 ou 0,5 a 5,0)": "Keret (0 vagy 0,5–5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Keret vastagsága (a felső és alsó 1,25-ször nagyobb, hogy a képernyőn egyformának tűnjön); 0 esetén a sáv keret nélküli. A maximum a sáv szélességétől és magasságától függ.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Fekvő sávnál (jobbra vagy balra) a legfeljebb 4,5-ös magasság a játékban 2,5-szer nagyobb lesz (legalább 6): a szerkesztő már a játékbeli magasságot mutatja"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Fekvő sávnál (jobbra vagy balra) a legfeljebb 4,5-ös magasság a játékban 2,5-szer nagyobb lesz (legalább 6): a szerkesztő már a játékbeli magasságot mutatja",
+ "Caixa no começo": "Doboz az elején",
+ "Caixa no fim": "Doboz a végén",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Az include bekapcsolja a dobozt. Balra vagy jobbra igazítva az érték az az X, ahol a doboz véget ér; középre igazítva a doboz szélessége.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "A sávok képernyőszéles fekete dobozok; az effektus csak mozgatja őket. A magasságuk az Y betűméretből jön."
 }

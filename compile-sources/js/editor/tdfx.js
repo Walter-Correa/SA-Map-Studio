@@ -62,8 +62,8 @@ export const TDFX_EFFECTS = [
   { id: 'neon', fn: 'NeonFlickerPlayerTextDraw', gfn: 'NeonFlickerTextDraw', label: 'Neon falhando', fonts: 'any', params: [dur(3000), P('brokenRatio', 'int', 40, 'Falhas (0 a 100%)', 0, 100)] },
   { id: 'waveDrift', fn: 'WaveDriftPlayerTextDraw', gfn: 'WaveDriftTextDraw', label: 'Flutuar', fonts: 'any', params: [
     P('amplitudeX', 'float', 6, 'Amplitude X', 0, 320), P('amplitudeY', 'float', 4, 'Amplitude Y', 0, 240), P('speedMs', 'int', 1500, 'Tempo de cada volta (ms)', 100, 600000), dur()] },
-  { id: 'fill', fn: 'FillPlayerTextDrawProgress', gfn: 'FillTextDrawProgress', label: 'Encher a caixa', fonts: 'text', box: true, params: [
-    P('startWidth', 'float', (td) => round2(td.x), 'Largura inicial', -200, 840), P('targetWidth', 'float', (td) => round2(td.textSizeX ?? 640), 'Largura final', -200, 840), dur(2000), ease(2),
+  { id: 'fill', fn: 'FillPlayerTextDrawProgress', gfn: 'FillTextDrawProgress', label: 'Encher a caixa', fonts: 'text', params: [
+    P('startWidth', 'float', (td) => fillDefaults(td).start, 'Caixa no começo', -1000, 1000), P('targetWidth', 'float', (td) => fillDefaults(td).end, 'Caixa no fim', -1000, 1000), dur(2000), ease(2),
     P('lineHeight', 'float', 0, 'Altura (0 = a do TextDraw)', 0, 640)] },
   { id: 'firework', fn: 'FireworkPlayerTextDraw', gfn: 'FireworkTextDraw', label: 'Fogos de artifício', fonts: 'any', params: [
     P('pattern', 'fw', 0, 'Explosão'), P('fuseDuration', 'int', 1500, 'Pavio (ms)', TDFX_MIN_INTERVAL, 600000), P('explodeDuration', 'int', 1200, 'Explosão (ms)', TDFX_MIN_INTERVAL, 600000),
@@ -87,7 +87,7 @@ export const TDFX_EFFECTS = [
     P('startY', 'float', (td) => round2(td.y - 120), 'Y inicial', -200, 650), P('targetY', 'float', (td) => round2(td.y), 'Y final', -200, 650), P('elasticity', 'float', 0.38, 'Elasticidade', 0, 0.95)] },
   { id: 'vortex', fn: 'VortexPlayerTextDraw', gfn: 'VortexTextDraw', label: 'Redemoinho', fonts: 'text', params: [
     cx(), cy(), P('startRadius', 'float', 120, 'Raio inicial', 0, 640), P('spins', 'float', 2.5, 'Voltas', -100, 100), dur(2000)] },
-  { id: 'letterbox', fn: 'LetterboxPlayerTextDraw', gfn: 'LetterboxTextDraw', label: 'Faixas de cinema', fonts: 'text', box: true, params: [
+  { id: 'letterbox', fn: 'LetterboxPlayerTextDraw', gfn: 'LetterboxTextDraw', label: 'Faixas de cinema', fonts: 'text', params: [
     P('bottomBarTD', 'td', '', 'Faixa de baixo'), P('barHeight', 'float', 65, 'Altura das faixas', 0, 240), dur(1200), P('reverse', 'bool', false, 'Recolher'), ease(2)] },
   { id: 'sonarPing', fn: 'SonarPingPlayerTextDraw', gfn: 'SonarPingTextDraw', label: 'Pulso de sonar', fonts: 'text', params: [
     cx(), cy(), P('maxRadius', 'float', 140, 'Raio', 0, 640), P('pulseCount', 'int', 3, 'Pulsos', 1, 1000), P('pulseDuration', 'int', 1200, 'Tempo de cada pulso (ms)', 1, 600000)] },
@@ -110,7 +110,30 @@ export const TDFX_EFFECTS = [
     txt(), cx(), cy(), P('hopHeight', 'float', 16, 'Altura do pulo', 0, 240), P('staggerMs', 'int', 90, 'Atraso entre letras (ms)', 0, 60000),
     P('hopDurationMs', 'int', 350, 'Tempo do pulo (ms)', 1, 60000), P('direction', 'dir', 0, 'Direção'), dur(), P('loop', 'bool', false, 'Repetir')] },
 ];
+// Every function has bool:loop before extra_id (the blink after text and baseColour): it starts the effect again at the end
+for (const e of TDFX_EFFECTS) if (!e.params.some(p => p.k === 'loop')) e.params.push(P('loop', 'bool', false, 'Repetir'));
 export const TDFX_BY_ID = Object.fromEntries(TDFX_EFFECTS.map(e => [e.id, e]));
+
+// Box fill: TextDrawTextSize of the box changes from the first value to the second. Aligned left (or right), the value is the
+// X where the box ends on the screen; centred, it is the width of the box. The defaults fill the box the TextDraw has.
+function fillDefaults(td) {
+  const centred = (td.align ?? td.alignment ?? 1) === 2;
+  if (centred) return { start: 0, end: round2(Math.abs(Number(td.textSizeY) || 0) || 150) };
+  const x = Number(td.x) || 0, end = Number(td.textSizeX) || 0;
+  return { start: round2(x), end: round2(end > x ? end : x + 150) };
+}
+
+// Cinema bars: the include only moves the two TextDraws, so they must be black full-width boxes whose height comes from the
+// letter size (like the demo of the include: 6.84 on top and 9.5 at the bottom for bars of 65)
+export const letterboxTopSize = (h) => round2((Number(h) + 15) / 11.7);
+export const letterboxBottomSize = (h) => round2((Number(h) + 35.8) / 10.61);
+export function letterboxBar(td, top, barHeight) {
+  Object.assign(td, {
+    text: '_', font: 1, x: 0, y: top ? -(Number(barHeight) + 15) : 480, letterSizeX: 0, letterSizeY: top ? letterboxTopSize(barHeight) : letterboxBottomSize(barHeight),
+    textSizeX: 640, textSizeY: 0, useBox: 1, boxColor: 0x000000FF, color: 0x00000000, align: 1, alignment: 1, outline: 0, shadow: 0, proportional: 1,
+  });
+  return td;
+}
 const BY_FN = new Map();
 for (const e of TDFX_EFFECTS) { BY_FN.set(e.fn, { e, player: true }); if (e.gfn) BY_FN.set(e.gfn, { e, player: false }); }
 export const TDFX_FUNCTIONS = [...BY_FN.keys()];
@@ -193,9 +216,10 @@ export function tdfxPawn(td, varName, text, refVar = () => null) {
     // Only what is not the default; the text and the original colour make it work on SA-MP 0.3.7 too
     args.push(String(fx.interval), String(fx.duration));
     const perChar = fx.perChar && (td.font ?? 1) <= 3;
-    if (perChar || fx.colour) {
+    if (perChar || fx.colour || fx.loop) {
       args.push(perChar ? 'true' : 'false', fx.colour ? hex8(fx.colour) : '0', perChar ? pawnStr(text) : '""');
-      if (fx.colour) args.push(hex8((td.font ?? 1) === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0) : (td.color ?? 0xFFFFFFFF)));
+      if (fx.colour || fx.loop) args.push(fx.colour ? hex8((td.font ?? 1) === 5 ? (td.useBox ? (td.boxColor ?? 0x00000060) : 0) : (td.color ?? 0xFFFFFFFF)) : '0');
+      if (fx.loop) args.push('true');
     }
   } else {
     for (const p of e.params) if (p.type !== 'td') args.push(pawnValue(p, fx[p.k], ctx));
@@ -230,6 +254,7 @@ export function tdfxFromCall(fn, a, named, helpers) {
   };
   for (const p of e.params) {
     if (p.type === 'td') continue;
+    if (e.id === 'blink' && p.k === 'loop') i += 2; // text and baseColour come before loop
     data[p.k] = read(p, named[p.k.toLowerCase()] ?? a[i]);
     i++;
   }
@@ -381,7 +406,7 @@ export function tdfxLength(fx, td) {
     default: return Math.max(0, p.duration | 0);
   }
 }
-const loops = (fx) => (fx.type === 'waveMotion' || fx.type === 'hopLetter') && fx.loop;
+const loops = (fx) => Boolean(fx.loop);
 
 // The TextDraw at this moment of the effect: { view (copy of the TextDraw, null = hidden), extras (other TextDraws drawn,
 // such as sparks and letters), done }. td = the TextDraw as in the project, text = its text (textDrawNative), t = ms since start.
@@ -566,6 +591,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       const f = tdfxEase(done ? 1 : prog, p.easing), w = p.startWidth + (p.targetWidth - p.startWidth) * f;
       const h = p.lineHeight > 0 ? p.lineHeight : (td.textSizeY || 12);
       if ((td.align ?? td.alignment ?? 1) === 2) { view.textSizeX = h; view.textSizeY = w; } else { view.textSizeX = w; view.textSizeY = h; }
+      view.useBox = 1; // the include turns the box on
       return r;
     }
     case 'firework': return fireworkFrame(r, td, p, t, frame, done, baseCol, setCol);
@@ -661,7 +687,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       let f = tdfxEase(done ? 1 : prog, p.easing);
       if (p.reverse) f = 1 - f;
       const h = p.barHeight;
-      view.x = 0; view.y = -(h + 15) + (h + 15) * f;
+      view.x = 0; view.y = -(h + 15) + (h + 15) * f; view.useBox = 1; // the include turns the box of both bars on
       const bottom = other(p.bottomBarTD);
       if (bottom) r.moved = { [bottom.uid]: { x: 0, y: 480 - (h + 35.8) * f, hidden: done && p.reverse } };
       if (done && p.reverse) r.view = null;

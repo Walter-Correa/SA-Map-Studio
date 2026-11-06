@@ -89,7 +89,7 @@
 #define TDFX_EASE_OUT_BOUNCE    (4)
 
 #if !defined TDFX_MAX_FX
-	#define TDFX_MAX_FX (64)
+	#define TDFX_MAX_FX (128)
 #endif
 
 #if !defined TDFX_MAX_BLINKS
@@ -273,8 +273,12 @@ static stock Float:TDFX_BoundMaxY[TDFX_MAX_FX];
 static stock bool:TDFX_ColorShift[TDFX_MAX_FX];
 
 // Firework / Exploding fragmentation particle system
-#define TDFX_MAX_FW_INSTANCES   (8)
-#define TDFX_FW_PARTICLES       (12)
+#if !defined TDFX_MAX_FW_INSTANCES
+	#define TDFX_MAX_FW_INSTANCES   (16)
+#endif
+#if !defined TDFX_FW_PARTICLES
+	#define TDFX_FW_PARTICLES       (12)
+#endif
 
 static stock bool:TDFX_FwActive[TDFX_MAX_FW_INSTANCES];
 static stock bool:TDFX_FwIsGlobal[TDFX_MAX_FW_INSTANCES];
@@ -359,8 +363,12 @@ static stock TDFX_FreeFwInstance(fwIdx)
 
 // Classic DVD screensaver color palette
 // Multi-Character Animation Pool Storage (Letter Rain, Traveling Wave Motion, Hop Letter Cascade)
-#define TDFX_MAX_CHAR_INSTANCES (8)
-#define TDFX_MAX_CHAR_PARTS     (24)
+#if !defined TDFX_MAX_CHAR_INSTANCES
+	#define TDFX_MAX_CHAR_INSTANCES (16)
+#endif
+#if !defined TDFX_MAX_CHAR_PARTS
+	#define TDFX_MAX_CHAR_PARTS     (32)
+#endif
 
 static stock bool:TDFX_CharActive[TDFX_MAX_CHAR_INSTANCES];
 static stock bool:TDFX_CharIsGlobal[TDFX_MAX_CHAR_INSTANCES];
@@ -679,6 +687,50 @@ static stock TDFX_Cut(const text[], chars)
 	return i;
 }
 
+static stock TDFX_CountVisibleGlyphs(const text[])
+{
+	new i, seen;
+	while (text[i])
+	{
+		if (text[i] == '~')
+		{
+			i = TDFX_SkipTag(text, i);
+			continue;
+		}
+		i++;
+		seen++;
+	}
+	return seen;
+}
+
+static stock _TDFX_ParseGlyphs(const text[], glyphChars[], glyphTags[][16], maxParts)
+{
+	new i = 0, count = 0;
+	new currentTag[16];
+	currentTag[0] = '\0';
+
+	while (text[i] && count < maxParts)
+	{
+		if (text[i] == '~')
+		{
+			new nextTag = TDFX_SkipTag(text, i);
+			new tagLen = nextTag - i;
+			if (tagLen < sizeof(currentTag))
+			{
+				strmid(currentTag, text, i, nextTag, sizeof(currentTag));
+			}
+			i = nextTag;
+			continue;
+		}
+		glyphChars[count] = text[i];
+		strmid(glyphTags[count], currentTag, 0, strlen(currentTag), 16);
+		count++;
+		i++;
+	}
+	glyphChars[count] = '\0';
+	return count;
+}
+
 // -----------------------------------------------------------------------------
 // Slot Management
 // -----------------------------------------------------------------------------
@@ -720,7 +772,7 @@ static stock bool:TDFX_ValidGlobal(Text:textid)
 	return (0 <= _:textid < TDFX_MAX_GLOBAL_TD);
 }
 
-static stock bool:TDFX_GetPlayerPos(playerid, PlayerText:textid, &Float:x, &Float:y)
+stock bool:TDFX_GetPlayerPos(playerid, PlayerText:textid, &Float:x, &Float:y)
 {
 	x = 0.0;
 	y = 0.0;
@@ -737,7 +789,7 @@ static stock bool:TDFX_GetPlayerPos(playerid, PlayerText:textid, &Float:x, &Floa
 	return false;
 }
 
-static stock bool:TDFX_GetGlobalPos(Text:textid, &Float:x, &Float:y)
+stock bool:TDFX_GetGlobalPos(Text:textid, &Float:x, &Float:y)
 {
 	x = 0.0;
 	y = 0.0;
@@ -756,10 +808,25 @@ static stock bool:TDFX_GetGlobalPos(Text:textid, &Float:x, &Float:y)
 	return false;
 }
 
-static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false)
+static stock bool:TDFX_CallbacksChecked = false;
+static stock bool:TDFX_HasPlayerFinishCB = false;
+static stock bool:TDFX_HasGlobalFinishCB = false;
+
+static stock TDFX_CheckCallbacks()
+{
+	if (!TDFX_CallbacksChecked)
+	{
+		TDFX_HasPlayerFinishCB = (funcidx("OnPlayerTextDrawFXFinish") != -1);
+		TDFX_HasGlobalFinishCB = (funcidx("OnTextDrawFXFinish") != -1);
+		TDFX_CallbacksChecked = true;
+	}
+}
+
+static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false, bool:keepHidden = false)
 {
 	if (slot < 0 || slot >= TDFX_MAX_FX || !TDFX_Used[slot]) return;
 	KillTimer(TDFX_Timer[slot]);
+	TDFX_Timer[slot] = 0;
 	TDFX_Used[slot] = false;
 
 	new bool:isGlobal = TDFX_IsGlobal[slot];
@@ -784,366 +851,301 @@ static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false)
 
 	if (restore)
 	{
+		new bool:shouldShow = (!keepHidden && !TDFX_AutoHide[slot]);
+		if (!shouldShow && TDFX_AutoDestroy[slot])
+		{
+			if (isGlobal) TextDrawDestroy(Text:tdId);
+			else if (IsPlayerConnected(playerid)) PlayerTextDrawDestroy(playerid, PlayerText:tdId);
+			return;
+		}
+
 		if (isGlobal)
 		{
-			if (TDFX_AutoHide[slot])
+			if (fxType == TDFX_TYPE_SCALE)
 			{
-				if ((fxType == TDFX_TYPE_FADE || fxType == TDFX_TYPE_NEON) && TDFX_Base[slot])
+				TextDrawLetterSize(Text:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
+			}
+			else if (fxType == TDFX_TYPE_PULSE)
+			{
+				TextDrawLetterSize(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+			}
+			else if ((fxType == TDFX_TYPE_FADE || fxType == TDFX_TYPE_NEON) && TDFX_Base[slot])
+			{
+				if (TDFX_Preview[slot]) _TDFX_TDBackColour(Text:tdId, TDFX_Base[slot]);
+				else
 				{
 					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
 					if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, TDFX_BoxBase[slot]);
 				}
-				else if (fxType == TDFX_TYPE_SCALE)
-				{
-					TextDrawLetterSize(Text:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
-				}
-				else if (fxType == TDFX_TYPE_PULSE)
-				{
-					TextDrawLetterSize(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-				}
-				#if defined TextDrawSetPos
-				else if (fxType == TDFX_TYPE_SHAKE || fxType == TDFX_TYPE_WAVE)
-				{
-					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_GLITCH && TDFX_Base[slot])
+			}
+			else if (fxType == TDFX_TYPE_BLINK && TDFX_Colour[slot])
+			{
+				if (TDFX_Preview[slot]) _TDFX_TDBackColour(Text:tdId, TDFX_Base[slot]);
+				else
 				{
 					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+					if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, TDFX_BoxBase[slot]);
 				}
+			}
+			else if (fxType == TDFX_TYPE_TYPEWRITER || fxType == TDFX_TYPE_SCRAMBLE || fxType == TDFX_TYPE_GLITCH)
+			{
+				if (fxType == TDFX_TYPE_GLITCH && TDFX_Base[slot]) _TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+				TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+			}
+			#if defined TextDrawSetPos
+			else if (fxType == TDFX_TYPE_SHAKE || fxType == TDFX_TYPE_WAVE)
+			{
+				TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+			}
+			#endif
+			else if (fxType == TDFX_TYPE_PROGRESS)
+			{
+				new gAlign = 1;
+				#if TDFX_MAX_GLOBAL_TD > 0
+					if (TDFX_ValidGlobal(Text:tdId)) gAlign = TDFX_GRemAlign[tdId];
+				#endif
+				#if defined TextDrawGetAlignment
+					gAlign = _:TextDrawGetAlignment(Text:tdId);
+				#endif
+				if (gAlign == 2) TextDrawTextSize(Text:tdId, TDFX_FloatB[slot], TDFX_FloatC[slot]);
+				else TextDrawTextSize(Text:tdId, TDFX_FloatC[slot], TDFX_FloatB[slot]);
+			}
+			#if defined TextDrawSetPos
+			else if (fxType == TDFX_TYPE_SLIDE)
+			{
+				TextDrawSetPos(Text:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
+			}
+			#endif
+			else if (fxType == TDFX_TYPE_COUNT)
+			{
+				new str[TDFX_MAX_TEXT];
+				TDFX_FormatNumber(str, sizeof str, TDFX_Count[slot], TDFX_Prefix[slot], TDFX_Suffix[slot], TDFX_ThousandSep[slot]);
+				TextDrawSetString(Text:tdId, str);
+			}
+			else if ((fxType == TDFX_TYPE_BOUNCE || fxType == TDFX_TYPE_BOUNCE_CIRC) && TDFX_ColorShift[slot] && TDFX_Base[slot])
+			{
+				_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+			}
+			else if (fxType == TDFX_TYPE_FIREWORK)
+			{
+				#if defined TextDrawSetPos
+					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+				#endif
+			}
+			else if (fxType == TDFX_TYPE_SHIMMER || fxType == TDFX_TYPE_RAINBOW || fxType == TDFX_TYPE_SLOT || fxType == TDFX_TYPE_TYPEWRITER)
+			{
+				TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+			}
+			else if (fxType == TDFX_TYPE_SPIN3D || fxType == TDFX_TYPE_HOVER3D)
+			{
+				#if defined TextDrawSetPreviewRot
+					TextDrawSetPreviewRot(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot], TDFX_FloatC[slot], TDFX_FloatD[slot]);
+				#endif
+			}
+			#if defined TextDrawSetPos
+			else if (fxType == TDFX_TYPE_PENDULUM)
+			{
+				TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot] + TDFX_FloatC[slot]);
+			}
+			else if (fxType == TDFX_TYPE_SLAM)
+			{
+				TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+			}
+			#endif
+			else if (fxType == TDFX_TYPE_VORTEX)
+			{
+				TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
+				#if defined TextDrawSetPos
+					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+				#endif
+			}
+			else if (fxType == TDFX_TYPE_LETTERRAIN || fxType == TDFX_TYPE_WAVEMOTION || fxType == TDFX_TYPE_HOPLETTER)
+			{
+				TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+				_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+			}
+			else if (fxType == TDFX_TYPE_SHOCKWAVE)
+			{
+				#if defined TextDrawSetPos
+					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+				#endif
+				TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
+				if (TDFX_FadeBox[slot]) TextDrawUseBox(Text:tdId, true);
+			}
+			else if (fxType == TDFX_TYPE_WAVESWEEP || fxType == TDFX_TYPE_SCANNER || fxType == TDFX_TYPE_ELECTRIC || fxType == TDFX_TYPE_SPLITFLAP || fxType == TDFX_TYPE_HOLOGRAM)
+			{
+				TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+				_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+			}
+
+			if (fxType == TDFX_TYPE_LETTERBOX)
+			{
+				if (!shouldShow)
+				{
+					TextDrawHideForAll(Text:tdId);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) TextDrawHideForAll(Text:TDFX_Step[slot]);
+				}
+				else
+				{
+					TextDrawShowForAll(Text:tdId);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) TextDrawShowForAll(Text:TDFX_Step[slot]);
+				}
+			}
+			else if (fxType == TDFX_TYPE_FIREWORK || fxType == TDFX_TYPE_VORTEX)
+			{
 				TextDrawHideForAll(Text:tdId);
 			}
-			else if (TDFX_AutoDestroy[slot]) TextDrawDestroy(Text:tdId);
 			else
 			{
-				if (fxType == TDFX_TYPE_SCALE)
-				{
-					TextDrawLetterSize(Text:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_PULSE)
-				{
-					TextDrawLetterSize(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if ((fxType == TDFX_TYPE_FADE || fxType == TDFX_TYPE_NEON) && TDFX_Base[slot])
-				{
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, TDFX_BoxBase[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_BLINK && TDFX_Colour[slot])
-				{
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, TDFX_BoxBase[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_TYPEWRITER || fxType == TDFX_TYPE_SCRAMBLE || fxType == TDFX_TYPE_GLITCH)
-				{
-					if (fxType == TDFX_TYPE_GLITCH && TDFX_Base[slot]) _TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				#if defined TextDrawSetPos
-				else if (fxType == TDFX_TYPE_SHAKE || fxType == TDFX_TYPE_WAVE)
-				{
-					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_PROGRESS)
-				{
-					new gAlign = 1;
-					#if TDFX_MAX_GLOBAL_TD > 0
-						if (TDFX_ValidGlobal(Text:tdId)) gAlign = TDFX_GRemAlign[tdId];
-					#endif
-					#if defined TextDrawGetAlignment
-						gAlign = _:TextDrawGetAlignment(Text:tdId);
-					#endif
-					if (gAlign == 2) TextDrawTextSize(Text:tdId, TDFX_FloatB[slot], TDFX_FloatC[slot]);
-					else TextDrawTextSize(Text:tdId, TDFX_FloatC[slot], TDFX_FloatB[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				#if defined TextDrawSetPos
-				else if (fxType == TDFX_TYPE_SLIDE)
-				{
-					TextDrawSetPos(Text:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_COUNT)
-				{
-					new str[TDFX_MAX_TEXT];
-					TDFX_FormatNumber(str, sizeof str, TDFX_Count[slot], TDFX_Prefix[slot], TDFX_Suffix[slot], TDFX_ThousandSep[slot]);
-					TextDrawSetString(Text:tdId, str);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if ((fxType == TDFX_TYPE_BOUNCE || fxType == TDFX_TYPE_BOUNCE_CIRC) && TDFX_ColorShift[slot] && TDFX_Base[slot])
-				{
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_FIREWORK)
-				{
-					#if defined TextDrawSetPos
-						TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-						_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-						TextDrawHideForAll(Text:tdId);
-					#endif
-				}
-				else if (fxType == TDFX_TYPE_SHIMMER || fxType == TDFX_TYPE_RAINBOW || fxType == TDFX_TYPE_SLOT)
-				{
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_SPIN3D || fxType == TDFX_TYPE_HOVER3D)
-				{
-					#if defined TextDrawSetPreviewRot
-						TextDrawSetPreviewRot(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot], TDFX_FloatC[slot], TDFX_FloatD[slot]);
-						TextDrawShowForAll(Text:tdId);
-					#endif
-				}
-				#if defined TextDrawSetPos
-				else if (fxType == TDFX_TYPE_PENDULUM)
-				{
-					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot] + TDFX_FloatC[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_SLAM)
-				{
-					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_VORTEX)
-				{
-					TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-					#if defined TextDrawSetPos
-						TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					#endif
-					TextDrawHideForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_LETTERBOX)
-				{
-					if (TDFX_AutoHide[slot])
-					{
-						TextDrawHideForAll(Text:tdId);
-						if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) TextDrawHideForAll(Text:TDFX_Step[slot]);
-					}
-				}
-				else if (fxType == TDFX_TYPE_LETTERRAIN || fxType == TDFX_TYPE_WAVEMOTION || fxType == TDFX_TYPE_HOPLETTER)
-				{
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_SHOCKWAVE)
-				{
-					#if defined TextDrawSetPos
-						TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					#endif
-					TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-					if (TDFX_FadeBox[slot]) TextDrawUseBox(Text:tdId, true);
-					TextDrawShowForAll(Text:tdId);
-				}
-				else if (fxType == TDFX_TYPE_WAVESWEEP || fxType == TDFX_TYPE_SCANNER || fxType == TDFX_TYPE_ELECTRIC || fxType == TDFX_TYPE_SPLITFLAP || fxType == TDFX_TYPE_HOLOGRAM)
-				{
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					TextDrawShowForAll(Text:tdId);
-				}
+				if (shouldShow) TextDrawShowForAll(Text:tdId);
+				else TextDrawHideForAll(Text:tdId);
 			}
 		}
 		else if (IsPlayerConnected(playerid))
 		{
-			if (TDFX_AutoHide[slot])
+			if (fxType == TDFX_TYPE_SCALE)
 			{
-				if ((fxType == TDFX_TYPE_FADE || fxType == TDFX_TYPE_NEON) && TDFX_Base[slot])
-				{
-					if (TDFX_Preview[slot]) _TDFX_PTDBackColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					else
-					{
-						_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-						if (TDFX_BoxBase[slot]) _TDFX_PTDBoxColour(playerid, PlayerText:tdId, TDFX_BoxBase[slot]);
-					}
-				}
-				else if (fxType == TDFX_TYPE_SCALE)
-				{
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
-				}
-				else if (fxType == TDFX_TYPE_PULSE)
-				{
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-				}
-				#if defined PlayerTextDrawSetPos
-				else if (fxType == TDFX_TYPE_SHAKE || fxType == TDFX_TYPE_WAVE)
-				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_GLITCH && TDFX_Base[slot])
+				PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
+			}
+			else if (fxType == TDFX_TYPE_PULSE)
+			{
+				PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+			}
+			else if ((fxType == TDFX_TYPE_FADE || fxType == TDFX_TYPE_NEON) && TDFX_Base[slot])
+			{
+				if (TDFX_Preview[slot]) _TDFX_PTDBackColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+				else
 				{
 					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+					if (TDFX_BoxBase[slot]) _TDFX_PTDBoxColour(playerid, PlayerText:tdId, TDFX_BoxBase[slot]);
 				}
-				else if (fxType == TDFX_TYPE_FIREWORK)
+			}
+			else if (fxType == TDFX_TYPE_BLINK && TDFX_Colour[slot])
+			{
+				if (TDFX_Preview[slot]) _TDFX_PTDBackColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+				else
 				{
-					#if defined PlayerTextDrawSetPos
-						PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-						_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					#endif
+					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+					if (TDFX_BoxBase[slot]) _TDFX_PTDBoxColour(playerid, PlayerText:tdId, TDFX_BoxBase[slot]);
 				}
+			}
+			else if (fxType == TDFX_TYPE_TYPEWRITER || fxType == TDFX_TYPE_SCRAMBLE || fxType == TDFX_TYPE_GLITCH)
+			{
+				if (fxType == TDFX_TYPE_GLITCH && TDFX_Base[slot]) _TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+				PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+			}
+			#if defined PlayerTextDrawSetPos
+			else if (fxType == TDFX_TYPE_SHAKE || fxType == TDFX_TYPE_WAVE)
+			{
+				PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+			}
+			#endif
+			else if (fxType == TDFX_TYPE_PROGRESS)
+			{
+				new pAlign = 1;
+				#if defined PlayerTextDrawGetAlignment
+					pAlign = _:PlayerTextDrawGetAlignment(playerid, PlayerText:tdId);
+				#else
+					if (TDFX_ValidPlayer(playerid, PlayerText:tdId)) pAlign = TDFX_RemAlign[playerid][tdId];
+				#endif
+				if (pAlign == 2) PlayerTextDrawTextSize(playerid, PlayerText:tdId, TDFX_FloatB[slot], TDFX_FloatC[slot]);
+				else PlayerTextDrawTextSize(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatB[slot]);
+			}
+			#if defined PlayerTextDrawSetPos
+			else if (fxType == TDFX_TYPE_SLIDE)
+			{
+				PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
+			}
+			#endif
+			else if (fxType == TDFX_TYPE_COUNT)
+			{
+				new str[TDFX_MAX_TEXT];
+				TDFX_FormatNumber(str, sizeof str, TDFX_Count[slot], TDFX_Prefix[slot], TDFX_Suffix[slot], TDFX_ThousandSep[slot]);
+				PlayerTextDrawSetString(playerid, PlayerText:tdId, str);
+			}
+			else if ((fxType == TDFX_TYPE_BOUNCE || fxType == TDFX_TYPE_BOUNCE_CIRC) && TDFX_ColorShift[slot] && TDFX_Base[slot])
+			{
+				_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+			}
+			else if (fxType == TDFX_TYPE_FIREWORK)
+			{
+				#if defined PlayerTextDrawSetPos
+					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+				#endif
+			}
+			else if (fxType == TDFX_TYPE_SHIMMER || fxType == TDFX_TYPE_RAINBOW || fxType == TDFX_TYPE_SLOT || fxType == TDFX_TYPE_TYPEWRITER)
+			{
+				PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+			}
+			else if (fxType == TDFX_TYPE_SPIN3D || fxType == TDFX_TYPE_HOVER3D)
+			{
+				#if defined PlayerTextDrawSetPreviewRot
+					PlayerTextDrawSetPreviewRot(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot], TDFX_FloatC[slot], TDFX_FloatD[slot]);
+				#endif
+			}
+			#if defined PlayerTextDrawSetPos
+			else if (fxType == TDFX_TYPE_PENDULUM)
+			{
+				PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot] + TDFX_FloatC[slot]);
+			}
+			else if (fxType == TDFX_TYPE_SLAM)
+			{
+				PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+			}
+			#endif
+			else if (fxType == TDFX_TYPE_VORTEX)
+			{
+				PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
+				#if defined PlayerTextDrawSetPos
+					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+				#endif
+			}
+			else if (fxType == TDFX_TYPE_LETTERRAIN || fxType == TDFX_TYPE_WAVEMOTION || fxType == TDFX_TYPE_HOPLETTER)
+			{
+				PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+				_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+			}
+			else if (fxType == TDFX_TYPE_SHOCKWAVE)
+			{
+				#if defined PlayerTextDrawSetPos
+					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+				#endif
+				PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
+				if (TDFX_FadeBox[slot]) PlayerTextDrawUseBox(playerid, PlayerText:tdId, true);
+			}
+			else if (fxType == TDFX_TYPE_WAVESWEEP || fxType == TDFX_TYPE_SCANNER || fxType == TDFX_TYPE_ELECTRIC || fxType == TDFX_TYPE_SPLITFLAP || fxType == TDFX_TYPE_HOLOGRAM)
+			{
+				PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+				_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+			}
+
+			if (fxType == TDFX_TYPE_LETTERBOX)
+			{
+				if (!shouldShow)
+				{
+					PlayerTextDrawHide(playerid, PlayerText:tdId);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) PlayerTextDrawHide(playerid, PlayerText:TDFX_Step[slot]);
+				}
+				else
+				{
+					PlayerTextDrawShow(playerid, PlayerText:tdId);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) PlayerTextDrawShow(playerid, PlayerText:TDFX_Step[slot]);
+				}
+			}
+			else if (fxType == TDFX_TYPE_FIREWORK || fxType == TDFX_TYPE_VORTEX)
+			{
 				PlayerTextDrawHide(playerid, PlayerText:tdId);
 			}
-			else if (TDFX_AutoDestroy[slot]) PlayerTextDrawDestroy(playerid, PlayerText:tdId);
 			else
 			{
-				if (fxType == TDFX_TYPE_SCALE)
-				{
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_PULSE)
-				{
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if ((fxType == TDFX_TYPE_FADE || fxType == TDFX_TYPE_NEON) && TDFX_Base[slot])
-				{
-					if (TDFX_Preview[slot]) _TDFX_PTDBackColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					else
-					{
-						_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-						if (TDFX_BoxBase[slot]) _TDFX_PTDBoxColour(playerid, PlayerText:tdId, TDFX_BoxBase[slot]);
-					}
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_BLINK && TDFX_Colour[slot])
-				{
-					if (TDFX_Preview[slot]) _TDFX_PTDBackColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					else
-					{
-						_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-						if (TDFX_BoxBase[slot]) _TDFX_PTDBoxColour(playerid, PlayerText:tdId, TDFX_BoxBase[slot]);
-					}
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_TYPEWRITER || fxType == TDFX_TYPE_SCRAMBLE || fxType == TDFX_TYPE_GLITCH)
-				{
-					if (fxType == TDFX_TYPE_GLITCH && TDFX_Base[slot]) _TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#if defined PlayerTextDrawSetPos
-				else if (fxType == TDFX_TYPE_SHAKE || fxType == TDFX_TYPE_WAVE)
-				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_PROGRESS)
-				{
-					new align = 1;
-					if (TDFX_ValidPlayer(playerid, PlayerText:tdId)) align = TDFX_RemAlign[playerid][tdId];
-					#if defined PlayerTextDrawGetAlignment
-						align = _:PlayerTextDrawGetAlignment(playerid, PlayerText:tdId);
-					#endif
-					if (align == 2) PlayerTextDrawTextSize(playerid, PlayerText:tdId, TDFX_FloatB[slot], TDFX_FloatC[slot]);
-					else PlayerTextDrawTextSize(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatB[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#if defined PlayerTextDrawSetPos
-				else if (fxType == TDFX_TYPE_SLIDE)
-				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatC[slot], TDFX_FloatD[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_COUNT)
-				{
-					new str[TDFX_MAX_TEXT];
-					TDFX_FormatNumber(str, sizeof str, TDFX_Count[slot], TDFX_Prefix[slot], TDFX_Suffix[slot], TDFX_ThousandSep[slot]);
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, str);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_FIREWORK)
-				{
-					#if defined PlayerTextDrawSetPos
-						PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-						_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-						PlayerTextDrawHide(playerid, PlayerText:tdId);
-					#endif
-				}
-				else if (fxType == TDFX_TYPE_SHIMMER || fxType == TDFX_TYPE_RAINBOW || fxType == TDFX_TYPE_SLOT)
-				{
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_SPIN3D || fxType == TDFX_TYPE_HOVER3D)
-				{
-					#if defined PlayerTextDrawSetPreviewRot
-						PlayerTextDrawSetPreviewRot(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot], TDFX_FloatC[slot], TDFX_FloatD[slot]);
-						PlayerTextDrawShow(playerid, PlayerText:tdId);
-					#endif
-				}
-				#if defined PlayerTextDrawSetPos
-				else if (fxType == TDFX_TYPE_PENDULUM)
-				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot] + TDFX_FloatC[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_SLAM)
-				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#endif
-				else if (fxType == TDFX_TYPE_VORTEX)
-				{
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-					#if defined PlayerTextDrawSetPos
-						PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					#endif
-					PlayerTextDrawHide(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_LETTERBOX)
-				{
-					if (TDFX_AutoHide[slot])
-					{
-						PlayerTextDrawHide(playerid, PlayerText:tdId);
-						if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) PlayerTextDrawHide(playerid, PlayerText:TDFX_Step[slot]);
-					}
-				}
-				else if (fxType == TDFX_TYPE_LETTERRAIN || fxType == TDFX_TYPE_WAVEMOTION || fxType == TDFX_TYPE_HOPLETTER)
-				{
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_SHOCKWAVE)
-				{
-					#if defined PlayerTextDrawSetPos
-						PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					#endif
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-					if (TDFX_FadeBox[slot]) PlayerTextDrawUseBox(playerid, PlayerText:tdId, true);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if (fxType == TDFX_TYPE_WAVESWEEP || fxType == TDFX_TYPE_SCANNER || fxType == TDFX_TYPE_ELECTRIC || fxType == TDFX_TYPE_SPLITFLAP || fxType == TDFX_TYPE_HOLOGRAM)
-				{
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				else if ((fxType == TDFX_TYPE_BOUNCE || fxType == TDFX_TYPE_BOUNCE_CIRC) && TDFX_ColorShift[slot] && TDFX_Base[slot])
-				{
-					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
+				if (shouldShow) PlayerTextDrawShow(playerid, PlayerText:tdId);
+				else PlayerTextDrawHide(playerid, PlayerText:tdId);
 			}
 		}
 	}
+
 	if (triggerFinish)
 	{
 		if (cb[0])
@@ -1151,13 +1153,14 @@ static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false)
 			if (isGlobal) CallLocalFunction(cb, "ii", tdId, extraId);
 			else CallLocalFunction(cb, "iii", playerid, tdId, extraId);
 		}
+		TDFX_CheckCallbacks();
 		if (isGlobal)
 		{
-			CallLocalFunction("OnTextDrawFXFinish", "iii", tdId, fxType, extraId);
+			if (TDFX_HasGlobalFinishCB) CallLocalFunction("OnTextDrawFXFinish", "iii", tdId, fxType, extraId);
 		}
 		else if (IsPlayerConnected(playerid))
 		{
-			CallLocalFunction("OnPlayerTextDrawFXFinish", "iiii", playerid, tdId, fxType, extraId);
+			if (TDFX_HasPlayerFinishCB) CallLocalFunction("OnPlayerTextDrawFXFinish", "iiii", playerid, tdId, fxType, extraId);
 		}
 	}
 }
@@ -1184,18 +1187,35 @@ public TDFX_Tick(slot)
 	new duration = TDFX_Duration[slot];
 	new fxType = TDFX_Type[slot];
 
-	// Handle Duration-based Finish
-	if (duration > 0 && elapsed >= duration)
+	// Handle Generic Duration-based Finish for continuous/interpolation effects
+	switch (fxType)
 	{
-		if (TDFX_Loop[slot])
+		case TDFX_TYPE_SLOT, TDFX_TYPE_SLAM, TDFX_TYPE_VORTEX, TDFX_TYPE_LETTERBOX,
+		     TDFX_TYPE_SONAR, TDFX_TYPE_WAVESWEEP, TDFX_TYPE_LETTERRAIN,
+		     TDFX_TYPE_WAVEMOTION, TDFX_TYPE_HOPLETTER, TDFX_TYPE_SCANNER,
+		     TDFX_TYPE_ELECTRIC, TDFX_TYPE_SPLITFLAP, TDFX_TYPE_HOLOGRAM,
+		     TDFX_TYPE_SHOCKWAVE, TDFX_TYPE_FIREWORK:
 		{
-			TDFX_Start[slot] = GetTickCount();
-			TDFX_Step[slot] = 0;
+			// Custom loop/finish handled in switch cases below
 		}
-		else
+		default:
 		{
-			TDFX_Free(slot, true, true);
-			return 1;
+			if (duration > 0 && elapsed >= duration)
+			{
+				if (TDFX_Loop[slot])
+				{
+					TDFX_Start[slot] = GetTickCount();
+					if (fxType == TDFX_TYPE_BLINK || fxType == TDFX_TYPE_TYPEWRITER)
+					{
+						TDFX_Step[slot] = 0;
+					}
+				}
+				else
+				{
+					TDFX_Free(slot, true, true);
+					return 1;
+				}
+			}
 		}
 	}
 
@@ -1219,8 +1239,16 @@ public TDFX_Tick(slot)
 				{
 					if (fxType == TDFX_TYPE_TYPEWRITER)
 					{
-						TDFX_Step[slot] = TDFX_Count[slot];
-						if (duration == 0) typewriterDone = true;
+						if (TDFX_Loop[slot])
+						{
+							TDFX_Step[slot] = 0;
+							TDFX_Start[slot] = GetTickCount();
+						}
+						else
+						{
+							TDFX_Step[slot] = TDFX_Count[slot];
+							if (duration == 0) typewriterDone = true;
+						}
 					}
 					else
 					{
@@ -1241,6 +1269,11 @@ public TDFX_Tick(slot)
 			}
 			else
 			{
+				if (fxType == TDFX_TYPE_TYPEWRITER)
+				{
+					TDFX_Free(slot, true, true);
+					return 1;
+				}
 				TDFX_Step[slot] = TDFX_Step[slot] ? 0 : 1;
 				new bool:lit = (TDFX_Step[slot] != 0);
 				if (TDFX_Colour[slot])
@@ -1248,8 +1281,15 @@ public TDFX_Tick(slot)
 					new c = lit ? TDFX_Colour[slot] : TDFX_Base[slot];
 					if (isGlobal)
 					{
-						_TDFX_TDColour(Text:tdId, c);
-						if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, lit ? TDFX_Colour[slot] : TDFX_BoxBase[slot]);
+						if (TDFX_Preview[slot])
+						{
+							_TDFX_TDBackColour(Text:tdId, c);
+						}
+						else
+						{
+							_TDFX_TDColour(Text:tdId, c);
+							if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, lit ? TDFX_Colour[slot] : TDFX_BoxBase[slot]);
+						}
 						TextDrawShowForAll(Text:tdId);
 					}
 					else if (TDFX_Preview[slot])
@@ -1280,8 +1320,15 @@ public TDFX_Tick(slot)
 
 			if (isGlobal)
 			{
-				_TDFX_TDColour(Text:tdId, curCol);
-				if (TDFX_FadeBox[slot]) _TDFX_TDBoxColour(Text:tdId, curBox);
+				if (TDFX_Preview[slot])
+				{
+					_TDFX_TDBackColour(Text:tdId, curCol);
+				}
+				else
+				{
+					_TDFX_TDColour(Text:tdId, curCol);
+					if (TDFX_FadeBox[slot]) _TDFX_TDBoxColour(Text:tdId, curBox);
+				}
 				TextDrawShowForAll(Text:tdId);
 			}
 			else if (TDFX_Preview[slot])
@@ -1437,34 +1484,72 @@ public TDFX_Tick(slot)
 			new Float:curY = TDFX_FloatB[slot] + TDFX_FloatD[slot];
 			new bool:bounced = false, bool:hitX = false, bool:hitY = false;
 
-			if (curX <= TDFX_BoundMinX[slot])
-			{
-				curX = TDFX_BoundMinX[slot];
-				TDFX_FloatC[slot] = -TDFX_FloatC[slot];
-				bounced = true;
-				hitX = true;
-			}
-			else if (curX >= TDFX_BoundMaxX[slot])
-			{
-				curX = TDFX_BoundMaxX[slot];
-				TDFX_FloatC[slot] = -TDFX_FloatC[slot];
-				bounced = true;
-				hitX = true;
-			}
+			new Float:cornerTol = (floatabs(TDFX_FloatC[slot]) + floatabs(TDFX_FloatD[slot])) * 1.5;
+			new bool:nearLeft = (curX <= (TDFX_BoundMinX[slot] + cornerTol));
+			new bool:nearRight = (curX >= (TDFX_BoundMaxX[slot] - cornerTol));
+			new bool:nearTop = (curY <= (TDFX_BoundMinY[slot] + cornerTol));
+			new bool:nearBottom = (curY >= (TDFX_BoundMaxY[slot] - cornerTol));
 
-			if (curY <= TDFX_BoundMinY[slot])
+			if ((nearLeft || nearRight) && (nearTop || nearBottom) && (curX <= TDFX_BoundMinX[slot] || curX >= TDFX_BoundMaxX[slot] || curY <= TDFX_BoundMinY[slot] || curY >= TDFX_BoundMaxY[slot]))
 			{
-				curY = TDFX_BoundMinY[slot];
+				if (curX <= TDFX_BoundMinX[slot]) curX = TDFX_BoundMinX[slot];
+				else if (curX >= TDFX_BoundMaxX[slot]) curX = TDFX_BoundMaxX[slot];
+				if (curY <= TDFX_BoundMinY[slot]) curY = TDFX_BoundMinY[slot];
+				else if (curY >= TDFX_BoundMaxY[slot]) curY = TDFX_BoundMaxY[slot];
+
+				TDFX_FloatC[slot] = -TDFX_FloatC[slot];
 				TDFX_FloatD[slot] = -TDFX_FloatD[slot];
 				bounced = true;
+				hitX = true;
 				hitY = true;
 			}
-			else if (curY >= TDFX_BoundMaxY[slot])
+			else
 			{
-				curY = TDFX_BoundMaxY[slot];
-				TDFX_FloatD[slot] = -TDFX_FloatD[slot];
-				bounced = true;
-				hitY = true;
+				if (curX <= TDFX_BoundMinX[slot])
+				{
+					curX = TDFX_BoundMinX[slot];
+					TDFX_FloatC[slot] = -TDFX_FloatC[slot];
+					new Float:dyJit = 0.94 + (float(random(13)) / 100.0);
+					TDFX_FloatD[slot] *= dyJit;
+					if (floatabs(TDFX_FloatD[slot]) < 1.0) TDFX_FloatD[slot] = (TDFX_FloatD[slot] < 0.0) ? -1.2 : 1.2;
+					else if (floatabs(TDFX_FloatD[slot]) > 4.5) TDFX_FloatD[slot] = (TDFX_FloatD[slot] < 0.0) ? -4.0 : 4.0;
+					bounced = true;
+					hitX = true;
+				}
+				else if (curX >= TDFX_BoundMaxX[slot])
+				{
+					curX = TDFX_BoundMaxX[slot];
+					TDFX_FloatC[slot] = -TDFX_FloatC[slot];
+					new Float:dyJit = 0.94 + (float(random(13)) / 100.0);
+					TDFX_FloatD[slot] *= dyJit;
+					if (floatabs(TDFX_FloatD[slot]) < 1.0) TDFX_FloatD[slot] = (TDFX_FloatD[slot] < 0.0) ? -1.2 : 1.2;
+					else if (floatabs(TDFX_FloatD[slot]) > 4.5) TDFX_FloatD[slot] = (TDFX_FloatD[slot] < 0.0) ? -4.0 : 4.0;
+					bounced = true;
+					hitX = true;
+				}
+
+				if (curY <= TDFX_BoundMinY[slot])
+				{
+					curY = TDFX_BoundMinY[slot];
+					TDFX_FloatD[slot] = -TDFX_FloatD[slot];
+					new Float:dxJit = 0.94 + (float(random(13)) / 100.0);
+					TDFX_FloatC[slot] *= dxJit;
+					if (floatabs(TDFX_FloatC[slot]) < 1.0) TDFX_FloatC[slot] = (TDFX_FloatC[slot] < 0.0) ? -1.2 : 1.2;
+					else if (floatabs(TDFX_FloatC[slot]) > 4.5) TDFX_FloatC[slot] = (TDFX_FloatC[slot] < 0.0) ? -4.0 : 4.0;
+					bounced = true;
+					hitY = true;
+				}
+				else if (curY >= TDFX_BoundMaxY[slot])
+				{
+					curY = TDFX_BoundMaxY[slot];
+					TDFX_FloatD[slot] = -TDFX_FloatD[slot];
+					new Float:dxJit = 0.94 + (float(random(13)) / 100.0);
+					TDFX_FloatC[slot] *= dxJit;
+					if (floatabs(TDFX_FloatC[slot]) < 1.0) TDFX_FloatC[slot] = (TDFX_FloatC[slot] < 0.0) ? -1.2 : 1.2;
+					else if (floatabs(TDFX_FloatC[slot]) > 4.5) TDFX_FloatC[slot] = (TDFX_FloatC[slot] < 0.0) ? -4.0 : 4.0;
+					bounced = true;
+					hitY = true;
+				}
 			}
 
 			TDFX_FloatA[slot] = curX;
@@ -1642,8 +1727,15 @@ public TDFX_Tick(slot)
 
 			if (isGlobal)
 			{
-				_TDFX_TDColour(Text:tdId, curCol);
-				if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, curBox);
+				if (TDFX_Preview[slot])
+				{
+					_TDFX_TDBackColour(Text:tdId, curCol);
+				}
+				else
+				{
+					_TDFX_TDColour(Text:tdId, curCol);
+					if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, curBox);
+				}
 				TextDrawShowForAll(Text:tdId);
 			}
 			else
@@ -1661,7 +1753,7 @@ public TDFX_Tick(slot)
 			new Float:phase = float(elapsed % speedMs) / float(speedMs);
 			new Float:angle = phase * 360.0;
 			new Float:curX = TDFX_FloatA[slot] + TDFX_FloatC[slot] * floatsin(angle, degrees);
-			new Float:curY = TDFX_FloatB[slot] + TDFX_FloatD[slot] * floatcos(angle * 1.5, degrees);
+			new Float:curY = TDFX_FloatB[slot] + TDFX_FloatD[slot] * floatcos(angle, degrees);
 
 			#if defined PlayerTextDrawSetPos
 				if (!isGlobal)
@@ -1834,18 +1926,25 @@ public TDFX_Tick(slot)
 							TDFX_FwPartCol[fwIdx][p] = TDFX_FwPalette[p % sizeof(TDFX_FwPalette)];
 
 							new PlayerText:ptd = CreatePlayerTextDraw(playerid, origX, origY, TDFX_FwGlyphs[p]);
-							#if defined _INC_open_mp
-							PlayerTextDrawAlignment(playerid, ptd, TEXT_DRAW_ALIGN_CENTER);
-							PlayerTextDrawFont(playerid, ptd, TEXT_DRAW_FONT_2);
-							#else
-							PlayerTextDrawAlignment(playerid, ptd, 2);
-							PlayerTextDrawFont(playerid, ptd, 2);
-							#endif
-							PlayerTextDrawLetterSize(playerid, ptd, 0.40, 1.60);
-							_TDFX_PTDColour(playerid, ptd, TDFX_FwPartCol[fwIdx][p]);
-							PlayerTextDrawSetOutline(playerid, ptd, 1);
-							PlayerTextDrawShow(playerid, ptd);
-							TDFX_FwParts[fwIdx][p] = ptd;
+							if (_:ptd != 0xFFFF && _:ptd >= 0)
+							{
+								#if defined _INC_open_mp
+								PlayerTextDrawAlignment(playerid, ptd, TEXT_DRAW_ALIGN_CENTER);
+								PlayerTextDrawFont(playerid, ptd, TEXT_DRAW_FONT_2);
+								#else
+								PlayerTextDrawAlignment(playerid, ptd, 2);
+								PlayerTextDrawFont(playerid, ptd, 2);
+								#endif
+								PlayerTextDrawLetterSize(playerid, ptd, 0.40, 1.60);
+								_TDFX_PTDColour(playerid, ptd, TDFX_FwPartCol[fwIdx][p]);
+								PlayerTextDrawSetOutline(playerid, ptd, 1);
+								PlayerTextDrawShow(playerid, ptd);
+								TDFX_FwParts[fwIdx][p] = ptd;
+							}
+							else
+							{
+								TDFX_FwParts[fwIdx][p] = PlayerText:INVALID_TEXT_DRAW;
+							}
 						}
 					}
 					#if TDFX_MAX_GLOBAL_TD > 0
@@ -1901,18 +2000,25 @@ public TDFX_Tick(slot)
 							TDFX_FwPartCol[fwIdx][p] = TDFX_FwPalette[p % sizeof(TDFX_FwPalette)];
 
 							new Text:gtd = TextDrawCreate(origX, origY, TDFX_FwGlyphs[p]);
-							#if defined _INC_open_mp
-							TextDrawAlignment(gtd, TEXT_DRAW_ALIGN_CENTER);
-							TextDrawFont(gtd, TEXT_DRAW_FONT_2);
-							#else
-							TextDrawAlignment(gtd, 2);
-							TextDrawFont(gtd, 2);
-							#endif
-							TextDrawLetterSize(gtd, 0.40, 1.60);
-							_TDFX_TDColour(gtd, TDFX_FwPartCol[fwIdx][p]);
-							TextDrawSetOutline(gtd, 1);
-							TextDrawShowForAll(gtd);
-							TDFX_GFwParts[fwIdx][p] = gtd;
+							if (_:gtd != 0xFFFF && _:gtd >= 0)
+							{
+								#if defined _INC_open_mp
+								TextDrawAlignment(gtd, TEXT_DRAW_ALIGN_CENTER);
+								TextDrawFont(gtd, TEXT_DRAW_FONT_2);
+								#else
+								TextDrawAlignment(gtd, 2);
+								TextDrawFont(gtd, 2);
+								#endif
+								TextDrawLetterSize(gtd, 0.40, 1.60);
+								_TDFX_TDColour(gtd, TDFX_FwPartCol[fwIdx][p]);
+								TextDrawSetOutline(gtd, 1);
+								TextDrawShowForAll(gtd);
+								TDFX_GFwParts[fwIdx][p] = gtd;
+							}
+							else
+							{
+								TDFX_GFwParts[fwIdx][p] = Text:INVALID_TEXT_DRAW;
+							}
 						}
 					}
 					#endif
@@ -1955,6 +2061,38 @@ public TDFX_Tick(slot)
 				}
 			}
 			#endif
+
+			if (elapsed >= totalDuration)
+			{
+				if (TDFX_Loop[slot])
+				{
+					if (TDFX_PerChar[slot] && fwIdx >= 0 && fwIdx < TDFX_MAX_FW_INSTANCES)
+					{
+						for (new p = 0; p < TDFX_FW_PARTICLES; p++)
+						{
+							if (!isGlobal && TDFX_FwParts[fwIdx][p] != PlayerText:INVALID_TEXT_DRAW)
+							{
+								PlayerTextDrawDestroy(playerid, TDFX_FwParts[fwIdx][p]);
+								TDFX_FwParts[fwIdx][p] = PlayerText:INVALID_TEXT_DRAW;
+							}
+							#if TDFX_MAX_GLOBAL_TD > 0
+							else if (isGlobal && TDFX_GFwParts[fwIdx][p] != Text:INVALID_TEXT_DRAW)
+							{
+								TextDrawDestroy(TDFX_GFwParts[fwIdx][p]);
+								TDFX_GFwParts[fwIdx][p] = Text:INVALID_TEXT_DRAW;
+							}
+							#endif
+						}
+					}
+					TDFX_PerChar[slot] = false;
+					TDFX_Start[slot] = GetTickCount();
+				}
+				else
+				{
+					TDFX_Free(slot, true, true);
+					return 1;
+				}
+			}
 		}
 
 		case TDFX_TYPE_GLITCH:
@@ -2076,12 +2214,12 @@ public TDFX_Tick(slot)
 			if (pauseTime < 0) pauseTime = 0;
 			new cycleTime = sweepTime + pauseTime;
 			new cycleElapsed = elapsed % cycleTime;
-			new rawLen = strlen(TDFX_Text[slot]);
+			new totalVis = TDFX_CountVisibleGlyphs(TDFX_Text[slot]);
 			new hIdx = -1;
 
-			if (cycleElapsed < sweepTime && rawLen > 0)
+			if (cycleElapsed < sweepTime && totalVis > 0)
 			{
-				hIdx = floatround((float(cycleElapsed) / float(sweepTime)) * float(rawLen + 2)) - 1;
+				hIdx = floatround((float(cycleElapsed) / float(sweepTime)) * float(totalVis + 2)) - 1;
 			}
 
 			if (hIdx != TDFX_Easing[slot])
@@ -2089,31 +2227,37 @@ public TDFX_Tick(slot)
 				TDFX_Easing[slot] = hIdx;
 				new outStr[TDFX_MAX_TEXT];
 				new outPos = 0;
-				new baseLen = strlen(TDFX_Prefix[slot]);
-				new shimLen = strlen(TDFX_Suffix[slot]);
-				new bool:inShim = false;
+				new curTag[16];
+				strmid(curTag, TDFX_Prefix[slot], 0, strlen(TDFX_Prefix[slot]), sizeof curTag);
+				new lastTag[16];
+				lastTag[0] = '\0';
+				new i = 0, visIdx = 0;
 
-				for (new i = 0; i < rawLen && outPos < (sizeof(outStr) - 16); i++)
+				while (TDFX_Text[slot][i] && outPos < (sizeof(outStr) - 20))
 				{
-					new bool:shouldShim = (hIdx >= 0 && (i >= (hIdx - 1) && i <= (hIdx + 1)));
-					if (shouldShim && !inShim)
+					if (TDFX_Text[slot][i] == '~')
 					{
-						for (new k = 0; k < shimLen && outPos < (sizeof(outStr) - 16); k++)
-							outStr[outPos++] = TDFX_Suffix[slot][k];
-						inShim = true;
+						new nextTag = TDFX_SkipTag(TDFX_Text[slot], i);
+						strmid(curTag, TDFX_Text[slot], i, nextTag, sizeof curTag);
+						i = nextTag;
+						continue;
 					}
-					else if (!shouldShim && inShim)
+
+					new bool:shouldShim = (hIdx >= 0 && (visIdx >= (hIdx - 1) && visIdx <= (hIdx + 1)));
+					new neededTag[16];
+					if (shouldShim) strmid(neededTag, TDFX_Suffix[slot], 0, strlen(TDFX_Suffix[slot]), sizeof neededTag);
+					else strmid(neededTag, curTag, 0, strlen(curTag), sizeof neededTag);
+
+					if (strcmp(neededTag, lastTag) != 0)
 					{
-						for (new k = 0; k < baseLen && outPos < (sizeof(outStr) - 16); k++)
-							outStr[outPos++] = TDFX_Prefix[slot][k];
-						inShim = false;
+						for (new k = 0; neededTag[k] && outPos < (sizeof(outStr) - 2); k++)
+							outStr[outPos++] = neededTag[k];
+						strmid(lastTag, neededTag, 0, strlen(neededTag), sizeof lastTag);
 					}
-					else if (i == 0 && !shouldShim)
-					{
-						for (new k = 0; k < baseLen && outPos < (sizeof(outStr) - 16); k++)
-							outStr[outPos++] = TDFX_Prefix[slot][k];
-					}
+
 					outStr[outPos++] = TDFX_Text[slot][i];
+					visIdx++;
+					i++;
 				}
 				outStr[outPos] = '\0';
 
@@ -2141,20 +2285,31 @@ public TDFX_Tick(slot)
 				TDFX_Easing[slot] = phase;
 				new outStr[TDFX_MAX_TEXT];
 				new outPos = 0;
-				new rawLen = strlen(TDFX_Text[slot]);
+				new i = 0, visIdx = 0;
 
-				for (new i = 0; i < rawLen && outPos < (sizeof(outStr) - 6); i++)
+				while (TDFX_Text[slot][i] && outPos < (sizeof(outStr) - 8))
 				{
+					if (TDFX_Text[slot][i] == '~')
+					{
+						i = TDFX_SkipTag(TDFX_Text[slot], i);
+						continue;
+					}
+
 					if (TDFX_Text[slot][i] == ' ')
 					{
 						outStr[outPos++] = ' ';
+						visIdx++;
+						i++;
 						continue;
 					}
-					new cIdx = (i + phase) % 6;
+
+					new cIdx = (visIdx + phase) % 6;
 					outStr[outPos++] = TDFX_RainbowPalette[cIdx][0];
 					outStr[outPos++] = TDFX_RainbowPalette[cIdx][1];
 					outStr[outPos++] = TDFX_RainbowPalette[cIdx][2];
 					outStr[outPos++] = TDFX_Text[slot][i];
+					visIdx++;
+					i++;
 				}
 				outStr[outPos] = '\0';
 
@@ -2173,20 +2328,20 @@ public TDFX_Tick(slot)
 
 		case TDFX_TYPE_SLOT:
 		{
-			new totalLen = strlen(TDFX_Text[slot]);
-			if (totalLen <= 0) return 1;
+			new totalVis = TDFX_CountVisibleGlyphs(TDFX_Text[slot]);
+			if (totalVis <= 0) return 1;
 
 			new spinDuration = TDFX_Duration[slot];
-			if (spinDuration <= 0) spinDuration = 2000;
-			new colTime = spinDuration / totalLen;
+			if (spinDuration <= 0) spinDuration = 2200;
+			new colTime = spinDuration / totalVis;
 			if (colTime < 50) colTime = 50;
 
 			new lockedCount = elapsed / colTime;
-			if (lockedCount > totalLen) lockedCount = totalLen;
+			if (lockedCount > totalVis) lockedCount = totalVis;
 
 			if (lockedCount > TDFX_Step[slot])
 			{
-				if (!isGlobal && lockedCount < totalLen)
+				if (!isGlobal && lockedCount < totalVis)
 				{
 					PlayerPlaySound(playerid, 1057, 0.0, 0.0, 0.0);
 				}
@@ -2194,11 +2349,33 @@ public TDFX_Tick(slot)
 			}
 
 			new buf[TDFX_MAX_TEXT];
+			new outPos = 0;
 			new glyphCount = sizeof(TDFX_SlotGlyphs) - 1;
+			new i = 0, visIdx = 0;
 
-			for (new i = 0; i < totalLen; i++)
-				buf[i] = (i < lockedCount) ? TDFX_Text[slot][i] : ((TDFX_Text[slot][i] == ' ') ? ' ' : TDFX_SlotGlyphs[random(glyphCount)]);
-			buf[totalLen] = '\0';
+			while (TDFX_Text[slot][i] && outPos < (sizeof(buf) - 4))
+			{
+				if (TDFX_Text[slot][i] == '~')
+				{
+					new nextTag = TDFX_SkipTag(TDFX_Text[slot], i);
+					for (new t = i; t < nextTag && outPos < (sizeof(buf) - 2); t++)
+						buf[outPos++] = TDFX_Text[slot][t];
+					i = nextTag;
+					continue;
+				}
+
+				if (visIdx < lockedCount)
+				{
+					buf[outPos++] = TDFX_Text[slot][i];
+				}
+				else
+				{
+					buf[outPos++] = (TDFX_Text[slot][i] == ' ') ? ' ' : TDFX_SlotGlyphs[random(glyphCount)];
+				}
+				visIdx++;
+				i++;
+			}
+			buf[outPos] = '\0';
 
 			if (!isGlobal)
 			{
@@ -2211,14 +2388,22 @@ public TDFX_Tick(slot)
 				TextDrawShowForAll(Text:tdId);
 			}
 
-			if (lockedCount >= totalLen && elapsed >= spinDuration)
+			if (lockedCount >= totalVis && elapsed >= spinDuration)
 			{
-				if (!isGlobal)
+				if (TDFX_Loop[slot])
 				{
-					PlayerPlaySound(playerid, 1058, 0.0, 0.0, 0.0);
+					TDFX_Start[slot] = GetTickCount();
+					TDFX_Step[slot] = 0;
 				}
-				TDFX_Free(slot, true, true);
-				return 1;
+				else
+				{
+					if (!isGlobal)
+					{
+						PlayerPlaySound(playerid, 1058, 0.0, 0.0, 0.0);
+					}
+					TDFX_Free(slot, true, true);
+					return 1;
+				}
 			}
 		}
 
@@ -2265,21 +2450,31 @@ public TDFX_Tick(slot)
 
 				if (floatabs(TDFX_FloatD[slot]) < 0.60 || TDFX_Step[slot] >= 4)
 				{
-					TDFX_FloatB[slot] = TDFX_FloatC[slot];
-					if (!isGlobal)
+					if (TDFX_Loop[slot])
 					{
-						PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-						PlayerTextDrawShow(playerid, PlayerText:tdId);
+						TDFX_Start[slot] = GetTickCount();
+						TDFX_Step[slot] = 0;
+						TDFX_FloatB[slot] = TDFX_BoundMinY[slot];
+						TDFX_FloatD[slot] = 0.0;
 					}
-					#if TDFX_MAX_GLOBAL_TD > 0
 					else
 					{
-						TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-						TextDrawShowForAll(Text:tdId);
+						TDFX_FloatB[slot] = TDFX_FloatC[slot];
+						if (!isGlobal)
+						{
+							PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+							PlayerTextDrawShow(playerid, PlayerText:tdId);
+						}
+						#if TDFX_MAX_GLOBAL_TD > 0
+						else
+						{
+							TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+							TextDrawShowForAll(Text:tdId);
+						}
+						#endif
+						TDFX_Free(slot, true, true);
+						return 1;
 					}
-					#endif
-					TDFX_Free(slot, true, true);
-					return 1;
 				}
 			}
 
@@ -2327,19 +2522,26 @@ public TDFX_Tick(slot)
 
 			if (prog >= 1.0)
 			{
-				if (!isGlobal)
+				if (TDFX_Loop[slot])
 				{
-					PlayerPlaySound(playerid, 1185, 0.0, 0.0, 0.0);
-					PlayerTextDrawHide(playerid, PlayerText:tdId);
+					TDFX_Start[slot] = GetTickCount();
 				}
-				#if TDFX_MAX_GLOBAL_TD > 0
 				else
 				{
-					TextDrawHideForAll(Text:tdId);
+					if (!isGlobal)
+					{
+						PlayerPlaySound(playerid, 1185, 0.0, 0.0, 0.0);
+						PlayerTextDrawHide(playerid, PlayerText:tdId);
+					}
+					#if TDFX_MAX_GLOBAL_TD > 0
+					else
+					{
+						TextDrawHideForAll(Text:tdId);
+					}
+					#endif
+					TDFX_Free(slot, false, true);
+					return 1;
 				}
-				#endif
-				TDFX_Free(slot, false, true);
-				return 1;
 			}
 			#endif
 		}
@@ -2387,23 +2589,30 @@ public TDFX_Tick(slot)
 
 			if (prog >= 1.0)
 			{
-				if (TDFX_AutoHide[slot])
+				if (TDFX_Loop[slot])
 				{
-					if (!isGlobal)
-					{
-						PlayerTextDrawHide(playerid, PlayerText:tdId);
-						if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0) PlayerTextDrawHide(playerid, PlayerText:bottomTd);
-					}
-					#if TDFX_MAX_GLOBAL_TD > 0
-					else
-					{
-						TextDrawHideForAll(Text:tdId);
-						if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0) TextDrawHideForAll(Text:bottomTd);
-					}
-					#endif
+					TDFX_Start[slot] = GetTickCount();
 				}
-				TDFX_Free(slot, false, true);
-				return 1;
+				else
+				{
+					if (TDFX_AutoHide[slot])
+					{
+						if (!isGlobal)
+						{
+							PlayerTextDrawHide(playerid, PlayerText:tdId);
+							if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0) PlayerTextDrawHide(playerid, PlayerText:bottomTd);
+						}
+						#if TDFX_MAX_GLOBAL_TD > 0
+						else
+						{
+							TextDrawHideForAll(Text:tdId);
+							if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0) TextDrawHideForAll(Text:bottomTd);
+						}
+						#endif
+					}
+					TDFX_Free(slot, false, true);
+					return 1;
+				}
 			}
 		}
 
@@ -2446,12 +2655,19 @@ public TDFX_Tick(slot)
 
 			if (elapsed >= TDFX_Duration[slot])
 			{
-				if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
-				#if TDFX_MAX_GLOBAL_TD > 0
-				else TextDrawHideForAll(Text:tdId);
-				#endif
-				TDFX_Free(slot, false, true);
-				return 1;
+				if (TDFX_Loop[slot])
+				{
+					TDFX_Start[slot] = GetTickCount();
+				}
+				else
+				{
+					if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
+					#if TDFX_MAX_GLOBAL_TD > 0
+					else TextDrawHideForAll(Text:tdId);
+					#endif
+					TDFX_Free(slot, false, true);
+					return 1;
+				}
 			}
 		}
 
@@ -2459,13 +2675,13 @@ public TDFX_Tick(slot)
 		{
 			new speedMs = TDFX_Step[slot];
 			if (speedMs < 25) speedMs = 25;
-			new rawLen = strlen(TDFX_Text[slot]);
-			if (rawLen > 0)
+			new totalVis = TDFX_CountVisibleGlyphs(TDFX_Text[slot]);
+			if (totalVis > 0)
 			{
 				new crestW = floatround(TDFX_BoundMinX[slot]);
 				if (crestW < 1) crestW = 1;
 				new dir = floatround(TDFX_BoundMinY[slot]);
-				new totalSteps = rawLen + crestW;
+				new totalSteps = totalVis + crestW;
 				new cycle = elapsed / speedMs;
 				new center;
 
@@ -2475,14 +2691,14 @@ public TDFX_Tick(slot)
 				}
 				else if (dir == TDFX_DIR_RIGHT_TO_LEFT)
 				{
-					center = rawLen - (cycle % totalSteps) + crestW/2;
+					center = totalVis - (cycle % totalSteps) + crestW/2;
 				}
 				else // TDFX_DIR_BOUNCE
 				{
-					new bounceSteps = (rawLen - 1) * 2;
+					new bounceSteps = (totalVis - 1) * 2;
 					if (bounceSteps <= 0) bounceSteps = 1;
 					new bPos = cycle % bounceSteps;
-					if (bPos >= rawLen) center = bounceSteps - bPos;
+					if (bPos >= totalVis) center = bounceSteps - bPos;
 					else center = bPos;
 				}
 
@@ -2491,28 +2707,40 @@ public TDFX_Tick(slot)
 					TDFX_Base[slot] = center;
 					new outStr[TDFX_MAX_TEXT];
 					new outPos = 0;
-					new bool:inCrest = false;
+					new curTag[16];
+					strmid(curTag, TDFX_Suffix[slot], 0, strlen(TDFX_Suffix[slot]), sizeof curTag);
+					new lastTag[16];
+					lastTag[0] = '\0';
+					new i = 0, visIdx = 0;
 
-					for (new i = 0; i < rawLen && outPos < (sizeof(outStr) - 10); i++)
+					while (TDFX_Text[slot][i] && outPos < (sizeof(outStr) - 20))
 					{
-						new dist = i - center;
+						if (TDFX_Text[slot][i] == '~')
+						{
+							new nextTag = TDFX_SkipTag(TDFX_Text[slot], i);
+							strmid(curTag, TDFX_Text[slot], i, nextTag, sizeof curTag);
+							i = nextTag;
+							continue;
+						}
+
+						new dist = visIdx - center;
 						if (dist < 0) dist = -dist;
 						new bool:isCrest = (dist <= (crestW / 2));
 
-						if (isCrest && !inCrest)
+						new neededTag[16];
+						if (isCrest) strmid(neededTag, TDFX_Prefix[slot], 0, strlen(TDFX_Prefix[slot]), sizeof neededTag);
+						else strmid(neededTag, curTag, 0, strlen(curTag), sizeof neededTag);
+
+						if (strcmp(neededTag, lastTag) != 0)
 						{
-							for (new c = 0; TDFX_Prefix[slot][c] && outPos < (sizeof(outStr) - 2); c++)
-								outStr[outPos++] = TDFX_Prefix[slot][c];
-							inCrest = true;
-						}
-						else if (!isCrest && inCrest)
-						{
-							for (new b = 0; TDFX_Suffix[slot][b] && outPos < (sizeof(outStr) - 2); b++)
-								outStr[outPos++] = TDFX_Suffix[slot][b];
-							inCrest = false;
+							for (new k = 0; neededTag[k] && outPos < (sizeof(outStr) - 2); k++)
+								outStr[outPos++] = neededTag[k];
+							strmid(lastTag, neededTag, 0, strlen(neededTag), sizeof lastTag);
 						}
 
 						outStr[outPos++] = TDFX_Text[slot][i];
+						visIdx++;
+						i++;
 					}
 					outStr[outPos] = '\0';
 
@@ -2528,20 +2756,27 @@ public TDFX_Tick(slot)
 						TextDrawShowForAll(Text:tdId);
 					}
 					#endif
-				}
+					}
 			}
 
 			if (TDFX_Duration[slot] > 0 && elapsed >= TDFX_Duration[slot])
 			{
-				if (TDFX_AutoHide[slot])
+				if (TDFX_Loop[slot])
 				{
-					if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
-					#if TDFX_MAX_GLOBAL_TD > 0
-					else TextDrawHideForAll(Text:tdId);
-					#endif
+					TDFX_Start[slot] = GetTickCount();
 				}
-				TDFX_Free(slot, true, true);
-				return 1;
+				else
+				{
+					if (TDFX_AutoHide[slot])
+					{
+						if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
+						#if TDFX_MAX_GLOBAL_TD > 0
+						else TextDrawHideForAll(Text:tdId);
+						#endif
+					}
+					TDFX_Free(slot, true, true);
+					return 1;
+				}
 			}
 		}
 
@@ -2595,26 +2830,41 @@ public TDFX_Tick(slot)
 
 			if (elapsed >= TDFX_Duration[slot])
 			{
-				if (instIdx >= 0 && instIdx < TDFX_MAX_CHAR_INSTANCES)
+				if (TDFX_Loop[slot])
 				{
-					TDFX_FreeCharInstance(instIdx);
+					TDFX_Start[slot] = GetTickCount();
+					if (instIdx >= 0 && instIdx < TDFX_MAX_CHAR_INSTANCES && TDFX_CharActive[instIdx])
+					{
+						new count = TDFX_CharCount[instIdx];
+						for (new p = 0; p < count; p++)
+						{
+							TDFX_CharState[instIdx][p] = false;
+						}
+					}
 				}
-				if (!isGlobal)
-				{
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#if TDFX_MAX_GLOBAL_TD > 0
 				else
 				{
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-					TextDrawShowForAll(Text:tdId);
+					if (instIdx >= 0 && instIdx < TDFX_MAX_CHAR_INSTANCES)
+					{
+						TDFX_FreeCharInstance(instIdx);
+					}
+					if (!isGlobal)
+					{
+						PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+						_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+						PlayerTextDrawShow(playerid, PlayerText:tdId);
+					}
+					#if TDFX_MAX_GLOBAL_TD > 0
+					else
+					{
+						TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+						_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+						TextDrawShowForAll(Text:tdId);
+					}
+					#endif
+					TDFX_Free(slot, false, true);
+					return 1;
 				}
-				#endif
-				TDFX_Free(slot, false, true);
-				return 1;
 			}
 		}
 
@@ -2638,9 +2888,14 @@ public TDFX_Tick(slot)
 				{
 					crestPos = minC + (maxC - minC) * prog;
 				}
-				else
+				else if (direction == TDFX_DIR_RIGHT_TO_LEFT)
 				{
 					crestPos = maxC - (maxC - minC) * prog;
+				}
+				else // TDFX_DIR_BOUNCE
+				{
+					new Float:bProg = (prog < 0.5) ? (prog * 2.0) : ((1.0 - prog) * 2.0);
+					crestPos = minC + (maxC - minC) * bProg;
 				}
 
 				new Float:baseY = TDFX_CharTargetY[instIdx];
@@ -2725,15 +2980,39 @@ public TDFX_Tick(slot)
 				new Float:hopH = TDFX_FloatA[slot];
 				new hopMs = TDFX_Count[slot];
 				if (hopMs <= 0) hopMs = 350;
+				new direction = TDFX_Easing[slot];
+				new stag = floatround(TDFX_FloatB[slot]);
+				if (stag <= 0) stag = 90;
 
 				for (new p = 0; p < count; p++)
 				{
-					new startTime = TDFX_CharDelay[instIdx][p];
 					new Float:offsetY = 0.0;
+					new hopElapsed = -1;
 
-					if (elapsed >= startTime && elapsed < (startTime + hopMs))
+					if (direction == TDFX_DIR_BOUNCE)
 					{
-						new hopElapsed = elapsed - startTime;
+						new fwdStart = p * stag;
+						new bwdStart = (count - 1) * stag + (count - 1 - p) * stag;
+						if (elapsed >= fwdStart && elapsed < (fwdStart + hopMs))
+						{
+							hopElapsed = elapsed - fwdStart;
+						}
+						else if (elapsed >= bwdStart && elapsed < (bwdStart + hopMs))
+						{
+							hopElapsed = elapsed - bwdStart;
+						}
+					}
+					else
+					{
+						new startTime = TDFX_CharDelay[instIdx][p];
+						if (elapsed >= startTime && elapsed < (startTime + hopMs))
+						{
+							hopElapsed = elapsed - startTime;
+						}
+					}
+
+					if (hopElapsed >= 0)
+					{
 						new Float:u = float(hopElapsed) / float(hopMs);
 						if (u <= 0.80)
 						{
@@ -2810,43 +3089,54 @@ public TDFX_Tick(slot)
 		{
 			new speedMs = TDFX_Step[slot];
 			if (speedMs < 25) speedMs = 25;
-			new rawLen = strlen(TDFX_Text[slot]);
-			if (rawLen > 0)
+			new totalVis = TDFX_CountVisibleGlyphs(TDFX_Text[slot]);
+			if (totalVis > 0)
 			{
-				new bounceSteps = (rawLen - 1) * 2;
+				new bounceSteps = (totalVis - 1) * 2;
 				if (bounceSteps <= 0) bounceSteps = 1;
 				new cycle = elapsed / speedMs;
 				new bPos = cycle % bounceSteps;
-				new laserIdx = (bPos >= rawLen) ? (bounceSteps - bPos) : bPos;
+				new laserIdx = (bPos >= totalVis) ? (bounceSteps - bPos) : bPos;
 
 				if (laserIdx != TDFX_Easing[slot])
 				{
 					TDFX_Easing[slot] = laserIdx;
 					new outStr[TDFX_MAX_TEXT];
 					new outPos = 0;
+					new curTag[16];
+					curTag[0] = '~'; curTag[1] = 'w'; curTag[2] = '~'; curTag[3] = '\0';
+					new lastTag[16];
+					lastTag[0] = '\0';
+					new i = 0, visIdx = 0;
 
-					for (new i = 0; i < rawLen && outPos < (sizeof(outStr) - 10); i++)
+					while (TDFX_Text[slot][i] && outPos < (sizeof(outStr) - 20))
 					{
-						new dist = i - laserIdx;
+						if (TDFX_Text[slot][i] == '~')
+						{
+							new nextTag = TDFX_SkipTag(TDFX_Text[slot], i);
+							strmid(curTag, TDFX_Text[slot], i, nextTag, sizeof curTag);
+							i = nextTag;
+							continue;
+						}
+
+						new dist = visIdx - laserIdx;
 						if (dist < 0) dist = -dist;
 
-						if (dist == 0)
+						new neededTag[16];
+						if (dist == 0) strmid(neededTag, TDFX_Prefix[slot], 0, strlen(TDFX_Prefix[slot]), sizeof neededTag);
+						else if (dist == 1) strmid(neededTag, TDFX_Suffix[slot], 0, strlen(TDFX_Suffix[slot]), sizeof neededTag);
+						else strmid(neededTag, curTag, 0, strlen(curTag), sizeof neededTag);
+
+						if (strcmp(neededTag, lastTag) != 0)
 						{
-							for (new c = 0; TDFX_Prefix[slot][c] && outPos < (sizeof(outStr) - 2); c++)
-								outStr[outPos++] = TDFX_Prefix[slot][c];
+							for (new k = 0; neededTag[k] && outPos < (sizeof(outStr) - 2); k++)
+								outStr[outPos++] = neededTag[k];
+							strmid(lastTag, neededTag, 0, strlen(neededTag), sizeof lastTag);
 						}
-						else if (dist == 1)
-						{
-							for (new t = 0; TDFX_Suffix[slot][t] && outPos < (sizeof(outStr) - 2); t++)
-								outStr[outPos++] = TDFX_Suffix[slot][t];
-						}
-						else
-						{
-							outStr[outPos++] = '~';
-							outStr[outPos++] = 'w';
-							outStr[outPos++] = '~';
-						}
+
 						outStr[outPos++] = TDFX_Text[slot][i];
+						visIdx++;
+						i++;
 					}
 					outStr[outPos] = '\0';
 
@@ -2854,7 +3144,7 @@ public TDFX_Tick(slot)
 					{
 						PlayerTextDrawSetString(playerid, PlayerText:tdId, outStr);
 						PlayerTextDrawShow(playerid, PlayerText:tdId);
-						if (laserIdx == 0 || laserIdx == (rawLen - 1))
+						if (laserIdx == 0 || laserIdx == (totalVis - 1))
 						{
 							PlayerPlaySound(playerid, 1058, 0.0, 0.0, 0.0);
 						}
@@ -2866,117 +3156,141 @@ public TDFX_Tick(slot)
 						TextDrawShowForAll(Text:tdId);
 					}
 					#endif
+					}
 				}
-			}
-
-			if (TDFX_Duration[slot] > 0 && elapsed >= TDFX_Duration[slot])
-			{
-				if (TDFX_AutoHide[slot])
+	
+				if (TDFX_Duration[slot] > 0 && elapsed >= TDFX_Duration[slot])
 				{
-					if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
-					#if TDFX_MAX_GLOBAL_TD > 0
-					else TextDrawHideForAll(Text:tdId);
-					#endif
-				}
-				TDFX_Free(slot, true, true);
-				return 1;
-			}
-		}
-
-		case TDFX_TYPE_ELECTRIC:
-		{
-			new Float:decay = 1.0 - (float(elapsed) / float(TDFX_Duration[slot]));
-			if (decay < 0.0) decay = 0.0;
-
-			new Float:jitX = TDFX_FloatA[slot] + ((float(random(21) - 10) / 10.0) * 2.2 * decay);
-			new Float:jitY = TDFX_FloatB[slot] + ((float(random(17) - 8) / 10.0) * 1.6 * decay);
-
-			#if defined PlayerTextDrawSetPos
-			if (!isGlobal)
-			{
-				PlayerTextDrawSetPos(playerid, PlayerText:tdId, jitX, jitY);
-				if (random(4) == 0 && decay > 0.3)
-				{
-					PlayerPlaySound(playerid, 1130, 0.0, 0.0, 0.0);
+					if (TDFX_Loop[slot])
+					{
+						TDFX_Start[slot] = GetTickCount();
+					}
+					else
+					{
+						if (TDFX_AutoHide[slot])
+						{
+							if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
+							#if TDFX_MAX_GLOBAL_TD > 0
+							else TextDrawHideForAll(Text:tdId);
+							#endif
+						}
+						TDFX_Free(slot, true, true);
+						return 1;
+					}
 				}
 			}
-			#endif
-			#if TDFX_MAX_GLOBAL_TD > 0
-			else
+	
+			case TDFX_TYPE_ELECTRIC:
 			{
-				#if defined TextDrawSetPos
-				TextDrawSetPos(Text:tdId, jitX, jitY);
-				#endif
-			}
-			#endif
-
-			new outStr[TDFX_MAX_TEXT];
-			new spark = random(4);
-			if (decay > 0.15 && spark == 0)
-			{
-				format(outStr, sizeof outStr, "~b~>> ~w~%s ~b~<<", TDFX_Text[slot]);
-			}
-			else if (decay > 0.15 && spark == 1)
-			{
-				format(outStr, sizeof outStr, "~y~** ~w~%s ~y~**", TDFX_Text[slot]);
-			}
-			else
-			{
-				format(outStr, sizeof outStr, "~w~%s", TDFX_Text[slot]);
-			}
-
-			if (!isGlobal)
-			{
-				PlayerTextDrawSetString(playerid, PlayerText:tdId, outStr);
-				PlayerTextDrawShow(playerid, PlayerText:tdId);
-			}
-			#if TDFX_MAX_GLOBAL_TD > 0
-			else
-			{
-				TextDrawSetString(Text:tdId, outStr);
-				TextDrawShowForAll(Text:tdId);
-			}
-			#endif
-
-			if (elapsed >= TDFX_Duration[slot])
-			{
+				new Float:decay = 1.0 - (float(elapsed) / float(TDFX_Duration[slot]));
+				if (decay < 0.0) decay = 0.0;
+	
+				new Float:jitX = TDFX_FloatA[slot] + ((float(random(21) - 10) / 10.0) * 2.2 * decay);
+				new Float:jitY = TDFX_FloatB[slot] + ((float(random(17) - 8) / 10.0) * 1.6 * decay);
+	
 				#if defined PlayerTextDrawSetPos
 				if (!isGlobal)
 				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
+					PlayerTextDrawSetPos(playerid, PlayerText:tdId, jitX, jitY);
+					if (random(4) == 0 && decay > 0.3)
+					{
+						PlayerPlaySound(playerid, 1130, 0.0, 0.0, 0.0);
+					}
 				}
 				#endif
 				#if TDFX_MAX_GLOBAL_TD > 0
 				else
 				{
 					#if defined TextDrawSetPos
-					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+					TextDrawSetPos(Text:tdId, jitX, jitY);
 					#endif
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+				}
+				#endif
+	
+				new outStr[TDFX_MAX_TEXT];
+				new spark = random(4);
+				if (decay > 0.15 && spark == 0)
+				{
+					format(outStr, sizeof outStr, "~b~>> ~w~%s ~b~<<", TDFX_Text[slot]);
+				}
+				else if (decay > 0.15 && spark == 1)
+				{
+					format(outStr, sizeof outStr, "~y~** ~w~%s ~y~**", TDFX_Text[slot]);
+				}
+				else
+				{
+					format(outStr, sizeof outStr, "%s", TDFX_Text[slot]);
+				}
+	
+				if (!isGlobal)
+				{
+					PlayerTextDrawSetString(playerid, PlayerText:tdId, outStr);
+					PlayerTextDrawShow(playerid, PlayerText:tdId);
+				}
+				#if TDFX_MAX_GLOBAL_TD > 0
+				else
+				{
+					TextDrawSetString(Text:tdId, outStr);
 					TextDrawShowForAll(Text:tdId);
 				}
 				#endif
-				TDFX_Free(slot, false, true);
-				return 1;
+	
+				if (elapsed >= TDFX_Duration[slot])
+				{
+					if (TDFX_Loop[slot])
+					{
+						TDFX_Start[slot] = GetTickCount();
+					}
+					else
+					{
+						#if defined PlayerTextDrawSetPos
+						if (!isGlobal)
+						{
+							PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+							PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+							_TDFX_PTDColour(playerid, PlayerText:tdId, TDFX_Base[slot]);
+							PlayerTextDrawShow(playerid, PlayerText:tdId);
+						}
+						#endif
+						#if TDFX_MAX_GLOBAL_TD > 0
+						else
+						{
+						#if defined TextDrawSetPos
+							TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+						#endif
+							TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+							_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
+							TextDrawShowForAll(Text:tdId);
+						}
+						#endif
+						TDFX_Free(slot, false, true);
+						return 1;
+				}
 			}
 		}
 
 		case TDFX_TYPE_SPLITFLAP:
 		{
-			new rawLen = strlen(TDFX_Text[slot]);
+			new totalVis = TDFX_CountVisibleGlyphs(TDFX_Text[slot]);
 			new lockIntervalMs = floatround(TDFX_FloatB[slot]);
 			if (lockIntervalMs < 50) lockIntervalMs = 180;
 			new outStr[TDFX_MAX_TEXT];
 			new outPos = 0;
 			new flapCount = sizeof(TDFX_FlapChars) - 1;
+			new i = 0, visIdx = 0;
 
-			for (new i = 0; i < rawLen && outPos < (sizeof(outStr) - 2); i++)
+			while (TDFX_Text[slot][i] && outPos < (sizeof(outStr) - 4))
 			{
-				new lockTime = (i + 1) * lockIntervalMs;
+				if (TDFX_Text[slot][i] == '~')
+				{
+					new nextTag = TDFX_SkipTag(TDFX_Text[slot], i);
+					for (new t = i; t < nextTag && outPos < (sizeof(outStr) - 2); t++)
+						outStr[outPos++] = TDFX_Text[slot][t];
+					i = nextTag;
+					continue;
+				}
+
+				new lockTime = (visIdx + 1) * lockIntervalMs;
 				if (elapsed >= lockTime)
 				{
 					outStr[outPos++] = TDFX_Text[slot][i];
@@ -2993,6 +3307,8 @@ public TDFX_Tick(slot)
 						outStr[outPos++] = TDFX_FlapChars[r];
 					}
 				}
+				visIdx++;
+				i++;
 			}
 			outStr[outPos] = '\0';
 
@@ -3000,7 +3316,7 @@ public TDFX_Tick(slot)
 			if (currentLocked != TDFX_Easing[slot])
 			{
 				TDFX_Easing[slot] = currentLocked;
-				if (!isGlobal && currentLocked <= rawLen)
+				if (!isGlobal && currentLocked <= totalVis)
 				{
 					PlayerPlaySound(playerid, 1083, 0.0, 0.0, 0.0);
 				}
@@ -3019,22 +3335,30 @@ public TDFX_Tick(slot)
 			}
 			#endif
 
-			if (elapsed >= (rawLen * lockIntervalMs + 600))
+			if (elapsed >= (totalVis * lockIntervalMs + 600))
 			{
-				if (!isGlobal)
+				if (TDFX_Loop[slot])
 				{
-					PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
+					TDFX_Start[slot] = GetTickCount();
+					TDFX_Easing[slot] = -1;
 				}
-				#if TDFX_MAX_GLOBAL_TD > 0
 				else
 				{
-					TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-					TextDrawShowForAll(Text:tdId);
+					if (!isGlobal)
+					{
+						PlayerTextDrawSetString(playerid, PlayerText:tdId, TDFX_Text[slot]);
+						PlayerTextDrawShow(playerid, PlayerText:tdId);
+					}
+					#if TDFX_MAX_GLOBAL_TD > 0
+					else
+					{
+						TextDrawSetString(Text:tdId, TDFX_Text[slot]);
+						TextDrawShowForAll(Text:tdId);
+					}
+					#endif
+					TDFX_Free(slot, false, true);
+					return 1;
 				}
-				#endif
-				TDFX_Free(slot, false, true);
-				return 1;
 			}
 		}
 
@@ -3069,15 +3393,22 @@ public TDFX_Tick(slot)
 
 			if (TDFX_Duration[slot] > 0 && elapsed >= TDFX_Duration[slot])
 			{
-				if (TDFX_AutoHide[slot])
+				if (TDFX_Loop[slot])
 				{
-					if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
-					#if TDFX_MAX_GLOBAL_TD > 0
-					else TextDrawHideForAll(Text:tdId);
-					#endif
+					TDFX_Start[slot] = GetTickCount();
 				}
-				TDFX_Free(slot, true, true);
-				return 1;
+				else
+				{
+					if (TDFX_AutoHide[slot])
+					{
+						if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
+						#if TDFX_MAX_GLOBAL_TD > 0
+						else TextDrawHideForAll(Text:tdId);
+						#endif
+					}
+					TDFX_Free(slot, true, true);
+					return 1;
+				}
 			}
 		}
 
@@ -3163,33 +3494,47 @@ public TDFX_Tick(slot)
 							if (!isGlobal)
 							{
 								new PlayerText:ptd = CreatePlayerTextDraw(playerid, TDFX_FloatA[slot], TDFX_FloatB[slot], "*");
-								#if defined _INC_open_mp
-								PlayerTextDrawAlignment(playerid, ptd, TEXT_DRAW_ALIGN_CENTER);
-								PlayerTextDrawFont(playerid, ptd, TEXT_DRAW_FONT_2);
-								#else
-								PlayerTextDrawAlignment(playerid, ptd, 2);
-								PlayerTextDrawFont(playerid, ptd, 2);
-								#endif
-								PlayerTextDrawLetterSize(playerid, ptd, 0.35, 1.2);
-								_TDFX_PTDColour(playerid, ptd, 0xF1C40FFF);
-								PlayerTextDrawShow(playerid, ptd);
-								TDFX_FwParts[fwIdx][p] = ptd;
+								if (_:ptd != 0xFFFF && _:ptd >= 0)
+								{
+									#if defined _INC_open_mp
+									PlayerTextDrawAlignment(playerid, ptd, TEXT_DRAW_ALIGN_CENTER);
+									PlayerTextDrawFont(playerid, ptd, TEXT_DRAW_FONT_2);
+									#else
+									PlayerTextDrawAlignment(playerid, ptd, 2);
+									PlayerTextDrawFont(playerid, ptd, 2);
+									#endif
+									PlayerTextDrawLetterSize(playerid, ptd, 0.35, 1.2);
+									_TDFX_PTDColour(playerid, ptd, 0xF1C40FFF);
+									PlayerTextDrawShow(playerid, ptd);
+									TDFX_FwParts[fwIdx][p] = ptd;
+								}
+								else
+								{
+									TDFX_FwParts[fwIdx][p] = PlayerText:INVALID_TEXT_DRAW;
+								}
 							}
 							#if TDFX_MAX_GLOBAL_TD > 0
 							else
 							{
 								new Text:gtd = TextDrawCreate(TDFX_FloatA[slot], TDFX_FloatB[slot], "*");
-								#if defined _INC_open_mp
-								TextDrawAlignment(gtd, TEXT_DRAW_ALIGN_CENTER);
-								TextDrawFont(gtd, TEXT_DRAW_FONT_2);
-								#else
-								TextDrawAlignment(gtd, 2);
-								TextDrawFont(gtd, 2);
-								#endif
-								TextDrawLetterSize(gtd, 0.35, 1.2);
-								_TDFX_TDColour(gtd, 0xF1C40FFF);
-								TextDrawShowForAll(gtd);
-								TDFX_GFwParts[fwIdx][p] = gtd;
+								if (_:gtd != 0xFFFF && _:gtd >= 0)
+								{
+									#if defined _INC_open_mp
+									TextDrawAlignment(gtd, TEXT_DRAW_ALIGN_CENTER);
+									TextDrawFont(gtd, TEXT_DRAW_FONT_2);
+									#else
+									TextDrawAlignment(gtd, 2);
+									TextDrawFont(gtd, 2);
+									#endif
+									TextDrawLetterSize(gtd, 0.35, 1.2);
+									_TDFX_TDColour(gtd, 0xF1C40FFF);
+									TextDrawShowForAll(gtd);
+									TDFX_GFwParts[fwIdx][p] = gtd;
+								}
+								else
+								{
+									TDFX_GFwParts[fwIdx][p] = Text:INVALID_TEXT_DRAW;
+								}
 							}
 							#endif
 						}
@@ -3264,30 +3609,43 @@ public TDFX_Tick(slot)
 
 			if (elapsed >= TDFX_Duration[slot])
 			{
-				if (fwIdx >= 0 && fwIdx < TDFX_MAX_FW_INSTANCES)
+				if (TDFX_Loop[slot])
 				{
-					TDFX_FreeFwInstance(fwIdx);
+					if (fwIdx >= 0 && fwIdx < TDFX_MAX_FW_INSTANCES)
+					{
+						TDFX_FreeFwInstance(fwIdx);
+					}
+					TDFX_Step[slot] = TDFX_AllocFwInstance();
+					TDFX_Easing[slot] = 0;
+					TDFX_Start[slot] = GetTickCount();
 				}
-				#if defined PlayerTextDrawSetPos
-				if (!isGlobal)
-				{
-					PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-					PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-					PlayerTextDrawShow(playerid, PlayerText:tdId);
-				}
-				#endif
-				#if TDFX_MAX_GLOBAL_TD > 0
 				else
 				{
-					#if defined TextDrawSetPos
-					TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+					if (fwIdx >= 0 && fwIdx < TDFX_MAX_FW_INSTANCES)
+					{
+						TDFX_FreeFwInstance(fwIdx);
+					}
+					#if defined PlayerTextDrawSetPos
+					if (!isGlobal)
+					{
+						PlayerTextDrawSetPos(playerid, PlayerText:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+						PlayerTextDrawLetterSize(playerid, PlayerText:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
+						PlayerTextDrawShow(playerid, PlayerText:tdId);
+					}
 					#endif
-					TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-					TextDrawShowForAll(Text:tdId);
+					#if TDFX_MAX_GLOBAL_TD > 0
+					else
+					{
+						#if defined TextDrawSetPos
+						TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
+						#endif
+						TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
+						TextDrawShowForAll(Text:tdId);
+					}
+					#endif
+					TDFX_Free(slot, false, true);
+					return 1;
 				}
-				#endif
-				TDFX_Free(slot, false, true);
-				return 1;
 			}
 		}
 	}
@@ -3298,7 +3656,7 @@ public TDFX_Tick(slot)
 // Public API - Player TextDraws
 // -----------------------------------------------------------------------------
 
-stock BlinkPlayerTextDraw(playerid, PlayerText:textid, interval = 500, duration = 0, bool:perChar = false, colour = 0, const text[] = "", baseColour = 0)
+stock BlinkPlayerTextDraw(playerid, PlayerText:textid, interval = 500, duration = 0, bool:perChar = false, colour = 0, const text[] = "", baseColour = 0, bool:loop = false)
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -3380,7 +3738,7 @@ stock BlinkPlayerTextDraw(playerid, PlayerText:textid, interval = 500, duration 
 	TDFX_Callback[slot][0] = 0;
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	if (perChar)
@@ -3405,15 +3763,22 @@ stock BlinkPlayerTextDraw(playerid, PlayerText:textid, interval = 500, duration 
 	return 1;
 }
 
-stock TypewriterPlayerTextDraw(playerid, PlayerText:textid, const text[], interval = 50, duration = 0, extra_id = 0, const callback[] = "")
+stock TypewriterPlayerTextDraw(playerid, PlayerText:textid, const text[], interval = 50, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
+	if (!text[0]) return 0;
 	new ret = BlinkPlayerTextDraw(playerid, textid, interval, duration, true, 0, text);
 	if (ret)
 	{
 		new slot = TDFX_FindPlayer(playerid, textid);
 		if (slot != -1)
 		{
+			if (!TDFX_PerChar[slot])
+			{
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			TDFX_Type[slot] = TDFX_TYPE_TYPEWRITER;
+			TDFX_Loop[slot] = loop;
 			TDFX_ExtraId[slot] = extra_id;
 			if (callback[0]) strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		}
@@ -3421,7 +3786,7 @@ stock TypewriterPlayerTextDraw(playerid, PlayerText:textid, const text[], interv
 	return ret;
 }
 
-stock FadeInPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:fadeBox = true, targetAlpha = 255, extra_id = 0, const callback[] = "", bool:autoHide = false)
+stock FadeInPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:fadeBox = true, targetAlpha = 255, bool:loop = false, extra_id = 0, const callback[] = "", bool:autoHide = false)
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -3486,7 +3851,7 @@ stock FadeInPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:fa
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = autoHide;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	if (preview) _TDFX_PTDBackColour(playerid, textid, startCol);
@@ -3500,7 +3865,7 @@ stock FadeInPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:fa
 	return 1;
 }
 
-stock FadeOutPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:fadeBox = true, extra_id = 0, const callback[] = "", bool:autoHide = true)
+stock FadeOutPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:fadeBox = true, bool:loop = false, extra_id = 0, const callback[] = "", bool:autoHide = true)
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -3565,14 +3930,14 @@ stock FadeOutPlayerTextDraw(playerid, PlayerText:textid, duration = 1000, bool:f
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = autoHide;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock FadeColorPlayerTextDraw(playerid, PlayerText:textid, fromColor, toColor, duration = 1000, bool:fadeBox = false, fromBox = 0, toBox = 0, easing = TDFX_EASE_LINEAR, extra_id = 0, const callback[] = "")
+stock FadeColorPlayerTextDraw(playerid, PlayerText:textid, fromColor, toColor, duration = 1000, bool:fadeBox = false, fromBox = 0, toBox = 0, easing = TDFX_EASE_LINEAR, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -3607,14 +3972,14 @@ stock FadeColorPlayerTextDraw(playerid, PlayerText:textid, fromColor, toColor, d
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock ScalePlayerTextDraw(playerid, PlayerText:textid, Float:startSizeX, Float:startSizeY, Float:targetSizeX, Float:targetSizeY, duration = 1000, easing = TDFX_EASE_LINEAR, extra_id = 0, const callback[] = "")
+stock ScalePlayerTextDraw(playerid, PlayerText:textid, Float:startSizeX, Float:startSizeY, Float:targetSizeX, Float:targetSizeY, duration = 1000, easing = TDFX_EASE_LINEAR, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -3641,7 +4006,7 @@ stock ScalePlayerTextDraw(playerid, PlayerText:textid, Float:startSizeX, Float:s
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawLetterSize(playerid, textid, startSizeX, startSizeY);
@@ -3650,7 +4015,7 @@ stock ScalePlayerTextDraw(playerid, PlayerText:textid, Float:startSizeX, Float:s
 	return 1;
 }
 
-stock PulsePlayerTextDraw(playerid, PlayerText:textid, Float:amplitude = 0.25, interval = 300, cycles = 0, extra_id = 0, const callback[] = "")
+stock PulsePlayerTextDraw(playerid, PlayerText:textid, Float:amplitude = 0.25, interval = 300, cycles = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -3687,17 +4052,17 @@ stock PulsePlayerTextDraw(playerid, PlayerText:textid, Float:amplitude = 0.25, i
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (cycles == 0);
+	TDFX_Loop[slot] = (cycles == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock SlidePlayerTextDraw(playerid, PlayerText:textid, Float:targetX, Float:targetY, duration = 1000, easing = TDFX_EASE_OUT_QUAD, extra_id = 0, const callback[] = "")
+stock SlidePlayerTextDraw(playerid, PlayerText:textid, Float:targetX, Float:targetY, duration = 1000, easing = TDFX_EASE_OUT_QUAD, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, targetX, targetY, duration, easing, extra_id, callback
+		#pragma unused playerid, textid, targetX, targetY, duration, easing, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -3729,7 +4094,7 @@ stock SlidePlayerTextDraw(playerid, PlayerText:textid, Float:targetX, Float:targ
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
@@ -3737,7 +4102,7 @@ stock SlidePlayerTextDraw(playerid, PlayerText:textid, Float:targetX, Float:targ
 	#endif
 }
 
-stock CountPlayerTextDrawNumber(playerid, PlayerText:textid, startValue, targetValue, duration = 1000, const prefix[] = "", const suffix[] = "", bool:thousandsSep = false, easing = TDFX_EASE_LINEAR, extra_id = 0, const callback[] = "")
+stock CountPlayerTextDrawNumber(playerid, PlayerText:textid, startValue, targetValue, duration = 1000, const prefix[] = "", const suffix[] = "", bool:thousandsSep = false, easing = TDFX_EASE_LINEAR, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new pFont = 0;
@@ -3771,7 +4136,7 @@ stock CountPlayerTextDrawNumber(playerid, PlayerText:textid, startValue, targetV
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	new initial[TDFX_MAX_TEXT];
@@ -3782,7 +4147,7 @@ stock CountPlayerTextDrawNumber(playerid, PlayerText:textid, startValue, targetV
 	return 1;
 }
 
-stock ScramblePlayerTextDraw(playerid, PlayerText:textid, const finalText[], duration = 2000, extra_id = 0, const callback[] = "")
+stock ScramblePlayerTextDraw(playerid, PlayerText:textid, const finalText[], duration = 2000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new pFont = 0;
@@ -3811,7 +4176,7 @@ stock ScramblePlayerTextDraw(playerid, PlayerText:textid, const finalText[], dur
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -3819,10 +4184,10 @@ stock ScramblePlayerTextDraw(playerid, PlayerText:textid, const finalText[], dur
 	return 1;
 }
 
-stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, extra_id = 0, const callback[] = "")
+stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, extra_id, callback
+		#pragma unused playerid, textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -3850,6 +4215,10 @@ stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:spee
 		TDFX_Player[slot] = playerid;
 		TDFX_Td[slot] = _:textid;
 		TDFX_Duration[slot] = duration;
+		if (random(2) == 0) speedX = -speedX;
+		if (random(2) == 0) speedY = -speedY;
+		speedX *= (0.90 + float(random(21)) / 100.0);
+		speedY *= (0.90 + float(random(21)) / 100.0);
 		TDFX_FloatA[slot] = curX;
 		TDFX_FloatB[slot] = curY;
 		TDFX_FloatC[slot] = speedX;
@@ -3864,7 +4233,7 @@ stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:spee
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -3873,10 +4242,10 @@ stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:spee
 	#endif
 }
 
-stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, extra_id = 0, const callback[] = "")
+stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, speed, angle, centerX, centerY, radius, colorShift, duration, extra_id, callback
+		#pragma unused playerid, textid, speed, angle, centerX, centerY, radius, colorShift, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -3925,7 +4294,7 @@ stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8,
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -3934,10 +4303,10 @@ stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8,
 	#endif
 }
 
-stock OrbitPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, Float:radiusX, Float:radiusY, Float:angularSpeed = 60.0, Float:startAngle = 0.0, duration = 0, extra_id = 0, const callback[] = "")
+stock OrbitPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, Float:radiusX, Float:radiusY, Float:angularSpeed = 60.0, Float:startAngle = 0.0, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, centerX, centerY, radiusX, radiusY, angularSpeed, startAngle, duration, extra_id, callback
+		#pragma unused playerid, textid, centerX, centerY, radiusX, radiusY, angularSpeed, startAngle, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -3971,7 +4340,7 @@ stock OrbitPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:cent
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -3980,10 +4349,10 @@ stock OrbitPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:cent
 	#endif
 }
 
-stock ShakePlayerTextDraw(playerid, PlayerText:textid, Float:intensity = 6.0, duration = 800, extra_id = 0, const callback[] = "")
+stock ShakePlayerTextDraw(playerid, PlayerText:textid, Float:intensity = 6.0, duration = 800, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, intensity, duration, extra_id, callback
+		#pragma unused playerid, textid, intensity, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4013,7 +4382,7 @@ stock ShakePlayerTextDraw(playerid, PlayerText:textid, Float:intensity = 6.0, du
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4022,7 +4391,7 @@ stock ShakePlayerTextDraw(playerid, PlayerText:textid, Float:intensity = 6.0, du
 	#endif
 }
 
-stock NeonFlickerPlayerTextDraw(playerid, PlayerText:textid, duration = 3000, brokenRatio = 40, extra_id = 0, const callback[] = "")
+stock NeonFlickerPlayerTextDraw(playerid, PlayerText:textid, duration = 3000, brokenRatio = 40, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -4062,7 +4431,7 @@ stock NeonFlickerPlayerTextDraw(playerid, PlayerText:textid, duration = 3000, br
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4070,10 +4439,10 @@ stock NeonFlickerPlayerTextDraw(playerid, PlayerText:textid, duration = 3000, br
 	return 1;
 }
 
-stock WaveDriftPlayerTextDraw(playerid, PlayerText:textid, Float:amplitudeX, Float:amplitudeY, speedMs = 1500, duration = 0, extra_id = 0, const callback[] = "")
+stock WaveDriftPlayerTextDraw(playerid, PlayerText:textid, Float:amplitudeX, Float:amplitudeY, speedMs = 1500, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, amplitudeX, amplitudeY, speedMs, duration, extra_id, callback
+		#pragma unused playerid, textid, amplitudeX, amplitudeY, speedMs, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4105,7 +4474,7 @@ stock WaveDriftPlayerTextDraw(playerid, PlayerText:textid, Float:amplitudeX, Flo
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4114,7 +4483,7 @@ stock WaveDriftPlayerTextDraw(playerid, PlayerText:textid, Float:amplitudeX, Flo
 	#endif
 }
 
-stock FillPlayerTextDrawProgress(playerid, PlayerText:textid, Float:startWidth, Float:targetWidth, duration = 2000, easing = TDFX_EASE_OUT_QUAD, Float:lineHeight = 0.0, extra_id = 0, const callback[] = "")
+stock FillPlayerTextDrawProgress(playerid, PlayerText:textid, Float:startWidth, Float:targetWidth, duration = 2000, easing = TDFX_EASE_OUT_QUAD, Float:lineHeight = 0.0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -4150,7 +4519,7 @@ stock FillPlayerTextDrawProgress(playerid, PlayerText:textid, Float:startWidth, 
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	new align = 1;
@@ -4166,10 +4535,10 @@ stock FillPlayerTextDrawProgress(playerid, PlayerText:textid, Float:startWidth, 
 	return 1;
 }
 
-stock FireworkPlayerTextDraw(playerid, PlayerText:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration = 1500, explodeDuration = 1200, Float:shakeIntensity = 6.0, Float:burstSpeed = 6.0, particleCount = 10, extra_id = 0, const callback[] = "")
+stock FireworkPlayerTextDraw(playerid, PlayerText:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration = 1500, explodeDuration = 1200, Float:shakeIntensity = 6.0, Float:burstSpeed = 6.0, particleCount = 10, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, fuseDuration, explodeDuration, shakeIntensity, burstSpeed, extra_id, callback
+		#pragma unused playerid, textid, fuseDuration, explodeDuration, shakeIntensity, burstSpeed, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4230,7 +4599,7 @@ stock FireworkPlayerTextDraw(playerid, PlayerText:textid, pattern = TDFX_FW_BURS
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4239,7 +4608,7 @@ stock FireworkPlayerTextDraw(playerid, PlayerText:textid, pattern = TDFX_FW_BURS
 	#endif
 }
 
-stock GlitchPlayerTextDraw(playerid, PlayerText:textid, const text[] = "", intensity = 2, duration = 3000, extra_id = 0, const callback[] = "")
+stock GlitchPlayerTextDraw(playerid, PlayerText:textid, const text[] = "", intensity = 2, duration = 3000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new pFont = 0;
@@ -4292,7 +4661,7 @@ stock GlitchPlayerTextDraw(playerid, PlayerText:textid, const text[] = "", inten
 
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4316,10 +4685,10 @@ stock bool:IsPlayerTextDrawFXActive(playerid, PlayerText:textid)
 #define IsPlayerTextDrawBlinking IsPlayerTextDrawFXActive
 
 
-stock Spin3DPlayerTextDraw(playerid, PlayerText:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:speedZ = 45.0, Float:zoom = 1.0, duration = 0, extra_id = 0, const callback[] = "")
+stock Spin3DPlayerTextDraw(playerid, PlayerText:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:speedZ = 45.0, Float:zoom = 1.0, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPreviewRot
-		#pragma unused playerid, textid, speedX, speedY, speedZ, zoom, duration, extra_id, callback
+		#pragma unused playerid, textid, speedX, speedY, speedZ, zoom, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4360,7 +4729,7 @@ stock Spin3DPlayerTextDraw(playerid, PlayerText:textid, Float:speedX = 0.0, Floa
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4369,10 +4738,10 @@ stock Spin3DPlayerTextDraw(playerid, PlayerText:textid, Float:speedX = 0.0, Floa
 	#endif
 }
 
-stock Hover3DPlayerTextDraw(playerid, PlayerText:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:zoomAmp = 0.06, speedMs = 2400, duration = 0, extra_id = 0, const callback[] = "")
+stock Hover3DPlayerTextDraw(playerid, PlayerText:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:zoomAmp = 0.06, speedMs = 2400, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPreviewRot
-		#pragma unused playerid, textid, tiltX, tiltZ, zoomAmp, speedMs, duration, extra_id, callback
+		#pragma unused playerid, textid, tiltX, tiltZ, zoomAmp, speedMs, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4414,7 +4783,7 @@ stock Hover3DPlayerTextDraw(playerid, PlayerText:textid, Float:tiltX = 8.0, Floa
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4423,7 +4792,7 @@ stock Hover3DPlayerTextDraw(playerid, PlayerText:textid, Float:tiltX = 8.0, Floa
 	#endif
 }
 
-stock ShimmerPlayerTextDraw(playerid, PlayerText:textid, const text[], const baseTag[] = "~y~", const shimmerTag[] = "~w~", sweepDuration = 1000, pauseDuration = 1500, duration = 0, extra_id = 0, const callback[] = "")
+stock ShimmerPlayerTextDraw(playerid, PlayerText:textid, const text[], const baseTag[] = "~y~", const shimmerTag[] = "~w~", sweepDuration = 1000, pauseDuration = 1500, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -4457,7 +4826,7 @@ stock ShimmerPlayerTextDraw(playerid, PlayerText:textid, const text[], const bas
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4465,7 +4834,7 @@ stock ShimmerPlayerTextDraw(playerid, PlayerText:textid, const text[], const bas
 	return 1;
 }
 
-stock RainbowPlayerTextDraw(playerid, PlayerText:textid, const text[], speedMs = 100, duration = 0, extra_id = 0, const callback[] = "")
+stock RainbowPlayerTextDraw(playerid, PlayerText:textid, const text[], speedMs = 100, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -4496,7 +4865,7 @@ stock RainbowPlayerTextDraw(playerid, PlayerText:textid, const text[], speedMs =
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4504,7 +4873,7 @@ stock RainbowPlayerTextDraw(playerid, PlayerText:textid, const text[], speedMs =
 	return 1;
 }
 
-stock SlotMachinePlayerTextDraw(playerid, PlayerText:textid, const finalText[], spinDuration = 2200, extra_id = 0, const callback[] = "")
+stock SlotMachinePlayerTextDraw(playerid, PlayerText:textid, const finalText[], spinDuration = 2200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -4534,7 +4903,7 @@ stock SlotMachinePlayerTextDraw(playerid, PlayerText:textid, const finalText[], 
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4542,10 +4911,10 @@ stock SlotMachinePlayerTextDraw(playerid, PlayerText:textid, const finalText[], 
 	return 1;
 }
 
-stock PendulumPlayerTextDraw(playerid, PlayerText:textid, Float:pivotX, Float:pivotY, Float:armLength = 80.0, Float:maxAngle = 40.0, Float:damping = 0.65, duration = 3500, extra_id = 0, const callback[] = "")
+stock PendulumPlayerTextDraw(playerid, PlayerText:textid, Float:pivotX, Float:pivotY, Float:armLength = 80.0, Float:maxAngle = 40.0, Float:damping = 0.65, duration = 3500, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, pivotX, pivotY, armLength, maxAngle, damping, duration, extra_id, callback
+		#pragma unused playerid, textid, pivotX, pivotY, armLength, maxAngle, damping, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4572,7 +4941,7 @@ stock PendulumPlayerTextDraw(playerid, PlayerText:textid, Float:pivotX, Float:pi
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4581,10 +4950,10 @@ stock PendulumPlayerTextDraw(playerid, PlayerText:textid, Float:pivotX, Float:pi
 	#endif
 }
 
-stock GravityDropPlayerTextDraw(playerid, PlayerText:textid, Float:startY, Float:targetY, Float:elasticity = 0.38, extra_id = 0, const callback[] = "")
+stock GravityDropPlayerTextDraw(playerid, PlayerText:textid, Float:startY, Float:targetY, Float:elasticity = 0.38, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, startY, targetY, elasticity, extra_id, callback
+		#pragma unused playerid, textid, startY, targetY, elasticity, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4610,12 +4979,13 @@ stock GravityDropPlayerTextDraw(playerid, PlayerText:textid, Float:startY, Float
 		TDFX_FloatC[slot] = targetY;
 		TDFX_FloatD[slot] = 0.0;
 		TDFX_BoundMinX[slot] = elasticity;
+		TDFX_BoundMinY[slot] = startY;
 		TDFX_Step[slot] = 0;
 		TDFX_ExtraId[slot] = extra_id;
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawSetPos(playerid, textid, curX, startY);
@@ -4625,10 +4995,10 @@ stock GravityDropPlayerTextDraw(playerid, PlayerText:textid, Float:startY, Float
 	#endif
 }
 
-stock VortexPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, Float:startRadius = 120.0, Float:spins = 2.5, duration = 2000, extra_id = 0, const callback[] = "")
+stock VortexPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, Float:startRadius = 120.0, Float:spins = 2.5, duration = 2000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, centerX, centerY, startRadius, spins, duration, extra_id, callback
+		#pragma unused playerid, textid, centerX, centerY, startRadius, spins, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4666,7 +5036,7 @@ stock VortexPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:cen
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = true;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4675,7 +5045,7 @@ stock VortexPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:cen
 	#endif
 }
 
-stock LetterboxPlayerTextDraw(playerid, PlayerText:topBarTD, PlayerText:bottomBarTD, Float:barHeight = 65.0, duration = 1200, bool:reverse = false, easing = TDFX_EASE_OUT_QUAD, extra_id = 0, const callback[] = "")
+stock LetterboxPlayerTextDraw(playerid, PlayerText:topBarTD, PlayerText:bottomBarTD, Float:barHeight = 65.0, duration = 1200, bool:reverse = false, easing = TDFX_EASE_OUT_QUAD, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:topBarTD == 0xFFFF || _:topBarTD < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, topBarTD);
@@ -4705,7 +5075,7 @@ stock LetterboxPlayerTextDraw(playerid, PlayerText:topBarTD, PlayerText:bottomBa
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = reverse;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, topBarTD);
@@ -4714,10 +5084,10 @@ stock LetterboxPlayerTextDraw(playerid, PlayerText:topBarTD, PlayerText:bottomBa
 	return 1;
 }
 
-stock SonarPingPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, Float:maxRadius = 140.0, pulseCount = 3, pulseDuration = 1200, extra_id = 0, const callback[] = "")
+stock SonarPingPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, Float:maxRadius = 140.0, pulseCount = 3, pulseDuration = 1200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, centerX, centerY, maxRadius, pulseCount, pulseDuration, extra_id, callback
+		#pragma unused playerid, textid, centerX, centerY, maxRadius, pulseCount, pulseDuration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4761,7 +5131,7 @@ stock SonarPingPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = true;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -4771,7 +5141,7 @@ stock SonarPingPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:
 }
 
 // -----------------------------------------------------------------------------
-stock WaveSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], const crestTag[] = "~w~", const baseTag[] = "~b~", crestWidth = 2, direction = TDFX_DIR_LEFT_TO_RIGHT, speedMs = 70, duration = 0, extra_id = 0, const callback[] = "")
+stock WaveSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], const crestTag[] = "~w~", const baseTag[] = "~b~", crestWidth = 2, direction = TDFX_DIR_LEFT_TO_RIGHT, speedMs = 70, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -4806,7 +5176,7 @@ stock WaveSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], const c
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4814,10 +5184,10 @@ stock WaveSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], const c
 	return 1;
 }
 
-stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:targetX, Float:targetY, Float:letterSpacing = 0.0, duration = 3000, extra_id = 0, const callback[] = "")
+stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:targetX, Float:targetY, Float:letterSpacing = 0.0, duration = 3000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, text, targetX, targetY, letterSpacing, duration, extra_id, callback
+		#pragma unused playerid, textid, text, targetX, targetY, letterSpacing, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4836,8 +5206,9 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		TDFX_CharPlayer[instIdx] = playerid;
 		TDFX_CharTargetY[instIdx] = targetY;
 
-		new rawLen = strlen(text);
-		if (rawLen > TDFX_MAX_CHAR_PARTS) rawLen = TDFX_MAX_CHAR_PARTS;
+		new glyphChars[TDFX_MAX_CHAR_PARTS + 1];
+		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
+		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
 		new font = 1;
@@ -4883,18 +5254,31 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		#if defined PlayerTextDrawGetOutline
 			outline = PlayerTextDrawGetOutline(playerid, textid);
 		#endif
-		_TDFX_LayoutChars(text, rawLen, font, lsX, targetX, letterSpacing, TDFX_CharTargetX[instIdx], align, outline);
+		_TDFX_LayoutChars(glyphChars, rawLen, font, lsX, targetX, letterSpacing, TDFX_CharTargetX[instIdx], align, outline);
 
 		for (new p = 0; p < rawLen; p++)
 		{
 			TDFX_CharDelay[instIdx][p] = p * 80 + random(60);
 			TDFX_CharState[instIdx][p] = false;
 
-			new charStr[2];
-			charStr[0] = text[p];
-			charStr[1] = '\0';
+			new charStr[24];
+			format(charStr, sizeof(charStr), "%s%c", glyphTags[p], glyphChars[p]);
 
 			new PlayerText:rptd = CreatePlayerTextDraw(playerid, TDFX_CharTargetX[instIdx][p], -25.0, charStr);
+			if (_:rptd == 0xFFFF || _:rptd < 0)
+			{
+				for (new k = 0; k < p; k++)
+				{
+					if (TDFX_CharParts[instIdx][k] != PlayerText:INVALID_TEXT_DRAW)
+					{
+						PlayerTextDrawDestroy(playerid, TDFX_CharParts[instIdx][k]);
+						TDFX_CharParts[instIdx][k] = PlayerText:INVALID_TEXT_DRAW;
+					}
+				}
+				TDFX_FreeCharInstance(instIdx);
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			#if defined _INC_open_mp
 			PlayerTextDrawAlignment(playerid, rptd, TEXT_DRAW_ALIGN_CENTER);
 			PlayerTextDrawFont(playerid, rptd, t_TEXT_DRAW_FONT:font);
@@ -4937,7 +5321,7 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
@@ -4945,7 +5329,7 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 	#endif
 }
 
-stock ScannerSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], const laserTag[] = "~r~", const trailTag[] = "~y~", speedMs = 60, duration = 0, extra_id = 0, const callback[] = "")
+stock ScannerSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], const laserTag[] = "~r~", const trailTag[] = "~y~", speedMs = 60, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -4978,7 +5362,7 @@ stock ScannerSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], cons
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -4986,10 +5370,10 @@ stock ScannerSweepPlayerTextDraw(playerid, PlayerText:textid, const text[], cons
 	return 1;
 }
 
-stock ElectricArcPlayerTextDraw(playerid, PlayerText:textid, const text[], surgeDuration = 2200, extra_id = 0, const callback[] = "")
+stock ElectricArcPlayerTextDraw(playerid, PlayerText:textid, const text[], surgeDuration = 2200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, text, surgeDuration, extra_id, callback
+		#pragma unused playerid, textid, text, surgeDuration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -5024,7 +5408,7 @@ stock ElectricArcPlayerTextDraw(playerid, PlayerText:textid, const text[], surge
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawShow(playerid, textid);
@@ -5033,7 +5417,7 @@ stock ElectricArcPlayerTextDraw(playerid, PlayerText:textid, const text[], surge
 	#endif
 }
 
-stock SplitFlapPlayerTextDraw(playerid, PlayerText:textid, const targetText[], charRollMs = 80, lockIntervalMs = 200, extra_id = 0, const callback[] = "")
+stock SplitFlapPlayerTextDraw(playerid, PlayerText:textid, const targetText[], charRollMs = 80, lockIntervalMs = 200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindPlayer(playerid, textid);
@@ -5058,7 +5442,7 @@ stock SplitFlapPlayerTextDraw(playerid, PlayerText:textid, const targetText[], c
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	PlayerTextDrawShow(playerid, textid);
@@ -5066,10 +5450,10 @@ stock SplitFlapPlayerTextDraw(playerid, PlayerText:textid, const targetText[], c
 	return 1;
 }
 
-stock HologramPlayerTextDraw(playerid, PlayerText:textid, const text[], duration = 0, extra_id = 0, const callback[] = "")
+stock HologramPlayerTextDraw(playerid, PlayerText:textid, const text[], duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, text, duration, extra_id, callback
+		#pragma unused playerid, textid, text, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -5101,7 +5485,7 @@ stock HologramPlayerTextDraw(playerid, PlayerText:textid, const text[], duration
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		PlayerTextDrawSetString(playerid, textid, text);
@@ -5111,10 +5495,10 @@ stock HologramPlayerTextDraw(playerid, PlayerText:textid, const text[], duration
 	#endif
 }
 
-stock ShockwaveSlamPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, duration = 1800, extra_id = 0, const callback[] = "")
+stock ShockwaveSlamPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Float:centerY, duration = 1800, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, centerX, centerY, duration, extra_id, callback
+		#pragma unused playerid, textid, centerX, centerY, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -5167,7 +5551,7 @@ stock ShockwaveSlamPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Fl
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
@@ -5197,8 +5581,9 @@ stock WaveMotionPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		TDFX_CharPlayer[instIdx] = playerid;
 		TDFX_CharTargetY[instIdx] = centerY;
 
-		new rawLen = strlen(text);
-		if (rawLen > TDFX_MAX_CHAR_PARTS) rawLen = TDFX_MAX_CHAR_PARTS;
+		new glyphChars[TDFX_MAX_CHAR_PARTS + 1];
+		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
+		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
 		new font = 1;
@@ -5244,15 +5629,28 @@ stock WaveMotionPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		#if defined PlayerTextDrawGetOutline
 			outline = PlayerTextDrawGetOutline(playerid, textid);
 		#endif
-		_TDFX_LayoutChars(text, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], align, outline);
+		_TDFX_LayoutChars(glyphChars, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], align, outline);
 
 		for (new p = 0; p < rawLen; p++)
 		{
-			new charStr[2];
-			charStr[0] = text[p];
-			charStr[1] = '\0';
+			new charStr[24];
+			format(charStr, sizeof(charStr), "%s%c", glyphTags[p], glyphChars[p]);
 
 			new PlayerText:wptd = CreatePlayerTextDraw(playerid, TDFX_CharTargetX[instIdx][p], centerY, charStr);
+			if (_:wptd == 0xFFFF || _:wptd < 0)
+			{
+				for (new k = 0; k < p; k++)
+				{
+					if (TDFX_CharParts[instIdx][k] != PlayerText:INVALID_TEXT_DRAW)
+					{
+						PlayerTextDrawDestroy(playerid, TDFX_CharParts[instIdx][k]);
+						TDFX_CharParts[instIdx][k] = PlayerText:INVALID_TEXT_DRAW;
+					}
+				}
+				TDFX_FreeCharInstance(instIdx);
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			#if defined _INC_open_mp
 			PlayerTextDrawAlignment(playerid, wptd, TEXT_DRAW_ALIGN_CENTER);
 			PlayerTextDrawFont(playerid, wptd, t_TEXT_DRAW_FONT:font);
@@ -5329,8 +5727,9 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 		TDFX_CharPlayer[instIdx] = playerid;
 		TDFX_CharTargetY[instIdx] = centerY;
 
-		new rawLen = strlen(text);
-		if (rawLen > TDFX_MAX_CHAR_PARTS) rawLen = TDFX_MAX_CHAR_PARTS;
+		new glyphChars[TDFX_MAX_CHAR_PARTS + 1];
+		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
+		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
 		new font = 1;
@@ -5376,18 +5775,32 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 		#if defined PlayerTextDrawGetOutline
 			outline = PlayerTextDrawGetOutline(playerid, textid);
 		#endif
-		_TDFX_LayoutChars(text, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], align, outline);
+		_TDFX_LayoutChars(glyphChars, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], align, outline);
 
 		for (new p = 0; p < rawLen; p++)
 		{
 			new pIdx = (direction == TDFX_DIR_LEFT_TO_RIGHT) ? p : (rawLen - 1 - p);
 			TDFX_CharDelay[instIdx][pIdx] = p * staggerMs;
 
-			new charStr[2];
-			charStr[0] = text[pIdx];
-			charStr[1] = '\0';
+			new charStr[24];
+			format(charStr, sizeof(charStr), "%s%c", glyphTags[pIdx], glyphChars[pIdx]);
 
 			new PlayerText:hptd = CreatePlayerTextDraw(playerid, TDFX_CharTargetX[instIdx][pIdx], centerY, charStr);
+			if (_:hptd == 0xFFFF || _:hptd < 0)
+			{
+				for (new k = 0; k < p; k++)
+				{
+					new prevIdx = (direction == TDFX_DIR_RIGHT_TO_LEFT) ? (rawLen - 1 - k) : k;
+					if (TDFX_CharParts[instIdx][prevIdx] != PlayerText:INVALID_TEXT_DRAW)
+					{
+						PlayerTextDrawDestroy(playerid, TDFX_CharParts[instIdx][prevIdx]);
+						TDFX_CharParts[instIdx][prevIdx] = PlayerText:INVALID_TEXT_DRAW;
+					}
+				}
+				TDFX_FreeCharInstance(instIdx);
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			#if defined _INC_open_mp
 			PlayerTextDrawAlignment(playerid, hptd, TEXT_DRAW_ALIGN_CENTER);
 			PlayerTextDrawFont(playerid, hptd, t_TEXT_DRAW_FONT:font);
@@ -5421,7 +5834,14 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 		new totalDur = duration;
 		if (totalDur <= 0)
 		{
-			totalDur = (rawLen - 1) * staggerMs + hopDurationMs + 100;
+			if (direction == TDFX_DIR_BOUNCE)
+			{
+				totalDur = ((rawLen - 1) * staggerMs * 2) + hopDurationMs + 100;
+			}
+			else
+			{
+				totalDur = (rawLen - 1) * staggerMs + hopDurationMs + 100;
+			}
 		}
 
 		TDFX_Used[slot] = true;
@@ -5431,6 +5851,8 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 		TDFX_Td[slot] = _:textid;
 		TDFX_Base[slot] = textCol;
 		TDFX_FloatA[slot] = hopHeight;
+		TDFX_FloatB[slot] = float(staggerMs);
+		TDFX_Easing[slot] = direction;
 		TDFX_Count[slot] = hopDurationMs;
 		TDFX_Duration[slot] = totalDur;
 		strmid(TDFX_Text[slot], text, 0, strlen(text), sizeof TDFX_Text[]);
@@ -5450,7 +5872,7 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 // Public API - Global TextDraws
 // -----------------------------------------------------------------------------
 
-stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = false, colour = 0, const text[] = "", baseColour = 0)
+stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = false, colour = 0, const text[] = "", baseColour = 0, bool:loop = false)
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -5476,23 +5898,36 @@ stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = fa
 	#if defined TextDrawIsBox
 		box = TextDrawIsBox(textid);
 	#endif
+	new bool:preview = (font == 5);
 	if (font == 4 || font == 5) perChar = false;
 	new boxBase = 0;
 	if (colour)
 	{
-		#if defined _TDFX_TDGetColour
-			if (!baseColour) baseColour = _TDFX_TDGetColour(textid);
-		#endif
-		#if TDFX_MAX_GLOBAL_TD > 0
-			if (!baseColour && known) baseColour = TDFX_GRemText[_:textid];
-			if (box)
-			{
-				#if defined _TDFX_TDGetBoxColour
-					boxBase = _TDFX_TDGetBoxColour(textid);
-				#endif
-				if (!boxBase && known) boxBase = TDFX_GRemBox[_:textid];
-			}
-		#endif
+		if (preview)
+		{
+			#if defined _TDFX_TDGetBackColour
+				if (!baseColour) baseColour = _TDFX_TDGetBackColour(textid);
+			#endif
+			#if TDFX_MAX_GLOBAL_TD > 0
+				if (!baseColour && known) baseColour = TDFX_GRemBack[_:textid];
+			#endif
+		}
+		else
+		{
+			#if defined _TDFX_TDGetColour
+				if (!baseColour) baseColour = _TDFX_TDGetColour(textid);
+			#endif
+			#if TDFX_MAX_GLOBAL_TD > 0
+				if (!baseColour && known) baseColour = TDFX_GRemText[_:textid];
+				if (box)
+				{
+					#if defined _TDFX_TDGetBoxColour
+						boxBase = _TDFX_TDGetBoxColour(textid);
+					#endif
+					if (!boxBase && known) boxBase = TDFX_GRemBox[_:textid];
+				}
+			#endif
+		}
 		if (!baseColour) return 0;
 	}
 	TDFX_Text[slot][0] = 0;
@@ -5516,7 +5951,7 @@ stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = fa
 	TDFX_Player[slot] = INVALID_PLAYER_ID;
 	TDFX_Td[slot] = _:textid;
 	TDFX_PerChar[slot] = perChar;
-	TDFX_Preview[slot] = false;
+	TDFX_Preview[slot] = preview;
 	TDFX_Duration[slot] = duration;
 	TDFX_Colour[slot] = colour;
 	TDFX_Base[slot] = baseColour;
@@ -5525,7 +5960,7 @@ stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = fa
 	TDFX_Callback[slot][0] = 0;
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	if (perChar)
@@ -5538,23 +5973,34 @@ stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = fa
 
 	if (colour)
 	{
-		_TDFX_TDColour(textid, colour);
-		if (boxBase) _TDFX_TDBoxColour(textid, colour);
+		if (preview) _TDFX_TDBackColour(textid, colour);
+		else
+		{
+			_TDFX_TDColour(textid, colour);
+			if (boxBase) _TDFX_TDBoxColour(textid, colour);
+		}
 	}
 	TextDrawShowForAll(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", interval, true, "i", slot);
 	return 1;
 }
 
-stock TypewriterTextDraw(Text:textid, const text[], interval = 50, duration = 0, extra_id = 0, const callback[] = "")
+stock TypewriterTextDraw(Text:textid, const text[], interval = 50, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
+	if (!text[0]) return 0;
 	new ret = BlinkTextDraw(textid, interval, duration, true, 0, text);
 	if (ret)
 	{
 		new slot = TDFX_FindGlobal(textid);
 		if (slot != -1)
 		{
+			if (!TDFX_PerChar[slot])
+			{
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			TDFX_Type[slot] = TDFX_TYPE_TYPEWRITER;
+			TDFX_Loop[slot] = loop;
 			TDFX_ExtraId[slot] = extra_id;
 			if (callback[0]) strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		}
@@ -5562,7 +6008,7 @@ stock TypewriterTextDraw(Text:textid, const text[], interval = 50, duration = 0,
 	return ret;
 }
 
-stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAlpha = 255, extra_id = 0, const callback[] = "", bool:autoHide = false)
+stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAlpha = 255, bool:loop = false, extra_id = 0, const callback[] = "", bool:autoHide = false)
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -5573,22 +6019,40 @@ stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAl
 		if (slot == -1) return 0;
 	}
 	if (duration < TDFX_MIN_INTERVAL) duration = TDFX_MIN_INTERVAL;
-	new bool:known = TDFX_ValidGlobal(textid), baseCol = 0, boxCol = 0;
+	new bool:known = TDFX_ValidGlobal(textid), baseCol = 0, boxCol = 0, font = 1;
 	#if TDFX_MAX_GLOBAL_TD > 0
 		if (known)
 		{
+			font = TDFX_GInfo[_:textid] & 7;
 			baseCol = TDFX_GRemText[_:textid];
 			boxCol = TDFX_GRemBox[_:textid];
 		}
 	#endif
-	#if defined _TDFX_TDGetColour
-		baseCol = _TDFX_TDGetColour(textid);
+	#if defined TextDrawGetFont
+		font = _:TextDrawGetFont(textid);
 	#endif
-	#if defined _TDFX_TDGetBoxColour
-		boxCol = _TDFX_TDGetBoxColour(textid);
-	#endif
-	if (!baseCol) baseCol = 0xFFFFFFFF;
-	if (!boxCol) boxCol = 0x000000AA;
+	new bool:preview = (font == 5);
+	if (preview)
+	{
+		#if defined _TDFX_TDGetBackColour
+			baseCol = _TDFX_TDGetBackColour(textid);
+		#endif
+		#if TDFX_MAX_GLOBAL_TD > 0
+			if (!baseCol && known) baseCol = TDFX_GRemBack[_:textid];
+		#endif
+		if (!baseCol) baseCol = 0xFFFFFFFF;
+	}
+	else
+	{
+		#if defined _TDFX_TDGetColour
+			if (!baseCol) baseCol = _TDFX_TDGetColour(textid);
+		#endif
+		#if defined _TDFX_TDGetBoxColour
+			if (!boxCol) boxCol = _TDFX_TDGetBoxColour(textid);
+		#endif
+		if (!baseCol) baseCol = 0xFFFFFFFF;
+		if (!boxCol) boxCol = 0x000000AA;
+	}
 
 	new startCol = (baseCol & 0xFFFFFF00);
 	new endCol = (baseCol & 0xFFFFFF00) | (targetAlpha & 0xFF);
@@ -5600,7 +6064,7 @@ stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAl
 	TDFX_Type[slot] = TDFX_TYPE_FADE;
 	TDFX_Player[slot] = INVALID_PLAYER_ID;
 	TDFX_Td[slot] = _:textid;
-	TDFX_Preview[slot] = false;
+	TDFX_Preview[slot] = preview;
 	TDFX_Duration[slot] = duration;
 	TDFX_Base[slot] = endCol;
 	TDFX_BoxBase[slot] = endBox;
@@ -5614,17 +6078,21 @@ stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAl
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = autoHide;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_TDColour(textid, startCol);
-	if (fadeBox) _TDFX_TDBoxColour(textid, startBox);
+	if (preview) _TDFX_TDBackColour(textid, startCol);
+	else
+	{
+		_TDFX_TDColour(textid, startCol);
+		if (fadeBox) _TDFX_TDBoxColour(textid, startBox);
+	}
 	TextDrawShowForAll(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock FadeOutTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, extra_id = 0, const callback[] = "", bool:autoHide = true)
+stock FadeOutTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, bool:loop = false, extra_id = 0, const callback[] = "", bool:autoHide = true)
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -5635,22 +6103,40 @@ stock FadeOutTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, extra_i
 		if (slot == -1) return 0;
 	}
 	if (duration < TDFX_MIN_INTERVAL) duration = TDFX_MIN_INTERVAL;
-	new bool:known = TDFX_ValidGlobal(textid), baseCol = 0, boxCol = 0;
+	new bool:known = TDFX_ValidGlobal(textid), baseCol = 0, boxCol = 0, font = 1;
 	#if TDFX_MAX_GLOBAL_TD > 0
 		if (known)
 		{
+			font = TDFX_GInfo[_:textid] & 7;
 			baseCol = TDFX_GRemText[_:textid];
 			boxCol = TDFX_GRemBox[_:textid];
 		}
 	#endif
-	#if defined _TDFX_TDGetColour
-		baseCol = _TDFX_TDGetColour(textid);
+	#if defined TextDrawGetFont
+		font = _:TextDrawGetFont(textid);
 	#endif
-	#if defined _TDFX_TDGetBoxColour
-		boxCol = _TDFX_TDGetBoxColour(textid);
-	#endif
-	if (!baseCol) baseCol = 0xFFFFFFFF;
-	if (!boxCol) boxCol = 0x000000AA;
+	new bool:preview = (font == 5);
+	if (preview)
+	{
+		#if defined _TDFX_TDGetBackColour
+			baseCol = _TDFX_TDGetBackColour(textid);
+		#endif
+		#if TDFX_MAX_GLOBAL_TD > 0
+			if (!baseCol && known) baseCol = TDFX_GRemBack[_:textid];
+		#endif
+		if (!baseCol) baseCol = 0xFFFFFFFF;
+	}
+	else
+	{
+		#if defined _TDFX_TDGetColour
+			if (!baseCol) baseCol = _TDFX_TDGetColour(textid);
+		#endif
+		#if defined _TDFX_TDGetBoxColour
+			if (!boxCol) boxCol = _TDFX_TDGetBoxColour(textid);
+		#endif
+		if (!baseCol) baseCol = 0xFFFFFFFF;
+		if (!boxCol) boxCol = 0x000000AA;
+	}
 
 	new startCol = baseCol;
 	new endCol = (baseCol & 0xFFFFFF00);
@@ -5662,7 +6148,7 @@ stock FadeOutTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, extra_i
 	TDFX_Type[slot] = TDFX_TYPE_FADE;
 	TDFX_Player[slot] = INVALID_PLAYER_ID;
 	TDFX_Td[slot] = _:textid;
-	TDFX_Preview[slot] = false;
+	TDFX_Preview[slot] = preview;
 	TDFX_Duration[slot] = duration;
 	TDFX_Base[slot] = baseCol;
 	TDFX_BoxBase[slot] = boxCol;
@@ -5676,14 +6162,14 @@ stock FadeOutTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, extra_i
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = autoHide;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock FadeColorTextDraw(Text:textid, fromColor, toColor, duration = 1000, bool:fadeBox = false, fromBox = 0, toBox = 0, easing = TDFX_EASE_LINEAR, extra_id = 0, const callback[] = "")
+stock FadeColorTextDraw(Text:textid, fromColor, toColor, duration = 1000, bool:fadeBox = false, fromBox = 0, toBox = 0, easing = TDFX_EASE_LINEAR, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -5694,10 +6180,14 @@ stock FadeColorTextDraw(Text:textid, fromColor, toColor, duration = 1000, bool:f
 		if (slot == -1) return 0;
 	}
 	if (duration < TDFX_MIN_INTERVAL) duration = TDFX_MIN_INTERVAL;
-	new bool:preview = false;
-	#if defined TextDrawGetFont
-		preview = (_:TextDrawGetFont(textid) == 5);
+	new bool:known = TDFX_ValidGlobal(textid), font = 1;
+	#if TDFX_MAX_GLOBAL_TD > 0
+		if (known) font = TDFX_GInfo[_:textid] & 7;
 	#endif
+	#if defined TextDrawGetFont
+		font = _:TextDrawGetFont(textid);
+	#endif
+	new bool:preview = (font == 5);
 
 	TDFX_Used[slot] = true;
 	TDFX_IsGlobal[slot] = true;
@@ -5718,14 +6208,14 @@ stock FadeColorTextDraw(Text:textid, fromColor, toColor, duration = 1000, bool:f
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock ScaleTextDraw(Text:textid, Float:startSizeX, Float:startSizeY, Float:targetSizeX, Float:targetSizeY, duration = 1000, easing = TDFX_EASE_LINEAR, extra_id = 0, const callback[] = "")
+stock ScaleTextDraw(Text:textid, Float:startSizeX, Float:startSizeY, Float:targetSizeX, Float:targetSizeY, duration = 1000, easing = TDFX_EASE_LINEAR, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -5752,7 +6242,7 @@ stock ScaleTextDraw(Text:textid, Float:startSizeX, Float:startSizeY, Float:targe
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawLetterSize(textid, startSizeX, startSizeY);
@@ -5761,7 +6251,7 @@ stock ScaleTextDraw(Text:textid, Float:startSizeX, Float:startSizeY, Float:targe
 	return 1;
 }
 
-stock PulseTextDraw(Text:textid, Float:amplitude = 0.25, interval = 300, cycles = 0, extra_id = 0, const callback[] = "")
+stock PulseTextDraw(Text:textid, Float:amplitude = 0.25, interval = 300, cycles = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -5800,17 +6290,17 @@ stock PulseTextDraw(Text:textid, Float:amplitude = 0.25, interval = 300, cycles 
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (cycles == 0);
+	TDFX_Loop[slot] = (cycles == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
 
-stock SlideTextDraw(Text:textid, Float:targetX, Float:targetY, duration = 1000, easing = TDFX_EASE_OUT_QUAD, extra_id = 0, const callback[] = "")
+stock SlideTextDraw(Text:textid, Float:targetX, Float:targetY, duration = 1000, easing = TDFX_EASE_OUT_QUAD, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, targetX, targetY, duration, easing, extra_id, callback
+		#pragma unused textid, targetX, targetY, duration, easing, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -5842,7 +6332,7 @@ stock SlideTextDraw(Text:textid, Float:targetX, Float:targetY, duration = 1000, 
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
@@ -5850,7 +6340,7 @@ stock SlideTextDraw(Text:textid, Float:targetX, Float:targetY, duration = 1000, 
 	#endif
 }
 
-stock CountTextDrawNumber(Text:textid, startValue, targetValue, duration = 1000, const prefix[] = "", const suffix[] = "", bool:thousandsSep = false, easing = TDFX_EASE_LINEAR, extra_id = 0, const callback[] = "")
+stock CountTextDrawNumber(Text:textid, startValue, targetValue, duration = 1000, const prefix[] = "", const suffix[] = "", bool:thousandsSep = false, easing = TDFX_EASE_LINEAR, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new gFont = 0;
@@ -5886,7 +6376,7 @@ stock CountTextDrawNumber(Text:textid, startValue, targetValue, duration = 1000,
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	new initial[TDFX_MAX_TEXT];
@@ -5897,7 +6387,7 @@ stock CountTextDrawNumber(Text:textid, startValue, targetValue, duration = 1000,
 	return 1;
 }
 
-stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, extra_id = 0, const callback[] = "")
+stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new gFont = 0;
@@ -5928,7 +6418,7 @@ stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, extra_id
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(textid);
@@ -5936,10 +6426,10 @@ stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, extra_id
 	return 1;
 }
 
-stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, extra_id = 0, const callback[] = "")
+stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, extra_id, callback
+		#pragma unused textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -5969,6 +6459,10 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		TDFX_Player[slot] = INVALID_PLAYER_ID;
 		TDFX_Td[slot] = _:textid;
 		TDFX_Duration[slot] = duration;
+		if (random(2) == 0) speedX = -speedX;
+		if (random(2) == 0) speedY = -speedY;
+		speedX *= (0.90 + float(random(21)) / 100.0);
+		speedY *= (0.90 + float(random(21)) / 100.0);
 		TDFX_FloatA[slot] = curX;
 		TDFX_FloatB[slot] = curY;
 		TDFX_FloatC[slot] = speedX;
@@ -5983,7 +6477,7 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -5992,10 +6486,10 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 	#endif
 }
 
-stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, extra_id = 0, const callback[] = "")
+stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, speed, angle, centerX, centerY, radius, colorShift, duration, extra_id, callback
+		#pragma unused textid, speed, angle, centerX, centerY, radius, colorShift, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6046,7 +6540,7 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6055,10 +6549,10 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 	#endif
 }
 
-stock OrbitTextDraw(Text:textid, Float:centerX, Float:centerY, Float:radiusX, Float:radiusY, Float:angularSpeed = 60.0, Float:startAngle = 0.0, duration = 0, extra_id = 0, const callback[] = "")
+stock OrbitTextDraw(Text:textid, Float:centerX, Float:centerY, Float:radiusX, Float:radiusY, Float:angularSpeed = 60.0, Float:startAngle = 0.0, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, centerX, centerY, radiusX, radiusY, angularSpeed, startAngle, duration, extra_id, callback
+		#pragma unused textid, centerX, centerY, radiusX, radiusY, angularSpeed, startAngle, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6092,7 +6586,7 @@ stock OrbitTextDraw(Text:textid, Float:centerX, Float:centerY, Float:radiusX, Fl
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6101,10 +6595,10 @@ stock OrbitTextDraw(Text:textid, Float:centerX, Float:centerY, Float:radiusX, Fl
 	#endif
 }
 
-stock ShakeTextDraw(Text:textid, Float:intensity = 6.0, duration = 800, extra_id = 0, const callback[] = "")
+stock ShakeTextDraw(Text:textid, Float:intensity = 6.0, duration = 800, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, intensity, duration, extra_id, callback
+		#pragma unused textid, intensity, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6134,7 +6628,7 @@ stock ShakeTextDraw(Text:textid, Float:intensity = 6.0, duration = 800, extra_id
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6143,7 +6637,7 @@ stock ShakeTextDraw(Text:textid, Float:intensity = 6.0, duration = 800, extra_id
 	#endif
 }
 
-stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, extra_id = 0, const callback[] = "")
+stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -6157,24 +6651,43 @@ stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, extra_
 	if (brokenRatio < 0) brokenRatio = 0;
 	if (brokenRatio > 100) brokenRatio = 100;
 
-	new baseCol = 0xFFFFFFFF, boxCol = 0;
+	new bool:known = TDFX_ValidGlobal(textid), font = 1, baseCol = 0xFFFFFFFF, boxCol = 0;
 	#if TDFX_MAX_GLOBAL_TD > 0
-		if (TDFX_ValidGlobal(textid))
+		if (known)
 		{
+			font = TDFX_GInfo[_:textid] & 7;
 			if (TDFX_GRemText[_:textid]) baseCol = TDFX_GRemText[_:textid];
 			boxCol = TDFX_GRemBox[_:textid];
 		}
 	#endif
-	#if defined _TDFX_TDGetColour
-		baseCol = _TDFX_TDGetColour(textid);
+	#if defined TextDrawGetFont
+		font = _:TextDrawGetFont(textid);
 	#endif
-	#if defined _TDFX_TDGetBoxColour
-		boxCol = _TDFX_TDGetBoxColour(textid);
-	#endif
+	new bool:preview = (font == 5);
+	if (preview)
+	{
+		#if defined _TDFX_TDGetBackColour
+			baseCol = _TDFX_TDGetBackColour(textid);
+		#endif
+		#if TDFX_MAX_GLOBAL_TD > 0
+			if (!baseCol && known) baseCol = TDFX_GRemBack[_:textid];
+		#endif
+	}
+	else
+	{
+		#if defined _TDFX_TDGetColour
+			baseCol = _TDFX_TDGetColour(textid);
+		#endif
+		#if defined _TDFX_TDGetBoxColour
+			boxCol = _TDFX_TDGetBoxColour(textid);
+		#endif
+	}
+	if (!baseCol) baseCol = 0xFFFFFFFF;
 
 	TDFX_Used[slot] = true;
 	TDFX_IsGlobal[slot] = true;
 	TDFX_Type[slot] = TDFX_TYPE_NEON;
+	TDFX_Preview[slot] = preview;
 	TDFX_Player[slot] = INVALID_PLAYER_ID;
 	TDFX_Td[slot] = _:textid;
 	TDFX_Duration[slot] = duration;
@@ -6185,7 +6698,7 @@ stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, extra_
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(textid);
@@ -6193,10 +6706,10 @@ stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, extra_
 	return 1;
 }
 
-stock WaveDriftTextDraw(Text:textid, Float:amplitudeX, Float:amplitudeY, speedMs = 1500, duration = 0, extra_id = 0, const callback[] = "")
+stock WaveDriftTextDraw(Text:textid, Float:amplitudeX, Float:amplitudeY, speedMs = 1500, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, amplitudeX, amplitudeY, speedMs, duration, extra_id, callback
+		#pragma unused textid, amplitudeX, amplitudeY, speedMs, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6228,7 +6741,7 @@ stock WaveDriftTextDraw(Text:textid, Float:amplitudeX, Float:amplitudeY, speedMs
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6237,7 +6750,7 @@ stock WaveDriftTextDraw(Text:textid, Float:amplitudeX, Float:amplitudeY, speedMs
 	#endif
 }
 
-stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, duration = 2000, easing = TDFX_EASE_OUT_QUAD, Float:lineHeight = 0.0, extra_id = 0, const callback[] = "")
+stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, duration = 2000, easing = TDFX_EASE_OUT_QUAD, Float:lineHeight = 0.0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new slot = TDFX_FindGlobal(textid);
@@ -6275,7 +6788,7 @@ stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, dur
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	new gAlign = 1;
@@ -6293,10 +6806,10 @@ stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, dur
 	return 1;
 }
 
-stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration = 1500, explodeDuration = 1200, Float:shakeIntensity = 6.0, Float:burstSpeed = 6.0, particleCount = 10, extra_id = 0, const callback[] = "")
+stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration = 1500, explodeDuration = 1200, Float:shakeIntensity = 6.0, Float:burstSpeed = 6.0, particleCount = 10, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, fuseDuration, explodeDuration, shakeIntensity, burstSpeed, extra_id, callback
+		#pragma unused textid, fuseDuration, explodeDuration, shakeIntensity, burstSpeed, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6359,7 +6872,7 @@ stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6368,7 +6881,7 @@ stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration
 	#endif
 }
 
-stock GlitchTextDraw(Text:textid, const text[] = "", intensity = 2, duration = 3000, extra_id = 0, const callback[] = "")
+stock GlitchTextDraw(Text:textid, const text[] = "", intensity = 2, duration = 3000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new gFont = 0;
@@ -6425,7 +6938,7 @@ stock GlitchTextDraw(Text:textid, const text[] = "", intensity = 2, duration = 3
 
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(textid);
@@ -6434,10 +6947,10 @@ stock GlitchTextDraw(Text:textid, const text[] = "", intensity = 2, duration = 3
 }
 
 
-stock Spin3DTextDraw(Text:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:speedZ = 45.0, Float:zoom = 1.0, duration = 0, extra_id = 0, const callback[] = "")
+stock Spin3DTextDraw(Text:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:speedZ = 45.0, Float:zoom = 1.0, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPreviewRot
-		#pragma unused textid, speedX, speedY, speedZ, zoom, duration, extra_id, callback
+		#pragma unused textid, speedX, speedY, speedZ, zoom, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6480,7 +6993,7 @@ stock Spin3DTextDraw(Text:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6489,10 +7002,10 @@ stock Spin3DTextDraw(Text:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:
 	#endif
 }
 
-stock Hover3DTextDraw(Text:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:zoomAmp = 0.06, speedMs = 2400, duration = 0, extra_id = 0, const callback[] = "")
+stock Hover3DTextDraw(Text:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:zoomAmp = 0.06, speedMs = 2400, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPreviewRot
-		#pragma unused textid, tiltX, tiltZ, zoomAmp, speedMs, duration, extra_id, callback
+		#pragma unused textid, tiltX, tiltZ, zoomAmp, speedMs, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6536,7 +7049,7 @@ stock Hover3DTextDraw(Text:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6545,7 +7058,7 @@ stock Hover3DTextDraw(Text:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:
 	#endif
 }
 
-stock ShimmerTextDraw(Text:textid, const text[], const baseTag[] = "~y~", const shimmerTag[] = "~w~", sweepDuration = 1000, pauseDuration = 1500, duration = 0, extra_id = 0, const callback[] = "")
+stock ShimmerTextDraw(Text:textid, const text[], const baseTag[] = "~y~", const shimmerTag[] = "~w~", sweepDuration = 1000, pauseDuration = 1500, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -6581,7 +7094,7 @@ stock ShimmerTextDraw(Text:textid, const text[], const baseTag[] = "~y~", const 
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(textid);
@@ -6589,7 +7102,7 @@ stock ShimmerTextDraw(Text:textid, const text[], const baseTag[] = "~y~", const 
 	return 1;
 }
 
-stock RainbowTextDraw(Text:textid, const text[], speedMs = 100, duration = 0, extra_id = 0, const callback[] = "")
+stock RainbowTextDraw(Text:textid, const text[], speedMs = 100, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -6622,7 +7135,7 @@ stock RainbowTextDraw(Text:textid, const text[], speedMs = 100, duration = 0, ex
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = (duration == 0);
+	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(textid);
@@ -6630,7 +7143,7 @@ stock RainbowTextDraw(Text:textid, const text[], speedMs = 100, duration = 0, ex
 	return 1;
 }
 
-stock SlotMachineTextDraw(Text:textid, const finalText[], spinDuration = 2200, extra_id = 0, const callback[] = "")
+stock SlotMachineTextDraw(Text:textid, const finalText[], spinDuration = 2200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:textid == 0xFFFF || _:textid < 0) return 0;
 	new font = 0;
@@ -6662,7 +7175,7 @@ stock SlotMachineTextDraw(Text:textid, const finalText[], spinDuration = 2200, e
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = false;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(textid);
@@ -6670,10 +7183,10 @@ stock SlotMachineTextDraw(Text:textid, const finalText[], spinDuration = 2200, e
 	return 1;
 }
 
-stock PendulumTextDraw(Text:textid, Float:pivotX, Float:pivotY, Float:armLength = 80.0, Float:maxAngle = 40.0, Float:damping = 0.65, duration = 3500, extra_id = 0, const callback[] = "")
+stock PendulumTextDraw(Text:textid, Float:pivotX, Float:pivotY, Float:armLength = 80.0, Float:maxAngle = 40.0, Float:damping = 0.65, duration = 3500, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, pivotX, pivotY, armLength, maxAngle, damping, duration, extra_id, callback
+		#pragma unused textid, pivotX, pivotY, armLength, maxAngle, damping, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6700,7 +7213,7 @@ stock PendulumTextDraw(Text:textid, Float:pivotX, Float:pivotY, Float:armLength 
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6709,10 +7222,10 @@ stock PendulumTextDraw(Text:textid, Float:pivotX, Float:pivotY, Float:armLength 
 	#endif
 }
 
-stock GravityDropTextDraw(Text:textid, Float:startY, Float:targetY, Float:elasticity = 0.38, extra_id = 0, const callback[] = "")
+stock GravityDropTextDraw(Text:textid, Float:startY, Float:targetY, Float:elasticity = 0.38, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, startY, targetY, elasticity, extra_id, callback
+		#pragma unused textid, startY, targetY, elasticity, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6738,12 +7251,13 @@ stock GravityDropTextDraw(Text:textid, Float:startY, Float:targetY, Float:elasti
 		TDFX_FloatC[slot] = targetY;
 		TDFX_FloatD[slot] = 0.0;
 		TDFX_BoundMinX[slot] = elasticity;
+		TDFX_BoundMinY[slot] = startY;
 		TDFX_Step[slot] = 0;
 		TDFX_ExtraId[slot] = extra_id;
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawSetPos(textid, curX, startY);
@@ -6753,10 +7267,10 @@ stock GravityDropTextDraw(Text:textid, Float:startY, Float:targetY, Float:elasti
 	#endif
 }
 
-stock VortexTextDraw(Text:textid, Float:centerX, Float:centerY, Float:startRadius = 120.0, Float:spins = 2.5, duration = 2000, extra_id = 0, const callback[] = "")
+stock VortexTextDraw(Text:textid, Float:centerX, Float:centerY, Float:startRadius = 120.0, Float:spins = 2.5, duration = 2000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, centerX, centerY, startRadius, spins, duration, extra_id, callback
+		#pragma unused textid, centerX, centerY, startRadius, spins, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6796,7 +7310,7 @@ stock VortexTextDraw(Text:textid, Float:centerX, Float:centerY, Float:startRadiu
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = true;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6805,7 +7319,7 @@ stock VortexTextDraw(Text:textid, Float:centerX, Float:centerY, Float:startRadiu
 	#endif
 }
 
-stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0, duration = 1200, bool:reverse = false, easing = TDFX_EASE_OUT_QUAD, extra_id = 0, const callback[] = "")
+stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0, duration = 1200, bool:reverse = false, easing = TDFX_EASE_OUT_QUAD, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	if (_:topBarTD == 0xFFFF || _:topBarTD < 0) return 0;
 	new slot = TDFX_FindGlobal(topBarTD);
@@ -6835,7 +7349,7 @@ stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0,
 	strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 	TDFX_AutoHide[slot] = reverse;
 	TDFX_AutoDestroy[slot] = false;
-	TDFX_Loop[slot] = false;
+	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawShowForAll(topBarTD);
@@ -6844,10 +7358,10 @@ stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0,
 	return 1;
 }
 
-stock SonarPingTextDraw(Text:textid, Float:centerX, Float:centerY, Float:maxRadius = 140.0, pulseCount = 3, pulseDuration = 1200, extra_id = 0, const callback[] = "")
+stock SonarPingTextDraw(Text:textid, Float:centerX, Float:centerY, Float:maxRadius = 140.0, pulseCount = 3, pulseDuration = 1200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, centerX, centerY, maxRadius, pulseCount, pulseDuration, extra_id, callback
+		#pragma unused textid, centerX, centerY, maxRadius, pulseCount, pulseDuration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6895,7 +7409,7 @@ stock SonarPingTextDraw(Text:textid, Float:centerX, Float:centerY, Float:maxRadi
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = true;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6904,10 +7418,10 @@ stock SonarPingTextDraw(Text:textid, Float:centerX, Float:centerY, Float:maxRadi
 	#endif
 }
 
-stock WaveSweepTextDraw(Text:textid, const text[], const crestTag[] = "~w~", const baseTag[] = "~b~", crestWidth = 2, direction = TDFX_DIR_LEFT_TO_RIGHT, speedMs = 70, duration = 0, extra_id = 0, const callback[] = "")
+stock WaveSweepTextDraw(Text:textid, const text[], const crestTag[] = "~w~", const baseTag[] = "~b~", crestWidth = 2, direction = TDFX_DIR_LEFT_TO_RIGHT, speedMs = 70, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0
-		#pragma unused textid, text, crestTag, baseTag, crestWidth, direction, speedMs, duration, extra_id, callback
+		#pragma unused textid, text, crestTag, baseTag, crestWidth, direction, speedMs, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6936,7 +7450,7 @@ stock WaveSweepTextDraw(Text:textid, const text[], const crestTag[] = "~w~", con
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -6945,10 +7459,10 @@ stock WaveSweepTextDraw(Text:textid, const text[], const crestTag[] = "~w~", con
 	#endif
 }
 
-stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY, Float:letterSpacing = 0.0, duration = 3000, extra_id = 0, const callback[] = "")
+stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY, Float:letterSpacing = 0.0, duration = 3000, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0 || !defined TextDrawSetPos
-		#pragma unused textid, text, targetX, targetY, letterSpacing, duration, extra_id, callback
+		#pragma unused textid, text, targetX, targetY, letterSpacing, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6967,8 +7481,9 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		TDFX_CharPlayer[instIdx] = INVALID_PLAYER_ID;
 		TDFX_CharTargetY[instIdx] = targetY;
 
-		new rawLen = strlen(text);
-		if (rawLen > TDFX_MAX_CHAR_PARTS) rawLen = TDFX_MAX_CHAR_PARTS;
+		new glyphChars[TDFX_MAX_CHAR_PARTS + 1];
+		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
+		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
 		new font = 1;
@@ -7018,18 +7533,31 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		#if defined TextDrawGetOutline
 			outline = TextDrawGetOutline(textid);
 		#endif
-		_TDFX_LayoutChars(text, rawLen, font, lsX, targetX, letterSpacing, TDFX_CharTargetX[instIdx], gAlign, outline);
+		_TDFX_LayoutChars(glyphChars, rawLen, font, lsX, targetX, letterSpacing, TDFX_CharTargetX[instIdx], gAlign, outline);
 
 		for (new p = 0; p < rawLen; p++)
 		{
 			TDFX_CharDelay[instIdx][p] = p * 80 + random(60);
 			TDFX_CharState[instIdx][p] = false;
 
-			new charStr[2];
-			charStr[0] = text[p];
-			charStr[1] = '\0';
+			new charStr[24];
+			format(charStr, sizeof(charStr), "%s%c", glyphTags[p], glyphChars[p]);
 
 			new Text:rgtd = TextDrawCreate(TDFX_CharTargetX[instIdx][p], -25.0, charStr);
+			if (_:rgtd == 0xFFFF || _:rgtd < 0)
+			{
+				for (new k = 0; k < p; k++)
+				{
+					if (TDFX_GCharParts[instIdx][k] != Text:INVALID_TEXT_DRAW)
+					{
+						TextDrawDestroy(TDFX_GCharParts[instIdx][k]);
+						TDFX_GCharParts[instIdx][k] = Text:INVALID_TEXT_DRAW;
+					}
+				}
+				TDFX_FreeCharInstance(instIdx);
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			#if defined _INC_open_mp
 			TextDrawAlignment(rgtd, TEXT_DRAW_ALIGN_CENTER);
 			TextDrawFont(rgtd, t_TEXT_DRAW_FONT:font);
@@ -7072,7 +7600,7 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
@@ -7080,10 +7608,10 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 	#endif
 }
 
-stock ScannerSweepTextDraw(Text:textid, const text[], const laserTag[] = "~r~", const trailTag[] = "~y~", speedMs = 60, duration = 0, extra_id = 0, const callback[] = "")
+stock ScannerSweepTextDraw(Text:textid, const text[], const laserTag[] = "~r~", const trailTag[] = "~y~", speedMs = 60, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0
-		#pragma unused textid, text, laserTag, trailTag, bgTag, speedMs, duration, extra_id, callback
+		#pragma unused textid, text, laserTag, trailTag, bgTag, speedMs, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -7110,7 +7638,7 @@ stock ScannerSweepTextDraw(Text:textid, const text[], const laserTag[] = "~r~", 
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -7119,10 +7647,10 @@ stock ScannerSweepTextDraw(Text:textid, const text[], const laserTag[] = "~r~", 
 	#endif
 }
 
-stock ElectricArcTextDraw(Text:textid, const text[], surgeDuration = 2200, extra_id = 0, const callback[] = "")
+stock ElectricArcTextDraw(Text:textid, const text[], surgeDuration = 2200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0 || !defined TextDrawSetPos
-		#pragma unused textid, text, surgeDuration, extra_id, callback
+		#pragma unused textid, text, surgeDuration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -7157,7 +7685,7 @@ stock ElectricArcTextDraw(Text:textid, const text[], surgeDuration = 2200, extra
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -7166,10 +7694,10 @@ stock ElectricArcTextDraw(Text:textid, const text[], surgeDuration = 2200, extra
 	#endif
 }
 
-stock SplitFlapTextDraw(Text:textid, const targetText[], charRollMs = 80, lockIntervalMs = 200, extra_id = 0, const callback[] = "")
+stock SplitFlapTextDraw(Text:textid, const targetText[], charRollMs = 80, lockIntervalMs = 200, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0
-		#pragma unused textid, targetText, charRollMs, lockIntervalMs, extra_id, callback
+		#pragma unused textid, targetText, charRollMs, lockIntervalMs, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -7195,7 +7723,7 @@ stock SplitFlapTextDraw(Text:textid, const targetText[], charRollMs = 80, lockIn
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawShowForAll(textid);
@@ -7204,10 +7732,10 @@ stock SplitFlapTextDraw(Text:textid, const targetText[], charRollMs = 80, lockIn
 	#endif
 }
 
-stock HologramTextDraw(Text:textid, const text[], duration = 0, extra_id = 0, const callback[] = "")
+stock HologramTextDraw(Text:textid, const text[], duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0 || !defined TextDrawSetPos
-		#pragma unused textid, text, duration, extra_id, callback
+		#pragma unused textid, text, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -7239,7 +7767,7 @@ stock HologramTextDraw(Text:textid, const text[], duration = 0, extra_id = 0, co
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = (duration == 0);
+		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawSetString(textid, text);
@@ -7249,10 +7777,10 @@ stock HologramTextDraw(Text:textid, const text[], duration = 0, extra_id = 0, co
 	#endif
 }
 
-stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration = 1800, extra_id = 0, const callback[] = "")
+stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration = 1800, bool:loop = false, extra_id = 0, const callback[] = "")
 {
 	#if TDFX_MAX_GLOBAL_TD <= 0 || !defined TextDrawSetPos
-		#pragma unused textid, centerX, centerY, duration, extra_id, callback
+		#pragma unused textid, centerX, centerY, duration, loop, extra_id, callback
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -7305,7 +7833,7 @@ stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration 
 		strmid(TDFX_Callback[slot], callback, 0, strlen(callback), 32);
 		TDFX_AutoHide[slot] = false;
 		TDFX_AutoDestroy[slot] = false;
-		TDFX_Loop[slot] = false;
+		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
@@ -7335,8 +7863,9 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 		TDFX_CharPlayer[instIdx] = INVALID_PLAYER_ID;
 		TDFX_CharTargetY[instIdx] = centerY;
 
-		new rawLen = strlen(text);
-		if (rawLen > TDFX_MAX_CHAR_PARTS) rawLen = TDFX_MAX_CHAR_PARTS;
+		new glyphChars[TDFX_MAX_CHAR_PARTS + 1];
+		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
+		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
 		new font = 1;
@@ -7386,15 +7915,28 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 		#if defined TextDrawGetOutline
 			outline = TextDrawGetOutline(textid);
 		#endif
-		_TDFX_LayoutChars(text, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], gAlign, outline);
+		_TDFX_LayoutChars(glyphChars, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], gAlign, outline);
 
 		for (new p = 0; p < rawLen; p++)
 		{
-			new charStr[2];
-			charStr[0] = text[p];
-			charStr[1] = '\0';
+			new charStr[24];
+			format(charStr, sizeof(charStr), "%s%c", glyphTags[p], glyphChars[p]);
 
 			new Text:wgtd = TextDrawCreate(TDFX_CharTargetX[instIdx][p], centerY, charStr);
+			if (_:wgtd == 0xFFFF || _:wgtd < 0)
+			{
+				for (new k = 0; k < p; k++)
+				{
+					if (TDFX_GCharParts[instIdx][k] != Text:INVALID_TEXT_DRAW)
+					{
+						TextDrawDestroy(TDFX_GCharParts[instIdx][k]);
+						TDFX_GCharParts[instIdx][k] = Text:INVALID_TEXT_DRAW;
+					}
+				}
+				TDFX_FreeCharInstance(instIdx);
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			#if defined _INC_open_mp
 			TextDrawAlignment(wgtd, TEXT_DRAW_ALIGN_CENTER);
 			TextDrawFont(wgtd, t_TEXT_DRAW_FONT:font);
@@ -7471,8 +8013,9 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		TDFX_CharPlayer[instIdx] = INVALID_PLAYER_ID;
 		TDFX_CharTargetY[instIdx] = centerY;
 
-		new rawLen = strlen(text);
-		if (rawLen > TDFX_MAX_CHAR_PARTS) rawLen = TDFX_MAX_CHAR_PARTS;
+		new glyphChars[TDFX_MAX_CHAR_PARTS + 1];
+		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
+		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
 		new font = 1;
@@ -7522,18 +8065,32 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		#if defined TextDrawGetOutline
 			outline = TextDrawGetOutline(textid);
 		#endif
-		_TDFX_LayoutChars(text, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], gAlign, outline);
+		_TDFX_LayoutChars(glyphChars, rawLen, font, lsX, centerX, 0.0, TDFX_CharTargetX[instIdx], gAlign, outline);
 
 		for (new p = 0; p < rawLen; p++)
 		{
 			new pIdx = (direction == TDFX_DIR_LEFT_TO_RIGHT) ? p : (rawLen - 1 - p);
 			TDFX_CharDelay[instIdx][pIdx] = p * staggerMs;
 
-			new charStr[2];
-			charStr[0] = text[pIdx];
-			charStr[1] = '\0';
+			new charStr[24];
+			format(charStr, sizeof(charStr), "%s%c", glyphTags[pIdx], glyphChars[pIdx]);
 
 			new Text:hgtd = TextDrawCreate(TDFX_CharTargetX[instIdx][pIdx], centerY, charStr);
+			if (_:hgtd == 0xFFFF || _:hgtd < 0)
+			{
+				for (new k = 0; k < p; k++)
+				{
+					new prevIdx = (direction == TDFX_DIR_RIGHT_TO_LEFT) ? (rawLen - 1 - k) : k;
+					if (TDFX_GCharParts[instIdx][prevIdx] != Text:INVALID_TEXT_DRAW)
+					{
+						TextDrawDestroy(TDFX_GCharParts[instIdx][prevIdx]);
+						TDFX_GCharParts[instIdx][prevIdx] = Text:INVALID_TEXT_DRAW;
+					}
+				}
+				TDFX_FreeCharInstance(instIdx);
+				TDFX_Free(slot, false);
+				return 0;
+			}
 			#if defined _INC_open_mp
 			TextDrawAlignment(hgtd, TEXT_DRAW_ALIGN_CENTER);
 			TextDrawFont(hgtd, t_TEXT_DRAW_FONT:font);
@@ -7567,7 +8124,14 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		new totalDur = duration;
 		if (totalDur <= 0)
 		{
-			totalDur = (rawLen - 1) * staggerMs + hopDurationMs + 100;
+			if (direction == TDFX_DIR_BOUNCE)
+			{
+				totalDur = ((rawLen - 1) * staggerMs * 2) + hopDurationMs + 100;
+			}
+			else
+			{
+				totalDur = (rawLen - 1) * staggerMs + hopDurationMs + 100;
+			}
 		}
 
 		TDFX_Used[slot] = true;
@@ -7577,6 +8141,8 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		TDFX_Td[slot] = _:textid;
 		TDFX_Base[slot] = textCol;
 		TDFX_FloatA[slot] = hopHeight;
+		TDFX_FloatB[slot] = float(staggerMs);
+		TDFX_Easing[slot] = direction;
 		TDFX_Count[slot] = hopDurationMs;
 		TDFX_Duration[slot] = totalDur;
 		strmid(TDFX_Text[slot], text, 0, strlen(text), sizeof TDFX_Text[]);
@@ -7981,15 +8547,42 @@ stock TDFX_PlayerTextDrawSetOutline(playerid, PlayerText:textid, size)
 stock TDFX_PlayerTextDrawSetString(playerid, PlayerText:textid, const string[])
 {
 	new slot = TDFX_FindPlayer(playerid, textid);
-	if (slot != -1 && (TDFX_Type[slot] == TDFX_TYPE_BLINK && TDFX_PerChar[slot]))
+	if (slot != -1)
 	{
 		strmid(TDFX_Text[slot], string, 0, strlen(string), TDFX_MAX_TEXT);
-		TDFX_Count[slot] = TDFX_CountChars(TDFX_Text[slot]);
-		if (TDFX_Step[slot] > TDFX_Count[slot]) TDFX_Step[slot] = TDFX_Count[slot];
-		return 1;
+		if (TDFX_Type[slot] == TDFX_TYPE_BLINK && TDFX_PerChar[slot])
+		{
+			TDFX_Count[slot] = TDFX_CountChars(TDFX_Text[slot]);
+			if (TDFX_Step[slot] > TDFX_Count[slot]) TDFX_Step[slot] = TDFX_Count[slot];
+			return 1;
+		}
 	}
 	return PlayerTextDrawSetString(playerid, textid, string);
 }
+
+#if TDFX_MAX_GLOBAL_TD > 0
+stock TDFX_TextDrawSetString(Text:textid, const string[])
+{
+	new slot = TDFX_FindGlobal(textid);
+	if (slot != -1)
+	{
+		strmid(TDFX_Text[slot], string, 0, strlen(string), TDFX_MAX_TEXT);
+		if (TDFX_Type[slot] == TDFX_TYPE_BLINK && TDFX_PerChar[slot])
+		{
+			TDFX_Count[slot] = TDFX_CountChars(TDFX_Text[slot]);
+			if (TDFX_Step[slot] > TDFX_Count[slot]) TDFX_Step[slot] = TDFX_Count[slot];
+			return 1;
+		}
+	}
+	return TextDrawSetString(textid, string);
+}
+#if defined _ALS_TextDrawSetString
+	#undef TextDrawSetString
+#else
+	#define _ALS_TextDrawSetString
+#endif
+#define TextDrawSetString TDFX_TextDrawSetString
+#endif
 #if defined _ALS_PlayerTextDrawSetString
 	#undef PlayerTextDrawSetString
 #else
@@ -8000,7 +8593,7 @@ stock TDFX_PlayerTextDrawSetString(playerid, PlayerText:textid, const string[])
 stock TDFX_PlayerTextDrawHide(playerid, PlayerText:textid)
 {
 	new slot = TDFX_FindPlayer(playerid, textid);
-	if (slot != -1) TDFX_Free(slot, false);
+	if (slot != -1) TDFX_Free(slot, true, false, true);
 	return PlayerTextDrawHide(playerid, textid);
 }
 #if defined _ALS_PlayerTextDrawHide
@@ -8185,7 +8778,7 @@ stock TDFX_TextDrawLetterSize(Text:textid, Float:x, Float:y)
 stock TDFX_TextDrawHideForAll(Text:textid)
 {
 	new slot = TDFX_FindGlobal(textid);
-	if (slot != -1) TDFX_Free(slot, false);
+	if (slot != -1) TDFX_Free(slot, true, false, true);
 	return TextDrawHideForAll(textid);
 }
 #if defined _ALS_TextDrawHideForAll

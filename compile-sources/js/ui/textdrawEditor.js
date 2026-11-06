@@ -2,7 +2,7 @@
 // SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
 import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE, pbRealHeight } from '../editor/project.js';
-import { TDFX_EFFECTS, TDFX_BY_ID, TDFX_INCLUDE, tdfxActive, tdfxAllowed, tdfxParams, tdfxFrame, tdfxLength, makeFx, newFx } from '../editor/tdfx.js';
+import { TDFX_EFFECTS, TDFX_BY_ID, TDFX_INCLUDE, tdfxActive, tdfxAllowed, tdfxParams, tdfxFrame, tdfxLength, makeFx, newFx, letterboxBar, letterboxTopSize, letterboxBottomSize } from '../editor/tdfx.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep, themeVar } from './common.js';
 import { modelPreviewImage } from '../editor/modelPreview.js';
@@ -728,8 +728,10 @@ function bindFieldInputs() {
     if (!td || td.type === 'progress') return;
     tdPushUndo();
     td.fx = fxSel.value ? newFx(fxSel.value, td) : null;
+    if (td.fx?.type === 'letterbox') setupLetterbox(td);
     appRef.project.modified = true;
-    syncFxFields(td);
+    updateSidebarFields();
+    updateSidebarList();
     restartBlinkPreview();
   };
   const fxReplay = dialogEl.querySelector('#tdFxReplay');
@@ -1226,7 +1228,8 @@ function syncFxFields(td) {
   if (note) {
     const off = e && !tdfxAllowed(e, td);
     const msg = !e ? '' : off ? (!td.isPlayer && !e.gfn ? 'Este efeito só existe para PlayerTextDraw.' : 'Este efeito não funciona com esta fonte.')
-      : e.box && !td.useBox ? 'Este efeito usa a caixa do TextDraw: ligue a caixa.' : '';
+      : e.id === 'fill' ? 'A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.'
+      : e.id === 'letterbox' ? 'As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.' : '';
     note.textContent = msg ? t(msg) : '';
     note.style.display = msg ? 'block' : 'none';
   }
@@ -1310,6 +1313,12 @@ function syncFxFields(td) {
         const typed = Number(String(input.value).replace(',', '.'));
         if (!fix && (input.value === '' || !Number.isFinite(typed) || fx[p.k] !== typed)) return;
         td.fx[p.k] = fx[p.k];
+        if (e.id === 'letterbox' && p.k === 'barHeight') {
+          // The height of the bars comes from their letter size
+          td.letterSizeY = letterboxTopSize(fx.barHeight);
+          const bottom = (appRef.project.textDraws || []).find(o => o.uid === td.fx.bottomBarTD);
+          if (bottom) bottom.letterSizeY = letterboxBottomSize(fx.barHeight);
+        }
         if (fix) input.value = fx[p.k];
         changed();
       };
@@ -1903,6 +1912,22 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
+}
+
+// Cinema bars: this TextDraw becomes the top bar and a second TextDraw (created when there is none yet) the bottom bar,
+// both black full-width boxes like the ones the include expects
+function setupLetterbox(td) {
+  const tds = appRef.project.textDraws;
+  letterboxBar(td, true, td.fx.barHeight);
+  let bottom = tds.find(o => o.uid === td.fx.bottomBarTD && o !== td && o.type !== 'progress');
+  if (!bottom) {
+    bottom = makeTextDraw({ tdv: 2, isPlayer: Boolean(td.isPlayer) });
+    tds.splice(tds.indexOf(td) + 1, 0, bottom);
+    td.fx.bottomBarTD = bottom.uid;
+  }
+  letterboxBar(bottom, false, td.fx.barHeight);
+  normalizeTdOrder();
+  selectedIdx = tds.indexOf(td);
 }
 
 function createNewBox() {

@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Objets supprimés : {0}",
  "Textos 3D: {0}": "Textes 3D : {0}",
  "Como usar:": "Utilisation :",
- "Requer o plugin streamer ({0}) - {1}": "Nécessite le plugin streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Caméras (appelez-les quand vous voulez, avec le joueur déjà apparu) :",
  "Posições relativas: some ({0}) ou passe a origem.": "Positions relatives : ajoutez ({0}) ou passez l'origine.",
  "Gerado pelo SA Map Studio": "Généré par SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Espace entre lettres (0 = automatique)",
  "Este efeito não funciona com esta fonte.": "Cet effet ne fonctionne pas avec cette police.",
  "Este efeito só existe para PlayerTextDraw.": "Cet effet n'existe que pour les PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Cet effet utilise la boîte du TextDraw : activez la boîte.",
  "Explosão": "Explosion",
  "Explosão (ms)": "Explosion (ms)",
  "Faixa de baixo": "Bande du bas",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue : à l'apparition, la barre va de la valeur de départ à la valeur actuelle",
  "Inverter": "Inverser",
  "Largura da onda": "Largeur de la vague",
- "Largura final": "Largeur finale",
- "Largura inicial": "Largeur initiale",
  "Leque": "Éventail",
  "Letras pulando": "Lettres qui sautent",
  "Linear": "Linéaire",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Bordure (0 ou {0} à {1})",
  "Borda (0 ou 0,5 a 5,0)": "Bordure (0 ou 0,5 à 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Épaisseur de la bordure (celle du haut et du bas est 1,25 fois plus grande pour paraître égale à l'écran) ; 0 laisse la barre sans bordure. Le maximum dépend de la largeur et de la hauteur de la barre.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Sur une barre horizontale (droite ou gauche), une hauteur jusqu'à 4,5 devient 2,5 fois plus grande dans le jeu (au moins 6) : l'éditeur affiche déjà la hauteur du jeu"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Sur une barre horizontale (droite ou gauche), une hauteur jusqu'à 4,5 devient 2,5 fois plus grande dans le jeu (au moins 6) : l'éditeur affiche déjà la hauteur du jeu",
+ "Caixa no começo": "Boîte au début",
+ "Caixa no fim": "Boîte à la fin",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "L'include active la boîte. Aligné à gauche ou à droite, la valeur est le X où la boîte se termine ; centré, c'est la largeur de la boîte.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Les bandes sont des boîtes noires de la largeur de l'écran ; l'effet ne fait que les déplacer. Leur hauteur vient de la taille de lettre Y."
 }

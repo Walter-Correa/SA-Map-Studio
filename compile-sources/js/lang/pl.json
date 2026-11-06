@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Usunięte obiekty: {0}",
  "Textos 3D: {0}": "Teksty 3D: {0}",
  "Como usar:": "Jak używać:",
- "Requer o plugin streamer ({0}) - {1}": "Wymaga wtyczki streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Kamery (wywołuj kiedy chcesz, gdy gracz jest już zespawnowany):",
  "Posições relativas: some ({0}) ou passe a origem.": "Pozycje względne: dodaj ({0}) albo przekaż punkt początkowy.",
  "Gerado pelo SA Map Studio": "Wygenerowano przez SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Odstęp liter (0 = automatyczny)",
  "Este efeito não funciona com esta fonte.": "Ten efekt nie działa z tą czcionką.",
  "Este efeito só existe para PlayerTextDraw.": "Ten efekt istnieje tylko dla PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Ten efekt używa ramki TextDraw: włącz ramkę.",
  "Explosão": "Wybuch",
  "Explosão (ms)": "Wybuch (ms)",
  "Faixa de baixo": "Dolny pas",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: po pojawieniu pasek przechodzi od wartości początkowej do bieżącej",
  "Inverter": "Odwróć",
  "Largura da onda": "Szerokość fali",
- "Largura final": "Szerokość końcowa",
- "Largura inicial": "Szerokość początkowa",
  "Leque": "Wachlarz",
  "Letras pulando": "Skaczące litery",
  "Linear": "Liniowa",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Obramowanie (0 lub {0} do {1})",
  "Borda (0 ou 0,5 a 5,0)": "Obramowanie (0 lub 0,5 do 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Grubość obramowania (górne i dolne jest 1,25 raza większe, by na ekranie wyglądało tak samo); 0 zostawia pasek bez obramowania. Maksimum zależy od szerokości i wysokości paska.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Na leżącym pasku (w prawo lub w lewo) wysokość do 4,5 staje się w grze 2,5 raza większa (co najmniej 6): edytor już pokazuje wysokość z gry"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Na leżącym pasku (w prawo lub w lewo) wysokość do 4,5 staje się w grze 2,5 raza większa (co najmniej 6): edytor już pokazuje wysokość z gry",
+ "Caixa no começo": "Ramka na początku",
+ "Caixa no fim": "Ramka na końcu",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include włącza ramkę. Przy wyrównaniu do lewej lub prawej wartość to X, gdzie ramka się kończy; przy wyśrodkowaniu to szerokość ramki.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Pasy to czarne ramki o szerokości ekranu; efekt tylko je przesuwa. Ich wysokość wynika z rozmiaru litery Y."
 }

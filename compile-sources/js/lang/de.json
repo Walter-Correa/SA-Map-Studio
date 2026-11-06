@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Entfernte Objekte: {0}",
  "Textos 3D: {0}": "3D-Texte: {0}",
  "Como usar:": "Verwendung:",
- "Requer o plugin streamer ({0}) - {1}": "Erfordert das Streamer-Plugin ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Kameras (jederzeit aufrufen, wenn der Spieler schon gespawnt ist):",
  "Posições relativas: some ({0}) ou passe a origem.": "Relative Positionen: addiere ({0}) oder übergib den Ursprung.",
  "Gerado pelo SA Map Studio": "Erstellt mit SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Buchstabenabstand (0 = automatisch)",
  "Este efeito não funciona com esta fonte.": "Dieser Effekt funktioniert mit dieser Schrift nicht.",
  "Este efeito só existe para PlayerTextDraw.": "Diesen Effekt gibt es nur für PlayerTextDraws.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Dieser Effekt nutzt die Box des TextDraws: Schalte die Box ein.",
  "Explosão": "Explosion",
  "Explosão (ms)": "Explosion (ms)",
  "Faixa de baixo": "Unterer Balken",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: Beim Erscheinen geht der Balken vom Startwert zum aktuellen Wert",
  "Inverter": "Umkehren",
  "Largura da onda": "Wellenbreite",
- "Largura final": "Endbreite",
- "Largura inicial": "Startbreite",
  "Leque": "Fächer",
  "Letras pulando": "Hüpfende Buchstaben",
  "Linear": "Linear",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Rand (0 oder {0} bis {1})",
  "Borda (0 ou 0,5 a 5,0)": "Rand (0 oder 0,5 bis 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Randstärke (oben und unten 1,25-mal größer, damit er auf dem Bildschirm gleich aussieht); 0 lässt den Balken ohne Rand. Das Maximum hängt von Breite und Höhe des Balkens ab.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Bei einem liegenden Balken (rechts oder links) wird eine Höhe bis 4,5 im Spiel 2,5-mal größer (mindestens 6): Der Editor zeigt schon die Höhe im Spiel"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "Bei einem liegenden Balken (rechts oder links) wird eine Höhe bis 4,5 im Spiel 2,5-mal größer (mindestens 6): Der Editor zeigt schon die Höhe im Spiel",
+ "Caixa no começo": "Box am Anfang",
+ "Caixa no fim": "Box am Ende",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Die Include schaltet die Box ein. Links oder rechts ausgerichtet ist der Wert das X, an dem die Box endet; zentriert ist es die Breite der Box.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Die Balken sind schwarze Boxen in Bildschirmbreite; der Effekt bewegt sie nur. Ihre Höhe kommt von der Buchstabengröße Y."
 }

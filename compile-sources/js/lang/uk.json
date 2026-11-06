@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Видалені об'єкти: {0}",
  "Textos 3D: {0}": "3D-тексти: {0}",
  "Como usar:": "Як використовувати:",
- "Requer o plugin streamer ({0}) - {1}": "Потрібен плагін streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Камери (викликайте будь-коли, коли гравець уже заспавнився):",
  "Posições relativas: some ({0}) ou passe a origem.": "Відносні позиції: додайте ({0}) або передайте початок координат.",
  "Gerado pelo SA Map Studio": "Створено в SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Відстань між літерами (0 = авто)",
  "Este efeito não funciona com esta fonte.": "Цей ефект не працює з цим шрифтом.",
  "Este efeito só existe para PlayerTextDraw.": "Цей ефект є лише для PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Цей ефект використовує рамку TextDraw: увімкніть рамку.",
  "Explosão": "Вибух",
  "Explosão (ms)": "Вибух (ms)",
  "Faixa de baixo": "Нижня смуга",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: під час появи смуга йде від початкового значення до поточного",
  "Inverter": "Інвертувати",
  "Largura da onda": "Ширина хвилі",
- "Largura final": "Кінцева ширина",
- "Largura inicial": "Початкова ширина",
  "Leque": "Віяло",
  "Letras pulando": "Стрибаючі літери",
  "Linear": "Лінійна",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Рамка (0 або {0} до {1})",
  "Borda (0 ou 0,5 a 5,0)": "Рамка (0 або 0,5 до 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Товщина рамки (верхня й нижня в 1,25 раза більша, щоб на екрані виглядати однаково); 0 залишає смугу без рамки. Максимум залежить від ширини й висоти смуги.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "У лежачої смуги (праворуч або ліворуч) висота до 4,5 у грі стає в 2,5 раза більшою (щонайменше 6): редактор уже показує висоту з гри"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "У лежачої смуги (праворуч або ліворуч) висота до 4,5 у грі стає в 2,5 раза більшою (щонайменше 6): редактор уже показує висоту з гри",
+ "Caixa no começo": "Рамка на початку",
+ "Caixa no fim": "Рамка в кінці",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include вмикає рамку. При вирівнюванні ліворуч або праворуч значення — це X, де рамка закінчується; по центру — ширина рамки.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Смуги — чорні рамки на всю ширину екрана; ефект лише рухає їх. Їхня висота береться з розміру літери Y."
 }

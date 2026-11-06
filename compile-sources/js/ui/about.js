@@ -8,6 +8,17 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.41', date: '07/11/2026', items: [
+      'Progress Bar Plus and TextDrawFX updated again in the test server, the export and the preview.',
+      'TextDraw effects: every effect has the new Repeat option (loop parameter of the include), exported, imported back and used by the test server.',
+      'Box fill effect: the values are now the box size of the include (the X where the box ends when aligned left or right, the box width when centred), with defaults taken from the box of the TextDraw; the preview turns the box on like the include does.',
+      'Cinema bars effect: choosing it turns the TextDraw into the top bar and creates the bottom bar, both black full-width boxes with the letter size of the bar height, as the include expects.',
+      'Test server: the TextDraws, the progress bars and their effects only appear a moment after the player spawns, so short effects are seen from the start.',
+      'The exported code starts with #include <streamer> and its address when it uses dynamic items, instead of the old note in the header.',
+      'The export window is much larger.',
+    ],
+  },
+  {
     version: '4.1.40', date: '03/11/2026', items: [
       'Progress Bar Plus and TextDrawFX updated to their latest versions in the test server, the export and the preview.',
       'Progress bars: a border of 0 now means no border (PB_BORDER_NONE); a lying bar (right or left) up to 4.5 high gets the height the include gives it in the game (2.5 times, at least 6), and new bars start with the include size (60 x 8). The export uses the PB_DIR_* names and always shows the bar with ShowPlayerProgressBar.',

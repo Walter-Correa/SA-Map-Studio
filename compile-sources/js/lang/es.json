@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Objetos eliminados: {0}",
  "Textos 3D: {0}": "Textos 3D: {0}",
  "Como usar:": "Cómo usar:",
- "Requer o plugin streamer ({0}) - {1}": "Requiere el plugin streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Cámaras (llámalas cuando quieras, con el jugador ya spawneado):",
  "Posições relativas: some ({0}) ou passe a origem.": "Posiciones relativas: suma ({0}) o pasa el origen.",
  "Gerado pelo SA Map Studio": "Generado por SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Espacio entre letras (0 = automático)",
  "Este efeito não funciona com esta fonte.": "Este efecto no funciona con esta fuente.",
  "Este efeito só existe para PlayerTextDraw.": "Este efecto solo existe para PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Este efecto usa la caja del TextDraw: activa la caja.",
  "Explosão": "Explosión",
  "Explosão (ms)": "Explosión (ms)",
  "Faixa de baixo": "Franja de abajo",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: al aparecer, la barra va del valor inicial al valor actual",
  "Inverter": "Invertir",
  "Largura da onda": "Ancho de la onda",
- "Largura final": "Ancho final",
- "Largura inicial": "Ancho inicial",
  "Leque": "Abanico",
  "Letras pulando": "Letras saltando",
  "Linear": "Lineal",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Borde (0 o {0} a {1})",
  "Borda (0 ou 0,5 a 5,0)": "Borde (0 o 0,5 a 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Grosor del borde (el de arriba y el de abajo es 1,25 veces mayor para verse igual en pantalla); 0 deja la barra sin borde. El máximo depende del ancho y la altura de la barra.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "En una barra horizontal (derecha o izquierda), una altura de hasta 4,5 se vuelve 2,5 veces mayor en el juego (como mínimo 6): el editor ya muestra la altura del juego"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "En una barra horizontal (derecha o izquierda), una altura de hasta 4,5 se vuelve 2,5 veces mayor en el juego (como mínimo 6): el editor ya muestra la altura del juego",
+ "Caixa no começo": "Caja al inicio",
+ "Caixa no fim": "Caja al final",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "La include activa la caja. Alineado a la izquierda o a la derecha, el valor es la X donde termina la caja; centrado, es el ancho de la caja.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Las franjas son cajas negras del ancho de la pantalla; el efecto solo las mueve. Su altura viene del tamaño de letra Y."
 }

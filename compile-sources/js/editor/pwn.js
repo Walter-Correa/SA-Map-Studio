@@ -163,8 +163,7 @@ export function cleanPwnHeader(headerText) {
         t.startsWith('// Como usar:') ||
         t.startsWith('//   OnGameModeInit') ||
         t.startsWith('//   OnPlayerConnect') ||
-        t.startsWith('//   Requer o plugin streamer') ||
-        /^#include\s*<(ProgressBar|TextDrawFX)>/i.test(t) ||
+        /^#include\s*<(ProgressBar|TextDrawFX|streamer)>/i.test(t) ||
         t.startsWith('//   Posições relativas') ||
         t.startsWith('//   Câmeras')) {
       continue;
@@ -1448,7 +1447,7 @@ export function exportPawn(project, options = {}) {
   if (opt.layout === 'lines') {
     const cleanHeader = cleanPwnHeader(project.pwnHeader);
     if (cleanHeader) lines.push(cleanHeader, '');
-    if (incs.length) lines.push(...incs, '');
+    const incAt = lines.length;
     if (opt.relative) lines.push(`// ${tr('Posições relativas ao centro ({0})', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
     if (opt.exportArray && arrayObjs.length) {
       lines.push(...arrayLines);
@@ -1483,14 +1482,14 @@ export function exportPawn(project, options = {}) {
     if (textDrawLines.length) lines.push('', '// TextDraws:', ...textDrawLines);
     if (remLines.length) lines.push('', '// Removed objects (put in OnPlayerConnect):', ...remLines);
     if (cams.code) lines.push('', cams.code);
-    return lines.join('\n') + '\n';
+    return withIncludes(lines, incAt, incs);
   }
 
   const id = sanitizeIdent(project.name).slice(0, 17).replace(/_+$/, ''); // Pawn names: up to 31 letters
   const date = new Date().toLocaleDateString(uiLocale());
   const cleanHeader = cleanPwnHeader(project.pwnHeader);
   if (cleanHeader) lines.push(cleanHeader, '');
-  if (incs.length) lines.push(...incs, '');
+  const incAt = lines.length;
   lines.push('// ================================================================');
   lines.push(`// ${tr('Mapa: {0}', project.name)}`);
   lines.push(`// ${tr('Gerado pelo SA Map Studio em {0}', date)}`);
@@ -1502,7 +1501,6 @@ export function exportPawn(project, options = {}) {
   lines.push(`// ${tr('Como usar:')}`);
   lines.push(`//   OnGameModeInit():   Map_${id}_Load();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
-  if (opt.objectFn === 'CreateDynamicObject') lines.push(`//   ${tr('Requer o plugin streamer ({0}) - {1}', '#include <streamer>', 'https://github.com/samp-incognito/samp-streamer-plugin')}`);
   if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   ${tr('Posições relativas: some ({0}) ou passe a origem.', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
   lines.push('// ================================================================');
@@ -1559,9 +1557,19 @@ export function exportPawn(project, options = {}) {
     lines.push('}');
   }
   if (cams.code) { lines.push(''); lines.push(cams.code); }
-  return lines.join('\n') + '\n';
+  return withIncludes(lines, incAt, incs);
 }
 export const exportPwn = exportPawn;
+
+// Puts the includes the code needs at the top, each with the address to download it; the streamer comes first
+// when the code uses dynamic items
+const STREAMER_INCLUDE = '#include <streamer>//https://github.com/samp-incognito/samp-streamer-plugin';
+function withIncludes(lines, at, incs) {
+  const dynamic = /\b(CreateDynamic\w*|MoveDynamicObject|SetDynamicObject\w*|AttachDynamicObject\w*|Streamer_\w+)\s*\(/.test(lines.join('\n'));
+  const all = [...(dynamic ? [STREAMER_INCLUDE] : []), ...incs];
+  if (all.length) lines.splice(at, 0, ...all, '');
+  return lines.join('\n') + '\n';
+}
 
 export function exportIpl(project, quatOf, modelName) {
   const lines = [`# ${tr('Gerado pelo SA Map Studio')}`, `# ${tr('Prédios removidos não existem em IPL: apague-os no IPL original do jogo.')}`, 'inst'];

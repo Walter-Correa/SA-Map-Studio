@@ -1839,7 +1839,6 @@
  "Objetos removidos: {0}": "Премахнати обекти: {0}",
  "Textos 3D: {0}": "3D текстове: {0}",
  "Como usar:": "Как се използва:",
- "Requer o plugin streamer ({0}) - {1}": "Изисква плъгина streamer ({0}) - {1}",
  "Câmeras (chame quando quiser, com o jogador já spawnado):": "Камери (извиквайте когато искате, след като играчът вече се е появил):",
  "Posições relativas: some ({0}) ou passe a origem.": "Относителни позиции: добавете ({0}) или подайте началото.",
  "Gerado pelo SA Map Studio": "Създадено със SA Map Studio",
@@ -2476,7 +2475,6 @@
  "Espaço entre letras (0 = automático)": "Разстояние между буквите (0 = автоматично)",
  "Este efeito não funciona com esta fonte.": "Този ефект не работи с този шрифт.",
  "Este efeito só existe para PlayerTextDraw.": "Този ефект съществува само за PlayerTextDraw.",
- "Este efeito usa a caixa do TextDraw: ligue a caixa.": "Този ефект използва кутията на TextDraw: включете кутията.",
  "Explosão": "Експлозия",
  "Explosão (ms)": "Експлозия (ms)",
  "Faixa de baixo": "Долна лента",
@@ -2504,8 +2502,6 @@
  "InterpolatePlayerProgressBarValue: ao aparecer, a barra vai do valor inicial até o valor atual": "InterpolatePlayerProgressBarValue: при появяване лентата отива от началната до текущата стойност",
  "Inverter": "Обърни",
  "Largura da onda": "Ширина на вълната",
- "Largura final": "Крайна ширина",
- "Largura inicial": "Начална ширина",
  "Leque": "Ветрило",
  "Letras pulando": "Подскачащи букви",
  "Linear": "Линейна",
@@ -2604,5 +2600,9 @@
  "Borda (0 ou {0} a {1})": "Рамка (0 или {0} до {1})",
  "Borda (0 ou 0,5 a 5,0)": "Рамка (0 или 0,5 до 5,0)",
  "Espessura da borda (a de cima e a de baixo é 1,25 vez maior para ficar igual na tela); 0 deixa a barra sem borda. O máximo depende da largura e da altura da barra.": "Дебелина на рамката (горната и долната е 1,25 пъти по-голяма, за да изглежда еднакво на екрана); 0 оставя лентата без рамка. Максимумът зависи от ширината и височината на лентата.",
- "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "При легнала лента (надясно или наляво) височина до 4,5 става 2,5 пъти по-голяма в играта (поне 6): редакторът вече показва височината от играта"
+ "Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo": "При легнала лента (надясно или наляво) височина до 4,5 става 2,5 пъти по-голяма в играта (поне 6): редакторът вече показва височината от играта",
+ "Caixa no começo": "Кутия в началото",
+ "Caixa no fim": "Кутия в края",
+ "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include включва кутията. При подравняване вляво или вдясно стойността е X, където кутията свършва; при центриране е ширината на кутията.",
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Лентите са черни кутии с ширината на екрана; ефектът само ги мести. Височината им идва от размера на буквата Y."
 }
