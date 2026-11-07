@@ -86,10 +86,12 @@
 #define TDFX_EASE_IN_QUAD       (1)
 #define TDFX_EASE_OUT_QUAD      (2)
 
-#define TDFX_GSTATE_UNTRACKED   (0)
-#define TDFX_GSTATE_SHOWN_ALL   (1)
-#define TDFX_GSTATE_PER_PLAYER  (2)
-#define TDFX_GSTATE_HIDDEN_ALL  (3)
+#define TDFX_GSTATE_UNTRACKED         (0)
+#define TDFX_GSTATE_SHOWN_ALL         (1)
+#define TDFX_GSTATE_PER_PLAYER        (2)
+#define TDFX_GSTATE_HIDDEN_ALL        (3)
+#define TDFX_GSTATE_HIDDEN_PER_PLAYER (4)
+
 #define TDFX_EASE_IN_OUT_QUAD   (3)
 #define TDFX_EASE_OUT_BOUNCE    (4)
 
@@ -898,7 +900,30 @@ stock _TDFX_InitGlobalTD(Text:textid)
 	if (TDFX_ValidGlobal(textid))
 	{
 		new tid = _:textid;
-		if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_ALL || TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_PER_PLAYER)
+		{
+			new bool:anyLeft = false;
+			for (new p = 0; p < MAX_PLAYERS; p++)
+			{
+				if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+				{
+					anyLeft = true;
+				}
+				else
+				{
+					TDFX_GShownMask[tid][p / 32] &= ~(1 << (p % 32));
+				}
+			}
+			if (anyLeft)
+			{
+				TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
+			}
+			else
+			{
+				TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
+			}
+		}
+		else if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_ALL || TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
 		{
 			TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
@@ -952,7 +977,7 @@ stock _TDFX_UpdateGlobalTD(Text:textid, bool:isNewAnimation = false)
 				}
 			}
 		}
-		case TDFX_GSTATE_HIDDEN_ALL:
+		case TDFX_GSTATE_HIDDEN_ALL, TDFX_GSTATE_HIDDEN_PER_PLAYER:
 		{
 			// Explicitly hidden from everyone (or all players were hidden).
 			// Do NOT show to anyone during a running animation!
@@ -1000,7 +1025,7 @@ stock _TDFX_UpdateGlobalChildTD(Text:childTd, parentTdId)
 				}
 				return;
 			}
-			case TDFX_GSTATE_HIDDEN_ALL:
+			case TDFX_GSTATE_HIDDEN_ALL, TDFX_GSTATE_HIDDEN_PER_PLAYER:
 			{
 				return;
 			}
@@ -1031,10 +1056,17 @@ stock _TDFX_HideGlobalTD(Text:textid, bool:permanent = false)
 	}
 	if (permanent)
 	{
-		TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
-		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_PER_PLAYER)
 		{
-			TDFX_GShownMask[tid][w] = 0;
+			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_PER_PLAYER;
+		}
+		else
+		{
+			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[tid][w] = 0;
+			}
 		}
 	}
 	#else
