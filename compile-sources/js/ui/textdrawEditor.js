@@ -728,10 +728,11 @@ function bindFieldInputs() {
     if (!td || td.type === 'progress') return;
     tdPushUndo();
     // The old effect leaves completely: the cinema bars made for a text go away with it (the new effect goes to that text)
-    const target = removeLetterbox(td);
+    const target = removeFillSet(removeLetterbox(td));
     target.fx = fxSel.value ? newFx(fxSel.value, target) : null;
     selectedIdx = appRef.project.textDraws.indexOf(target);
     if (target.fx?.type === 'letterbox') setupLetterbox(target);
+    else if (target.fx?.type === 'fill' && !isBoxOnly(target)) setupFill(target);
     appRef.project.modified = true;
     updateSidebarFields();
     updateSidebarList();
@@ -1233,20 +1234,10 @@ function syncFxFields(td) {
     const msg = !e ? '' : off ? (!td.isPlayer && !e.gfn ? 'Este efeito só existe para PlayerTextDraw.' : 'Este efeito não funciona com esta fonte.')
       : e.id === 'fill' ? 'A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.'
       : e.id === 'letterbox' ? 'As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.' : '';
-    note.textContent = msg ? t(msg) + (e.id === 'letterbox' && !off ? ' ' + t('Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.') : '') : '';
+    note.textContent = msg ? t(msg) + (e.id === 'letterbox' && !off ? ' ' + t('Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.') : e.id === 'fill' && !off ? ' ' + t('Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.') : '') : '';
     note.style.display = msg ? 'block' : 'none';
   }
   if (!e) return;
-  if (e.id === 'fill' && isBoxOnly(td)) {
-    // The demo puts a counter over the bar (two functions that run together)
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'secondary';
-    btn.style.cssText = 'grid-column: 1 / -1; font-size: 12px;';
-    btn.textContent = t('Adicionar contador de % sobre a barra (como no demo)');
-    btn.onclick = () => { tdPushUndo(); addFillCounter(td); appRef.project.modified = true; updateSidebarFields(); updateSidebarList(); restartBlinkPreview(); };
-    box.appendChild(btn);
-  }
   const changed = (restart = true) => { appRef.project.modified = true; if (restart) restartBlinkPreview(); else redrawCanvas(); };
   for (const p of tdfxParams(e)) {
     if (e.id === 'blink' && p.k === 'perChar' && (td.font ?? 1) > 3) continue;
@@ -1983,21 +1974,36 @@ function removeLetterbox(td) {
   set.top.fx = null;
   return set.top;
 }
-// Box fill like the demo: FillPlayerTextDrawProgress on the bar and CountPlayerTextDrawNumber on a text over it, with the
-// same time and curve so the number follows the bar (0 to 100 %)
-function addFillCounter(bar) {
+// Box fill like the demo: the include resizes the box of the TextDraw it runs on, and on a text that box size is also
+// where the text breaks into lines, so the demo fills a bar of its own ("_", aligned left, letter size X 0) under the
+// text and counts 0 to 100 % on the text (CountPlayerTextDrawNumber) with the same time and curve.
+const isFillBar = (o) => Boolean(o && o.type !== 'progress' && o.useBox && o.text === '_' && !(Number(o.letterSizeX) > 0) && (o.align ?? o.alignment ?? 1) !== 2);
+function setupFill(text) {
   const tds = appRef.project.textDraws;
-  const fx = bar.fx, centred = (bar.align ?? bar.alignment ?? 1) === 2;
-  const left = centred ? bar.x - fx.targetWidth / 2 : Math.min(fx.startWidth, bar.x), right = centred ? bar.x + fx.targetWidth / 2 : Math.max(fx.targetWidth, bar.x);
-  const width = Math.max(40, Math.abs(right - left));
-  const label = makeTextDraw({
-    tdv: 2, isPlayer: Boolean(bar.isPlayer), text: t('CARREGANDO') + ' (0%)', x: Math.round((left + right) / 2 * 100) / 100, y: Math.round((bar.y - 24) * 100) / 100,
-    font: 2, letterSizeX: 0.36, letterSizeY: 1.5, textSizeX: 500, textSizeY: Math.round(width * 100) / 100, color: 0xFFFFFFFF,
-    align: 2, alignment: 2, shadow: 0, outline: 1, proportional: 1, useBox: 1, boxColor: 0x000000BB,
+  const fx = text.fx;
+  const r = textDrawRect({ ...text, text: `${text.text} (100%)`, fx: null });
+  const left = Math.round(r.x * 100) / 100, right = Math.round((r.x + Math.max(20, r.w)) * 100) / 100;
+  const bar = makeTextDraw({
+    tdv: 2, isPlayer: Boolean(text.isPlayer), text: '_', x: left, y: Math.round((r.y + r.h + 3) * 100) / 100, font: 1, letterSizeX: 0,
+    letterSizeY: Math.max(0.25, Math.round((Number(text.letterSizeY) || 1.4) * 0.5 * 100) / 100), textSizeX: left, textSizeY: 0,
+    color: 0x2ECC7100, useBox: 1, boxColor: 0x2ECC71EE, align: 1, alignment: 1, shadow: 0, outline: 0, proportional: 1,
   });
-  label.fx = makeFx({ type: 'count', startValue: 0, targetValue: 100, duration: fx.duration, prefix: t('CARREGANDO') + ' (', suffix: '%)', easing: fx.easing, loop: fx.loop }, label);
-  tds.splice(tds.indexOf(bar) + 1, 0, label);
+  bar.fx = makeFx({ type: 'fill', startWidth: left, targetWidth: right, duration: fx.duration, easing: fx.easing, lineHeight: 0, loop: fx.loop }, bar);
+  text.fx = makeFx({ type: 'count', startValue: 0, targetValue: 100, duration: fx.duration, prefix: `${text.text} (`, suffix: '%)', easing: fx.easing, loop: fx.loop }, text);
+  tds.splice(tds.indexOf(text), 0, bar);
   normalizeTdOrder();
+  selectedIdx = tds.indexOf(bar);
+}
+// The fill set (the bar made for a text and the count on the text right after it) leaves when either effect changes
+function removeFillSet(td) {
+  const tds = appRef.project.textDraws;
+  const i = tds.indexOf(td);
+  const bar = td.fx?.type === 'fill' ? td : td.fx?.type === 'count' ? tds[i - 1] : null;
+  const text = bar && tds[tds.indexOf(bar) + 1];
+  if (!bar || !isFillBar(bar) || bar.fx?.type !== 'fill' || !text || text.fx?.type !== 'count' || isBoxOnly(text)) return td;
+  tds.splice(tds.indexOf(bar), 1);
+  text.fx = null;
+  return text;
 }
 
 function createNewBox() {

@@ -2606,5 +2606,5 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include włącza ramkę. Przy wyrównaniu do lewej lub prawej wartość to X, gdzie ramka się kończy; przy wyśrodkowaniu to szerokość ramki.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Pasy to czarne ramki o szerokości ekranu; efekt tylko je przesuwa. Ich wysokość wynika z rozmiaru litery Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Wybrany na tekście: tekst zostaje i pojawia się stopniowo razem z pasami, jak w demie.",
- "Adicionar contador de % sobre a barra (como no demo)": "Dodaj licznik % nad paskiem (jak w demie)"
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Wybrany na tekście: edytor tworzy pod nim własny pasek, a tekst liczy od 0 do 100%, jak w demie."
 }

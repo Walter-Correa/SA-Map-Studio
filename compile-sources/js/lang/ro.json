@@ -2606,5 +2606,5 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include-ul activează caseta. Aliniat la stânga sau la dreapta, valoarea este X-ul unde se termină caseta; centrat, este lățimea casetei.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Benzile sunt casete negre late cât ecranul; efectul doar le mută. Înălțimea lor vine din mărimea literei Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Ales pe un text, textul rămâne și apare treptat împreună cu benzile, ca în demo.",
- "Adicionar contador de % sobre a barra (como no demo)": "Adaugă un contor % deasupra barei (ca în demo)"
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Ales pe un text, editorul creează o bară proprie sub el și textul numără de la 0 la 100%, ca în demo."
 }

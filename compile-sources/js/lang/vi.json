@@ -2606,5 +2606,5 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include sẽ bật hộp. Căn trái hoặc phải, giá trị là X nơi hộp kết thúc; căn giữa, đó là chiều rộng của hộp.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Các dải là hộp đen rộng bằng màn hình; hiệu ứng chỉ di chuyển chúng. Chiều cao lấy từ cỡ chữ Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Khi chọn trên một văn bản, văn bản vẫn giữ nguyên và hiện dần cùng các dải, như trong bản demo.",
- "Adicionar contador de % sobre a barra (como no demo)": "Thêm bộ đếm % trên thanh (như trong bản demo)"
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Khi chọn trên một văn bản, trình chỉnh sửa tạo một thanh riêng bên dưới và văn bản đếm từ 0 đến 100%, như trong bản demo."
 }

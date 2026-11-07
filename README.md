@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.51-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.52-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -503,6 +503,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.52 — 07/11/2026
+- TextDraw editor: Bounce in the area travels the whole area again. A TextDraw that starts in a corner of the limits now leaves it like in the game instead of flipping in that corner, and the colour goes back at the end of a colour-shifting bounce.
+- TextDraw editor: Fill the box chosen on a text works like the demo. The include resizes the box of the TextDraw it runs on, and on a text that size is also where the text breaks into lines, so the editor now makes a bar of its own under the text (filled by FillPlayerTextDrawProgress) and the text counts from 0 to 100% (CountPlayerTextDrawNumber) with the same time and curve. Changing the effect removes the bar and the count.
 
 ### 4.1.51 — 07/11/2026
 - TextDraw editor: changing the effect after Cinema bars removes the whole set. The two bars made for a text go away and the text loses the fade that came with them, so the new effect (or none) applies to the text alone.

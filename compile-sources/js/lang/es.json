@@ -2606,5 +2606,5 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "La include activa la caja. Alineado a la izquierda o a la derecha, el valor es la X donde termina la caja; centrado, es el ancho de la caja.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Las franjas son cajas negras del ancho de la pantalla; el efecto solo las mueve. Su altura viene del tamaño de letra Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Elegido en un texto, el texto se mantiene y aparece poco a poco junto con las franjas, como en la demo.",
- "Adicionar contador de % sobre a barra (como no demo)": "Añadir contador de % sobre la barra (como en la demo)"
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Elegido en un texto, el editor crea una barra propia debajo y el texto cuenta de 0 a 100%, como en la demo."
 }

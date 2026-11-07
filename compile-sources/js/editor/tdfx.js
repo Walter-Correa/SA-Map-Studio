@@ -585,7 +585,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       const ticks = Math.floor((done ? len : len > 0 && !loops(fx) ? t : rawT % 120000) / TDFX_FRAME);
       const sim = (e.id === 'bounce' ? bounceSim : bounceCircleSim)(td, p, text, ticks);
       view.x = sim.x; view.y = sim.y;
-      if (sim.col) setCol(sim.col);
+      if (sim.col && !(done && !loops(fx))) setCol(sim.col); // at the end the include puts the colour back
       return r;
     }
     case 'orbit': {
@@ -810,8 +810,11 @@ function bounceSim(td, p, text, ticks) {
   if (minX > maxX) minX = maxX = (p.minX + p.maxX) / 2;
   if (minY > maxY) minY = maxY = (p.minY + p.maxY) / 2;
   let x = Math.max(minX, Math.min(maxX, td.x)), y = Math.max(minY, Math.min(maxY, td.y));
-  let vx = (rint(11, 1, 2) ? p.speedX : -p.speedX) * (0.90 + rint(11, 3, 21) / 100);
-  let vy = (rint(11, 2, 2) ? p.speedY : -p.speedY) * (0.90 + rint(11, 4, 21) / 100);
+  // The include picks each sign at random; the preview takes the one that leaves the nearest wall (one of those picks),
+  // because a start in a corner moving into it keeps flipping in that corner
+  const away = (pos, min, max, v) => (pos > (min + max) / 2 ? -Math.abs(v) : Math.abs(v));
+  let vx = away(x, minX, maxX, p.speedX) * (0.90 + rint(11, 3, 21) / 100);
+  let vy = away(y, minY, maxY, p.speedY) * (0.90 + rint(11, 4, 21) / 100);
   let col = null;
   const jit = (v, i) => { v *= 0.94 + rint(12, i, 13) / 100; return Math.abs(v) < 1 ? (v < 0 ? -1.2 : 1.2) : Math.abs(v) > 4.5 ? (v < 0 ? -4 : 4) : v; };
   for (let i = 0; i < ticks; i++) {
