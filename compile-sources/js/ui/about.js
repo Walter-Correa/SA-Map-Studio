@@ -8,6 +8,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.51', date: '07/11/2026', items: [
+      'TextDraw editor: changing the effect after Cinema bars removes the whole set. The two bars made for a text go away and the text loses the fade that came with them, so the new effect (or none) applies to the text alone.',
+    ],
+  },
+  {
     version: '4.1.50', date: '07/11/2026', items: [
       'TextDrawFX updated with its latest fixes: Bounce and Bounce in a circle keep the whole TextDraw inside the area (the limits shrink by its size), in the test server and in the editor preview.',
       'TextDraw editor: the effect preview now follows the include step by step. WaveDrift moves on the same circle as in the game, Bounce runs frame by frame with the same speed changes at the walls, Glitch only changes letters on the frames that dim the text, and Split-flap rolls its letters at the same rhythm.',

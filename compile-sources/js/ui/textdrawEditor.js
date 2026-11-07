@@ -727,8 +727,11 @@ function bindFieldInputs() {
     const td = getSelectedTd();
     if (!td || td.type === 'progress') return;
     tdPushUndo();
-    td.fx = fxSel.value ? newFx(fxSel.value, td) : null;
-    if (td.fx?.type === 'letterbox') setupLetterbox(td);
+    // The old effect leaves completely: the cinema bars made for a text go away with it (the new effect goes to that text)
+    const target = removeLetterbox(td);
+    target.fx = fxSel.value ? newFx(fxSel.value, target) : null;
+    selectedIdx = appRef.project.textDraws.indexOf(target);
+    if (target.fx?.type === 'letterbox') setupLetterbox(target);
     appRef.project.modified = true;
     updateSidebarFields();
     updateSidebarList();
@@ -1924,13 +1927,14 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
   redrawCanvas();
 }
 
-// Cinema bars like the demo: two black full-width boxes (the top one runs LetterboxPlayerTextDraw and moves the bottom
-// one). A bar chosen for it becomes the top bar; a text keeps its text and fades in (FadeIn, the same time as the bars)
-// while two new bars are made under it in the list.
+// Cinema bars like the demo: two new black full-width boxes (the top one runs LetterboxPlayerTextDraw and moves the
+// bottom one) right before the chosen TextDraw in the list, and the chosen one fades in (FadeIn, the same time as the
+// bars). Only a TextDraw that already is a full-width bar (an imported one) becomes the top bar itself.
+const isLetterboxBar = (o) => Boolean(o && o.type !== 'progress' && o.useBox && o.text === '_' && !(Number(o.letterSizeX) > 0) && Number(o.x) === 0 && Number(o.textSizeX) >= 640);
 function setupLetterbox(td) {
   const tds = appRef.project.textDraws;
   let top = td;
-  if (!isBoxOnly(td)) {
+  if (!isLetterboxBar(td)) {
     const fx = td.fx;
     td.fx = makeFx({ type: 'fadeIn', duration: fx.duration, fadeBox: true, targetAlpha: 255 }, td);
     top = makeTextDraw({ tdv: 2, isPlayer: Boolean(td.isPlayer) });
@@ -1947,6 +1951,37 @@ function setupLetterbox(td) {
   letterboxBar(bottom, false, top.fx.barHeight);
   normalizeTdOrder();
   selectedIdx = tds.indexOf(top);
+}
+// The cinema set of a TextDraw: top bar (letterbox), bottom bar and the text that fades in right after them
+function letterboxSet(td) {
+  const tds = appRef.project.textDraws;
+  let i = tds.indexOf(td);
+  if (td.fx?.type === 'fadeIn') i -= 2;
+  else if (td.fx?.type !== 'letterbox') return null;
+  const top = tds[i];
+  if (!top || top.fx?.type !== 'letterbox') return null;
+  const bottom = tds.find(o => o.uid === top.fx.bottomBarTD && o !== top) || null;
+  const next = tds[i + (bottom && tds[i + 1] === bottom ? 2 : 1)];
+  const text = next && next.fx?.type === 'fadeIn' && !isLetterboxBar(next) ? next : null;
+  if (td.fx?.type === 'fadeIn' && text !== td) return null;
+  return { top, bottom, text };
+}
+// Takes the cinema bars out when the effect of their set changes; returns the TextDraw that gets the new effect
+function removeLetterbox(td) {
+  const set = letterboxSet(td);
+  if (!set) return td;
+  const tds = appRef.project.textDraws;
+  const drop = (o) => { const k = o ? tds.indexOf(o) : -1; if (k >= 0) tds.splice(k, 1); };
+  const shared = (o) => tds.some(x => x !== set.top && x.fx?.type === 'letterbox' && x.fx.bottomBarTD === o.uid);
+  if (set.bottom && isLetterboxBar(set.bottom) && !set.bottom.fx && !shared(set.bottom)) drop(set.bottom);
+  if (set.text) {
+    // Bars made for a text: both go and the text loses the fade that came with them
+    drop(set.top);
+    set.text.fx = null;
+    return set.text;
+  }
+  set.top.fx = null;
+  return set.top;
 }
 // Box fill like the demo: FillPlayerTextDrawProgress on the bar and CountPlayerTextDrawNumber on a text over it, with the
 // same time and curve so the number follows the bar (0 to 100 %)
