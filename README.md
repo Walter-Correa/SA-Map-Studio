@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.48-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.49-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -503,6 +503,9 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.49 — 07/11/2026
+- TextDrawFX updated with its latest fixes in the test server: a global TextDraw shown to everyone and hidden at the end of an effect shows to the players connected now when a new effect starts after all its old viewers left.
 
 ### 4.1.48 — 07/11/2026
 - TextDrawFX updated with its latest fixes in the test server: a global TextDraw hidden at the end of an effect remembers who saw it also when it was shown to everyone, and showing it to one player afterwards starts a new list of viewers.

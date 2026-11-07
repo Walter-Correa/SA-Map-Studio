@@ -8,6 +8,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.49', date: '07/11/2026', items: [
+      'TextDrawFX updated with its latest fixes in the test server: a global TextDraw shown to everyone and hidden at the end of an effect shows to the players connected now when a new effect starts after all its old viewers left.',
+    ],
+  },
+  {
     version: '4.1.48', date: '07/11/2026', items: [
       'TextDrawFX updated with its latest fixes in the test server: a global TextDraw hidden at the end of an effect remembers who saw it also when it was shown to everyone, and showing it to one player afterwards starts a new list of viewers.',
     ],

@@ -919,8 +919,25 @@ stock _TDFX_InitGlobalTD(Text:textid)
 			{
 				TDFX_GShownState[tid] = (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_PER_PLAYER) ? TDFX_GSTATE_PER_PLAYER : TDFX_GSTATE_SHOWN_ALL;
 			}
+			else if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_SHOWN_ALL)
+			{
+				// Was shown to everyone: nobody from the saved list is left, so show it to the players connected now
+				TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
+				for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+				{
+					TDFX_GShownMask[tid][w] = 0;
+				}
+				for (new p = 0; p < MAX_PLAYERS; p++)
+				{
+					if (IsPlayerConnected(p))
+					{
+						TDFX_GShownMask[tid][p / 32] |= (1 << (p % 32));
+					}
+				}
+			}
 			else
 			{
+				// Was shown to a specific group: nobody from it is left, so keep it hidden
 				TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
 			}
 		}
