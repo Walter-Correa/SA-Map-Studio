@@ -841,13 +841,11 @@ stock TDFX_GetFreePlayerTDCount(playerid)
 			if (!IsValidPlayerTextDraw(playerid, PlayerText:i)) freeCount++;
 		}
 		return freeCount;
-	#elseif defined PB_GetFreePlayerTextDraws
-		return PB_GetFreePlayerTextDraws(playerid);
 	#else
 		// SA-MP 0.3.7 dynamic safe probe:
 		// In SA-MP 0.3.7, CreatePlayerTextDraw only allocates server-side structures and does
 		// NOT send network RPCs to clients until PlayerTextDrawShow is called.
-		// We probe how many slots SA-MP can actually allocate right now, without relying on include order.
+		// We probe how many slots SA-MP can actually allocate right now in real time (zero cache delay).
 		new PlayerText:probes[64];
 		new freeCount = 0;
 		while (freeCount < sizeof(probes))
@@ -904,20 +902,24 @@ stock _TDFX_UpdateGlobalTD(Text:textid)
 		case TDFX_GSTATE_UNTRACKED:
 		{
 			// Fallback: was never explicitly shown or hidden before the animation started.
-			// Default to showing to all players to preserve standard backward compatibility.
+			// Record currently connected players and show only to them.
 			TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
-				TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+				TDFX_GShownMask[tid][w] = 0;
 			}
-			TextDrawShowForAll(textid);
+			for (new p = 0; p < MAX_PLAYERS; p++)
+			{
+				if (IsPlayerConnected(p))
+				{
+					TDFX_GShownMask[tid][p / 32] |= (1 << (p % 32));
+					TextDrawShowForPlayer(p, textid);
+				}
+			}
 		}
-		case TDFX_GSTATE_SHOWN_ALL:
+		case TDFX_GSTATE_SHOWN_ALL, TDFX_GSTATE_PER_PLAYER:
 		{
-			TextDrawShowForAll(textid);
-		}
-		case TDFX_GSTATE_PER_PLAYER:
-		{
+			// Only show to players in the mask who were connected when shown (excludes late joiners)
 			for (new p = 0; p < MAX_PLAYERS; p++)
 			{
 				if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
@@ -946,12 +948,24 @@ stock _TDFX_UpdateGlobalChildTD(Text:childTd, parentTdId)
 	{
 		switch (TDFX_GShownState[parentTdId])
 		{
-			case TDFX_GSTATE_UNTRACKED, TDFX_GSTATE_SHOWN_ALL:
+			case TDFX_GSTATE_UNTRACKED:
 			{
-				TextDrawShowForAll(childTd);
+				TDFX_GShownState[parentTdId] = TDFX_GSTATE_SHOWN_ALL;
+				for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+				{
+					TDFX_GShownMask[parentTdId][w] = 0;
+				}
+				for (new p = 0; p < MAX_PLAYERS; p++)
+				{
+					if (IsPlayerConnected(p))
+					{
+						TDFX_GShownMask[parentTdId][p / 32] |= (1 << (p % 32));
+						TextDrawShowForPlayer(p, childTd);
+					}
+				}
 				return;
-		}
-			case TDFX_GSTATE_PER_PLAYER:
+			}
+			case TDFX_GSTATE_SHOWN_ALL, TDFX_GSTATE_PER_PLAYER:
 			{
 				for (new p = 0; p < MAX_PLAYERS; p++)
 				{
@@ -972,21 +986,31 @@ stock _TDFX_UpdateGlobalChildTD(Text:childTd, parentTdId)
 	TextDrawShowForAll(childTd);
 }
 
-stock _TDFX_HideGlobalTD(Text:textid)
+stock _TDFX_HideGlobalTD(Text:textid, bool:permanent = false)
 {
 	if (!TDFX_ValidGlobal(textid)) return;
 	#if TDFX_MAX_GLOBAL_TD > 0
 	new tid = _:textid;
-	if (TDFX_GShownState[tid] == TDFX_GSTATE_SHOWN_ALL || TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
+	if (TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
 	{
 		TextDrawHideForAll(textid);
-		return;
 	}
-	for (new p = 0; p < MAX_PLAYERS; p++)
+	else
 	{
-		if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+		for (new p = 0; p < MAX_PLAYERS; p++)
 		{
-			TextDrawHideForPlayer(p, textid);
+			if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+				{
+					TextDrawHideForPlayer(p, textid);
+				}
+		}
+	}
+	if (permanent)
+	{
+		TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
+		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		{
+			TDFX_GShownMask[tid][w] = 0;
 		}
 	}
 	#else
@@ -1169,8 +1193,8 @@ static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false, bool:keep
 			{
 				if (!shouldShow)
 				{
-					_TDFX_HideGlobalTD(Text:tdId);
-					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) _TDFX_HideGlobalTD(Text:TDFX_Step[slot]);
+					_TDFX_HideGlobalTD(Text:tdId, true);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) _TDFX_HideGlobalTD(Text:TDFX_Step[slot], true);
 				}
 				else
 				{
@@ -1180,12 +1204,12 @@ static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false, bool:keep
 			}
 			else if (fxType == TDFX_TYPE_FIREWORK || fxType == TDFX_TYPE_VORTEX)
 			{
-				_TDFX_HideGlobalTD(Text:tdId);
+				_TDFX_HideGlobalTD(Text:tdId, true);
 			}
 			else
 			{
 				if (shouldShow) _TDFX_UpdateGlobalTD(Text:tdId);
-				else _TDFX_HideGlobalTD(Text:tdId);
+				else _TDFX_HideGlobalTD(Text:tdId, true);
 			}
 		}
 		else if (IsPlayerConnected(playerid))
@@ -2136,7 +2160,7 @@ public TDFX_Tick(slot)
 					#if TDFX_MAX_GLOBAL_TD > 0
 					else
 					{
-						TextDrawHideForAll(Text:tdId);
+						_TDFX_HideGlobalTD(Text:tdId, false);
 
 						for (new p = 0; p < pCount; p++)
 						{
@@ -2722,7 +2746,7 @@ public TDFX_Tick(slot)
 					#if TDFX_MAX_GLOBAL_TD > 0
 					else
 					{
-						TextDrawHideForAll(Text:tdId);
+						_TDFX_HideGlobalTD(Text:tdId, true);
 					}
 					#endif
 					TDFX_Free(slot, false, true);
@@ -2791,8 +2815,8 @@ public TDFX_Tick(slot)
 						#if TDFX_MAX_GLOBAL_TD > 0
 						else
 						{
-							TextDrawHideForAll(Text:tdId);
-							if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0) TextDrawHideForAll(Text:bottomTd);
+							_TDFX_HideGlobalTD(Text:tdId, true);
+							if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0) _TDFX_HideGlobalTD(Text:bottomTd, true);
 						}
 						#endif
 					}
@@ -2849,7 +2873,7 @@ public TDFX_Tick(slot)
 				{
 					if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
 					#if TDFX_MAX_GLOBAL_TD > 0
-					else TextDrawHideForAll(Text:tdId);
+					else _TDFX_HideGlobalTD(Text:tdId, true);
 					#endif
 					TDFX_Free(slot, false, true);
 					return 1;
@@ -2957,7 +2981,7 @@ public TDFX_Tick(slot)
 					{
 						if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
 						#if TDFX_MAX_GLOBAL_TD > 0
-						else TextDrawHideForAll(Text:tdId);
+						else _TDFX_HideGlobalTD(Text:tdId, true);
 						#endif
 					}
 					TDFX_Free(slot, true, true);
@@ -3357,7 +3381,7 @@ public TDFX_Tick(slot)
 						{
 							if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
 							#if TDFX_MAX_GLOBAL_TD > 0
-							else TextDrawHideForAll(Text:tdId);
+							else _TDFX_HideGlobalTD(Text:tdId, true);
 							#endif
 						}
 						TDFX_Free(slot, true, true);
@@ -3589,7 +3613,7 @@ public TDFX_Tick(slot)
 					{
 						if (!isGlobal) PlayerTextDrawHide(playerid, PlayerText:tdId);
 						#if TDFX_MAX_GLOBAL_TD > 0
-						else TextDrawHideForAll(Text:tdId);
+						else _TDFX_HideGlobalTD(Text:tdId, true);
 						#endif
 					}
 					TDFX_Free(slot, true, true);
@@ -4777,16 +4801,10 @@ stock FireworkPlayerTextDraw(playerid, PlayerText:textid, pattern = TDFX_FW_BURS
 		TDFX_FwPlayer[fwIdx] = playerid;
 		TDFX_FwBaseX[fwIdx] = curX;
 		TDFX_FwBaseY[fwIdx] = curY;
-		if (TDFX_GetFreePlayerTDCount(playerid) < particleCount)
+		new freeTD = TDFX_GetFreePlayerTDCount(playerid);
+		if (freeTD < particleCount)
 		{
-			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for Firework.", playerid, TDFX_GetFreePlayerTDCount(playerid), particleCount);
-			TDFX_FreeFwInstance(fwIdx);
-			TDFX_Free(slot, false);
-			return 0;
-		}
-		if (TDFX_GetFreeGlobalTDCount() < particleCount)
-		{
-			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for Firework.", TDFX_GetFreeGlobalTDCount(), particleCount);
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for Firework.", playerid, freeTD, particleCount);
 			TDFX_FreeFwInstance(fwIdx);
 			TDFX_Free(slot, false);
 			return 0;
@@ -5429,49 +5447,10 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
-		if (TDFX_GetFreeGlobalTDCount() < rawLen)
+		new freeTD = TDFX_GetFreePlayerTDCount(playerid);
+		if (freeTD < rawLen)
 		{
-			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for HopLetter.", TDFX_GetFreeGlobalTDCount(), rawLen);
-			TDFX_FreeCharInstance(instIdx);
-			TDFX_Free(slot, false);
-			return 0;
-		}
-
-		if (TDFX_GetFreeGlobalTDCount() < rawLen)
-		{
-			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for WaveMotion.", TDFX_GetFreeGlobalTDCount(), rawLen);
-			TDFX_FreeCharInstance(instIdx);
-			TDFX_Free(slot, false);
-			return 0;
-		}
-
-		if (TDFX_GetFreeGlobalTDCount() < rawLen)
-		{
-			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for LetterRain.", TDFX_GetFreeGlobalTDCount(), rawLen);
-			TDFX_FreeCharInstance(instIdx);
-			TDFX_Free(slot, false);
-			return 0;
-		}
-
-		if (TDFX_GetFreePlayerTDCount(playerid) < rawLen)
-		{
-			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for HopLetter.", playerid, TDFX_GetFreePlayerTDCount(playerid), rawLen);
-			TDFX_FreeCharInstance(instIdx);
-			TDFX_Free(slot, false);
-			return 0;
-		}
-
-		if (TDFX_GetFreePlayerTDCount(playerid) < rawLen)
-		{
-			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for WaveMotion.", playerid, TDFX_GetFreePlayerTDCount(playerid), rawLen);
-			TDFX_FreeCharInstance(instIdx);
-			TDFX_Free(slot, false);
-			return 0;
-		}
-
-		if (TDFX_GetFreePlayerTDCount(playerid) < rawLen)
-		{
-			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for LetterRain.", playerid, TDFX_GetFreePlayerTDCount(playerid), rawLen);
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for LetterRain.", playerid, freeTD, rawLen);
 			TDFX_FreeCharInstance(instIdx);
 			TDFX_Free(slot, false);
 			return 0;
@@ -5768,9 +5747,10 @@ stock ShockwaveSlamPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Fl
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
-		if (TDFX_GetFreePlayerTDCount(playerid) < TDFX_FW_PARTICLES)
+		new freeTD = TDFX_GetFreePlayerTDCount(playerid);
+		if (freeTD < TDFX_FW_PARTICLES)
 		{
-			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for ShockwaveSlam.", playerid, TDFX_GetFreePlayerTDCount(playerid), TDFX_FW_PARTICLES);
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for ShockwaveSlam.", playerid, freeTD, TDFX_FW_PARTICLES);
 			return 0;
 		}
 		new slot = TDFX_FindPlayer(playerid, textid);
@@ -5856,6 +5836,15 @@ stock WaveMotionPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
+
+		new freeTD = TDFX_GetFreePlayerTDCount(playerid);
+		if (freeTD < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for WaveMotion.", playerid, freeTD, rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
 
 		new font = 1;
 		new Float:lsX = 0.45, Float:lsY = 1.80;
@@ -6002,6 +5991,15 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
+
+		new freeTD = TDFX_GetFreePlayerTDCount(playerid);
+		if (freeTD < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for HopLetter.", playerid, freeTD, rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
 
 		new font = 1;
 		new Float:lsX = 0.45, Float:lsY = 1.80;
@@ -7133,6 +7131,15 @@ stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration
 		if (particleCount < 4) particleCount = 4;
 		if (particleCount > TDFX_FW_PARTICLES) particleCount = TDFX_FW_PARTICLES;
 
+		new freeTD = TDFX_GetFreeGlobalTDCount();
+		if (freeTD < particleCount)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for Firework.", freeTD, particleCount);
+			TDFX_FreeFwInstance(fwIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
 		TDFX_FwIsGlobal[fwIdx] = true;
 		TDFX_FwPlayer[fwIdx] = INVALID_PLAYER_ID;
 		TDFX_FwBaseX[fwIdx] = curX;
@@ -7777,6 +7784,15 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
 
+		new freeTD = TDFX_GetFreeGlobalTDCount();
+		if (freeTD < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for LetterRain.", freeTD, rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
 		new font = 1;
 		new Float:lsX = 0.45, Float:lsY = 1.80;
 		new textCol = 0xFFFFFFFF;
@@ -7875,7 +7891,7 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		}
 		else
 		{
-			TextDrawHideForAll(textid);
+			_TDFX_HideGlobalTD(textid, false);
 		}
 
 		TDFX_Used[slot] = true;
@@ -8075,9 +8091,10 @@ stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration 
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
-		if (TDFX_GetFreeGlobalTDCount() < TDFX_FW_PARTICLES)
+		new freeTD = TDFX_GetFreeGlobalTDCount();
+		if (freeTD < TDFX_FW_PARTICLES)
 		{
-			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for ShockwaveSlam.", TDFX_GetFreeGlobalTDCount(), TDFX_FW_PARTICLES);
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for ShockwaveSlam.", freeTD, TDFX_FW_PARTICLES);
 			return 0;
 		}
 		new slot = TDFX_FindGlobal(textid);
@@ -8163,6 +8180,15 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
+
+		new freeTD = TDFX_GetFreeGlobalTDCount();
+		if (freeTD < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for WaveMotion.", freeTD, rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
 
 		new font = 1;
 		new Float:lsX = 0.45, Float:lsY = 1.80;
@@ -8260,7 +8286,7 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 		}
 		else
 		{
-			TextDrawHideForAll(textid);
+			_TDFX_HideGlobalTD(textid, false);
 		}
 
 		TDFX_Used[slot] = true;
@@ -8313,6 +8339,15 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
+
+		new freeTD = TDFX_GetFreeGlobalTDCount();
+		if (freeTD < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for HopLetter.", freeTD, rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
 
 		new font = 1;
 		new Float:lsX = 0.45, Float:lsY = 1.80;
@@ -8414,7 +8449,7 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		}
 		else
 		{
-			TextDrawHideForAll(textid);
+			_TDFX_HideGlobalTD(textid, false);
 		}
 
 		new totalDur = duration;
@@ -9080,7 +9115,14 @@ stock TDFX_TextDrawShowForAll(Text:textid)
 		TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
 		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 		{
-			TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+			TDFX_GShownMask[tid][w] = 0;
+		}
+		for (new p = 0; p < MAX_PLAYERS; p++)
+		{
+			if (IsPlayerConnected(p))
+			{
+				TDFX_GShownMask[tid][p / 32] |= (1 << (p % 32));
+			}
 		}
 	}
 	#endif
@@ -9146,11 +9188,18 @@ stock TDFX_TextDrawHideForPlayer(playerid, Text:textid)
 		new tid = _:textid;
 		new word = playerid / 32;
 		new bit = playerid % 32;
-		if (TDFX_GShownState[tid] == TDFX_GSTATE_SHOWN_ALL)
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_SHOWN_ALL || TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
 		{
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
-				TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+				TDFX_GShownMask[tid][w] = 0;
+			}
+			for (new p = 0; p < MAX_PLAYERS; p++)
+			{
+				if (IsPlayerConnected(p))
+				{
+					TDFX_GShownMask[tid][p / 32] |= (1 << (p % 32));
+				}
 			}
 			TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
 		}
@@ -9218,6 +9267,35 @@ stock TDFX_TextDrawDestroy(Text:textid)
 // -----------------------------------------------------------------------------
 // Connection & Disconnection Handling
 // -----------------------------------------------------------------------------
+
+public OnPlayerConnect(playerid)
+{
+	if (0 <= playerid < MAX_PLAYERS)
+	{
+		#if TDFX_MAX_GLOBAL_TD > 0
+		new word = playerid / 32;
+		new mask = ~(1 << (playerid % 32));
+		for (new t = 0; t < TDFX_MAX_GLOBAL_TD; t++)
+		{
+			TDFX_GShownMask[t][word] &= mask;
+		}
+		#endif
+	}
+	#if defined TDFX_OnPlayerConnect
+		return TDFX_OnPlayerConnect(playerid);
+	#else
+		return 1;
+	#endif
+}
+#if defined _ALS_OnPlayerConnect
+	#undef OnPlayerConnect
+#else
+	#define _ALS_OnPlayerConnect
+#endif
+#define OnPlayerConnect TDFX_OnPlayerConnect
+#if defined TDFX_OnPlayerConnect
+	forward TDFX_OnPlayerConnect(playerid);
+#endif
 
 public OnPlayerDisconnect(playerid, reason)
 {
