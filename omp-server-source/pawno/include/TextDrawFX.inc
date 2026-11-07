@@ -892,17 +892,14 @@ stock TDFX_GetFreeGlobalTDCount()
 	#endif
 }
 
-stock _TDFX_UpdateGlobalTD(Text:textid)
+stock _TDFX_InitGlobalTD(Text:textid)
 {
-	if (!TDFX_ValidGlobal(textid)) return;
 	#if TDFX_MAX_GLOBAL_TD > 0
-	new tid = _:textid;
-	switch (TDFX_GShownState[tid])
+	if (TDFX_ValidGlobal(textid))
 	{
-		case TDFX_GSTATE_UNTRACKED:
+		new tid = _:textid;
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_ALL || TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
 		{
-			// Fallback: was never explicitly shown or hidden before the animation started.
-			// Record currently connected players and show only to them.
 			TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
@@ -913,6 +910,33 @@ stock _TDFX_UpdateGlobalTD(Text:textid)
 				if (IsPlayerConnected(p))
 				{
 					TDFX_GShownMask[tid][p / 32] |= (1 << (p % 32));
+				}
+			}
+		}
+	}
+	#endif
+}
+
+stock _TDFX_UpdateGlobalTD(Text:textid, bool:isNewAnimation = false)
+{
+	if (!TDFX_ValidGlobal(textid)) return;
+	#if TDFX_MAX_GLOBAL_TD > 0
+	new tid = _:textid;
+	if (isNewAnimation)
+	{
+		_TDFX_InitGlobalTD(textid);
+	}
+	switch (TDFX_GShownState[tid])
+	{
+		case TDFX_GSTATE_UNTRACKED:
+		{
+			// Fallback: was never explicitly shown or hidden before the animation started.
+			// Record currently connected players and show only to them.
+			_TDFX_InitGlobalTD(textid);
+			for (new p = 0; p < MAX_PLAYERS; p++)
+			{
+				if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+				{
 					TextDrawShowForPlayer(p, textid);
 				}
 			}
@@ -931,7 +955,7 @@ stock _TDFX_UpdateGlobalTD(Text:textid)
 		case TDFX_GSTATE_HIDDEN_ALL:
 		{
 			// Explicitly hidden from everyone (or all players were hidden).
-			// Do NOT show to anyone!
+			// Do NOT show to anyone during a running animation!
 			return;
 		}
 	}
@@ -1000,9 +1024,9 @@ stock _TDFX_HideGlobalTD(Text:textid, bool:permanent = false)
 		for (new p = 0; p < MAX_PLAYERS; p++)
 		{
 			if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
-				{
-					TextDrawHideForPlayer(p, textid);
-				}
+			{
+				TextDrawHideForPlayer(p, textid);
+			}
 		}
 	}
 	if (permanent)
@@ -6249,7 +6273,7 @@ stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = fa
 			if (boxBase) _TDFX_TDBoxColour(textid, colour);
 		}
 	}
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", interval, true, "i", slot);
 	return 1;
 }
@@ -6356,7 +6380,7 @@ stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAl
 		_TDFX_TDColour(textid, startCol);
 		if (fadeBox) _TDFX_TDBoxColour(textid, startBox);
 	}
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6434,6 +6458,7 @@ stock FadeOutTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, bool:lo
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6480,6 +6505,7 @@ stock FadeColorTextDraw(Text:textid, fromColor, toColor, duration = 1000, bool:f
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6515,7 +6541,7 @@ stock ScaleTextDraw(Text:textid, Float:startSizeX, Float:startSizeY, Float:targe
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawLetterSize(textid, startSizeX, startSizeY);
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6562,6 +6588,7 @@ stock PulseTextDraw(Text:textid, Float:amplitude = 0.25, interval = 300, cycles 
 	TDFX_Loop[slot] = (cycles == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6604,6 +6631,7 @@ stock SlideTextDraw(Text:textid, Float:targetX, Float:targetY, duration = 1000, 
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6651,7 +6679,7 @@ stock CountTextDrawNumber(Text:textid, startValue, targetValue, duration = 1000,
 	new initial[TDFX_MAX_TEXT];
 	TDFX_FormatNumber(initial, sizeof initial, startValue, prefix, suffix, thousandsSep);
 	TextDrawSetString(textid, initial);
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6690,7 +6718,7 @@ stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, bool:loo
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6749,7 +6777,7 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6812,7 +6840,7 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6858,7 +6886,7 @@ stock OrbitTextDraw(Text:textid, Float:centerX, Float:centerY, Float:radiusX, Fl
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6900,7 +6928,7 @@ stock ShakeTextDraw(Text:textid, Float:intensity = 6.0, duration = 800, bool:loo
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6970,7 +6998,7 @@ stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, bool:l
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7013,7 +7041,7 @@ stock WaveDriftTextDraw(Text:textid, Float:amplitudeX, Float:amplitudeY, speedMs
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7085,7 +7113,7 @@ stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, dur
 	if (gAlign == 2) TextDrawTextSize(textid, lineHeight, startWidth);
 	else TextDrawTextSize(textid, startWidth, lineHeight);
 	TextDrawUseBox(textid, true);
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7168,7 +7196,7 @@ stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7234,7 +7262,7 @@ stock GlitchTextDraw(Text:textid, const text[] = "", intensity = 2, duration = 3
 	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7289,7 +7317,7 @@ stock Spin3DTextDraw(Text:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7345,7 +7373,7 @@ stock Hover3DTextDraw(Text:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7390,7 +7418,7 @@ stock ShimmerTextDraw(Text:textid, const text[], const baseTag[] = "~y~", const 
 	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7431,7 +7459,7 @@ stock RainbowTextDraw(Text:textid, const text[], speedMs = 100, duration = 0, bo
 	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7471,7 +7499,7 @@ stock SlotMachineTextDraw(Text:textid, const finalText[], spinDuration = 2200, b
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(textid);
+	_TDFX_UpdateGlobalTD(textid, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7509,7 +7537,7 @@ stock PendulumTextDraw(Text:textid, Float:pivotX, Float:pivotY, Float:armLength 
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7554,7 +7582,7 @@ stock GravityDropTextDraw(Text:textid, Float:startY, Float:targetY, Float:elasti
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawSetPos(textid, curX, startY);
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7606,7 +7634,7 @@ stock VortexTextDraw(Text:textid, Float:centerX, Float:centerY, Float:startRadiu
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7650,8 +7678,8 @@ stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0,
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	_TDFX_UpdateGlobalTD(topBarTD);
-	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0) _TDFX_UpdateGlobalTD(bottomBarTD);
+	_TDFX_UpdateGlobalTD(topBarTD, true);
+	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0) _TDFX_UpdateGlobalTD(bottomBarTD, true);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7710,7 +7738,7 @@ stock SonarPingTextDraw(Text:textid, Float:centerX, Float:centerY, Float:maxRadi
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7751,7 +7779,7 @@ stock WaveSweepTextDraw(Text:textid, const text[], const crestTag[] = "~w~", con
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7883,11 +7911,12 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		{
 			hasBox = bool:(TDFX_GInfo[_:textid] & (1 << 3));
 		}
+		_TDFX_InitGlobalTD(textid);
 		if (hasBox)
 		{
 			_TDFX_TDColour(textid, (textCol & 0xFFFFFF00));
 			TextDrawSetString(textid, " ");
-			_TDFX_UpdateGlobalTD(textid);
+			_TDFX_UpdateGlobalTD(textid, true);
 		}
 		else
 		{
@@ -7948,7 +7977,7 @@ stock ScannerSweepTextDraw(Text:textid, const text[], const laserTag[] = "~r~", 
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7995,7 +8024,7 @@ stock ElectricArcTextDraw(Text:textid, const text[], surgeDuration = 2200, bool:
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -8033,7 +8062,7 @@ stock SplitFlapTextDraw(Text:textid, const targetText[], charRollMs = 80, lockIn
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -8078,7 +8107,7 @@ stock HologramTextDraw(Text:textid, const text[], duration = 0, bool:loop = fals
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawSetString(textid, text);
-		_TDFX_UpdateGlobalTD(textid);
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -8149,6 +8178,7 @@ stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration 
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
+		_TDFX_UpdateGlobalTD(textid, true);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -8278,11 +8308,12 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 		{
 			hasBox = bool:(TDFX_GInfo[_:textid] & (1 << 3));
 		}
+		_TDFX_InitGlobalTD(textid);
 		if (hasBox)
 		{
 			_TDFX_TDColour(textid, (textCol & 0xFFFFFF00));
 			TextDrawSetString(textid, " ");
-			_TDFX_UpdateGlobalTD(textid);
+			_TDFX_UpdateGlobalTD(textid, true);
 		}
 		else
 		{
@@ -8441,11 +8472,12 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		{
 			hasBox = bool:(TDFX_GInfo[_:textid] & (1 << 3));
 		}
+		_TDFX_InitGlobalTD(textid);
 		if (hasBox)
 		{
 			_TDFX_TDColour(textid, (textCol & 0xFFFFFF00));
 			TextDrawSetString(textid, " ");
-			_TDFX_UpdateGlobalTD(textid);
+			_TDFX_UpdateGlobalTD(textid, true);
 		}
 		else
 		{
@@ -8566,6 +8598,11 @@ stock Text:TDFX_TextDrawCreate(Float:x, Float:y, const text[])
 		{
 			TDFX_GRemPosX[_:td] = x;
 			TDFX_GRemPosY[_:td] = y;
+			TDFX_GShownState[_:td] = TDFX_GSTATE_HIDDEN_ALL;
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[_:td][w] = 0;
+			}
 		}
 	#endif
 	return td;
@@ -9141,6 +9178,21 @@ stock TDFX_TextDrawShowForPlayer(playerid, Text:textid)
 	if (TDFX_ValidGlobal(textid) && 0 <= playerid < MAX_PLAYERS)
 	{
 		new tid = _:textid;
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
+		{
+			// Was shown natively before hook: snapshot all connected players first
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[tid][w] = 0;
+			}
+			for (new p = 0; p < MAX_PLAYERS; p++)
+			{
+				if (IsPlayerConnected(p))
+				{
+					TDFX_GShownMask[tid][p / 32] |= (1 << (p % 32));
+				}
+			}
+		}
 		TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
 		new word = playerid / 32;
 		new bit = playerid % 32;
@@ -9217,6 +9269,8 @@ stock TDFX_TextDrawHideForPlayer(playerid, Text:textid)
 		if (!anyLeft)
 		{
 			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
+			new slot = TDFX_FindGlobal(textid);
+			if (slot != -1) TDFX_Free(slot, true, false, true);
 		}
 	}
 	#endif

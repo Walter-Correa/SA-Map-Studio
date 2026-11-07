@@ -8,6 +8,11 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.46', date: '07/11/2026', items: [
+      'TextDrawFX updated with its latest fixes in the test server: a global TextDraw hidden at the end of an effect shows again when a new effect starts, and global TextDraws shown before the include keep everyone who sees them.',
+    ],
+  },
+  {
     version: '4.1.45', date: '07/11/2026', items: [
       'TextDrawFX updated with its latest fixes in the test server: global TextDraws keep track of who sees them when an effect ends or hides them, players who join later no longer start seeing a TextDraw because of an effect, and the free TextDraw checks on SA-MP 0.3.7 are always current.',
     ],
