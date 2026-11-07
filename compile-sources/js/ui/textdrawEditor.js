@@ -1539,7 +1539,7 @@ function renderTextDraw(real, isSelected) {
   const fr = fxFrames.get(real);
   const moved = fxMoved.get(real.uid);
   let td = fr ? fr.view : real;
-  if (moved) td = moved.hidden ? null : { ...(td || real), x: moved.x, y: moved.y };
+  if (moved) td = moved.hidden ? null : { ...(td || real), x: moved.x, y: moved.y, useBox: 1, ...(moved.letterSizeY ? { letterSizeY: moved.letterSizeY } : {}) };
   const vb = td && td !== real ? getTextDrawBounds(td) : bounds;
 
   if (real.type === 'progress') {

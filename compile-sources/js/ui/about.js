@@ -8,6 +8,14 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.42', date: '07/11/2026', items: [
+      'Progress Bar Plus and TextDrawFX updated with their latest fixes in the test server, the export and the preview.',
+      'Cinema bars effect: the bars get the letter size the include now gives them (top: height / 9.5, bottom: (height + 35.8) / 9.5), in the editor and in the preview.',
+      'Box fill effect: on a centred TextDraw the preview uses the line value the include now reads (TextSize X, 20 without one).',
+      'Short circuit effect: the preview keeps the colour of the text between the sparks, like the include.',
+    ],
+  },
+  {
     version: '4.1.41', date: '07/11/2026', items: [
       'Progress Bar Plus and TextDrawFX updated again in the test server, the export and the preview.',
       'TextDraw effects: every effect has the new Repeat option (loop parameter of the include), exported, imported back and used by the test server.',

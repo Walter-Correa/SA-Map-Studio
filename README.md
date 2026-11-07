@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.41-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.42-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -503,6 +503,12 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.42 — 07/11/2026
+- Progress Bar Plus and TextDrawFX updated with their latest fixes in the test server, the export and the preview.
+- Cinema bars effect: the bars get the letter size the include now gives them (top: height / 9.5, bottom: (height + 35.8) / 9.5), in the editor and in the preview.
+- Box fill effect: on a centred TextDraw the preview uses the line value the include now reads (TextSize X, 20 without one).
+- Short circuit effect: the preview keeps the colour of the text between the sparks, like the include.
 
 ### 4.1.41 — 07/11/2026
 - Progress Bar Plus and TextDrawFX updated again in the test server, the export and the preview.

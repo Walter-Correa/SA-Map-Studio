@@ -123,10 +123,10 @@ function fillDefaults(td) {
   return { start: round2(x), end: round2(end > x ? end : x + 150) };
 }
 
-// Cinema bars: the include only moves the two TextDraws, so they must be black full-width boxes whose height comes from the
-// letter size (like the demo of the include: 6.84 on top and 9.5 at the bottom for bars of 65)
-export const letterboxTopSize = (h) => round2((Number(h) + 15) / 11.7);
-export const letterboxBottomSize = (h) => round2((Number(h) + 35.8) / 10.61);
+// Cinema bars: black full-width boxes; the include gives them the letter size of the bar height (top h / 9.5, bottom
+// (h + 35.8) / 9.5) and moves them in from outside the screen
+export const letterboxTopSize = (h) => round4(Number(h) / 9.5);
+export const letterboxBottomSize = (h) => round4((Number(h) + 35.8) / 9.5);
 export function letterboxBar(td, top, barHeight) {
   Object.assign(td, {
     text: '_', font: 1, x: 0, y: top ? -(Number(barHeight) + 15) : 480, letterSizeX: 0, letterSizeY: top ? letterboxTopSize(barHeight) : letterboxBottomSize(barHeight),
@@ -589,7 +589,9 @@ export function tdfxFrame(td, text, t, other = () => null) {
     }
     case 'fill': {
       const f = tdfxEase(done ? 1 : prog, p.easing), w = p.startWidth + (p.targetWidth - p.startWidth) * f;
-      const h = p.lineHeight > 0 ? p.lineHeight : (td.textSizeY || 12);
+      // Default line value: aligned left or right the TextSize Y (12 without one), centred the TextSize X (20 without one)
+      const centred = (td.align ?? td.alignment ?? 1) === 2;
+      const h = p.lineHeight > 0 ? p.lineHeight : centred ? (td.textSizeX || 20) : (td.textSizeY || 12);
       if ((td.align ?? td.alignment ?? 1) === 2) { view.textSizeX = h; view.textSizeY = w; } else { view.textSizeX = w; view.textSizeY = h; }
       view.useBox = 1; // the include turns the box on
       return r;
@@ -688,8 +690,9 @@ export function tdfxFrame(td, text, t, other = () => null) {
       if (p.reverse) f = 1 - f;
       const h = p.barHeight;
       view.x = 0; view.y = -(h + 15) + (h + 15) * f; view.useBox = 1; // the include turns the box of both bars on
+      view.letterSizeY = letterboxTopSize(h);
       const bottom = other(p.bottomBarTD);
-      if (bottom) r.moved = { [bottom.uid]: { x: 0, y: 480 - (h + 35.8) * f, hidden: done && p.reverse } };
+      if (bottom) r.moved = { [bottom.uid]: { x: 0, y: 480 - (h + 35.8) * f, letterSizeY: letterboxBottomSize(h), hidden: done && p.reverse } };
       if (done && p.reverse) r.view = null;
       return r;
     }
@@ -731,7 +734,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
       view.x = td.x + (rint(frame, 1, 21) - 10) / 10 * 2.2 * decay;
       view.y = td.y + (rint(frame, 2, 17) - 8) / 10 * 1.6 * decay;
       const spark = rint(frame, 3, 4);
-      view.text = decay > 0.15 && spark === 0 ? `~b~>> ~w~${s} ~b~<<` : decay > 0.15 && spark === 1 ? `~y~** ~w~${s} ~y~**` : `~w~${s}`;
+      view.text = decay > 0.15 && spark === 0 ? `~b~>> ${s} ~b~<<` : decay > 0.15 && spark === 1 ? `~y~** ${s} ~y~**` : `~w~${s}`;
       return r;
     }
     case 'splitFlap': {

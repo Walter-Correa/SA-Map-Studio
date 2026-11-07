@@ -3211,11 +3211,11 @@ public TDFX_Tick(slot)
 				new spark = random(4);
 				if (decay > 0.15 && spark == 0)
 				{
-					format(outStr, sizeof outStr, "~b~>> ~w~%s ~b~<<", TDFX_Text[slot]);
+					format(outStr, sizeof outStr, "~b~>> %s ~b~<<", TDFX_Text[slot]);
 				}
 				else if (decay > 0.15 && spark == 1)
 				{
-					format(outStr, sizeof outStr, "~y~** ~w~%s ~y~**", TDFX_Text[slot]);
+					format(outStr, sizeof outStr, "~y~** %s ~y~**", TDFX_Text[slot]);
 				}
 				else
 				{
@@ -4495,14 +4495,32 @@ stock FillPlayerTextDrawProgress(playerid, PlayerText:textid, Float:startWidth, 
 	}
 	if (duration < TDFX_MIN_INTERVAL) duration = TDFX_MIN_INTERVAL;
 
+	new align = 1;
+	if (TDFX_ValidPlayer(playerid, textid)) align = TDFX_RemAlign[playerid][_:textid];
+	#if defined PlayerTextDrawGetAlignment
+		align = _:PlayerTextDrawGetAlignment(playerid, textid);
+	#endif
+
 	if (lineHeight <= 0.0)
 	{
-		if (TDFX_ValidPlayer(playerid, textid)) lineHeight = TDFX_RemSizeY[playerid][_:textid];
-		#if defined PlayerTextDrawGetTextSize
-			new Float:dummyW = 0.0;
-			PlayerTextDrawGetTextSize(playerid, textid, dummyW, lineHeight);
-		#endif
-		if (lineHeight <= 0.0) lineHeight = 12.0;
+		if (align == 2)
+		{
+			if (TDFX_ValidPlayer(playerid, textid)) lineHeight = TDFX_RemSizeX[playerid][_:textid];
+			#if defined PlayerTextDrawGetTextSize
+				new Float:dummyH = 0.0;
+				PlayerTextDrawGetTextSize(playerid, textid, lineHeight, dummyH);
+			#endif
+			if (lineHeight <= 0.0) lineHeight = 20.0;
+		}
+		else
+		{
+			if (TDFX_ValidPlayer(playerid, textid)) lineHeight = TDFX_RemSizeY[playerid][_:textid];
+			#if defined PlayerTextDrawGetTextSize
+				new Float:dummyW = 0.0;
+				PlayerTextDrawGetTextSize(playerid, textid, dummyW, lineHeight);
+			#endif
+			if (lineHeight <= 0.0) lineHeight = 12.0;
+		}
 	}
 
 	TDFX_Used[slot] = true;
@@ -4522,11 +4540,6 @@ stock FillPlayerTextDrawProgress(playerid, PlayerText:textid, Float:startWidth, 
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	new align = 1;
-	if (TDFX_ValidPlayer(playerid, textid)) align = TDFX_RemAlign[playerid][_:textid];
-	#if defined PlayerTextDrawGetAlignment
-		align = _:PlayerTextDrawGetAlignment(playerid, textid);
-	#endif
 	if (align == 2) PlayerTextDrawTextSize(playerid, textid, lineHeight, startWidth);
 	else PlayerTextDrawTextSize(playerid, textid, startWidth, lineHeight);
 	PlayerTextDrawUseBox(playerid, textid, true);
@@ -5057,9 +5070,14 @@ stock LetterboxPlayerTextDraw(playerid, PlayerText:topBarTD, PlayerText:bottomBa
 	}
 
 	PlayerTextDrawUseBox(playerid, topBarTD, true);
+	new Float:topLetY = barHeight / 9.5;
+	PlayerTextDrawLetterSize(playerid, topBarTD, 0.0, topLetY);
+
 	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0)
 	{
 		PlayerTextDrawUseBox(playerid, bottomBarTD, true);
+		new Float:botLetY = (barHeight + 35.8) / 9.5;
+		PlayerTextDrawLetterSize(playerid, bottomBarTD, 0.0, botLetY);
 	}
 
 	TDFX_Used[slot] = true;
@@ -5231,9 +5249,9 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		#if defined _TDFX_PTDGetColour
 			textCol = _TDFX_PTDGetColour(playerid, textid);
 		#else
-			if (TDFX_ValidPlayer(playerid, textid) && TDFX_Colour[playerid][_:textid] != 0)
+			if (TDFX_ValidPlayer(playerid, textid) && TDFX_RemText[playerid][_:textid] != 0)
 			{
-				textCol = TDFX_Colour[playerid][_:textid];
+				textCol = TDFX_RemText[playerid][_:textid];
 			}
 		#endif
 
@@ -5606,9 +5624,9 @@ stock WaveMotionPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		#if defined _TDFX_PTDGetColour
 			textCol = _TDFX_PTDGetColour(playerid, textid);
 		#else
-			if (TDFX_ValidPlayer(playerid, textid) && TDFX_Colour[playerid][_:textid] != 0)
+			if (TDFX_ValidPlayer(playerid, textid) && TDFX_RemText[playerid][_:textid] != 0)
 			{
-				textCol = TDFX_Colour[playerid][_:textid];
+				textCol = TDFX_RemText[playerid][_:textid];
 			}
 		#endif
 
@@ -5752,9 +5770,9 @@ stock HopLetterPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:c
 		#if defined _TDFX_PTDGetColour
 			textCol = _TDFX_PTDGetColour(playerid, textid);
 		#else
-			if (TDFX_ValidPlayer(playerid, textid) && TDFX_Colour[playerid][_:textid] != 0)
+			if (TDFX_ValidPlayer(playerid, textid) && TDFX_RemText[playerid][_:textid] != 0)
 			{
-				textCol = TDFX_Colour[playerid][_:textid];
+				textCol = TDFX_RemText[playerid][_:textid];
 			}
 		#endif
 
@@ -6762,16 +6780,38 @@ stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, dur
 	}
 	if (duration < TDFX_MIN_INTERVAL) duration = TDFX_MIN_INTERVAL;
 
+	new gAlign = 1;
+	#if TDFX_MAX_GLOBAL_TD > 0
+		if (TDFX_ValidGlobal(textid)) gAlign = TDFX_GRemAlign[_:textid];
+	#endif
+	#if defined TextDrawGetAlignment
+		gAlign = _:TextDrawGetAlignment(textid);
+	#endif
+
 	if (lineHeight <= 0.0)
 	{
-		#if TDFX_MAX_GLOBAL_TD > 0
-			if (TDFX_ValidGlobal(textid)) lineHeight = TDFX_GRemSizeY[_:textid];
-		#endif
-		#if defined TextDrawGetTextSize
-			new Float:dummyW = 0.0;
-			TextDrawGetTextSize(textid, dummyW, lineHeight);
-		#endif
-		if (lineHeight <= 0.0) lineHeight = 12.0;
+		if (gAlign == 2)
+		{
+			#if TDFX_MAX_GLOBAL_TD > 0
+				if (TDFX_ValidGlobal(textid)) lineHeight = TDFX_GRemSizeX[_:textid];
+			#endif
+			#if defined TextDrawGetTextSize
+				new Float:dummyH = 0.0;
+				TextDrawGetTextSize(textid, lineHeight, dummyH);
+			#endif
+			if (lineHeight <= 0.0) lineHeight = 20.0;
+		}
+		else
+		{
+			#if TDFX_MAX_GLOBAL_TD > 0
+				if (TDFX_ValidGlobal(textid)) lineHeight = TDFX_GRemSizeY[_:textid];
+			#endif
+			#if defined TextDrawGetTextSize
+				new Float:dummyW = 0.0;
+				TextDrawGetTextSize(textid, dummyW, lineHeight);
+			#endif
+			if (lineHeight <= 0.0) lineHeight = 12.0;
+		}
 	}
 
 	TDFX_Used[slot] = true;
@@ -6791,13 +6831,6 @@ stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, dur
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	new gAlign = 1;
-	#if TDFX_MAX_GLOBAL_TD > 0
-		if (TDFX_ValidGlobal(textid)) gAlign = TDFX_GRemAlign[_:textid];
-	#endif
-	#if defined TextDrawGetAlignment
-		gAlign = _:TextDrawGetAlignment(textid);
-	#endif
 	if (gAlign == 2) TextDrawTextSize(textid, lineHeight, startWidth);
 	else TextDrawTextSize(textid, startWidth, lineHeight);
 	TextDrawUseBox(textid, true);
@@ -7331,9 +7364,14 @@ stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0,
 	}
 
 	TextDrawUseBox(topBarTD, true);
+	new Float:topLetY = barHeight / 9.5;
+	TextDrawLetterSize(topBarTD, 0.0, topLetY);
+
 	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0)
 	{
 		TextDrawUseBox(bottomBarTD, true);
+		new Float:botLetY = (barHeight + 35.8) / 9.5;
+		TextDrawLetterSize(bottomBarTD, 0.0, botLetY);
 	}
 
 	TDFX_Used[slot] = true;
