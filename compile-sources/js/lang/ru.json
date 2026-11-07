@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Рамка в начале",
  "Caixa no fim": "Рамка в конце",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include включает рамку. При выравнивании влево или вправо значение — это X, где рамка заканчивается; по центру — ширина рамки.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Полосы — чёрные рамки во всю ширину экрана; эффект только двигает их. Их высота берётся из размера буквы Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Полосы — чёрные рамки во всю ширину экрана; эффект только двигает их. Их высота берётся из размера буквы Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Если выбрать на тексте, текст остаётся и плавно появляется вместе с полосами, как в демо.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Добавить счётчик % над полосой (как в демо)"
 }

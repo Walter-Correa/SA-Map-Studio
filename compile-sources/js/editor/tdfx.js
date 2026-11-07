@@ -302,6 +302,66 @@ function charWidth(ch, font, lsX, outline) {
   const idx = ch.charCodeAt(0) - 32;
   return ((idx >= 0 && idx < 95 ? FONT_WIDTHS[f][idx] : 22) + outline) * lsX;
 }
+// Width of a text the way _TDFX_MeasureStringWidth does it: ~~ is a tilde, ~n~ starts a line, other tags are skipped
+function measureWidth(text, font, lsX, outline) {
+  if (lsX <= 0) lsX = 0.40;
+  if (font < 0 || font > 3) font = 1;
+  let total = 0, max = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '~') {
+      if (text[i + 1] === '~') { total += charWidth('~', font, lsX, outline); i++; continue; }
+      if (text[i + 1] === 'n' && text[i + 2] === '~') { max = Math.max(max, total); total = 0; i += 2; continue; }
+      const close = text.indexOf('~', i + 1);
+      if (close !== -1) { i = close; continue; }
+    }
+    total += charWidth(text[i], font, lsX, outline);
+  }
+  return Math.max(max, total);
+}
+// How far the TextDraw reaches from its position (_TDFX_GetPlayerTDDimensions): the bounce keeps all of it inside
+function tdDims(td, curX, text) {
+  const font = td.font ?? 1;
+  let align = td.align ?? td.alignment ?? 1;
+  if (align < 1 || align > 3) align = 1;
+  let lsX = Number(td.letterSizeX ?? 0.48), lsY = Number(td.letterSizeY ?? 1.6);
+  if (lsX <= 0) lsX = 0.40;
+  if (lsY <= 0) lsY = 1.60;
+  const szX = Number(td.textSizeX) || 0, szY = Number(td.textSizeY) || 0, outline = Number(td.outline ?? 0) | 0;
+  const side = (w) => (align === 2 ? { l: w / 2, r: w / 2 } : align === 3 ? { l: w, r: 0 } : { l: 0, r: w });
+  if (font === 4 || font === 5) return { l: 0, r: szX > 0 ? szX : 32, t: 0, b: szY > 0 ? szY : 32 };
+  if (td.useBox && (szX > 0 || szY > 0)) {
+    const h = align === 2 ? (szX > 0 ? szX : lsY * 9.5) : (szY > 0 ? szY : lsY * 9.5);
+    const w = align === 2 ? (szY > 0 ? szY : lsX * 100) : szX > 0 ? Math.abs(align === 3 ? curX - szX : szX - curX) : lsX * 100;
+    return { ...side(w), t: 0, b: h };
+  }
+  const w = text ? measureWidth(text, font, lsX, outline) : 12 * 20 * lsX;
+  return { ...side(w), t: outline, b: lsY * 9.5 + outline };
+}
+// _TDFX_ParseGlyphs: every visible character with the colour tag that is active on it (at most `max`)
+function parseGlyphs(text, max = 32) {
+  const out = [];
+  let tag = '';
+  for (let i = 0; i < text.length && out.length < max;) {
+    if (text[i] === '~') { const n = skipTag(text, i); if (n - i < 16) tag = text.slice(i, n); i = n; continue; }
+    out.push({ ch: text[i], tag });
+    i++;
+  }
+  return out;
+}
+const visibleGlyphs = (s) => { let i = 0, n = 0; while (i < s.length) { if (s[i] === '~') { i = skipTag(s, i); continue; } i++; n++; } return n; };
+// The colour sweep of Shimmer, WaveSweep and Scanner: each visible character takes the tag pick(index) gives (or the
+// tag of the text on it), and a tag is written only when it changes, exactly like the include builds the string
+function tagSweep(s, firstTag, pick) {
+  let out = '', cur = firstTag, last = null, vis = 0;
+  for (let i = 0; i < s.length;) {
+    if (s[i] === '~') { const n = skipTag(s, i); cur = s.slice(i, n); i = n; continue; }
+    const need = pick(vis) ?? cur;
+    if (need !== last && need !== '') out += need;
+    if (need !== last) last = need;
+    out += s[i]; vis++; i++;
+  }
+  return out;
+}
 function layoutChars(text, font, lsX, anchorX, spacing, align, outline) {
   const out = [];
   if (spacing > 0) {
@@ -366,7 +426,7 @@ function formatNumber(v, prefix, suffix, sep) {
   if (sep) s = s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${prefix}${v < 0 ? '-' : ''}${s}${suffix}`;
 }
-const DVD = [0xFF3333FF, 0x33FF33FF, 0x3388FFFF, 0xFFFF33FF, 0xFF33FFFF, 0x33FFFFFF, 0xFF8833FF];
+const DVD = [0xFF3333FF, 0x33FF33FF, 0x3388FFFF, 0xFFFF33FF, 0xFF33FFFF, 0x33FFFFFF, 0xFF8833FF, 0xAA33FFFF];
 const FW_PALETTE = [0xF1C40FFF, 0xE74C3CFF, 0xE67E22FF, 0x00FFFFFF, 0x9B59B6FF, 0x2ECC71FF, 0xFF69B4FF, 0xFFFFFFFF];
 const FW_GLYPHS = ['*', '+', '#', 'o', 'x', '^', '!', '*', '+', 'o', 'x', '*'];
 const RAINBOW = ['~r~', '~y~', '~g~', '~b~', '~p~', '~w~'];
@@ -390,15 +450,19 @@ export function tdfxLength(fx, td) {
       return (countChars(String(p.text || td.text || '')) + 1) * typewriterInterval(p, td);
     }
     case 'firework': return p.fuseDuration + p.explodeDuration;
-    case 'slotMachine': return Math.max(50, p.spinDuration);
+    case 'slotMachine': {
+      // It ends when every character is locked and the spin time is over
+      const spin = p.spinDuration > 0 ? p.spinDuration : 2200, vis = visibleGlyphs(String(p.finalText || td.text || ''));
+      return vis ? Math.max(spin, vis * Math.max(50, Math.floor(spin / vis))) : spin;
+    }
     case 'gravityDrop': return 4000;
     case 'sonarPing': return p.pulseCount * p.pulseDuration;
     case 'electricArc': return p.surgeDuration;
-    case 'splitFlap': return String(p.targetText || td.text || '').length * Math.max(50, p.lockIntervalMs) + 600;
+    case 'splitFlap': return visibleGlyphs(String(p.targetText || td.text || '')) * (p.lockIntervalMs < 50 ? 180 : p.lockIntervalMs) + 600;
     case 'hopLetter': {
       if (p.duration > 0) return p.duration;
-      const n = Math.min(24, String(p.text || td.text || '').length);
-      return Math.max(0, n - 1) * p.staggerMs + p.hopDurationMs + 100;
+      const n = parseGlyphs(String(p.text || td.text || '')).length;
+      return Math.max(0, n - 1) * p.staggerMs * (p.direction === 2 ? 2 : 1) + p.hopDurationMs + 100;
     }
     case 'fadeIn': case 'fadeOut': case 'fadeColor': case 'scale': case 'slide': case 'count': case 'scramble': case 'shake': case 'neon':
     case 'fill': case 'glitch': case 'pendulum': case 'vortex': case 'letterbox': case 'letterRain': case 'shockwaveSlam': case 'waveMotion':
@@ -413,6 +477,7 @@ const loops = (fx) => Boolean(fx.loop);
 export function tdfxFrame(td, text, t, other = () => null) {
   const fx = td.fx, e = TDFX_BY_ID[fx.type];
   const len = tdfxLength(fx, td);
+  const rawT = t;
   let done = false;
   if (len > 0 && t >= len) {
     if (loops(fx)) t %= len;
@@ -515,47 +580,12 @@ export function tdfxFrame(td, text, t, other = () => null) {
       view.text = out;
       return r;
     }
-    case 'bounce': {
-      // Each axis goes back and forth between the limits (the same as reflecting the speed at the walls)
-      const n = done ? Math.floor(len / TDFX_FRAME) : frame;
-      const axis = (pos, v, min, max) => {
-        const span = max - min;
-        if (span <= 0 || !v) return { pos: Math.max(min, Math.min(max, pos)), hits: 0 };
-        let u = pos - min + v * (n + 1);
-        const per = 2 * span;
-        const hits = Math.floor((u >= 0 ? u : span - u) / span);
-        u = ((u % per) + per) % per;
-        return { pos: min + (u > span ? per - u : u), hits: Math.max(0, hits) };
-      };
-      const ax = axis(td.x, p.speedX, p.minX, p.maxX), ay = axis(td.y, p.speedY, p.minY, p.maxY);
-      view.x = ax.pos; view.y = ay.pos;
-      if (p.colorShift && ax.hits + ay.hits > 0) setCol(DVD[rint(ax.hits * 31 + ay.hits, 7, DVD.length)]);
-      return r;
-    }
-    case 'bounceCircle': {
-      const n = Math.min(done ? Math.floor(len / TDFX_FRAME) : frame, 6000);
-      let x = td.x, y = td.y, vx = p.speed * cosD(p.angle), vy = p.speed * sinD(p.angle), hits = 0;
-      for (let i = 0; i <= n; i++) {
-        x += vx; y += vy;
-        const dx = x - p.centerX, dy = y - p.centerY, d = Math.hypot(dx, dy);
-        if (d >= p.radius && d > 0.0001) {
-          const nx = dx / d, ny = dy / d, dot = vx * nx + vy * ny;
-          if (dot > 0) {
-            let wx = vx - 2 * dot * nx, wy = vy - 2 * dot * ny;
-            const sp = Math.hypot(wx, wy);
-            if (dot >= sp * 0.85) {
-              wx += -ny * sp * 0.4; wy += nx * sp * 0.4;
-              const ns = Math.hypot(wx, wy);
-              if (ns > 0.001) { wx = wx / ns * sp; wy = wy / ns * sp; }
-            }
-            vx = wx; vy = wy;
-            x = p.centerX + nx * (p.radius - 0.5); y = p.centerY + ny * (p.radius - 0.5);
-            hits++;
-          }
-        }
-      }
-      view.x = x; view.y = y;
-      if (p.colorShift && hits) setCol(DVD[rint(hits, 7, DVD.length)]);
+    case 'bounce': case 'bounceCircle': {
+      // The include moves it one step per frame; the run without an end is replayed every 2 minutes
+      const ticks = Math.floor((done ? len : len > 0 && !loops(fx) ? t : rawT % 120000) / TDFX_FRAME);
+      const sim = (e.id === 'bounce' ? bounceSim : bounceCircleSim)(td, p, text, ticks);
+      view.x = sim.x; view.y = sim.y;
+      if (sim.col) setCol(sim.col);
       return r;
     }
     case 'orbit': {
@@ -584,7 +614,7 @@ export function tdfxFrame(td, text, t, other = () => null) {
     case 'waveDrift': {
       if (done) return r;
       const sp = p.speedMs < 100 ? 1500 : p.speedMs, ang = (t % sp) / sp * 360;
-      view.x = td.x + p.amplitudeX * sinD(ang); view.y = td.y + p.amplitudeY * cosD(ang * 1.5);
+      view.x = td.x + p.amplitudeX * sinD(ang); view.y = td.y + p.amplitudeY * cosD(ang);
       return r;
     }
     case 'fill': {
@@ -598,16 +628,20 @@ export function tdfxFrame(td, text, t, other = () => null) {
     }
     case 'firework': return fireworkFrame(r, td, p, t, frame, done, baseCol, setCol);
     case 'glitch': {
+      // Only the frames that dim the text (35%) change characters; tags and spaces are kept
       const s = p.text || text;
       if (done) { view.text = s; return r; }
       const buf = s.split('');
-      const alpha = rint(frame, 1, 100) < 35 ? 180 + rint(frame, 2, 76) : 255;
-      const gc = '!@#$%^&*<>[]{}01/+=?';
-      for (let g = 0; g < Math.max(1, Math.min(5, p.intensity)); g++) {
-        const idx = rint(frame, 10 + g, Math.max(1, buf.length));
-        let j = 0, inTag = false;
-        while (j <= idx && j < s.length) { if (s[j] === '~') { const n = skipTag(s, j); if (idx >= j && idx < n) { inTag = true; break; } j = n; continue; } j++; }
-        if (!inTag && buf[idx] && buf[idx] !== ' ' && buf[idx] !== '_') buf[idx] = gc[rint(frame, 30 + g, gc.length)];
+      let alpha = 255;
+      if (rint(frame, 1, 100) < 35 && s.length > 0) {
+        alpha = 180 + rint(frame, 2, 76);
+        const gc = '!@#$%^&*<>[]{}01/+=?';
+        for (let g = 0; g < Math.max(1, Math.min(5, p.intensity)); g++) {
+          const idx = rint(frame, 10 + g, s.length);
+          let j = 0, inTag = false;
+          while (j <= idx && j < s.length) { if (s[j] === '~') { const n = skipTag(s, j); if (idx >= j && idx < n) { inTag = true; break; } j = n; continue; } j++; }
+          if (!inTag && buf[idx] !== ' ' && buf[idx] !== '_') buf[idx] = gc[rint(frame, 30 + g, gc.length)];
+        }
       }
       view.text = buf.join(''); setCol(withAlpha(baseCol, alpha));
       return r;
@@ -630,32 +664,41 @@ export function tdfxFrame(td, text, t, other = () => null) {
       return r;
     }
     case 'shimmer': {
+      // Visible characters (spaces too) count; the three around the light take its tag, the others keep their own colour
       const s = p.text || text;
-      if (done) return r;
-      const sweep = Math.max(300, p.sweepDuration), cyc = t % (sweep + Math.max(0, p.pauseDuration));
-      const h = cyc < sweep && s.length ? Math.round(cyc / sweep * (s.length + 2)) - 1 : -1;
-      let out = '', inShim = false;
-      for (let i = 0; i < s.length; i++) {
-        const sh = h >= 0 && i >= h - 1 && i <= h + 1;
-        if (sh && !inShim) { out += p.shimmerTag; inShim = true; } else if (!sh && inShim) { out += p.baseTag; inShim = false; } else if (i === 0 && !sh) out += p.baseTag;
-        out += s[i];
+      if (done && !loops(fx)) t = Math.max(0, len - 1);
+      const sweep = Math.max(300, p.sweepDuration), cyc = t % (sweep + Math.max(0, p.pauseDuration)), vis = visibleGlyphs(s);
+      const h = cyc < sweep && vis > 0 ? Math.round(cyc / sweep * (vis + 2)) - 1 : -1;
+      view.text = tagSweep(s, p.baseTag, (i) => (h >= 0 && i >= h - 1 && i <= h + 1 ? p.shimmerTag : null));
+      return r;
+    }
+    case 'rainbow': {
+      // The tags of the text are dropped; every visible character (spaces count) gets the colour of its place
+      const s = p.text || text;
+      if (done && !loops(fx)) t = Math.max(0, len - 1);
+      const ph = Math.floor(t / Math.max(35, p.speedMs)) % 6;
+      let out = '', vis = 0;
+      for (let i = 0; i < s.length;) {
+        if (s[i] === '~') { i = skipTag(s, i); continue; }
+        out += s[i] === ' ' ? ' ' : RAINBOW[(vis + ph) % 6] + s[i];
+        vis++; i++;
       }
       view.text = out;
       return r;
     }
-    case 'rainbow': {
-      const s = p.text || text;
-      if (done) return r;
-      const ph = Math.floor(t / Math.max(35, p.speedMs)) % 6;
-      view.text = [...s].map((c, i) => (c === ' ' ? ' ' : RAINBOW[(i + ph) % 6] + c)).join('');
-      return r;
-    }
     case 'slotMachine': {
-      const s = p.finalText || text;
-      if (done || !s.length) { view.text = s; return r; }
-      const col = Math.max(50, Math.floor(len / s.length)), locked = Math.min(s.length, Math.floor(t / col));
+      // Each visible character locks at its turn (spin time / characters, at least 50 ms); tags stay in place
+      const s = p.finalText || text, vis = visibleGlyphs(s);
+      if (done || !vis) { view.text = s; return r; }
+      const col = Math.max(50, Math.floor((p.spinDuration > 0 ? p.spinDuration : 2200) / vis)), locked = Math.min(vis, Math.floor(t / col));
       const g = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$#*?@!';
-      view.text = [...s].map((c, i) => (i < locked ? c : c === ' ' ? ' ' : g[rint(frame, i, g.length)])).join('');
+      let out = '', v = 0;
+      for (let i = 0; i < s.length;) {
+        if (s[i] === '~') { const n = skipTag(s, i); out += s.slice(i, n); i = n; continue; }
+        out += v < locked ? s[i] : s[i] === ' ' ? ' ' : g[rint(frame, v, g.length)];
+        v++; i++;
+      }
+      view.text = out;
       return r;
     }
     case 'pendulum': {
@@ -704,27 +747,21 @@ export function tdfxFrame(td, text, t, other = () => null) {
       return r;
     }
     case 'waveSweep': {
-      const s = p.text || text;
-      if (done || !s.length) return r;
-      const cw = Math.max(1, p.crestWidth), cyc = Math.floor(t / Math.max(25, p.speedMs));
+      const s = p.text || text, vis = visibleGlyphs(s);
+      if (!vis) return r;
+      const cw = Math.max(1, Math.round(p.crestWidth)), half = Math.floor(cw / 2), cyc = Math.floor(t / Math.max(25, p.speedMs));
       let center;
-      if (p.direction === 0) center = (cyc % (s.length + cw)) - Math.floor(cw / 2);
-      else if (p.direction === 1) center = s.length - (cyc % (s.length + cw)) + Math.floor(cw / 2);
-      else { const b = Math.max(1, (s.length - 1) * 2), bp = cyc % b; center = bp >= s.length ? b - bp : bp; }
-      let out = '', inC = false;
-      for (let i = 0; i < s.length; i++) {
-        const c = Math.abs(i - center) <= Math.floor(cw / 2);
-        if (c && !inC) { out += p.crestTag; inC = true; } else if (!c && inC) { out += p.baseTag; inC = false; }
-        out += s[i];
-      }
-      view.text = out;
+      if (p.direction === 0) center = (cyc % (vis + cw)) - half;
+      else if (p.direction === 1) center = vis - (cyc % (vis + cw)) + half;
+      else { const b = Math.max(1, (vis - 1) * 2), bp = cyc % b; center = bp >= vis ? b - bp : bp; }
+      view.text = tagSweep(s, p.baseTag, (i) => (Math.abs(i - center) <= half ? p.crestTag : null));
       return r;
     }
     case 'scannerSweep': {
-      const s = p.text || text;
-      if (done || !s.length) return r;
-      const b = Math.max(1, (s.length - 1) * 2), bp = Math.floor(t / Math.max(25, p.speedMs)) % b, li = bp >= s.length ? b - bp : bp;
-      view.text = [...s].map((c, i) => { const d = Math.abs(i - li); return (d === 0 ? p.laserTag : d === 1 ? p.trailTag : '~w~') + c; }).join('');
+      const s = p.text || text, vis = visibleGlyphs(s);
+      if (!vis) return r;
+      const b = Math.max(1, (vis - 1) * 2), bp = Math.floor(t / Math.max(25, p.speedMs)) % b, li = bp >= vis ? b - bp : bp;
+      view.text = tagSweep(s, '~w~', (i) => { const d = Math.abs(i - li); return d === 0 ? p.laserTag : d === 1 ? p.trailTag : null; });
       return r;
     }
     case 'electricArc': {
@@ -734,18 +771,26 @@ export function tdfxFrame(td, text, t, other = () => null) {
       view.x = td.x + (rint(frame, 1, 21) - 10) / 10 * 2.2 * decay;
       view.y = td.y + (rint(frame, 2, 17) - 8) / 10 * 1.6 * decay;
       const spark = rint(frame, 3, 4);
-      view.text = decay > 0.15 && spark === 0 ? `~b~>> ${s} ~b~<<` : decay > 0.15 && spark === 1 ? `~y~** ${s} ~y~**` : `~w~${s}`;
+      view.text = decay > 0.15 && spark === 0 ? `~b~>> ${s} ~b~<<` : decay > 0.15 && spark === 1 ? `~y~** ${s} ~y~**` : s;
       return r;
     }
     case 'splitFlap': {
+      // Letters lock one by one; the rolling letters only change when the next one locks (the include sets the string then)
       const s = p.targetText || text;
       if (done) { view.text = s; return r; }
-      const li = Math.max(50, p.lockIntervalMs), fc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?$#*';
-      view.text = [...s].map((c, i) => (t >= (i + 1) * li ? c : c === ' ' ? ' ' : fc[rint(frame, i, fc.length)])).join('');
+      const li = p.lockIntervalMs < 50 ? 180 : p.lockIntervalMs, step = Math.floor(t / li), fc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?$#*';
+      const tt = step * li;
+      let out = '', v = 0;
+      for (let i = 0; i < s.length;) {
+        if (s[i] === '~') { const n = skipTag(s, i); out += s.slice(i, n); i = n; continue; }
+        out += tt >= (v + 1) * li ? s[i] : s[i] === ' ' ? ' ' : fc[rint(step, v, fc.length)];
+        v++; i++;
+      }
+      view.text = out;
       return r;
     }
     case 'hologram': {
-      if (done) return r;
+      if (done && !loops(fx)) t = Math.max(0, len - 1);
       const a = Math.max(40, Math.min(255, Math.round(175 + 80 * sinD(t * 0.22))));
       view.color = withAlpha(0x00FFFFFF, a);
       if (rint(frame, 1, 6) === 0) view.y = td.y + (rint(frame, 2, 3) - 1) * 0.7;
@@ -755,6 +800,68 @@ export function tdfxFrame(td, text, t, other = () => null) {
     case 'letterRain': case 'waveMotion': case 'hopLetter': return lettersFrame(r, td, p, e.id, t, done, len, text);
   }
   return r;
+}
+
+// BouncePlayerTextDraw: the limits shrink by the size of the TextDraw, the start is put inside them, the speeds get a
+// random sign and +-10%, and every wall changes the other speed a little (kept between 1.2 and 4); corners turn both
+function bounceSim(td, p, text, ticks) {
+  const d = tdDims(td, td.x, text);
+  let minX = p.minX + d.l, maxX = p.maxX - d.r, minY = p.minY + d.t, maxY = p.maxY - d.b;
+  if (minX > maxX) minX = maxX = (p.minX + p.maxX) / 2;
+  if (minY > maxY) minY = maxY = (p.minY + p.maxY) / 2;
+  let x = Math.max(minX, Math.min(maxX, td.x)), y = Math.max(minY, Math.min(maxY, td.y));
+  let vx = (rint(11, 1, 2) ? p.speedX : -p.speedX) * (0.90 + rint(11, 3, 21) / 100);
+  let vy = (rint(11, 2, 2) ? p.speedY : -p.speedY) * (0.90 + rint(11, 4, 21) / 100);
+  let col = null;
+  const jit = (v, i) => { v *= 0.94 + rint(12, i, 13) / 100; return Math.abs(v) < 1 ? (v < 0 ? -1.2 : 1.2) : Math.abs(v) > 4.5 ? (v < 0 ? -4 : 4) : v; };
+  for (let i = 0; i < ticks; i++) {
+    let cx = x + vx, cy = y + vy, hit = false;
+    const tol = (Math.abs(vx) + Math.abs(vy)) * 1.5;
+    const nearX = cx <= minX + tol || cx >= maxX - tol, nearY = cy <= minY + tol || cy >= maxY - tol;
+    if (nearX && nearY && (cx <= minX || cx >= maxX || cy <= minY || cy >= maxY)) {
+      cx = cx <= minX ? minX : cx >= maxX ? maxX : cx;
+      cy = cy <= minY ? minY : cy >= maxY ? maxY : cy;
+      vx = -vx; vy = -vy; hit = true;
+    } else {
+      if (cx <= minX || cx >= maxX) { cx = cx <= minX ? minX : maxX; vx = -vx; vy = jit(vy, i * 2); hit = true; }
+      if (cy <= minY || cy >= maxY) { cy = cy <= minY ? minY : maxY; vy = -vy; vx = jit(vx, i * 2 + 1); hit = true; }
+    }
+    x = cx; y = cy;
+    if (hit && p.colorShift) col = DVD[rint(13, i, DVD.length)];
+  }
+  return { x, y, col };
+}
+// BounceCirclePlayerTextDraw: the radius shrinks by the half size of the TextDraw (at least 5) and the start goes inside it
+function bounceCircleSim(td, p, text, ticks) {
+  const d = tdDims(td, td.x, text);
+  const hw = Math.max(d.l, d.r), hh = Math.max(d.b, d.t);
+  let rad = p.radius - Math.hypot(hw, hh);
+  if (rad < 5) rad = p.radius > 10 ? p.radius * 0.5 : p.radius;
+  let x = td.x, y = td.y;
+  const cd = Math.hypot(x - p.centerX, y - p.centerY);
+  if (cd > rad && cd > 0.001) { x = p.centerX + (x - p.centerX) / cd * rad; y = p.centerY + (y - p.centerY) / cd * rad; }
+  else if (cd < 0.001) { x = p.centerX + rad * 0.40; y = p.centerY - rad * 0.25; }
+  let vx = p.speed * cosD(p.angle), vy = p.speed * sinD(p.angle), col = null;
+  for (let i = 0; i < ticks; i++) {
+    x += vx; y += vy;
+    const dx = x - p.centerX, dy = y - p.centerY, dist = Math.hypot(dx, dy);
+    if (dist >= rad && dist > 0.0001) {
+      const nx = dx / dist, ny = dy / dist, dot = vx * nx + vy * ny;
+      if (dot > 0) {
+        let wx = vx - 2 * dot * nx, wy = vy - 2 * dot * ny;
+        const sp = Math.hypot(wx, wy);
+        if (dot >= sp * 0.85) {
+          wx += -ny * sp * 0.4; wy += nx * sp * 0.4;
+          const ns = Math.hypot(wx, wy);
+          if (ns > 0.001) { wx = wx / ns * sp; wy = wy / ns * sp; }
+        }
+        vx = wx; vy = wy;
+        x = p.centerX + nx * (rad - 0.5); y = p.centerY + ny * (rad - 0.5);
+        if (p.colorShift) col = DVD[rint(13, i, DVD.length)];
+      }
+    }
+  }
+  return { x, y, col };
 }
 
 function fireworkFrame(r, td, p, t, frame, done, baseCol, setCol) {
@@ -816,32 +923,46 @@ function shockFrame(r, td, p, t, frame, done, len) {
 }
 
 function lettersFrame(r, td, p, id, t, done, len, text) {
-  const s = String(p.text || text).slice(0, 24);
-  if (done) { r.view.text = p.text || text; return r; }
-  r.view = null; // the include hides the TextDraw and draws one TextDraw per letter
-  const font = td.font ?? 1, lsX = td.letterSizeX ?? 0.45, align = td.align ?? td.alignment ?? 2;
+  // The include splits the text into visible characters (at most 32), each one a centred TextDraw with the colour tag
+  // active on it, the font, letter size, colour and outline of the original; the original is hidden, or keeps only its
+  // box (text " ") when it has one. At the end the original comes back with its text.
+  const src = String(p.text || text);
+  if (done) { r.view.text = src; return r; }
+  const glyphs = parseGlyphs(src, 32), n = glyphs.length;
+  if (td.useBox) { r.view.text = ' '; r.view.color = withAlpha(td.color ?? 0xFFFFFFFF, 0); } else r.view = null;
+  const font = td.font ?? 1, lsX = td.letterSizeX > 0 ? td.letterSizeX : 0.45, align = td.align ?? td.alignment ?? 2;
   const anchorX = id === 'letterRain' ? p.targetX : p.centerX, baseY = id === 'letterRain' ? p.targetY : p.centerY;
-  const xs = layoutChars(s, font, lsX, anchorX, id === 'letterRain' ? p.letterSpacing : 0, align, td.outline > 0 ? 1 : 0);
-  const n = s.length;
+  const outline = Number(td.outline ?? 0) | 0;
+  const xs = layoutChars(glyphs.map(g => g.ch).join(''), font, lsX, anchorX, id === 'letterRain' ? p.letterSpacing : 0, align, outline);
+  const hopMs = p.hopDurationMs > 0 ? p.hopDurationMs : 350, stag = p.staggerMs > 0 ? p.staggerMs : 90;
   for (let k = 0; k < n; k++) {
     let y = baseY;
     if (id === 'letterRain') {
       const delay = k * 80 + rint(5, k, 60);
-      if (t < delay) continue;
+      if (t < delay) continue; // still waiting above the screen (at Y -25, hidden by the top)
       y = -25 + (baseY + 25) * tdfxEase(Math.min(1, (t - delay) / 750), 4);
     } else if (id === 'waveMotion') {
       const prog = Math.min(1, t / len), cw = p.crestWidth, min = -cw, max = n - 1 + cw;
-      const crest = p.direction === 0 ? min + (max - min) * prog : max - (max - min) * prog;
+      const crest = p.direction === 0 ? min + (max - min) * prog : p.direction === 1 ? max - (max - min) * prog
+        : min + (max - min) * (prog < 0.5 ? prog * 2 : (1 - prog) * 2);
       const d = Math.abs(k - crest);
       if (d < cw) { const c = cosD(d / cw * 90); y -= p.crestHeight * c * c; }
     } else {
-      const idx = p.direction === 0 ? k : n - 1 - k, start = idx * p.staggerMs;
-      if (t >= start && t < start + p.hopDurationMs) {
-        const u = (t - start) / p.hopDurationMs;
+      // Letter k starts at its turn (from the left, from the right, or there and back again)
+      let he = -1;
+      if (p.direction === 2) {
+        const fwd = k * stag, bwd = (n - 1) * stag + (n - 1 - k) * stag;
+        if (t >= fwd && t < fwd + hopMs) he = t - fwd; else if (t >= bwd && t < bwd + hopMs) he = t - bwd;
+      } else {
+        const start = (p.direction === 0 ? k : n - 1 - k) * p.staggerMs;
+        if (t >= start && t < start + hopMs) he = t - start;
+      }
+      if (he >= 0) {
+        const u = he / hopMs;
         if (u <= 0.8) { const u1 = u / 0.8; y -= p.hopHeight * 4 * u1 * (1 - u1); } else { const u2 = (u - 0.8) / 0.2; y -= p.hopHeight * 0.8 * u2 * (1 - u2); }
       }
     }
-    r.extras.push({ ...td, text: s[k], x: xs[k], y, align: 2, alignment: 2, useBox: 0, fx: null });
+    r.extras.push({ ...td, text: glyphs[k].tag + glyphs[k].ch, x: xs[k], y, align: 2, alignment: 2, useBox: 0, fx: null });
   }
   return r;
 }

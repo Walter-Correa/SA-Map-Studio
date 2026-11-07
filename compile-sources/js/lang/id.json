@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Kotak di awal",
  "Caixa no fim": "Kotak di akhir",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include menyalakan kotak. Rata kiri atau kanan, nilainya adalah X tempat kotak berakhir; rata tengah, nilainya lebar kotak.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Pita adalah kotak hitam selebar layar; efek hanya menggerakkannya. Tingginya berasal dari ukuran huruf Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Pita adalah kotak hitam selebar layar; efek hanya menggerakkannya. Tingginya berasal dari ukuran huruf Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Jika dipilih pada teks, teks tetap ada dan muncul perlahan bersama garis-garisnya, seperti di demo.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Tambahkan penghitung % di atas bilah (seperti di demo)"
 }

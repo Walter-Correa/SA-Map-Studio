@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Riquadro all'inizio",
  "Caixa no fim": "Riquadro alla fine",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "L'include attiva il riquadro. Allineato a sinistra o a destra, il valore è la X dove finisce il riquadro; centrato, è la larghezza del riquadro.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Le bande sono riquadri neri larghi quanto lo schermo; l'effetto le sposta soltanto. La loro altezza viene dalla dimensione della lettera Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Le bande sono riquadri neri larghi quanto lo schermo; l'effetto le sposta soltanto. La loro altezza viene dalla dimensione della lettera Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Scelto su un testo, il testo resta e appare gradualmente insieme alle bande, come nella demo.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Aggiungi un contatore % sopra la barra (come nella demo)"
 }

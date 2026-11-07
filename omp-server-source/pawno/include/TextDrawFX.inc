@@ -237,6 +237,7 @@ static stock Float:TDFX_RemPosY[MAX_PLAYERS][TDFX_MAX_TD];
 static stock Float:TDFX_RemSizeX[MAX_PLAYERS][TDFX_MAX_TD];
 static stock Float:TDFX_RemSizeY[MAX_PLAYERS][TDFX_MAX_TD];
 static stock TDFX_RemAlign[MAX_PLAYERS][TDFX_MAX_TD];
+static stock Float:TDFX_RemBaseWidth[MAX_PLAYERS][TDFX_MAX_TD];
 
 // Global TextDraw fallback caches for SA-MP 0.3.7
 #if TDFX_MAX_GLOBAL_TD > 0
@@ -252,6 +253,7 @@ static stock Float:TDFX_GRemPosY[TDFX_MAX_GLOBAL_TD];
 static stock Float:TDFX_GRemSizeX[TDFX_MAX_GLOBAL_TD];
 static stock Float:TDFX_GRemSizeY[TDFX_MAX_GLOBAL_TD];
 static stock TDFX_GRemAlign[TDFX_MAX_GLOBAL_TD];
+static stock Float:TDFX_GRemBaseWidth[TDFX_MAX_GLOBAL_TD];
 static stock TDFX_GShownState[TDFX_MAX_GLOBAL_TD];
 static stock TDFX_GShownMask[TDFX_MAX_GLOBAL_TD][TDFX_PLAYER_BITWORDS];
 #endif
@@ -550,6 +552,51 @@ static stock _TDFX_LayoutChars(const text[], rawLen, font, Float:lsX, Float:anch
 			curX += w;
 		}
 	}
+}
+
+stock Float:_TDFX_MeasureStringWidth(const text[], font, Float:lsX, outline = 1)
+{
+	if (lsX <= 0.0) lsX = 0.40;
+	if (font < 0 || font > 3) font = 1;
+	new Float:totalW = 0.0;
+	new Float:maxLineW = 0.0;
+	new len = strlen(text);
+	for (new i = 0; i < len; i++)
+	{
+		if (text[i] == '~')
+		{
+			if (i + 1 < len && text[i + 1] == '~')
+			{
+				totalW += _TDFX_GetCharWidth('~', font, lsX, outline);
+				i++;
+				continue;
+			}
+			if (i + 2 < len && text[i + 1] == 'n' && text[i + 2] == '~')
+			{
+				if (totalW > maxLineW) maxLineW = totalW;
+				totalW = 0.0;
+				i += 2;
+				continue;
+			}
+			new closeIdx = -1;
+			for (new j = i + 1; j < len; j++)
+			{
+				if (text[j] == '~')
+				{
+					closeIdx = j;
+					break;
+				}
+			}
+			if (closeIdx != -1)
+			{
+				i = closeIdx;
+				continue;
+			}
+		}
+		totalW += _TDFX_GetCharWidth(text[i], font, lsX, outline);
+	}
+	if (totalW > maxLineW) maxLineW = totalW;
+	return maxLineW;
 }
 
 static stock const TDFX_FlapChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?$#*";
@@ -4472,10 +4519,328 @@ stock ScramblePlayerTextDraw(playerid, PlayerText:textid, const finalText[], dur
 	return 1;
 }
 
-stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
+static stock _TDFX_GetPlayerTDDimensions(playerid, PlayerText:textid, Float:curX, Float:textWidth, Float:textHeight, &Float:leftOff, &Float:rightOff, &Float:topOff, &Float:bottomOff)
+{
+	new Float:w = textWidth;
+	new Float:h = textHeight;
+
+	new font = 1;
+	#if defined PlayerTextDrawGetFont
+		font = _:PlayerTextDrawGetFont(playerid, textid);
+	#else
+		if (TDFX_ValidPlayer(playerid, textid)) font = (TDFX_Info[playerid][_:textid] & 7);
+	#endif
+
+	new align = 1;
+	#if defined PlayerTextDrawGetAlignment
+		align = _:PlayerTextDrawGetAlignment(playerid, textid);
+	#else
+		if (TDFX_ValidPlayer(playerid, textid)) align = TDFX_RemAlign[playerid][_:textid];
+	#endif
+	if (align < 1 || align > 3) align = 1;
+
+	new Float:lsX = 0.48, Float:lsY = 1.60;
+	#if defined PlayerTextDrawGetLetterSize
+		PlayerTextDrawGetLetterSize(playerid, textid, lsX, lsY);
+	#else
+		if (TDFX_ValidPlayer(playerid, textid))
+		{
+			if (TDFX_RemLetX[playerid][_:textid] > 0.0) lsX = TDFX_RemLetX[playerid][_:textid];
+			if (TDFX_RemLetY[playerid][_:textid] > 0.0) lsY = TDFX_RemLetY[playerid][_:textid];
+		}
+	#endif
+	if (lsX <= 0.0) lsX = 0.40;
+	if (lsY <= 0.0) lsY = 1.60;
+
+	new Float:szX = 0.0, Float:szY = 0.0;
+	#if defined PlayerTextDrawGetTextSize
+		PlayerTextDrawGetTextSize(playerid, textid, szX, szY);
+	#else
+		if (TDFX_ValidPlayer(playerid, textid))
+		{
+			szX = TDFX_RemSizeX[playerid][_:textid];
+			szY = TDFX_RemSizeY[playerid][_:textid];
+		}
+	#endif
+
+	new bool:useBox = false;
+	#if defined PlayerTextDrawIsBox
+		useBox = bool:PlayerTextDrawIsBox(playerid, textid);
+	#else
+		if (TDFX_ValidPlayer(playerid, textid)) useBox = ((TDFX_Info[playerid][_:textid] & 8) != 0);
+	#endif
+
+	new outline = 1;
+	#if defined PlayerTextDrawGetOutline
+		outline = PlayerTextDrawGetOutline(playerid, textid);
+	#else
+		if (TDFX_ValidPlayer(playerid, textid) && (TDFX_Info[playerid][_:textid] & (1 << 8)))
+			outline = (TDFX_Info[playerid][_:textid] >> 4) & 0x0F;
+	#endif
+
+	if (w > 0.0)
+	{
+		if (h <= 0.0) h = lsY * 9.5;
+		topOff = 0.0;
+		bottomOff = h;
+		if (align == 2)
+		{
+			leftOff = w / 2.0;
+			rightOff = w / 2.0;
+		}
+		else if (align == 3)
+		{
+			leftOff = w;
+			rightOff = 0.0;
+		}
+		else
+		{
+			leftOff = 0.0;
+			rightOff = w;
+		}
+		return;
+	}
+
+	if (font == 4 || font == 5)
+	{
+		w = (szX > 0.0) ? szX : 32.0;
+		h = (szY > 0.0) ? szY : 32.0;
+		leftOff = 0.0;
+		rightOff = w;
+		topOff = 0.0;
+		bottomOff = h;
+		return;
+	}
+
+	if (useBox && (szX > 0.0 || szY > 0.0))
+	{
+		h = (textHeight > 0.0) ? textHeight : ((align == 2) ? ((szX > 0.0) ? szX : (lsY * 9.5)) : ((szY > 0.0) ? szY : (lsY * 9.5)));
+		topOff = 0.0;
+		bottomOff = h;
+		if (align == 2)
+		{
+			w = (szY > 0.0) ? szY : (lsX * 100.0);
+			leftOff = w / 2.0;
+			rightOff = w / 2.0;
+		}
+		else if (align == 3)
+		{
+			w = (szX > 0.0) ? floatabs(curX - szX) : (lsX * 100.0);
+			leftOff = w;
+			rightOff = 0.0;
+		}
+		else
+		{
+			w = (szX > 0.0) ? floatabs(szX - curX) : (lsX * 100.0);
+			leftOff = 0.0;
+			rightOff = w;
+		}
+		return;
+	}
+
+	// Bare text
+	new str[TDFX_MAX_TEXT];
+	str[0] = 0;
+	#if defined PlayerTextDrawGetString
+		PlayerTextDrawGetString(playerid, textid, str, sizeof(str));
+	#endif
+	if (str[0] != 0)
+	{
+		w = _TDFX_MeasureStringWidth(str, font, lsX, outline);
+	}
+	else if (TDFX_ValidPlayer(playerid, textid) && TDFX_RemBaseWidth[playerid][_:textid] > 0.0)
+	{
+		w = TDFX_RemBaseWidth[playerid][_:textid] * lsX;
+	}
+	else
+	{
+		w = 12.0 * 20.0 * lsX;
+	}
+
+	h = (textHeight > 0.0) ? textHeight : (lsY * 9.5);
+	topOff = float(outline);
+	bottomOff = h + float(outline);
+	if (align == 2)
+	{
+		leftOff = w / 2.0;
+		rightOff = w / 2.0;
+	}
+	else if (align == 3)
+	{
+		leftOff = w;
+		rightOff = 0.0;
+	}
+	else
+	{
+		leftOff = 0.0;
+		rightOff = w;
+	}
+}
+
+#if TDFX_MAX_GLOBAL_TD > 0
+static stock _TDFX_GetGlobalTDDimensions(Text:textid, Float:curX, Float:textWidth, Float:textHeight, &Float:leftOff, &Float:rightOff, &Float:topOff, &Float:bottomOff)
+{
+	new Float:w = textWidth;
+	new Float:h = textHeight;
+
+	new font = 1;
+	#if defined TextDrawGetFont
+		font = _:TextDrawGetFont(textid);
+	#else
+		if (TDFX_ValidGlobal(textid)) font = (TDFX_GInfo[_:textid] & 7);
+	#endif
+
+	new align = 1;
+	#if defined TextDrawGetAlignment
+		align = _:TextDrawGetAlignment(textid);
+	#else
+		if (TDFX_ValidGlobal(textid)) align = TDFX_GRemAlign[_:textid];
+	#endif
+	if (align < 1 || align > 3) align = 1;
+
+	new Float:lsX = 0.48, Float:lsY = 1.60;
+	#if defined TextDrawGetLetterSize
+		TextDrawGetLetterSize(textid, lsX, lsY);
+	#else
+		if (TDFX_ValidGlobal(textid))
+		{
+			if (TDFX_GRemLetX[_:textid] > 0.0) lsX = TDFX_GRemLetX[_:textid];
+			if (TDFX_GRemLetY[_:textid] > 0.0) lsY = TDFX_GRemLetY[_:textid];
+		}
+	#endif
+	if (lsX <= 0.0) lsX = 0.40;
+	if (lsY <= 0.0) lsY = 1.60;
+
+	new Float:szX = 0.0, Float:szY = 0.0;
+	#if defined TextDrawGetTextSize
+		TextDrawGetTextSize(textid, szX, szY);
+	#else
+		if (TDFX_ValidGlobal(textid))
+		{
+			szX = TDFX_GRemSizeX[_:textid];
+			szY = TDFX_GRemSizeY[_:textid];
+		}
+	#endif
+
+	new bool:useBox = false;
+	#if defined TextDrawIsBox
+		useBox = bool:TextDrawIsBox(textid);
+	#else
+		if (TDFX_ValidGlobal(textid)) useBox = ((TDFX_GInfo[_:textid] & 8) != 0);
+	#endif
+
+	new outline = 1;
+	#if defined TextDrawGetOutline
+		outline = TextDrawGetOutline(textid);
+	#else
+		if (TDFX_ValidGlobal(textid) && (TDFX_GInfo[_:textid] & (1 << 8)))
+			outline = (TDFX_GInfo[_:textid] >> 4) & 0x0F;
+	#endif
+
+	if (w > 0.0)
+	{
+		if (h <= 0.0) h = lsY * 9.5;
+		topOff = 0.0;
+		bottomOff = h;
+		if (align == 2)
+		{
+			leftOff = w / 2.0;
+			rightOff = w / 2.0;
+		}
+		else if (align == 3)
+		{
+			leftOff = w;
+			rightOff = 0.0;
+		}
+		else
+		{
+			leftOff = 0.0;
+			rightOff = w;
+		}
+		return;
+	}
+
+	if (font == 4 || font == 5)
+	{
+		w = (szX > 0.0) ? szX : 32.0;
+		h = (szY > 0.0) ? szY : 32.0;
+		leftOff = 0.0;
+		rightOff = w;
+		topOff = 0.0;
+		bottomOff = h;
+		return;
+	}
+
+	if (useBox && (szX > 0.0 || szY > 0.0))
+	{
+		h = (textHeight > 0.0) ? textHeight : ((align == 2) ? ((szX > 0.0) ? szX : (lsY * 9.5)) : ((szY > 0.0) ? szY : (lsY * 9.5)));
+		topOff = 0.0;
+		bottomOff = h;
+		if (align == 2)
+		{
+			w = (szY > 0.0) ? szY : (lsX * 100.0);
+			leftOff = w / 2.0;
+			rightOff = w / 2.0;
+		}
+		else if (align == 3)
+		{
+			w = (szX > 0.0) ? floatabs(curX - szX) : (lsX * 100.0);
+			leftOff = w;
+			rightOff = 0.0;
+		}
+		else
+		{
+			w = (szX > 0.0) ? floatabs(szX - curX) : (lsX * 100.0);
+			leftOff = 0.0;
+			rightOff = w;
+		}
+		return;
+	}
+
+	// Bare text
+	new str[TDFX_MAX_TEXT];
+	str[0] = 0;
+	#if defined TextDrawGetString
+		TextDrawGetString(textid, str, sizeof(str));
+	#endif
+	if (str[0] != 0)
+	{
+		w = _TDFX_MeasureStringWidth(str, font, lsX, outline);
+	}
+	else if (TDFX_ValidGlobal(textid) && TDFX_GRemBaseWidth[_:textid] > 0.0)
+	{
+		w = TDFX_GRemBaseWidth[_:textid] * lsX;
+	}
+	else
+	{
+		w = 12.0 * 20.0 * lsX;
+	}
+
+	h = (textHeight > 0.0) ? textHeight : (lsY * 9.5);
+	topOff = float(outline);
+	bottomOff = h + float(outline);
+	if (align == 2)
+	{
+		leftOff = w / 2.0;
+		rightOff = w / 2.0;
+	}
+	else if (align == 3)
+	{
+		leftOff = w;
+		rightOff = 0.0;
+	}
+	else
+	{
+		leftOff = 0.0;
+		rightOff = w;
+	}
+}
+#endif
+
+stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "", Float:textWidth = 0.0, Float:textHeight = 0.0)
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, loop, extra_id, callback
+		#pragma unused playerid, textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, loop, extra_id, callback, textWidth, textHeight
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4489,6 +4854,33 @@ stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:spee
 		if (duration < 0) duration = 0;
 		new Float:curX = 0.0, Float:curY = 0.0;
 		TDFX_GetPlayerPos(playerid, textid, curX, curY);
+
+		new Float:leftOff = 0.0, Float:rightOff = 0.0, Float:topOff = 0.0, Float:bottomOff = 0.0;
+		_TDFX_GetPlayerTDDimensions(playerid, textid, curX, textWidth, textHeight, leftOff, rightOff, topOff, bottomOff);
+
+		new Float:effMinX = minX + leftOff;
+		new Float:effMaxX = maxX - rightOff;
+		new Float:effMinY = minY + topOff;
+		new Float:effMaxY = maxY - bottomOff;
+
+		if (effMinX > effMaxX)
+		{
+			new Float:midX = (minX + maxX) / 2.0;
+			effMinX = midX;
+			effMaxX = midX;
+		}
+		if (effMinY > effMaxY)
+		{
+			new Float:midY = (minY + maxY) / 2.0;
+			effMinY = midY;
+			effMaxY = midY;
+		}
+
+		if (curX < effMinX) curX = effMinX;
+		else if (curX > effMaxX) curX = effMaxX;
+		if (curY < effMinY) curY = effMinY;
+		else if (curY > effMaxY) curY = effMaxY;
+		PlayerTextDrawSetPos(playerid, textid, curX, curY);
 
 		new baseCol = 0xFFFFFFFF;
 		if (TDFX_ValidPlayer(playerid, textid) && TDFX_RemText[playerid][_:textid])
@@ -4511,10 +4903,10 @@ stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:spee
 		TDFX_FloatB[slot] = curY;
 		TDFX_FloatC[slot] = speedX;
 		TDFX_FloatD[slot] = speedY;
-		TDFX_BoundMinX[slot] = minX;
-		TDFX_BoundMinY[slot] = minY;
-		TDFX_BoundMaxX[slot] = maxX;
-		TDFX_BoundMaxY[slot] = maxY;
+		TDFX_BoundMinX[slot] = effMinX;
+		TDFX_BoundMinY[slot] = effMinY;
+		TDFX_BoundMaxX[slot] = effMaxX;
+		TDFX_BoundMaxY[slot] = effMaxY;
 		TDFX_ColorShift[slot] = colorShift;
 		TDFX_Base[slot] = baseCol;
 		TDFX_ExtraId[slot] = extra_id;
@@ -4530,10 +4922,10 @@ stock BouncePlayerTextDraw(playerid, PlayerText:textid, Float:speedX, Float:spee
 	#endif
 }
 
-stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
+stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "", Float:textWidth = 0.0, Float:textHeight = 0.0)
 {
 	#if !defined PlayerTextDrawSetPos
-		#pragma unused playerid, textid, speed, angle, centerX, centerY, radius, colorShift, duration, loop, extra_id, callback
+		#pragma unused playerid, textid, speed, angle, centerX, centerY, radius, colorShift, duration, loop, extra_id, callback, textWidth, textHeight
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
@@ -4548,10 +4940,27 @@ stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8,
 		new Float:curX = 0.0, Float:curY = 0.0;
 		TDFX_GetPlayerPos(playerid, textid, curX, curY);
 
-		if (floatabs(curX - centerX) < 0.001 && floatabs(curY - centerY) < 0.001)
+		new Float:leftOff = 0.0, Float:rightOff = 0.0, Float:topOff = 0.0, Float:bottomOff = 0.0;
+		_TDFX_GetPlayerTDDimensions(playerid, textid, curX, textWidth, textHeight, leftOff, rightOff, topOff, bottomOff);
+
+		new Float:halfW = (leftOff > rightOff) ? leftOff : rightOff;
+		new Float:halfH = (bottomOff > topOff) ? bottomOff : topOff;
+		new Float:effRadius = radius - floatsqroot(halfW * halfW + halfH * halfH);
+		if (effRadius < 5.0) effRadius = (radius > 10.0) ? (radius * 0.5) : radius;
+
+		new Float:cdx = curX - centerX;
+		new Float:cdy = curY - centerY;
+		new Float:cdist = floatsqroot(cdx * cdx + cdy * cdy);
+		if (cdist > effRadius && cdist > 0.001)
 		{
-			curX = centerX + radius * 0.40;
-			curY = centerY - radius * 0.25;
+			curX = centerX + (cdx / cdist) * effRadius;
+			curY = centerY + (cdy / cdist) * effRadius;
+			PlayerTextDrawSetPos(playerid, textid, curX, curY);
+		}
+		else if (cdist < 0.001)
+		{
+			curX = centerX + effRadius * 0.40;
+			curY = centerY - effRadius * 0.25;
 			PlayerTextDrawSetPos(playerid, textid, curX, curY);
 		}
 
@@ -4574,7 +4983,7 @@ stock BounceCirclePlayerTextDraw(playerid, PlayerText:textid, Float:speed = 2.8,
 		TDFX_FloatD[slot] = speed * floatsin(angle, degrees);
 		TDFX_BoundMinX[slot] = centerX;
 		TDFX_BoundMinY[slot] = centerY;
-		TDFX_BoundMaxX[slot] = radius;
+		TDFX_BoundMaxX[slot] = effRadius;
 		TDFX_BoundMaxY[slot] = 0.0;
 		TDFX_ColorShift[slot] = colorShift;
 		TDFX_Base[slot] = baseCol;
@@ -6777,10 +7186,10 @@ stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, bool:loo
 	return 1;
 }
 
-stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
+stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:minY, Float:maxX, Float:maxY, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "", Float:textWidth = 0.0, Float:textHeight = 0.0)
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, loop, extra_id, callback
+		#pragma unused textid, speedX, speedY, minX, minY, maxX, maxY, colorShift, duration, loop, extra_id, callback, textWidth, textHeight
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6795,6 +7204,40 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		new Float:curX = 0.0, Float:curY = 0.0;
 		TDFX_GetGlobalPos(textid, curX, curY);
 
+		#if TDFX_MAX_GLOBAL_TD > 0
+			new Float:leftOff = 0.0, Float:rightOff = 0.0, Float:topOff = 0.0, Float:bottomOff = 0.0;
+			_TDFX_GetGlobalTDDimensions(textid, curX, textWidth, textHeight, leftOff, rightOff, topOff, bottomOff);
+
+			new Float:effMinX = minX + leftOff;
+			new Float:effMaxX = maxX - rightOff;
+			new Float:effMinY = minY + topOff;
+			new Float:effMaxY = maxY - bottomOff;
+
+			if (effMinX > effMaxX)
+			{
+				new Float:midX = (minX + maxX) / 2.0;
+				effMinX = midX;
+				effMaxX = midX;
+			}
+			if (effMinY > effMaxY)
+			{
+				new Float:midY = (minY + maxY) / 2.0;
+				effMinY = midY;
+				effMaxY = midY;
+			}
+
+			if (curX < effMinX) curX = effMinX;
+			else if (curX > effMaxX) curX = effMaxX;
+			if (curY < effMinY) curY = effMinY;
+			else if (curY > effMaxY) curY = effMaxY;
+			TextDrawSetPos(textid, curX, curY);
+		#else
+			new Float:effMinX = minX;
+			new Float:effMaxX = maxX;
+			new Float:effMinY = minY;
+			new Float:effMaxY = maxY;
+		#endif
+
 		new baseCol = 0xFFFFFFFF;
 		#if TDFX_MAX_GLOBAL_TD > 0
 			if (TDFX_ValidGlobal(textid) && TDFX_GRemText[_:textid])
@@ -6803,6 +7246,8 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		#if defined _TDFX_TDGetColour
 			baseCol = _TDFX_TDGetColour(textid);
 		#endif
+
+		_TDFX_InitGlobalTD(textid);
 
 		TDFX_Used[slot] = true;
 		TDFX_IsGlobal[slot] = true;
@@ -6818,10 +7263,10 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		TDFX_FloatB[slot] = curY;
 		TDFX_FloatC[slot] = speedX;
 		TDFX_FloatD[slot] = speedY;
-		TDFX_BoundMinX[slot] = minX;
-		TDFX_BoundMinY[slot] = minY;
-		TDFX_BoundMaxX[slot] = maxX;
-		TDFX_BoundMaxY[slot] = maxY;
+		TDFX_BoundMinX[slot] = effMinX;
+		TDFX_BoundMinY[slot] = effMinY;
+		TDFX_BoundMaxX[slot] = effMaxX;
+		TDFX_BoundMaxY[slot] = effMaxY;
 		TDFX_ColorShift[slot] = colorShift;
 		TDFX_Base[slot] = baseCol;
 		TDFX_ExtraId[slot] = extra_id;
@@ -6837,10 +7282,10 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 	#endif
 }
 
-stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "")
+stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, Float:centerX = 320.0, Float:centerY = 240.0, Float:radius = 120.0, bool:colorShift = false, duration = 0, bool:loop = false, extra_id = 0, const callback[] = "", Float:textWidth = 0.0, Float:textHeight = 0.0)
 {
 	#if !defined TextDrawSetPos
-		#pragma unused textid, speed, angle, centerX, centerY, radius, colorShift, duration, loop, extra_id, callback
+		#pragma unused textid, speed, angle, centerX, centerY, radius, colorShift, duration, loop, extra_id, callback, textWidth, textHeight
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
@@ -6855,10 +7300,31 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 		new Float:curX = 0.0, Float:curY = 0.0;
 		TDFX_GetGlobalPos(textid, curX, curY);
 
-		if (floatabs(curX - centerX) < 0.001 && floatabs(curY - centerY) < 0.001)
+		#if TDFX_MAX_GLOBAL_TD > 0
+			new Float:leftOff = 0.0, Float:rightOff = 0.0, Float:topOff = 0.0, Float:bottomOff = 0.0;
+			_TDFX_GetGlobalTDDimensions(textid, curX, textWidth, textHeight, leftOff, rightOff, topOff, bottomOff);
+
+			new Float:halfW = (leftOff > rightOff) ? leftOff : rightOff;
+			new Float:halfH = (bottomOff > topOff) ? bottomOff : topOff;
+			new Float:effRadius = radius - floatsqroot(halfW * halfW + halfH * halfH);
+			if (effRadius < 5.0) effRadius = (radius > 10.0) ? (radius * 0.5) : radius;
+		#else
+			new Float:effRadius = radius;
+		#endif
+
+		new Float:cdx = curX - centerX;
+		new Float:cdy = curY - centerY;
+		new Float:cdist = floatsqroot(cdx * cdx + cdy * cdy);
+		if (cdist > effRadius && cdist > 0.001)
 		{
-			curX = centerX + radius * 0.40;
-			curY = centerY - radius * 0.25;
+			curX = centerX + (cdx / cdist) * effRadius;
+			curY = centerY + (cdy / cdist) * effRadius;
+			TextDrawSetPos(textid, curX, curY);
+		}
+		else if (cdist < 0.001)
+		{
+			curX = centerX + effRadius * 0.40;
+			curY = centerY - effRadius * 0.25;
 			TextDrawSetPos(textid, curX, curY);
 		}
 
@@ -6870,6 +7336,8 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 		#if defined _TDFX_TDGetColour
 			baseCol = _TDFX_TDGetColour(textid);
 		#endif
+
+		_TDFX_InitGlobalTD(textid);
 
 		TDFX_Used[slot] = true;
 		TDFX_IsGlobal[slot] = true;
@@ -6883,7 +7351,7 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 		TDFX_FloatD[slot] = speed * floatsin(angle, degrees);
 		TDFX_BoundMinX[slot] = centerX;
 		TDFX_BoundMinY[slot] = centerY;
-		TDFX_BoundMaxX[slot] = radius;
+		TDFX_BoundMaxX[slot] = effRadius;
 		TDFX_BoundMaxY[slot] = 0.0;
 		TDFX_ColorShift[slot] = colorShift;
 		TDFX_Base[slot] = baseCol;
@@ -8600,6 +9068,7 @@ stock PlayerText:TDFX_CreatePlayerTextDraw(playerid, Float:x, Float:y, const tex
 	{
 		TDFX_RemPosX[playerid][_:td] = x;
 		TDFX_RemPosY[playerid][_:td] = y;
+		TDFX_RemBaseWidth[playerid][_:td] = _TDFX_MeasureStringWidth(text, 1, 1.0, 1);
 	}
 	return td;
 }
@@ -8652,6 +9121,7 @@ stock Text:TDFX_TextDrawCreate(Float:x, Float:y, const text[])
 		{
 			TDFX_GRemPosX[_:td] = x;
 			TDFX_GRemPosY[_:td] = y;
+			TDFX_GRemBaseWidth[_:td] = _TDFX_MeasureStringWidth(text, 1, 1.0, 1);
 			TDFX_GShownState[_:td] = TDFX_GSTATE_HIDDEN_ALL;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
@@ -8968,6 +9438,7 @@ stock TDFX_PlayerTextDrawSetOutline(playerid, PlayerText:textid, size)
 
 stock TDFX_PlayerTextDrawSetString(playerid, PlayerText:textid, const string[])
 {
+	if (TDFX_ValidPlayer(playerid, textid)) TDFX_RemBaseWidth[playerid][_:textid] = _TDFX_MeasureStringWidth(string, 1, 1.0, 1);
 	new slot = TDFX_FindPlayer(playerid, textid);
 	if (slot != -1)
 	{
@@ -8985,6 +9456,7 @@ stock TDFX_PlayerTextDrawSetString(playerid, PlayerText:textid, const string[])
 #if TDFX_MAX_GLOBAL_TD > 0
 stock TDFX_TextDrawSetString(Text:textid, const string[])
 {
+	if (TDFX_ValidGlobal(textid)) TDFX_GRemBaseWidth[_:textid] = _TDFX_MeasureStringWidth(string, 1, 1.0, 1);
 	new slot = TDFX_FindGlobal(textid);
 	if (slot != -1)
 	{
@@ -9042,6 +9514,7 @@ stock TDFX_PlayerTextDrawDestroy(playerid, PlayerText:textid)
 		TDFX_RemSizeX[playerid][_:textid] = 0.0;
 		TDFX_RemSizeY[playerid][_:textid] = 0.0;
 		TDFX_RemAlign[playerid][_:textid] = 1;
+		TDFX_RemBaseWidth[playerid][_:textid] = 0.0;
 	}
 	return PlayerTextDrawDestroy(playerid, textid);
 }
@@ -9370,6 +9843,7 @@ stock TDFX_TextDrawDestroy(Text:textid)
 			TDFX_GRemSizeX[tid] = 0.0;
 			TDFX_GRemSizeY[tid] = 0.0;
 			TDFX_GRemAlign[tid] = 1;
+			TDFX_GRemBaseWidth[tid] = 0.0;
 			TDFX_GShownState[tid] = TDFX_GSTATE_UNTRACKED;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
@@ -9443,6 +9917,7 @@ public OnPlayerDisconnect(playerid, reason)
 			TDFX_RemSizeX[playerid][t] = 0.0;
 			TDFX_RemSizeY[playerid][t] = 0.0;
 			TDFX_RemAlign[playerid][t] = 1;
+			TDFX_RemBaseWidth[playerid][t] = 0.0;
 		}
 		#if TDFX_MAX_GLOBAL_TD > 0
 		new word = playerid / 32;

@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Doboz az elején",
  "Caixa no fim": "Doboz a végén",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Az include bekapcsolja a dobozt. Balra vagy jobbra igazítva az érték az az X, ahol a doboz véget ér; középre igazítva a doboz szélessége.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "A sávok képernyőszéles fekete dobozok; az effektus csak mozgatja őket. A magasságuk az Y betűméretből jön."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "A sávok képernyőszéles fekete dobozok; az effektus csak mozgatja őket. A magasságuk az Y betűméretből jön.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Szövegen választva a szöveg megmarad, és a sávokkal együtt fokozatosan megjelenik, mint a demóban.",
+ "Adicionar contador de % sobre a barra (como no demo)": "%-számláló hozzáadása a sáv fölé (mint a demóban)"
 }

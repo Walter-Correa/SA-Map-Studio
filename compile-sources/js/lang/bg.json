@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Кутия в началото",
  "Caixa no fim": "Кутия в края",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include включва кутията. При подравняване вляво или вдясно стойността е X, където кутията свършва; при центриране е ширината на кутията.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Лентите са черни кутии с ширината на екрана; ефектът само ги мести. Височината им идва от размера на буквата Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Лентите са черни кутии с ширината на екрана; ефектът само ги мести. Височината им идва от размера на буквата Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Избран върху текст, текстът остава и се появява постепенно заедно с лентите, както в демото.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Добави брояч на % над лентата (както в демото)"
 }

@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.49-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.50-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -503,6 +503,13 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.50 — 07/11/2026
+- TextDrawFX updated with its latest fixes: Bounce and Bounce in a circle keep the whole TextDraw inside the area (the limits shrink by its size), in the test server and in the editor preview.
+- TextDraw editor: the effect preview now follows the include step by step. WaveDrift moves on the same circle as in the game, Bounce runs frame by frame with the same speed changes at the walls, Glitch only changes letters on the frames that dim the text, and Split-flap rolls its letters at the same rhythm.
+- TextDraw editor: colour codes inside the text (~y~, ~r~ and the others) work in every effect like in the game. Shimmer, Wave sweep and Scanner keep the colour of each letter outside the highlight, Rainbow, Slot machine and Split-flap count the characters the same way, and Letter rain, Wave motion and Hop letters split the text into coloured letters (the box of the TextDraw stays).
+- TextDraw editor: Cinema bars no longer turn the chosen text into a bar. Chosen on a text, two new bars are made and the text fades in with them, like in the demo; a repeating effect starts again at once in the preview.
+- TextDraw editor: Fill the box has a button that adds a % counter over the bar with the same time and curve, the two functions the demo combines.
 
 ### 4.1.49 — 07/11/2026
 - TextDrawFX updated with its latest fixes in the test server: a global TextDraw shown to everyone and hidden at the end of an effect shows to the players connected now when a new effect starts after all its old viewers left.

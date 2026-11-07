@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Box am Anfang",
  "Caixa no fim": "Box am Ende",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Die Include schaltet die Box ein. Links oder rechts ausgerichtet ist der Wert das X, an dem die Box endet; zentriert ist es die Breite der Box.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Die Balken sind schwarze Boxen in Bildschirmbreite; der Effekt bewegt sie nur. Ihre Höhe kommt von der Buchstabengröße Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Die Balken sind schwarze Boxen in Bildschirmbreite; der Effekt bewegt sie nur. Ihre Höhe kommt von der Buchstabengröße Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Auf einem Text gewählt, bleibt der Text erhalten und blendet zusammen mit den Balken ein, wie in der Demo.",
+ "Adicionar contador de % sobre a barra (como no demo)": "%-Zähler über dem Balken hinzufügen (wie in der Demo)"
 }

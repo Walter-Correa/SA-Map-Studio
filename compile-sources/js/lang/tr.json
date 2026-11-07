@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Başta kutu",
  "Caixa no fim": "Sonda kutu",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include kutuyu açar. Sola veya sağa hizalıyken değer kutunun bittiği X'tir; ortalıyken kutunun genişliğidir.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Bantlar ekran genişliğinde siyah kutulardır; efekt yalnızca onları hareket ettirir. Yükseklikleri harf boyutu Y'den gelir."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Bantlar ekran genişliğinde siyah kutulardır; efekt yalnızca onları hareket ettirir. Yükseklikleri harf boyutu Y'den gelir.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Bir metinde seçildiğinde metin kalır ve şeritlerle birlikte yavaşça belirir, demodaki gibi.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Çubuğun üstüne % sayacı ekle (demodaki gibi)"
 }

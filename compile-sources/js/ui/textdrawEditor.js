@@ -1230,10 +1230,20 @@ function syncFxFields(td) {
     const msg = !e ? '' : off ? (!td.isPlayer && !e.gfn ? 'Este efeito só existe para PlayerTextDraw.' : 'Este efeito não funciona com esta fonte.')
       : e.id === 'fill' ? 'A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.'
       : e.id === 'letterbox' ? 'As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.' : '';
-    note.textContent = msg ? t(msg) : '';
+    note.textContent = msg ? t(msg) + (e.id === 'letterbox' && !off ? ' ' + t('Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.') : '') : '';
     note.style.display = msg ? 'block' : 'none';
   }
   if (!e) return;
+  if (e.id === 'fill' && isBoxOnly(td)) {
+    // The demo puts a counter over the bar (two functions that run together)
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'secondary';
+    btn.style.cssText = 'grid-column: 1 / -1; font-size: 12px;';
+    btn.textContent = t('Adicionar contador de % sobre a barra (como no demo)');
+    btn.onclick = () => { tdPushUndo(); addFillCounter(td); appRef.project.modified = true; updateSidebarFields(); updateSidebarList(); restartBlinkPreview(); };
+    box.appendChild(btn);
+  }
   const changed = (restart = true) => { appRef.project.modified = true; if (restart) restartBlinkPreview(); else redrawCanvas(); };
   for (const p of tdfxParams(e)) {
     if (e.id === 'blink' && p.k === 'perChar' && (td.font ?? 1) > 3) continue;
@@ -1391,7 +1401,7 @@ function blinkPhaseOf(td) {
 function fxElapsed(td) {
   const len = tdfxLength(td.fx, td);
   let t = performance.now() - blinkStart;
-  if (len > 0 && !((td.fx.type === 'waveMotion' || td.fx.type === 'hopLetter') && td.fx.loop)) t %= len + 1500;
+  if (len > 0 && !td.fx.loop) t %= len + 1500; // a repeating effect starts again at once, like the include
   return t;
 }
 // Frames of this moment: uid -> { view, extras } of every TextDraw with an effect, and the positions an effect gives
@@ -1914,20 +1924,45 @@ function createNewTextDraw(defaultText = 'NOVO TEXTO') {
   redrawCanvas();
 }
 
-// Cinema bars: this TextDraw becomes the top bar and a second TextDraw (created when there is none yet) the bottom bar,
-// both black full-width boxes like the ones the include expects
+// Cinema bars like the demo: two black full-width boxes (the top one runs LetterboxPlayerTextDraw and moves the bottom
+// one). A bar chosen for it becomes the top bar; a text keeps its text and fades in (FadeIn, the same time as the bars)
+// while two new bars are made under it in the list.
 function setupLetterbox(td) {
   const tds = appRef.project.textDraws;
-  letterboxBar(td, true, td.fx.barHeight);
-  let bottom = tds.find(o => o.uid === td.fx.bottomBarTD && o !== td && o.type !== 'progress');
-  if (!bottom) {
-    bottom = makeTextDraw({ tdv: 2, isPlayer: Boolean(td.isPlayer) });
-    tds.splice(tds.indexOf(td) + 1, 0, bottom);
-    td.fx.bottomBarTD = bottom.uid;
+  let top = td;
+  if (!isBoxOnly(td)) {
+    const fx = td.fx;
+    td.fx = makeFx({ type: 'fadeIn', duration: fx.duration, fadeBox: true, targetAlpha: 255 }, td);
+    top = makeTextDraw({ tdv: 2, isPlayer: Boolean(td.isPlayer) });
+    top.fx = { ...fx, bottomBarTD: '' };
+    tds.splice(tds.indexOf(td), 0, top);
   }
-  letterboxBar(bottom, false, td.fx.barHeight);
+  letterboxBar(top, true, top.fx.barHeight);
+  let bottom = tds.find(o => o.uid === top.fx.bottomBarTD && o !== top && o.type !== 'progress');
+  if (!bottom) {
+    bottom = makeTextDraw({ tdv: 2, isPlayer: Boolean(top.isPlayer) });
+    tds.splice(tds.indexOf(top) + 1, 0, bottom);
+    top.fx.bottomBarTD = bottom.uid;
+  }
+  letterboxBar(bottom, false, top.fx.barHeight);
   normalizeTdOrder();
-  selectedIdx = tds.indexOf(td);
+  selectedIdx = tds.indexOf(top);
+}
+// Box fill like the demo: FillPlayerTextDrawProgress on the bar and CountPlayerTextDrawNumber on a text over it, with the
+// same time and curve so the number follows the bar (0 to 100 %)
+function addFillCounter(bar) {
+  const tds = appRef.project.textDraws;
+  const fx = bar.fx, centred = (bar.align ?? bar.alignment ?? 1) === 2;
+  const left = centred ? bar.x - fx.targetWidth / 2 : Math.min(fx.startWidth, bar.x), right = centred ? bar.x + fx.targetWidth / 2 : Math.max(fx.targetWidth, bar.x);
+  const width = Math.max(40, Math.abs(right - left));
+  const label = makeTextDraw({
+    tdv: 2, isPlayer: Boolean(bar.isPlayer), text: t('CARREGANDO') + ' (0%)', x: Math.round((left + right) / 2 * 100) / 100, y: Math.round((bar.y - 24) * 100) / 100,
+    font: 2, letterSizeX: 0.36, letterSizeY: 1.5, textSizeX: 500, textSizeY: Math.round(width * 100) / 100, color: 0xFFFFFFFF,
+    align: 2, alignment: 2, shadow: 0, outline: 1, proportional: 1, useBox: 1, boxColor: 0x000000BB,
+  });
+  label.fx = makeFx({ type: 'count', startValue: 0, targetValue: 100, duration: fx.duration, prefix: t('CARREGANDO') + ' (', suffix: '%)', easing: fx.easing, loop: fx.loop }, label);
+  tds.splice(tds.indexOf(bar) + 1, 0, label);
+  normalizeTdOrder();
 }
 
 function createNewBox() {

@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Boîte au début",
  "Caixa no fim": "Boîte à la fin",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "L'include active la boîte. Aligné à gauche ou à droite, la valeur est le X où la boîte se termine ; centré, c'est la largeur de la boîte.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Les bandes sont des boîtes noires de la largeur de l'écran ; l'effet ne fait que les déplacer. Leur hauteur vient de la taille de lettre Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Les bandes sont des boîtes noires de la largeur de l'écran ; l'effet ne fait que les déplacer. Leur hauteur vient de la taille de lettre Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Choisi sur un texte, le texte reste et apparaît en fondu avec les bandes, comme dans la démo.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Ajouter un compteur de % sur la barre (comme dans la démo)"
 }

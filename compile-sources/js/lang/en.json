@@ -2604,5 +2604,7 @@
  "Caixa no começo": "Box at the start",
  "Caixa no fim": "Box at the end",
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "The include turns the box on. Aligned left or right, the value is the X where the box ends; centred, it is the width of the box.",
- "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "The bars are black boxes as wide as the screen; the effect only moves them. Their height comes from the letter size Y."
+ "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "The bars are black boxes as wide as the screen; the effect only moves them. Their height comes from the letter size Y.",
+ "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Chosen on a text, the text stays and fades in together with the bars, like in the demo.",
+ "Adicionar contador de % sobre a barra (como no demo)": "Add a % counter over the bar (like in the demo)"
 }
