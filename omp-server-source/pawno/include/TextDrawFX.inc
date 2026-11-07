@@ -116,6 +116,22 @@
 	#endif
 #endif
 
+#if !defined MAX_PLAYERS
+	#define MAX_PLAYERS (50)
+#endif
+
+#if !defined TDFX_PLAYER_BITWORDS
+	#define TDFX_PLAYER_BITWORDS ((MAX_PLAYERS + 31) / 32)
+#endif
+
+#if !defined TDFX_LETTERBOX_SCREEN_BOTTOM
+	#define TDFX_LETTERBOX_SCREEN_BOTTOM (480.0)
+#endif
+
+#if !defined TDFX_LETTERBOX_ASCENT_OFFSET
+	#define TDFX_LETTERBOX_ASCENT_OFFSET (35.8)
+#endif
+
 #if !defined TDFX_MIN_INTERVAL
 	#define TDFX_MIN_INTERVAL (30)
 #endif
@@ -228,6 +244,8 @@ static stock Float:TDFX_GRemPosY[TDFX_MAX_GLOBAL_TD];
 static stock Float:TDFX_GRemSizeX[TDFX_MAX_GLOBAL_TD];
 static stock Float:TDFX_GRemSizeY[TDFX_MAX_GLOBAL_TD];
 static stock TDFX_GRemAlign[TDFX_MAX_GLOBAL_TD];
+static stock bool:TDFX_GShownAll[TDFX_MAX_GLOBAL_TD];
+static stock TDFX_GShownMask[TDFX_MAX_GLOBAL_TD][TDFX_PLAYER_BITWORDS];
 #endif
 
 // Slot pool for active animations
@@ -808,6 +826,144 @@ stock bool:TDFX_GetGlobalPos(Text:textid, &Float:x, &Float:y)
 	return false;
 }
 
+stock TDFX_GetFreePlayerTDCount(playerid)
+{
+	if (!(0 <= playerid < MAX_PLAYERS) || !IsPlayerConnected(playerid)) return 0;
+	#if defined _INC_open_mp
+		new freeCount = 0;
+		for (new i = 0; i < _:MAX_PLAYER_TEXT_DRAWS; i++)
+		{
+			if (!IsValidPlayerTextDraw(playerid, PlayerText:i)) freeCount++;
+		}
+		return freeCount;
+	#else
+		new used = 0;
+		for (new i = 0; i < TDFX_MAX_TD; i++)
+		{
+			if (TDFX_Info[playerid][i] != 0 || TDFX_RemPosX[playerid][i] != 0.0 || TDFX_RemPosY[playerid][i] != 0.0)
+			{
+				used++;
+			}
+		}
+		new freeCount = TDFX_MAX_TD - used;
+		return (freeCount < 0) ? 0 : freeCount;
+	#endif
+}
+
+stock TDFX_GetFreeGlobalTDCount()
+{
+	#if defined _INC_open_mp
+		new freeCount = 0;
+		for (new i = 0; i < _:MAX_TEXT_DRAWS; i++)
+		{
+			if (!IsValidTextDraw(Text:i)) freeCount++;
+		}
+		return freeCount;
+	#else
+		#if TDFX_MAX_GLOBAL_TD > 0
+		new used = 0;
+		for (new i = 0; i < TDFX_MAX_GLOBAL_TD; i++)
+		{
+			if (TDFX_GInfo[i] != 0 || TDFX_GRemPosX[i] != 0.0 || TDFX_GRemPosY[i] != 0.0)
+			{
+				used++;
+			}
+		}
+		new freeCount = TDFX_MAX_GLOBAL_TD - used;
+		return (freeCount < 0) ? 0 : freeCount;
+		#else
+		return 0;
+		#endif
+	#endif
+}
+
+stock _TDFX_UpdateGlobalTD(Text:textid)
+{
+	if (!TDFX_ValidGlobal(textid)) return;
+	#if TDFX_MAX_GLOBAL_TD > 0
+	new tid = _:textid;
+	if (TDFX_GShownAll[tid])
+	{
+		TextDrawShowForAll(textid);
+		return;
+	}
+	new anyShown = 0;
+	for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+	{
+		if (TDFX_GShownMask[tid][w] != 0)
+		{
+			anyShown = 1;
+			break;
+		}
+	}
+	if (!anyShown)
+	{
+		TDFX_GShownAll[tid] = true;
+		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		{
+			TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+		}
+		TextDrawShowForAll(textid);
+		return;
+	}
+	for (new p = 0; p < MAX_PLAYERS; p++)
+	{
+		if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+		{
+			TextDrawShowForPlayer(p, textid);
+		}
+	}
+	#else
+	TextDrawShowForAll(textid);
+	#endif
+}
+
+stock _TDFX_UpdateGlobalChildTD(Text:childTd, parentTdId)
+{
+	if (!TDFX_ValidGlobal(childTd)) return;
+	#if TDFX_MAX_GLOBAL_TD > 0
+	if (TDFX_ValidGlobal(Text:parentTdId))
+	{
+		if (TDFX_GShownAll[parentTdId])
+		{
+			TextDrawShowForAll(childTd);
+			return;
+		}
+		for (new p = 0; p < MAX_PLAYERS; p++)
+		{
+			if (IsPlayerConnected(p) && (TDFX_GShownMask[parentTdId][p / 32] & (1 << (p % 32))))
+			{
+				TextDrawShowForPlayer(p, childTd);
+			}
+		}
+		return;
+	}
+	#endif
+	TextDrawShowForAll(childTd);
+}
+
+stock _TDFX_HideGlobalTD(Text:textid)
+{
+	if (!TDFX_ValidGlobal(textid)) return;
+	#if TDFX_MAX_GLOBAL_TD > 0
+	new tid = _:textid;
+	if (TDFX_GShownAll[tid])
+	{
+		TextDrawHideForAll(textid);
+		return;
+	}
+	for (new p = 0; p < MAX_PLAYERS; p++)
+	{
+		if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+		{
+			TextDrawHideForPlayer(p, textid);
+		}
+	}
+	#else
+	TextDrawHideForAll(textid);
+	#endif
+}
+
 static stock bool:TDFX_CallbacksChecked = false;
 static stock bool:TDFX_HasPlayerFinishCB = false;
 static stock bool:TDFX_HasGlobalFinishCB = false;
@@ -983,23 +1139,23 @@ static stock TDFX_Free(slot, bool:restore, bool:triggerFinish = false, bool:keep
 			{
 				if (!shouldShow)
 				{
-					TextDrawHideForAll(Text:tdId);
-					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) TextDrawHideForAll(Text:TDFX_Step[slot]);
+					_TDFX_HideGlobalTD(Text:tdId);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) _TDFX_HideGlobalTD(Text:TDFX_Step[slot]);
 				}
 				else
 				{
-					TextDrawShowForAll(Text:tdId);
-					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) TextDrawShowForAll(Text:TDFX_Step[slot]);
+					_TDFX_UpdateGlobalTD(Text:tdId);
+					if (TDFX_Step[slot] != -1 && TDFX_Step[slot] != 0xFFFF && TDFX_Step[slot] >= 0) _TDFX_UpdateGlobalTD(Text:TDFX_Step[slot]);
 				}
 			}
 			else if (fxType == TDFX_TYPE_FIREWORK || fxType == TDFX_TYPE_VORTEX)
 			{
-				TextDrawHideForAll(Text:tdId);
+				_TDFX_HideGlobalTD(Text:tdId);
 			}
 			else
 			{
-				if (shouldShow) TextDrawShowForAll(Text:tdId);
-				else TextDrawHideForAll(Text:tdId);
+				if (shouldShow) _TDFX_UpdateGlobalTD(Text:tdId);
+				else _TDFX_HideGlobalTD(Text:tdId);
 			}
 		}
 		else if (IsPlayerConnected(playerid))
@@ -1259,7 +1415,7 @@ public TDFX_Tick(slot)
 				if (TDFX_Step[slot] >= TDFX_Count[slot]) cut = strlen(TDFX_Text[slot]);
 				if (cut > 0) strmid(part, TDFX_Text[slot], 0, cut, sizeof part);
 				else { part[0] = ' '; part[1] = 0; }
-				if (isGlobal) { TextDrawSetString(Text:tdId, part); TextDrawShowForAll(Text:tdId); }
+				if (isGlobal) { TextDrawSetString(Text:tdId, part); _TDFX_UpdateGlobalTD(Text:tdId); }
 				else { PlayerTextDrawSetString(playerid, PlayerText:tdId, part); PlayerTextDrawShow(playerid, PlayerText:tdId); }
 				if (typewriterDone)
 				{
@@ -1290,7 +1446,7 @@ public TDFX_Tick(slot)
 							_TDFX_TDColour(Text:tdId, c);
 							if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, lit ? TDFX_Colour[slot] : TDFX_BoxBase[slot]);
 						}
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					else if (TDFX_Preview[slot])
 					{
@@ -1306,7 +1462,7 @@ public TDFX_Tick(slot)
 				}
 				else
 				{
-					if (isGlobal) { if (lit) TextDrawShowForAll(Text:tdId); else TextDrawHideForAll(Text:tdId); }
+					if (isGlobal) { if (lit) _TDFX_UpdateGlobalTD(Text:tdId); else _TDFX_HideGlobalTD(Text:tdId); }
 					else { if (lit) PlayerTextDrawShow(playerid, PlayerText:tdId); else PlayerTextDrawHide(playerid, PlayerText:tdId); }
 				}
 			}
@@ -1329,7 +1485,7 @@ public TDFX_Tick(slot)
 					_TDFX_TDColour(Text:tdId, curCol);
 					if (TDFX_FadeBox[slot]) _TDFX_TDBoxColour(Text:tdId, curBox);
 				}
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else if (TDFX_Preview[slot])
 			{
@@ -1353,7 +1509,7 @@ public TDFX_Tick(slot)
 			if (isGlobal)
 			{
 				TextDrawLetterSize(Text:tdId, curX, curY);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -1378,7 +1534,7 @@ public TDFX_Tick(slot)
 			if (isGlobal)
 			{
 				TextDrawLetterSize(Text:tdId, curX, curY);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -1404,7 +1560,7 @@ public TDFX_Tick(slot)
 				if (isGlobal)
 				{
 					TextDrawSetPos(Text:tdId, curX, curY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			#endif
 		}
@@ -1420,7 +1576,7 @@ public TDFX_Tick(slot)
 			if (isGlobal)
 			{
 				TextDrawSetString(Text:tdId, str);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -1469,7 +1625,7 @@ public TDFX_Tick(slot)
 			if (isGlobal)
 			{
 				TextDrawSetString(Text:tdId, buf);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -1582,7 +1738,7 @@ public TDFX_Tick(slot)
 				if (isGlobal)
 				{
 					TextDrawSetPos(Text:tdId, curX, curY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			#endif
 		}
@@ -1648,7 +1804,7 @@ public TDFX_Tick(slot)
 				if (isGlobal)
 				{
 					TextDrawSetPos(Text:tdId, curX, curY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			#endif
 		}
@@ -1670,7 +1826,7 @@ public TDFX_Tick(slot)
 				if (isGlobal)
 				{
 					TextDrawSetPos(Text:tdId, curX, curY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			#endif
 		}
@@ -1695,7 +1851,7 @@ public TDFX_Tick(slot)
 				if (isGlobal)
 				{
 					TextDrawSetPos(Text:tdId, curX, curY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			#endif
 		}
@@ -1736,7 +1892,7 @@ public TDFX_Tick(slot)
 					_TDFX_TDColour(Text:tdId, curCol);
 					if (TDFX_BoxBase[slot]) _TDFX_TDBoxColour(Text:tdId, curBox);
 				}
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -1766,7 +1922,7 @@ public TDFX_Tick(slot)
 				if (isGlobal)
 				{
 					TextDrawSetPos(Text:tdId, curX, curY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			#endif
 		}
@@ -1788,7 +1944,7 @@ public TDFX_Tick(slot)
 
 				if (gAlign == 2) TextDrawTextSize(Text:tdId, TDFX_FloatB[slot], curWidth);
 				else TextDrawTextSize(Text:tdId, curWidth, TDFX_FloatB[slot]);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -1853,7 +2009,7 @@ public TDFX_Tick(slot)
 					{
 						_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
 					}
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 				#endif
 			}
@@ -2012,7 +2168,7 @@ public TDFX_Tick(slot)
 								TextDrawLetterSize(gtd, 0.40, 1.60);
 								_TDFX_TDColour(gtd, TDFX_FwPartCol[fwIdx][p]);
 								TextDrawSetOutline(gtd, 1);
-								TextDrawShowForAll(gtd);
+								_TDFX_UpdateGlobalChildTD(gtd, tdId);
 								TDFX_GFwParts[fwIdx][p] = gtd;
 							}
 							else
@@ -2053,7 +2209,7 @@ public TDFX_Tick(slot)
 							{
 								TextDrawSetPos(TDFX_GFwParts[fwIdx][p], TDFX_FwPartX[fwIdx][p], TDFX_FwPartY[fwIdx][p]);
 								_TDFX_TDColour(TDFX_GFwParts[fwIdx][p], pCol);
-								TextDrawShowForAll(TDFX_GFwParts[fwIdx][p]);
+								_TDFX_UpdateGlobalChildTD(TDFX_GFwParts[fwIdx][p], tdId);
 							}
 						}
 						#endif
@@ -2139,7 +2295,7 @@ public TDFX_Tick(slot)
 			{
 				_TDFX_TDColour(Text:tdId, curCol);
 				TextDrawSetString(Text:tdId, buf);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			else
 			{
@@ -2176,7 +2332,7 @@ public TDFX_Tick(slot)
 			if (isGlobal)
 			{
 				TextDrawSetPreviewRot(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot], TDFX_FloatC[slot], TDFX_FloatD[slot]);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 		}
@@ -2201,7 +2357,7 @@ public TDFX_Tick(slot)
 			if (isGlobal)
 			{
 				TextDrawSetPreviewRot(Text:tdId, curX, TDFX_FloatB[slot], curZ, curZoom);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 		}
@@ -2269,7 +2425,7 @@ public TDFX_Tick(slot)
 				else
 				{
 					TextDrawSetString(Text:tdId, outStr);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			}
 		}
@@ -2321,7 +2477,7 @@ public TDFX_Tick(slot)
 				else
 				{
 					TextDrawSetString(Text:tdId, outStr);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 			}
 		}
@@ -2385,7 +2541,7 @@ public TDFX_Tick(slot)
 			else
 			{
 				TextDrawSetString(Text:tdId, buf);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 
 			if (lockedCount >= totalVis && elapsed >= spinDuration)
@@ -2425,7 +2581,7 @@ public TDFX_Tick(slot)
 			else
 			{
 				TextDrawSetPos(Text:tdId, curX, curY);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 			#endif
@@ -2469,7 +2625,7 @@ public TDFX_Tick(slot)
 						else
 						{
 							TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-							TextDrawShowForAll(Text:tdId);
+							_TDFX_UpdateGlobalTD(Text:tdId);
 						}
 						#endif
 						TDFX_Free(slot, true, true);
@@ -2487,7 +2643,7 @@ public TDFX_Tick(slot)
 			else
 			{
 				TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 			#endif
@@ -2516,7 +2672,7 @@ public TDFX_Tick(slot)
 			{
 				TextDrawSetPos(Text:tdId, curX, curY);
 				TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot] * scaleFactor, TDFX_BoundMinY[slot] * scaleFactor);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 
@@ -2555,7 +2711,7 @@ public TDFX_Tick(slot)
 
 			new Float:maxH = TDFX_FloatA[slot];
 			new Float:curTopY = -(maxH + 15.0) + ((maxH + 15.0) * factor);
-			new Float:curBottomY = 480.0 - ((maxH + 35.8) * factor);
+			new Float:curBottomY = TDFX_LETTERBOX_SCREEN_BOTTOM - ((maxH + TDFX_LETTERBOX_ASCENT_OFFSET) * factor);
 			new bottomTd = TDFX_Step[slot];
 
 			#if defined PlayerTextDrawSetPos
@@ -2576,12 +2732,12 @@ public TDFX_Tick(slot)
 			{
 				#if defined TextDrawSetPos
 				TextDrawSetPos(Text:tdId, 0.0, curTopY);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 
 				if (bottomTd != -1 && bottomTd != 0xFFFF && bottomTd >= 0)
 				{
 					TextDrawSetPos(Text:bottomTd, 0.0, curBottomY);
-					TextDrawShowForAll(Text:bottomTd);
+					_TDFX_UpdateGlobalTD(Text:bottomTd);
 				}
 				#endif
 			}
@@ -2649,7 +2805,7 @@ public TDFX_Tick(slot)
 			{
 				TextDrawLetterSize(Text:tdId, scaleX, scaleY);
 				_TDFX_TDColour(Text:tdId, curCol);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 
@@ -2753,7 +2909,7 @@ public TDFX_Tick(slot)
 					else
 					{
 						TextDrawSetString(Text:tdId, outStr);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					}
@@ -2820,7 +2976,7 @@ public TDFX_Tick(slot)
 						if (TDFX_GCharParts[instIdx][p] != Text:INVALID_TEXT_DRAW)
 						{
 							TextDrawSetPos(TDFX_GCharParts[instIdx][p], TDFX_CharTargetX[instIdx][p], curY);
-							TextDrawShowForAll(TDFX_GCharParts[instIdx][p]);
+							_TDFX_UpdateGlobalChildTD(TDFX_GCharParts[instIdx][p], tdId);
 						}
 						#endif
 					}
@@ -2859,7 +3015,7 @@ public TDFX_Tick(slot)
 					{
 						TextDrawSetString(Text:tdId, TDFX_Text[slot]);
 						_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					TDFX_Free(slot, false, true);
@@ -2930,7 +3086,7 @@ public TDFX_Tick(slot)
 						if (TDFX_GCharParts[instIdx][p] != Text:INVALID_TEXT_DRAW)
 						{
 							TextDrawSetPos(TDFX_GCharParts[instIdx][p], TDFX_CharTargetX[instIdx][p], curY);
-							TextDrawShowForAll(TDFX_GCharParts[instIdx][p]);
+							_TDFX_UpdateGlobalChildTD(TDFX_GCharParts[instIdx][p], tdId);
 						}
 						#endif
 					}
@@ -2961,7 +3117,7 @@ public TDFX_Tick(slot)
 					{
 						TextDrawSetString(Text:tdId, TDFX_Text[slot]);
 						_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					TDFX_Free(slot, false, true);
@@ -3045,7 +3201,7 @@ public TDFX_Tick(slot)
 						if (TDFX_GCharParts[instIdx][p] != Text:INVALID_TEXT_DRAW)
 						{
 							TextDrawSetPos(TDFX_GCharParts[instIdx][p], TDFX_CharTargetX[instIdx][p], curY);
-							TextDrawShowForAll(TDFX_GCharParts[instIdx][p]);
+							_TDFX_UpdateGlobalChildTD(TDFX_GCharParts[instIdx][p], tdId);
 						}
 						#endif
 					}
@@ -3076,7 +3232,7 @@ public TDFX_Tick(slot)
 					{
 						TextDrawSetString(Text:tdId, TDFX_Text[slot]);
 						_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					TDFX_Free(slot, false, true);
@@ -3153,7 +3309,7 @@ public TDFX_Tick(slot)
 					else
 					{
 						TextDrawSetString(Text:tdId, outStr);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					}
@@ -3231,7 +3387,7 @@ public TDFX_Tick(slot)
 				else
 				{
 					TextDrawSetString(Text:tdId, outStr);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 				#endif
 	
@@ -3260,7 +3416,7 @@ public TDFX_Tick(slot)
 						#endif
 							TextDrawSetString(Text:tdId, TDFX_Text[slot]);
 							_TDFX_TDColour(Text:tdId, TDFX_Base[slot]);
-							TextDrawShowForAll(Text:tdId);
+							_TDFX_UpdateGlobalTD(Text:tdId);
 						}
 						#endif
 						TDFX_Free(slot, false, true);
@@ -3331,7 +3487,7 @@ public TDFX_Tick(slot)
 			else
 			{
 				TextDrawSetString(Text:tdId, outStr);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 
@@ -3353,7 +3509,7 @@ public TDFX_Tick(slot)
 					else
 					{
 						TextDrawSetString(Text:tdId, TDFX_Text[slot]);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					TDFX_Free(slot, false, true);
@@ -3387,7 +3543,7 @@ public TDFX_Tick(slot)
 				TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], jitY);
 				#endif
 				_TDFX_TDColour(Text:tdId, curCol);
-				TextDrawShowForAll(Text:tdId);
+				_TDFX_UpdateGlobalTD(Text:tdId);
 			}
 			#endif
 
@@ -3441,7 +3597,7 @@ public TDFX_Tick(slot)
 					#endif
 					if (TDFX_FadeBox[slot]) TextDrawUseBox(Text:tdId, false);
 					TextDrawLetterSize(Text:tdId, scaleX, scaleY);
-					TextDrawShowForAll(Text:tdId);
+					_TDFX_UpdateGlobalTD(Text:tdId);
 				}
 				#endif
 			}
@@ -3474,7 +3630,7 @@ public TDFX_Tick(slot)
 						}
 						if (TDFX_FadeBox[slot]) TextDrawUseBox(Text:tdId, true);
 						TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 
@@ -3528,7 +3684,7 @@ public TDFX_Tick(slot)
 									#endif
 									TextDrawLetterSize(gtd, 0.35, 1.2);
 									_TDFX_TDColour(gtd, 0xF1C40FFF);
-									TextDrawShowForAll(gtd);
+									_TDFX_UpdateGlobalChildTD(gtd, tdId);
 									TDFX_GFwParts[fwIdx][p] = gtd;
 								}
 								else
@@ -3560,7 +3716,7 @@ public TDFX_Tick(slot)
 					{
 						#if defined TextDrawSetPos
 						TextDrawSetPos(Text:tdId, sX, sY);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 						#endif
 					}
 					#endif
@@ -3598,7 +3754,7 @@ public TDFX_Tick(slot)
 							{
 								TextDrawSetPos(TDFX_GFwParts[fwIdx][p], TDFX_FwPartX[fwIdx][p], TDFX_FwPartY[fwIdx][p]);
 								_TDFX_TDColour(TDFX_GFwParts[fwIdx][p], pCol);
-								TextDrawShowForAll(TDFX_GFwParts[fwIdx][p]);
+								_TDFX_UpdateGlobalChildTD(TDFX_GFwParts[fwIdx][p], tdId);
 							}
 							#endif
 						}
@@ -3640,7 +3796,7 @@ public TDFX_Tick(slot)
 						TextDrawSetPos(Text:tdId, TDFX_FloatA[slot], TDFX_FloatB[slot]);
 						#endif
 						TextDrawLetterSize(Text:tdId, TDFX_BoundMinX[slot], TDFX_BoundMinY[slot]);
-						TextDrawShowForAll(Text:tdId);
+						_TDFX_UpdateGlobalTD(Text:tdId);
 					}
 					#endif
 					TDFX_Free(slot, false, true);
@@ -4591,6 +4747,20 @@ stock FireworkPlayerTextDraw(playerid, PlayerText:textid, pattern = TDFX_FW_BURS
 		TDFX_FwPlayer[fwIdx] = playerid;
 		TDFX_FwBaseX[fwIdx] = curX;
 		TDFX_FwBaseY[fwIdx] = curY;
+		if (TDFX_GetFreePlayerTDCount(playerid) < particleCount)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for Firework.", playerid, TDFX_GetFreePlayerTDCount(playerid), particleCount);
+			TDFX_FreeFwInstance(fwIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+		if (TDFX_GetFreeGlobalTDCount() < particleCount)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for Firework.", TDFX_GetFreeGlobalTDCount(), particleCount);
+			TDFX_FreeFwInstance(fwIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
 		TDFX_FwCount[fwIdx] = particleCount;
 
 		TDFX_Used[slot] = true;
@@ -5076,7 +5246,7 @@ stock LetterboxPlayerTextDraw(playerid, PlayerText:topBarTD, PlayerText:bottomBa
 	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0)
 	{
 		PlayerTextDrawUseBox(playerid, bottomBarTD, true);
-		new Float:botLetY = (barHeight + 35.8) / 9.5;
+		new Float:botLetY = (barHeight + TDFX_LETTERBOX_ASCENT_OFFSET) / 9.5;
 		PlayerTextDrawLetterSize(playerid, bottomBarTD, 0.0, botLetY);
 	}
 
@@ -5228,6 +5398,54 @@ stock LetterRainPlayerTextDraw(playerid, PlayerText:textid, const text[], Float:
 		new glyphTags[TDFX_MAX_CHAR_PARTS][16];
 		new rawLen = _TDFX_ParseGlyphs(text, glyphChars, glyphTags, TDFX_MAX_CHAR_PARTS);
 		TDFX_CharCount[instIdx] = rawLen;
+
+		if (TDFX_GetFreeGlobalTDCount() < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for HopLetter.", TDFX_GetFreeGlobalTDCount(), rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
+		if (TDFX_GetFreeGlobalTDCount() < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for WaveMotion.", TDFX_GetFreeGlobalTDCount(), rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
+		if (TDFX_GetFreeGlobalTDCount() < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for LetterRain.", TDFX_GetFreeGlobalTDCount(), rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
+		if (TDFX_GetFreePlayerTDCount(playerid) < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for HopLetter.", playerid, TDFX_GetFreePlayerTDCount(playerid), rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
+		if (TDFX_GetFreePlayerTDCount(playerid) < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for WaveMotion.", playerid, TDFX_GetFreePlayerTDCount(playerid), rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
+
+		if (TDFX_GetFreePlayerTDCount(playerid) < rawLen)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for LetterRain.", playerid, TDFX_GetFreePlayerTDCount(playerid), rawLen);
+			TDFX_FreeCharInstance(instIdx);
+			TDFX_Free(slot, false);
+			return 0;
+		}
 
 		new font = 1;
 		new Float:lsX = 0.45, Float:lsY = 1.80;
@@ -5520,6 +5738,11 @@ stock ShockwaveSlamPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Fl
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
+		if (TDFX_GetFreePlayerTDCount(playerid) < 4)
+		{
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, 4 required) for ShockwaveSlam.", playerid, TDFX_GetFreePlayerTDCount(playerid));
+			return 0;
+		}
 		new slot = TDFX_FindPlayer(playerid, textid);
 		if (slot != -1) TDFX_Free(slot, false);
 		else
@@ -5998,7 +6221,7 @@ stock BlinkTextDraw(Text:textid, interval = 500, duration = 0, bool:perChar = fa
 			if (boxBase) _TDFX_TDBoxColour(textid, colour);
 		}
 	}
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", interval, true, "i", slot);
 	return 1;
 }
@@ -6105,7 +6328,7 @@ stock FadeInTextDraw(Text:textid, duration = 1000, bool:fadeBox = true, targetAl
 		_TDFX_TDColour(textid, startCol);
 		if (fadeBox) _TDFX_TDBoxColour(textid, startBox);
 	}
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6264,7 +6487,7 @@ stock ScaleTextDraw(Text:textid, Float:startSizeX, Float:startSizeY, Float:targe
 	TDFX_Start[slot] = GetTickCount();
 
 	TextDrawLetterSize(textid, startSizeX, startSizeY);
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6400,7 +6623,7 @@ stock CountTextDrawNumber(Text:textid, startValue, targetValue, duration = 1000,
 	new initial[TDFX_MAX_TEXT];
 	TDFX_FormatNumber(initial, sizeof initial, startValue, prefix, suffix, thousandsSep);
 	TextDrawSetString(textid, initial);
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6439,7 +6662,7 @@ stock ScrambleTextDraw(Text:textid, const finalText[], duration = 2000, bool:loo
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6498,7 +6721,7 @@ stock BounceTextDraw(Text:textid, Float:speedX, Float:speedY, Float:minX, Float:
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6561,7 +6784,7 @@ stock BounceCircleTextDraw(Text:textid, Float:speed = 2.8, Float:angle = 45.0, F
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6607,7 +6830,7 @@ stock OrbitTextDraw(Text:textid, Float:centerX, Float:centerY, Float:radiusX, Fl
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6649,7 +6872,7 @@ stock ShakeTextDraw(Text:textid, Float:intensity = 6.0, duration = 800, bool:loo
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6719,7 +6942,7 @@ stock NeonFlickerTextDraw(Text:textid, duration = 3000, brokenRatio = 40, bool:l
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6762,7 +6985,7 @@ stock WaveDriftTextDraw(Text:textid, Float:amplitudeX, Float:amplitudeY, speedMs
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6834,7 +7057,7 @@ stock FillTextDrawProgress(Text:textid, Float:startWidth, Float:targetWidth, dur
 	if (gAlign == 2) TextDrawTextSize(textid, lineHeight, startWidth);
 	else TextDrawTextSize(textid, startWidth, lineHeight);
 	TextDrawUseBox(textid, true);
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -6908,7 +7131,7 @@ stock FireworkTextDraw(Text:textid, pattern = TDFX_FW_BURST_SPHERE, fuseDuration
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -6974,7 +7197,7 @@ stock GlitchTextDraw(Text:textid, const text[] = "", intensity = 2, duration = 3
 	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7029,7 +7252,7 @@ stock Spin3DTextDraw(Text:textid, Float:speedX = 0.0, Float:speedY = 0.0, Float:
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7085,7 +7308,7 @@ stock Hover3DTextDraw(Text:textid, Float:tiltX = 8.0, Float:tiltZ = 12.0, Float:
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7130,7 +7353,7 @@ stock ShimmerTextDraw(Text:textid, const text[], const baseTag[] = "~y~", const 
 	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7171,7 +7394,7 @@ stock RainbowTextDraw(Text:textid, const text[], speedMs = 100, duration = 0, bo
 	TDFX_Loop[slot] = (duration == 0 || loop);
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7211,7 +7434,7 @@ stock SlotMachineTextDraw(Text:textid, const finalText[], spinDuration = 2200, b
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(textid);
+	_TDFX_UpdateGlobalTD(textid);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7249,7 +7472,7 @@ stock PendulumTextDraw(Text:textid, Float:pivotX, Float:pivotY, Float:armLength 
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7294,7 +7517,7 @@ stock GravityDropTextDraw(Text:textid, Float:startY, Float:targetY, Float:elasti
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawSetPos(textid, curX, startY);
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7346,7 +7569,7 @@ stock VortexTextDraw(Text:textid, Float:centerX, Float:centerY, Float:startRadiu
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7370,7 +7593,7 @@ stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0,
 	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0)
 	{
 		TextDrawUseBox(bottomBarTD, true);
-		new Float:botLetY = (barHeight + 35.8) / 9.5;
+		new Float:botLetY = (barHeight + TDFX_LETTERBOX_ASCENT_OFFSET) / 9.5;
 		TextDrawLetterSize(bottomBarTD, 0.0, botLetY);
 	}
 
@@ -7390,8 +7613,8 @@ stock LetterboxTextDraw(Text:topBarTD, Text:bottomBarTD, Float:barHeight = 65.0,
 	TDFX_Loop[slot] = loop;
 	TDFX_Start[slot] = GetTickCount();
 
-	TextDrawShowForAll(topBarTD);
-	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0) TextDrawShowForAll(bottomBarTD);
+	_TDFX_UpdateGlobalTD(topBarTD);
+	if (_:bottomBarTD != 0xFFFF && _:bottomBarTD >= 0) _TDFX_UpdateGlobalTD(bottomBarTD);
 	TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 	return 1;
 }
@@ -7450,7 +7673,7 @@ stock SonarPingTextDraw(Text:textid, Float:centerX, Float:centerY, Float:maxRadi
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7491,7 +7714,7 @@ stock WaveSweepTextDraw(Text:textid, const text[], const crestTag[] = "~w~", con
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7618,7 +7841,7 @@ stock LetterRainTextDraw(Text:textid, const text[], Float:targetX, Float:targetY
 		{
 			_TDFX_TDColour(textid, (textCol & 0xFFFFFF00));
 			TextDrawSetString(textid, " ");
-			TextDrawShowForAll(textid);
+			_TDFX_UpdateGlobalTD(textid);
 		}
 		else
 		{
@@ -7679,7 +7902,7 @@ stock ScannerSweepTextDraw(Text:textid, const text[], const laserTag[] = "~r~", 
 		TDFX_Loop[slot] = (duration == 0 || loop);
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7726,7 +7949,7 @@ stock ElectricArcTextDraw(Text:textid, const text[], surgeDuration = 2200, bool:
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7764,7 +7987,7 @@ stock SplitFlapTextDraw(Text:textid, const targetText[], charRollMs = 80, lockIn
 		TDFX_Loop[slot] = loop;
 		TDFX_Start[slot] = GetTickCount();
 
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7809,7 +8032,7 @@ stock HologramTextDraw(Text:textid, const text[], duration = 0, bool:loop = fals
 		TDFX_Start[slot] = GetTickCount();
 
 		TextDrawSetString(textid, text);
-		TextDrawShowForAll(textid);
+		_TDFX_UpdateGlobalTD(textid);
 		TDFX_Timer[slot] = SetTimerEx("TDFX_Tick", TDFX_FRAME_INTERVAL, true, "i", slot);
 		return 1;
 	#endif
@@ -7822,6 +8045,11 @@ stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration 
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
+		if (TDFX_GetFreeGlobalTDCount() < 4)
+		{
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, 4 required) for ShockwaveSlam.", TDFX_GetFreeGlobalTDCount());
+			return 0;
+		}
 		new slot = TDFX_FindGlobal(textid);
 		if (slot != -1) TDFX_Free(slot, false);
 		else
@@ -7985,7 +8213,7 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 			TextDrawLetterSize(wgtd, lsX, lsY);
 			_TDFX_TDColour(wgtd, textCol);
 			TextDrawSetOutline(wgtd, outline);
-			TextDrawShowForAll(wgtd);
+			_TDFX_UpdateGlobalChildTD(wgtd, textid);
 			TDFX_GCharParts[instIdx][p] = wgtd;
 		}
 
@@ -7998,7 +8226,7 @@ stock WaveMotionTextDraw(Text:textid, const text[], Float:centerX, Float:centerY
 		{
 			_TDFX_TDColour(textid, (textCol & 0xFFFFFF00));
 			TextDrawSetString(textid, " ");
-			TextDrawShowForAll(textid);
+			_TDFX_UpdateGlobalTD(textid);
 		}
 		else
 		{
@@ -8139,7 +8367,7 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 			TextDrawLetterSize(hgtd, lsX, lsY);
 			_TDFX_TDColour(hgtd, textCol);
 			TextDrawSetOutline(hgtd, outline);
-			TextDrawShowForAll(hgtd);
+			_TDFX_UpdateGlobalChildTD(hgtd, textid);
 			TDFX_GCharParts[instIdx][pIdx] = hgtd;
 		}
 
@@ -8152,7 +8380,7 @@ stock HopLetterTextDraw(Text:textid, const text[], Float:centerX, Float:centerY,
 		{
 			_TDFX_TDColour(textid, (textCol & 0xFFFFFF00));
 			TextDrawSetString(textid, " ");
-			TextDrawShowForAll(textid);
+			_TDFX_UpdateGlobalTD(textid);
 		}
 		else
 		{
@@ -8813,10 +9041,63 @@ stock TDFX_TextDrawLetterSize(Text:textid, Float:x, Float:y)
 #endif
 #define TextDrawLetterSize TDFX_TextDrawLetterSize
 
+stock TDFX_TextDrawShowForAll(Text:textid)
+{
+	#if TDFX_MAX_GLOBAL_TD > 0
+	if (TDFX_ValidGlobal(textid))
+	{
+		new tid = _:textid;
+		TDFX_GShownAll[tid] = true;
+		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		{
+			TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+		}
+	}
+	#endif
+	return _TDFX_UpdateGlobalTD(textid);
+}
+#if defined _ALS_TextDrawShowForAll
+	#undef TextDrawShowForAll
+#else
+	#define _ALS_TextDrawShowForAll
+#endif
+#define TextDrawShowForAll TDFX_TextDrawShowForAll
+
+stock TDFX_TextDrawShowForPlayer(playerid, Text:textid)
+{
+	#if TDFX_MAX_GLOBAL_TD > 0
+	if (TDFX_ValidGlobal(textid) && 0 <= playerid < MAX_PLAYERS)
+	{
+		new tid = _:textid;
+		new word = playerid / 32;
+		new bit = playerid % 32;
+		TDFX_GShownMask[tid][word] |= (1 << bit);
+	}
+	#endif
+	return TextDrawShowForPlayer(playerid, textid);
+}
+#if defined _ALS_TextDrawShowForPlayer
+	#undef TextDrawShowForPlayer
+#else
+	#define _ALS_TextDrawShowForPlayer
+#endif
+#define TextDrawShowForPlayer TDFX_TextDrawShowForPlayer
+
 stock TDFX_TextDrawHideForAll(Text:textid)
 {
 	new slot = TDFX_FindGlobal(textid);
 	if (slot != -1) TDFX_Free(slot, true, false, true);
+	#if TDFX_MAX_GLOBAL_TD > 0
+	if (TDFX_ValidGlobal(textid))
+	{
+		new tid = _:textid;
+		TDFX_GShownAll[tid] = false;
+		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		{
+			TDFX_GShownMask[tid][w] = 0;
+		}
+	}
+	#endif
 	return TextDrawHideForAll(textid);
 }
 #if defined _ALS_TextDrawHideForAll
@@ -8828,6 +9109,23 @@ stock TDFX_TextDrawHideForAll(Text:textid)
 
 stock TDFX_TextDrawHideForPlayer(playerid, Text:textid)
 {
+	#if TDFX_MAX_GLOBAL_TD > 0
+	if (TDFX_ValidGlobal(textid) && 0 <= playerid < MAX_PLAYERS)
+	{
+		new tid = _:textid;
+		new word = playerid / 32;
+		new bit = playerid % 32;
+		if (TDFX_GShownAll[tid])
+		{
+			TDFX_GShownAll[tid] = false;
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+			}
+		}
+		TDFX_GShownMask[tid][word] &= ~(1 << bit);
+	}
+	#endif
 	return TextDrawHideForPlayer(playerid, textid);
 }
 #if defined _ALS_TextDrawHideForPlayer
@@ -8844,17 +9142,23 @@ stock TDFX_TextDrawDestroy(Text:textid)
 	#if TDFX_MAX_GLOBAL_TD > 0
 		if (TDFX_ValidGlobal(textid))
 		{
-			TDFX_GInfo[_:textid] = 0;
-			TDFX_GRemText[_:textid] = 0;
-			TDFX_GRemBox[_:textid] = 0;
-			TDFX_GRemBack[_:textid] = 0;
-			TDFX_GRemLetX[_:textid] = 0.0;
-			TDFX_GRemLetY[_:textid] = 0.0;
-			TDFX_GRemPosX[_:textid] = 0.0;
-			TDFX_GRemPosY[_:textid] = 0.0;
-			TDFX_GRemSizeX[_:textid] = 0.0;
-			TDFX_GRemSizeY[_:textid] = 0.0;
-			TDFX_GRemAlign[_:textid] = 1;
+			new tid = _:textid;
+			TDFX_GInfo[tid] = 0;
+			TDFX_GRemText[tid] = 0;
+			TDFX_GRemBox[tid] = 0;
+			TDFX_GRemBack[tid] = 0;
+			TDFX_GRemLetX[tid] = 0.0;
+			TDFX_GRemLetY[tid] = 0.0;
+			TDFX_GRemPosX[tid] = 0.0;
+			TDFX_GRemPosY[tid] = 0.0;
+			TDFX_GRemSizeX[tid] = 0.0;
+			TDFX_GRemSizeY[tid] = 0.0;
+			TDFX_GRemAlign[tid] = 1;
+			TDFX_GShownAll[tid] = false;
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[tid][w] = 0;
+			}
 		}
 	#endif
 	return TextDrawDestroy(textid);
@@ -8895,6 +9199,14 @@ public OnPlayerDisconnect(playerid, reason)
 			TDFX_RemSizeY[playerid][t] = 0.0;
 			TDFX_RemAlign[playerid][t] = 1;
 		}
+		#if TDFX_MAX_GLOBAL_TD > 0
+		new word = playerid / 32;
+		new mask = ~(1 << (playerid % 32));
+		for (new t = 0; t < TDFX_MAX_GLOBAL_TD; t++)
+		{
+			TDFX_GShownMask[t][word] &= mask;
+		}
+		#endif
 	}
 	#if defined TDFX_OnPlayerDisconnect
 		return TDFX_OnPlayerDisconnect(playerid, reason);
@@ -8910,6 +9222,82 @@ public OnPlayerDisconnect(playerid, reason)
 #define OnPlayerDisconnect TDFX_OnPlayerDisconnect
 #if defined TDFX_OnPlayerDisconnect
 	forward TDFX_OnPlayerDisconnect(playerid, reason);
+#endif
+
+// -----------------------------------------------------------------------------
+// Script Exit Handling (Filterscript & GameMode)
+// -----------------------------------------------------------------------------
+
+stock TDFX_Exit()
+{
+	for (new i = 0; i < TDFX_MAX_FX; i++)
+	{
+		if (TDFX_Used[i])
+		{
+			TDFX_Free(i, true, true, true);
+		}
+	}
+	#if TDFX_MAX_GLOBAL_TD > 0
+	for (new t = 0; t < TDFX_MAX_GLOBAL_TD; t++)
+	{
+		TDFX_GInfo[t] = 0;
+		TDFX_GRemText[t] = 0;
+		TDFX_GRemBox[t] = 0;
+		TDFX_GRemBack[t] = 0;
+		TDFX_GRemLetX[t] = 0.0;
+		TDFX_GRemLetY[t] = 0.0;
+		TDFX_GRemPosX[t] = 0.0;
+		TDFX_GRemPosY[t] = 0.0;
+		TDFX_GRemSizeX[t] = 0.0;
+		TDFX_GRemSizeY[t] = 0.0;
+		TDFX_GRemAlign[t] = 1;
+		TDFX_GShownAll[t] = false;
+		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		{
+			TDFX_GShownMask[t][w] = 0;
+		}
+	}
+	#endif
+}
+
+#if defined FILTERSCRIPT
+	public OnFilterScriptExit()
+	{
+		TDFX_Exit();
+		#if defined TDFX_OnFilterScriptExit
+			return TDFX_OnFilterScriptExit();
+		#else
+			return 1;
+		#endif
+	}
+	#if defined _ALS_OnFilterScriptExit
+		#undef OnFilterScriptExit
+	#else
+		#define _ALS_OnFilterScriptExit
+	#endif
+	#define OnFilterScriptExit TDFX_OnFilterScriptExit
+	#if defined TDFX_OnFilterScriptExit
+		forward TDFX_OnFilterScriptExit();
+	#endif
+#else
+	public OnGameModeExit()
+	{
+		TDFX_Exit();
+		#if defined TDFX_OnGameModeExit
+			return TDFX_OnGameModeExit();
+		#else
+			return 1;
+		#endif
+	}
+	#if defined _ALS_OnGameModeExit
+		#undef OnGameModeExit
+	#else
+		#define _ALS_OnGameModeExit
+	#endif
+	#define OnGameModeExit TDFX_OnGameModeExit
+	#if defined TDFX_OnGameModeExit
+		forward TDFX_OnGameModeExit();
+	#endif
 #endif
 
 // -----------------------------------------------------------------------------
