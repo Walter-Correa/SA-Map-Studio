@@ -181,7 +181,10 @@ export function layoutTextDraw(td) {
       pendingSpace += w;
       continue;
     }
-    word.push({ id, x: wordW, color: color.slice() });
+    // Proportional text: like the game, only the width of the character is taken from its cell of the font texture
+    // (the full 32 px cell also catches marks of the next character, like the line after ")")
+    const cw = data && prop ? Math.min(32, data.prop[id] + outline + 1) : 32;
+    word.push({ id, x: wordW, color: color.slice(), cw });
     wordW += w;
   }
   flushWord();
@@ -380,9 +383,10 @@ function drawGlyphs(ctx, lay, dx, dy, forceColor) {
       const srcH = big ? cellW : cellH;
       const dstH = (big ? 16 : 20) * lay.sy;
       ctx.globalAlpha = col[3] / 255;
+      const cw = g.cw || 32;
       ctx.drawImage(tinted(lay.tex, col[0], col[1], col[2]),
-        (g.id & 15) * cellW, (g.id >> 4) * cellH, cellW, srcH,
-        line.x + g.x + dx, line.y + dy, 32 * lay.sx, dstH);
+        (g.id & 15) * cellW, (g.id >> 4) * cellH, cellW * cw / 32, srcH,
+        line.x + g.x + dx, line.y + dy, cw * lay.sx, dstH);
     }
   }
   ctx.globalAlpha = 1;

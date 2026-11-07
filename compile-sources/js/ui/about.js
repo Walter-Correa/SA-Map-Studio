@@ -8,6 +8,12 @@ export const AUTHORS = 'Rafael_Hurley and Walter_Correa';
 // Update History: everything in this dialog is English and never translated (no keys in the language files)
 const CHANGELOG = [
   {
+    version: '4.1.53', date: '07/11/2026', items: [
+      'TextDraw editor: Repeat, duration and curve changed on one part of a set made like the demo go to the other part too, so the % counter starts again from zero with its fill bar and the text fades in again with the cinema bars.',
+      'TextDraw editor: text is drawn with only the width of each character taken from the font texture, like the game, so no stray line shows after ")" and other characters.',
+    ],
+  },
+  {
     version: '4.1.52', date: '07/11/2026', items: [
       'TextDraw editor: Bounce in the area travels the whole area again. A TextDraw that starts in a corner of the limits now leaves it like in the game instead of flipping in that corner, and the colour goes back at the end of a colour-shifting bounce.',
       'TextDraw editor: Fill the box chosen on a text works like the demo. The include resizes the box of the TextDraw it runs on, and on a text that size is also where the text breaks into lines, so the editor now makes a bar of its own under the text (filled by FillPlayerTextDrawProgress) and the text counts from 0 to 100% (CountPlayerTextDrawNumber) with the same time and curve. Changing the effect removes the bar and the count.',

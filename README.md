@@ -4,7 +4,7 @@
 *SA-MP Map Construction*, with a new interface and the whole San Andreas map in 3D. Choose **Singleplayer** to build a
 mod for the original game (Modloader and CLEO scripts) or **Multiplayer** to generate Pawn code for your server.
 
-![Version](https://img.shields.io/badge/version-4.1.52-f0a630)
+![Version](https://img.shields.io/badge/version-4.1.53-f0a630)
 ![License](https://img.shields.io/badge/license-MPL--2.0-12603a)
 ![Platform](https://img.shields.io/badge/platform-Windows-12603a)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-36414b)
@@ -503,6 +503,10 @@ Tools (in `compile-sources/`, run with Python 3):
 
 <details>
 <summary>Show the version history</summary>
+
+### 4.1.53 — 07/11/2026
+- TextDraw editor: Repeat, duration and curve changed on one part of a set made like the demo go to the other part too, so the % counter starts again from zero with its fill bar and the text fades in again with the cinema bars.
+- TextDraw editor: text is drawn with only the width of each character taken from the font texture, like the game, so no stray line shows after ")" and other characters.
 
 ### 4.1.52 — 07/11/2026
 - TextDraw editor: Bounce in the area travels the whole area again. A TextDraw that starts in a corner of the limits now leaves it like in the game instead of flipping in that corner, and the colour goes back at the end of a colour-shifting bounce.

@@ -1251,7 +1251,7 @@ function syncFxFields(td) {
       input = document.createElement('input');
       input.type = 'checkbox';
       input.checked = Boolean(td.fx[p.k]);
-      input.onchange = () => { tdPushUndo(); td.fx[p.k] = input.checked; changed(); };
+      input.onchange = () => { tdPushUndo(); td.fx[p.k] = input.checked; syncLinkedFx(td, p.k); changed(); };
       wrap.append(input, ' ' + t(p.label));
       box.appendChild(wrap);
       continue;
@@ -1294,7 +1294,7 @@ function syncFxFields(td) {
         }
       }
       input.value = String(td.fx[p.k] ?? '');
-      input.onchange = () => { tdPushUndo(); td.fx[p.k] = p.type === 'td' ? input.value : Number(input.value) | 0; changed(); };
+      input.onchange = () => { tdPushUndo(); td.fx[p.k] = p.type === 'td' ? input.value : Number(input.value) | 0; syncLinkedFx(td, p.k); changed(); };
     } else if (p.type === 'text' || p.type === 'tag') {
       input = document.createElement('input');
       input.type = 'text';
@@ -1317,6 +1317,7 @@ function syncFxFields(td) {
         const typed = Number(String(input.value).replace(',', '.'));
         if (!fix && (input.value === '' || !Number.isFinite(typed) || fx[p.k] !== typed)) return;
         td.fx[p.k] = fx[p.k];
+        syncLinkedFx(td, p.k);
         if (e.id === 'letterbox' && p.k === 'barHeight') {
           // The height of the bars comes from their letter size
           td.letterSizeY = letterboxTopSize(fx.barHeight);
@@ -2004,6 +2005,23 @@ function removeFillSet(td) {
   tds.splice(tds.indexOf(bar), 1);
   text.fx = null;
   return text;
+}
+
+// The two TextDraws of a set made like the demo (fill bar + count text, cinema top bar + fading text) run together:
+// time, curve and Repeat changed on one go to the other too
+function linkedFx(td) {
+  const tds = appRef.project.textDraws, i = tds.indexOf(td);
+  if (td.fx?.type === 'fill' && isFillBar(td)) { const n = tds[i + 1]; if (n?.fx?.type === 'count' && !isBoxOnly(n)) return n; }
+  if (td.fx?.type === 'count') { const b = tds[i - 1]; if (b?.fx?.type === 'fill' && isFillBar(b)) return b; }
+  const set = (td.fx?.type === 'letterbox' || td.fx?.type === 'fadeIn') ? letterboxSet(td) : null;
+  if (set?.text) return td === set.top ? set.text : set.top;
+  return null;
+}
+function syncLinkedFx(td, key) {
+  if (!['duration', 'easing', 'loop'].includes(key)) return;
+  const other = linkedFx(td);
+  if (!other || !(key in other.fx)) return;
+  other.fx = makeFx({ ...other.fx, [key]: td.fx[key] }, other);
 }
 
 function createNewBox() {
