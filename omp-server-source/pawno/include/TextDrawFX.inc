@@ -91,6 +91,7 @@
 #define TDFX_GSTATE_PER_PLAYER        (2)
 #define TDFX_GSTATE_HIDDEN_ALL        (3)
 #define TDFX_GSTATE_HIDDEN_PER_PLAYER (4)
+#define TDFX_GSTATE_HIDDEN_SHOWN_ALL  (5)
 
 #define TDFX_EASE_IN_OUT_QUAD   (3)
 #define TDFX_EASE_OUT_BOUNCE    (4)
@@ -900,7 +901,7 @@ stock _TDFX_InitGlobalTD(Text:textid)
 	if (TDFX_ValidGlobal(textid))
 	{
 		new tid = _:textid;
-		if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_PER_PLAYER)
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_PER_PLAYER || TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_SHOWN_ALL)
 		{
 			new bool:anyLeft = false;
 			for (new p = 0; p < MAX_PLAYERS; p++)
@@ -916,7 +917,7 @@ stock _TDFX_InitGlobalTD(Text:textid)
 			}
 			if (anyLeft)
 			{
-				TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
+				TDFX_GShownState[tid] = (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_PER_PLAYER) ? TDFX_GSTATE_PER_PLAYER : TDFX_GSTATE_SHOWN_ALL;
 			}
 			else
 			{
@@ -977,7 +978,7 @@ stock _TDFX_UpdateGlobalTD(Text:textid, bool:isNewAnimation = false)
 				}
 			}
 		}
-		case TDFX_GSTATE_HIDDEN_ALL, TDFX_GSTATE_HIDDEN_PER_PLAYER:
+		case TDFX_GSTATE_HIDDEN_ALL, TDFX_GSTATE_HIDDEN_PER_PLAYER, TDFX_GSTATE_HIDDEN_SHOWN_ALL:
 		{
 			// Explicitly hidden from everyone (or all players were hidden).
 			// Do NOT show to anyone during a running animation!
@@ -1025,7 +1026,7 @@ stock _TDFX_UpdateGlobalChildTD(Text:childTd, parentTdId)
 				}
 				return;
 			}
-			case TDFX_GSTATE_HIDDEN_ALL, TDFX_GSTATE_HIDDEN_PER_PLAYER:
+			case TDFX_GSTATE_HIDDEN_ALL, TDFX_GSTATE_HIDDEN_PER_PLAYER, TDFX_GSTATE_HIDDEN_SHOWN_ALL:
 			{
 				return;
 			}
@@ -1059,6 +1060,10 @@ stock _TDFX_HideGlobalTD(Text:textid, bool:permanent = false)
 		if (TDFX_GShownState[tid] == TDFX_GSTATE_PER_PLAYER)
 		{
 			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_PER_PLAYER;
+		}
+		else if (TDFX_GShownState[tid] == TDFX_GSTATE_SHOWN_ALL)
+		{
+			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_SHOWN_ALL;
 		}
 		else
 		{
@@ -9225,6 +9230,16 @@ stock TDFX_TextDrawShowForPlayer(playerid, Text:textid)
 				}
 			}
 		}
+		else if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_ALL ||
+		         TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_PER_PLAYER ||
+		         TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_SHOWN_ALL)
+		{
+			// TextDraw was hidden on screen: starting a new viewer list for this specific player
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[tid][w] = 0;
+			}
+		}
 		TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
 		new word = playerid / 32;
 		new bit = playerid % 32;
@@ -9286,6 +9301,10 @@ stock TDFX_TextDrawHideForPlayer(playerid, Text:textid)
 				}
 			}
 			TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
+		}
+		else if (TDFX_GShownState[tid] == TDFX_GSTATE_HIDDEN_SHOWN_ALL)
+		{
+			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_PER_PLAYER;
 		}
 		TDFX_GShownMask[tid][word] &= ~(1 << bit);
 
