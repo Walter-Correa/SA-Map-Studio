@@ -85,6 +85,11 @@
 #define TDFX_EASE_LINEAR        (0)
 #define TDFX_EASE_IN_QUAD       (1)
 #define TDFX_EASE_OUT_QUAD      (2)
+
+#define TDFX_GSTATE_UNTRACKED   (0)
+#define TDFX_GSTATE_SHOWN_ALL   (1)
+#define TDFX_GSTATE_PER_PLAYER  (2)
+#define TDFX_GSTATE_HIDDEN_ALL  (3)
 #define TDFX_EASE_IN_OUT_QUAD   (3)
 #define TDFX_EASE_OUT_BOUNCE    (4)
 
@@ -244,7 +249,7 @@ static stock Float:TDFX_GRemPosY[TDFX_MAX_GLOBAL_TD];
 static stock Float:TDFX_GRemSizeX[TDFX_MAX_GLOBAL_TD];
 static stock Float:TDFX_GRemSizeY[TDFX_MAX_GLOBAL_TD];
 static stock TDFX_GRemAlign[TDFX_MAX_GLOBAL_TD];
-static stock bool:TDFX_GShownAll[TDFX_MAX_GLOBAL_TD];
+static stock TDFX_GShownState[TDFX_MAX_GLOBAL_TD];
 static stock TDFX_GShownMask[TDFX_MAX_GLOBAL_TD][TDFX_PLAYER_BITWORDS];
 #endif
 
@@ -836,17 +841,26 @@ stock TDFX_GetFreePlayerTDCount(playerid)
 			if (!IsValidPlayerTextDraw(playerid, PlayerText:i)) freeCount++;
 		}
 		return freeCount;
+	#elseif defined PB_GetFreePlayerTextDraws
+		return PB_GetFreePlayerTextDraws(playerid);
 	#else
-		new used = 0;
-		for (new i = 0; i < TDFX_MAX_TD; i++)
+		// SA-MP 0.3.7 dynamic safe probe:
+		// In SA-MP 0.3.7, CreatePlayerTextDraw only allocates server-side structures and does
+		// NOT send network RPCs to clients until PlayerTextDrawShow is called.
+		// We probe how many slots SA-MP can actually allocate right now, without relying on include order.
+		new PlayerText:probes[64];
+		new freeCount = 0;
+		while (freeCount < sizeof(probes))
 		{
-			if (TDFX_Info[playerid][i] != 0 || TDFX_RemPosX[playerid][i] != 0.0 || TDFX_RemPosY[playerid][i] != 0.0)
-			{
-				used++;
-			}
+			probes[freeCount] = CreatePlayerTextDraw(playerid, 0.0, 0.0, " ");
+			if (_:probes[freeCount] == 0xFFFF || _:probes[freeCount] < 0) break;
+			freeCount++;
 		}
-		new freeCount = TDFX_MAX_TD - used;
-		return (freeCount < 0) ? 0 : freeCount;
+		for (new i = 0; i < freeCount; i++)
+		{
+			PlayerTextDrawDestroy(playerid, probes[i]);
+		}
+		return freeCount;
 	#endif
 }
 
@@ -861,16 +875,19 @@ stock TDFX_GetFreeGlobalTDCount()
 		return freeCount;
 	#else
 		#if TDFX_MAX_GLOBAL_TD > 0
-		new used = 0;
-		for (new i = 0; i < TDFX_MAX_GLOBAL_TD; i++)
+		new Text:probes[64];
+		new freeCount = 0;
+		while (freeCount < sizeof(probes))
 		{
-			if (TDFX_GInfo[i] != 0 || TDFX_GRemPosX[i] != 0.0 || TDFX_GRemPosY[i] != 0.0)
-			{
-				used++;
-			}
+			probes[freeCount] = TextDrawCreate(0.0, 0.0, " ");
+			if (_:probes[freeCount] == 0xFFFF || _:probes[freeCount] < 0) break;
+			freeCount++;
 		}
-		new freeCount = TDFX_MAX_GLOBAL_TD - used;
-		return (freeCount < 0) ? 0 : freeCount;
+		for (new i = 0; i < freeCount; i++)
+		{
+			TextDrawDestroy(probes[i]);
+		}
+		return freeCount;
 		#else
 		return 0;
 		#endif
@@ -882,35 +899,38 @@ stock _TDFX_UpdateGlobalTD(Text:textid)
 	if (!TDFX_ValidGlobal(textid)) return;
 	#if TDFX_MAX_GLOBAL_TD > 0
 	new tid = _:textid;
-	if (TDFX_GShownAll[tid])
+	switch (TDFX_GShownState[tid])
 	{
-		TextDrawShowForAll(textid);
-		return;
-	}
-	new anyShown = 0;
-	for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
-	{
-		if (TDFX_GShownMask[tid][w] != 0)
+		case TDFX_GSTATE_UNTRACKED:
 		{
-			anyShown = 1;
-			break;
+			// Fallback: was never explicitly shown or hidden before the animation started.
+			// Default to showing to all players to preserve standard backward compatibility.
+			TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
+			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+			{
+				TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+			}
+			TextDrawShowForAll(textid);
 		}
-	}
-	if (!anyShown)
-	{
-		TDFX_GShownAll[tid] = true;
-		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		case TDFX_GSTATE_SHOWN_ALL:
 		{
-			TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
+			TextDrawShowForAll(textid);
 		}
-		TextDrawShowForAll(textid);
-		return;
-	}
-	for (new p = 0; p < MAX_PLAYERS; p++)
-	{
-		if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+		case TDFX_GSTATE_PER_PLAYER:
 		{
-			TextDrawShowForPlayer(p, textid);
+			for (new p = 0; p < MAX_PLAYERS; p++)
+			{
+				if (IsPlayerConnected(p) && (TDFX_GShownMask[tid][p / 32] & (1 << (p % 32))))
+				{
+					TextDrawShowForPlayer(p, textid);
+				}
+			}
+		}
+		case TDFX_GSTATE_HIDDEN_ALL:
+		{
+			// Explicitly hidden from everyone (or all players were hidden).
+			// Do NOT show to anyone!
+			return;
 		}
 	}
 	#else
@@ -924,19 +944,29 @@ stock _TDFX_UpdateGlobalChildTD(Text:childTd, parentTdId)
 	#if TDFX_MAX_GLOBAL_TD > 0
 	if (TDFX_ValidGlobal(Text:parentTdId))
 	{
-		if (TDFX_GShownAll[parentTdId])
+		switch (TDFX_GShownState[parentTdId])
 		{
-			TextDrawShowForAll(childTd);
-			return;
-		}
-		for (new p = 0; p < MAX_PLAYERS; p++)
-		{
-			if (IsPlayerConnected(p) && (TDFX_GShownMask[parentTdId][p / 32] & (1 << (p % 32))))
+			case TDFX_GSTATE_UNTRACKED, TDFX_GSTATE_SHOWN_ALL:
 			{
-				TextDrawShowForPlayer(p, childTd);
+				TextDrawShowForAll(childTd);
+				return;
+		}
+			case TDFX_GSTATE_PER_PLAYER:
+			{
+				for (new p = 0; p < MAX_PLAYERS; p++)
+				{
+					if (IsPlayerConnected(p) && (TDFX_GShownMask[parentTdId][p / 32] & (1 << (p % 32))))
+					{
+						TextDrawShowForPlayer(p, childTd);
+					}
+				}
+				return;
+			}
+			case TDFX_GSTATE_HIDDEN_ALL:
+			{
+				return;
 			}
 		}
-		return;
 	}
 	#endif
 	TextDrawShowForAll(childTd);
@@ -947,7 +977,7 @@ stock _TDFX_HideGlobalTD(Text:textid)
 	if (!TDFX_ValidGlobal(textid)) return;
 	#if TDFX_MAX_GLOBAL_TD > 0
 	new tid = _:textid;
-	if (TDFX_GShownAll[tid])
+	if (TDFX_GShownState[tid] == TDFX_GSTATE_SHOWN_ALL || TDFX_GShownState[tid] == TDFX_GSTATE_UNTRACKED)
 	{
 		TextDrawHideForAll(textid);
 		return;
@@ -5738,9 +5768,9 @@ stock ShockwaveSlamPlayerTextDraw(playerid, PlayerText:textid, Float:centerX, Fl
 		return 0;
 	#else
 		if (!IsPlayerConnected(playerid) || _:textid == 0xFFFF || _:textid < 0) return 0;
-		if (TDFX_GetFreePlayerTDCount(playerid) < 4)
+		if (TDFX_GetFreePlayerTDCount(playerid) < TDFX_FW_PARTICLES)
 		{
-			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, 4 required) for ShockwaveSlam.", playerid, TDFX_GetFreePlayerTDCount(playerid));
+			printf("[TextDrawFX] Warning: Player %d lacks free PlayerTextDraws (%d available, %d required) for ShockwaveSlam.", playerid, TDFX_GetFreePlayerTDCount(playerid), TDFX_FW_PARTICLES);
 			return 0;
 		}
 		new slot = TDFX_FindPlayer(playerid, textid);
@@ -8045,9 +8075,9 @@ stock ShockwaveSlamTextDraw(Text:textid, Float:centerX, Float:centerY, duration 
 		return 0;
 	#else
 		if (_:textid == 0xFFFF || _:textid < 0) return 0;
-		if (TDFX_GetFreeGlobalTDCount() < 4)
+		if (TDFX_GetFreeGlobalTDCount() < TDFX_FW_PARTICLES)
 		{
-			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, 4 required) for ShockwaveSlam.", TDFX_GetFreeGlobalTDCount());
+			printf("[TextDrawFX] Warning: Server lacks free Global TextDraws (%d available, %d required) for ShockwaveSlam.", TDFX_GetFreeGlobalTDCount(), TDFX_FW_PARTICLES);
 			return 0;
 		}
 		new slot = TDFX_FindGlobal(textid);
@@ -9047,14 +9077,14 @@ stock TDFX_TextDrawShowForAll(Text:textid)
 	if (TDFX_ValidGlobal(textid))
 	{
 		new tid = _:textid;
-		TDFX_GShownAll[tid] = true;
+		TDFX_GShownState[tid] = TDFX_GSTATE_SHOWN_ALL;
 		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 		{
 			TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
 		}
 	}
 	#endif
-	return _TDFX_UpdateGlobalTD(textid);
+	return TextDrawShowForAll(textid);
 }
 #if defined _ALS_TextDrawShowForAll
 	#undef TextDrawShowForAll
@@ -9069,6 +9099,7 @@ stock TDFX_TextDrawShowForPlayer(playerid, Text:textid)
 	if (TDFX_ValidGlobal(textid) && 0 <= playerid < MAX_PLAYERS)
 	{
 		new tid = _:textid;
+		TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
 		new word = playerid / 32;
 		new bit = playerid % 32;
 		TDFX_GShownMask[tid][word] |= (1 << bit);
@@ -9091,7 +9122,7 @@ stock TDFX_TextDrawHideForAll(Text:textid)
 	if (TDFX_ValidGlobal(textid))
 	{
 		new tid = _:textid;
-		TDFX_GShownAll[tid] = false;
+		TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
 		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 		{
 			TDFX_GShownMask[tid][w] = 0;
@@ -9115,15 +9146,29 @@ stock TDFX_TextDrawHideForPlayer(playerid, Text:textid)
 		new tid = _:textid;
 		new word = playerid / 32;
 		new bit = playerid % 32;
-		if (TDFX_GShownAll[tid])
+		if (TDFX_GShownState[tid] == TDFX_GSTATE_SHOWN_ALL)
 		{
-			TDFX_GShownAll[tid] = false;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
 				TDFX_GShownMask[tid][w] = 0xFFFFFFFF;
 			}
+			TDFX_GShownState[tid] = TDFX_GSTATE_PER_PLAYER;
 		}
 		TDFX_GShownMask[tid][word] &= ~(1 << bit);
+
+		new anyLeft = 0;
+		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
+		{
+			if (TDFX_GShownMask[tid][w] != 0)
+			{
+				anyLeft = 1;
+				break;
+			}
+		}
+		if (!anyLeft)
+		{
+			TDFX_GShownState[tid] = TDFX_GSTATE_HIDDEN_ALL;
+		}
 	}
 	#endif
 	return TextDrawHideForPlayer(playerid, textid);
@@ -9154,7 +9199,7 @@ stock TDFX_TextDrawDestroy(Text:textid)
 			TDFX_GRemSizeX[tid] = 0.0;
 			TDFX_GRemSizeY[tid] = 0.0;
 			TDFX_GRemAlign[tid] = 1;
-			TDFX_GShownAll[tid] = false;
+			TDFX_GShownState[tid] = TDFX_GSTATE_UNTRACKED;
 			for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 			{
 				TDFX_GShownMask[tid][w] = 0;
@@ -9234,7 +9279,7 @@ stock TDFX_Exit()
 	{
 		if (TDFX_Used[i])
 		{
-			TDFX_Free(i, true, true, true);
+			TDFX_Free(i, true, false, true);
 		}
 	}
 	#if TDFX_MAX_GLOBAL_TD > 0
@@ -9251,7 +9296,7 @@ stock TDFX_Exit()
 		TDFX_GRemSizeX[t] = 0.0;
 		TDFX_GRemSizeY[t] = 0.0;
 		TDFX_GRemAlign[t] = 1;
-		TDFX_GShownAll[t] = false;
+		TDFX_GShownState[t] = TDFX_GSTATE_UNTRACKED;
 		for (new w = 0; w < TDFX_PLAYER_BITWORDS; w++)
 		{
 			TDFX_GShownMask[t][w] = 0;
