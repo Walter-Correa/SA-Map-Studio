@@ -58,8 +58,12 @@ jobs:
           }
           $body = ($body -join "`n").Trim()
           if (-not $body) { throw "The section of version $v in readme.md is empty" }
-          $repo = $env:GITHUB_REPOSITORY
-          $notes = "<details>`n<summary>Changelog of v$v</summary>`n`n$body`n`n</details>`n`n---`nFull history: https://github.com/$repo/blob/v$v/readme.md#version-history"
+          # Up to 5000 characters the changelog shows open; a longer one goes inside a spoiler
+          if ($body.Length -gt 5000) {
+            $notes = "<details>`n<summary>Changelog of v$v</summary>`n`n$body`n`n</details>"
+          } else {
+            $notes = $body
+          }
           [System.IO.File]::WriteAllText((Join-Path $PWD "release-notes.md"), $notes, (New-Object System.Text.UTF8Encoding($false)))
 
       - name: Publish the release
