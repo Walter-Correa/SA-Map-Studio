@@ -297,6 +297,16 @@ never changed and removing the mod is deleting its folder.
 
 The program does not need Python, Visual C++ or any other installation: everything is inside the `.exe`.
 
+### Verifying the download and the Windows warning
+
+Every [release](https://github.com/Walter-Correa/SA-Map-Studio/releases) is built by GitHub Actions straight from
+this source code. Its notes show the SHA-256 hash of `SA.Map.Studio.exe` and a link to its VirusTotal report, so you
+can check that the file you downloaded is the published one.
+
+The executable is not code-signed yet, so on the first run Windows SmartScreen may show *Windows protected your PC*.
+This warning is about the publisher being unknown, not about a virus. To open the editor, click **More info** and then
+**Run anyway**.
+
 ### Requirements to keep developing on another PC
 
 - Git and **Python 3.10 or newer** from the official site (https://www.python.org/downloads/), with the `py` launcher.

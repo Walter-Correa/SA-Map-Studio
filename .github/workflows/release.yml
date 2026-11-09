@@ -12,6 +12,8 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      VT_API_KEY: ${{ secrets.VT_API_KEY }}
     steps:
       - uses: actions/checkout@v5
 
@@ -64,6 +66,11 @@ jobs:
           } else {
             $notes = $body
           }
+          # Hash of the executable and its VirusTotal report, so anyone can check the download
+          $hash = (Get-FileHash "compiled\SA Map Studio\SA Map Studio.exe" -Algorithm SHA256).Hash.ToLower()
+          $notes += "`n`n---`n`n**Verify the download**`n`n"
+          $notes += "SHA-256 of ``SA.Map.Studio.exe``: ``$hash```n`n"
+          $notes += "VirusTotal report: https://www.virustotal.com/gui/file/$hash"
           [System.IO.File]::WriteAllText((Join-Path $PWD "release-notes.md"), $notes, (New-Object System.Text.UTF8Encoding($false)))
 
       - name: Publish the release
@@ -79,3 +86,18 @@ jobs:
           } else {
             gh release create $tag $exe --target $env:GITHUB_SHA --title "SA Map Studio $tag" --notes-file release-notes.md
           }
+
+      # Sends the executable to VirusTotal so the link in the release notes already opens with the report.
+      # Needs the repository secret VT_API_KEY (free VirusTotal account); without it this step is skipped.
+      - name: Send the executable to VirusTotal
+        if: ${{ env.VT_API_KEY != '' }}
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $exe = "compiled\SA Map Studio\SA Map Studio.exe"
+          # Files over 32 MB go through a one-time upload URL
+          $url = (curl.exe -s -H "x-apikey: $env:VT_API_KEY" https://www.virustotal.com/api/v3/files/upload_url | ConvertFrom-Json).data
+          if (-not $url) { throw "VirusTotal did not return an upload URL" }
+          $r = curl.exe -s -H "x-apikey: $env:VT_API_KEY" -F "file=@$exe" $url | ConvertFrom-Json
+          if (-not $r.data.id) { throw "VirusTotal upload failed" }
+          "Sent to VirusTotal: $($r.data.id)"
