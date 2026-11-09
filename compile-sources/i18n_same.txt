@@ -382,7 +382,7 @@ Decimal (int)
 HTML / CSS
 Update History
 Close
-Rafael_Hurley and Walter_Correa
+Walter_Correa and Rafael_Hurley
 Built on
 Version history
 © {0} {1} · Mozilla Public License 2.0

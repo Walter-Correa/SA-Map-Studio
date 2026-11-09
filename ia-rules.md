@@ -4,7 +4,7 @@ This file defines ongoing guidelines and rules that must be strictly followed in
 
 ## 1. Building the Final Version (Mandatory)
 - **Always build the final version** by running `build-clean.bat` at the end of each task or round of changes.
-- **Executable version**: the version written into the `.exe` always comes from `VERSION` in `serve.py` (`build.bat` runs `compile-sources/sync_version.py` before PyInstaller). When changing the version, only change `serve.py`, `about.js` and `readme.md` (badge and "Version history"); never edit `version_info.txt` by hand.
+- **Executable version**: the version written into the `.exe` always comes from `VERSION` in `serve.py` (`build.bat` runs `compile-sources/sync_version.py` before PyInstaller). When changing the version, only change `serve.py`, `about.js` and `readme.md` ("Version history"; the release badge at the top of the readme follows the GitHub releases by itself); never edit `version_info.txt` by hand.
 - The clean distribution generated in `compiled\SA Map Studio\` must always reflect exactly every updated file (source code, assets, models and scripts).
 
 ## 2. Version Control (Git)
@@ -15,6 +15,7 @@ This file defines ongoing guidelines and rules that must be strictly followed in
   - No AI identification lines (such as `Co-Authored-By`) in the message.
   - Several changes in the same commit: list them in the title separated by commas or detail them in the message body.
 - **Releases are manual, preparing them is automatic**: whenever a task changes `VERSION` in `serve.py`, the commit also carries the matching section of the "Version history" in `readme.md` (the GitHub release text is taken from it), and it is pushed. Never create or push a version tag and never start the workflow: the user publishes each release by hand in Actions > Release > Run workflow (`.github/workflows/release.yml`, which builds with `build-clean.bat` and creates the tag `v<VERSION>` itself). The workflow fails without the matching "Version history" section.
+- **One version per system, not per change**: do not open a new version for each small change. While the current version has no published release (there is no tag `v<VERSION>` on GitHub), changes to the same system go into its entry in the "Version history" and the `CHANGELOG`; when a change undoes or alters something already written there, rewrite that text instead of adding an item, so the entry always tells the final state. Open a new version only for a different system or after the current version was published. Never lower the version: the update notice compares the installed version with the latest release.
 - **Build check on every push**: `.github/workflows/build.yml` runs `i18n_check.py` and `build-clean.bat` on every push to `main` (pushes that only change the documentation are skipped) and keeps the `.exe` as a download of the run for 7 days. It never creates a tag or a release; a red Build means the push broke the translations or the build and must be fixed.
 
 ## 3. Naming, Interface and Content Standards
