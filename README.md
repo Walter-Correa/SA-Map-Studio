@@ -16,7 +16,7 @@ folder for the Modloader (the game's own files are never changed).
 
 ---
 
-![SA Map Studio interface](images/editor_interface.webp)
+![SA Map Studio interface](images/editor_interface.jpg)
 
 ## Contents
 
