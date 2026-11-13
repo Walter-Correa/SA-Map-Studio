@@ -17,6 +17,7 @@ let defaultMarkerType = 0;
 let miUndoStack = [];
 let miRedoStack = [];
 let dragStartMiSnapshot = null;
+let dragGroup = null; // { startX, startY, items: [{ m, x, y }] } while dragging a multi-selection
 
 function updateMiUndoButtons() {
   const btnU = dialogEl?.querySelector('#miBtnUndo');
@@ -25,11 +26,70 @@ function updateMiUndoButtons() {
   if (btnR) btnR.disabled = miRedoStack.length === 0;
 }
 
-function miPushUndo() {
-  const current = JSON.stringify({
+// Multi-selection: with more than one icon selected, selectedUid is null and the uids live here.
+// Only moving and deleting are allowed in that state.
+let multiUids = new Set();
+
+function isMulti() { return multiUids.size > 1; }
+
+// The icons that move/delete act on: the whole multi-selection or the single selected icon
+function selectedIcons() {
+  const list = app.project?.mapIcons || [];
+  if (isMulti()) return list.filter(m => multiUids.has(m.uid));
+  const m = getSelectedMapIcon();
+  return m ? [m] : [];
+}
+
+function setSelection(set) {
+  if (set.size > 1) {
+    multiUids = new Set(set);
+    selectedUid = null;
+  } else {
+    multiUids = new Set();
+    selectedUid = set.size === 1 ? [...set][0] : null;
+  }
+}
+
+// Shift/Ctrl+click: adds or removes an icon from the selection
+function toggleIconSelection(uid) {
+  const cur = isMulti() ? new Set(multiUids) : new Set(selectedUid ? [selectedUid] : []);
+  if (cur.has(uid)) cur.delete(uid); else cur.add(uid);
+  setSelection(cur);
+}
+
+function miSnapshot() {
+  return JSON.stringify({
     mapIcons: app.project?.mapIcons || [],
-    selectedUid
+    selectedUid,
+    multi: [...multiUids]
   });
+}
+
+function miRestore(str) {
+  const st = JSON.parse(str);
+  app.project.mapIcons = st.mapIcons || [];
+  const ids = new Set(app.project.mapIcons.map(m => m.uid));
+  const multi = (st.multi || []).filter(u => ids.has(u));
+  if (multi.length > 1) {
+    multiUids = new Set(multi);
+    selectedUid = null;
+  } else {
+    multiUids = new Set();
+    selectedUid = st.selectedUid;
+  }
+}
+
+// Called when the whole project is closed: only then does the history start over
+export function resetMapIconHistory() {
+  miUndoStack = [];
+  miRedoStack = [];
+  selectedUid = null;
+  multiUids = new Set();
+  updateMiUndoButtons();
+}
+
+function miPushUndo() {
+  const current = miSnapshot();
   if (miUndoStack.length > 0 && miUndoStack[miUndoStack.length - 1] === current) return;
   miUndoStack.push(current);
   if (miUndoStack.length > 50) miUndoStack.shift();
@@ -48,14 +108,8 @@ function miPushUndoSnapshot(snapshotStr) {
 
 function miUndo() {
   if (miUndoStack.length === 0) return;
-  const current = JSON.stringify({
-    mapIcons: app.project?.mapIcons || [],
-    selectedUid
-  });
-  miRedoStack.push(current);
-  const prev = JSON.parse(miUndoStack.pop());
-  app.project.mapIcons = prev.mapIcons || [];
-  selectedUid = prev.selectedUid;
+  miRedoStack.push(miSnapshot());
+  miRestore(miUndoStack.pop());
   app.editor?.syncAll();
   updateSidebarList();
   updateSidebarFields();
@@ -65,14 +119,8 @@ function miUndo() {
 
 function miRedo() {
   if (miRedoStack.length === 0) return;
-  const current = JSON.stringify({
-    mapIcons: app.project?.mapIcons || [],
-    selectedUid
-  });
-  miUndoStack.push(current);
-  const next = JSON.parse(miRedoStack.pop());
-  app.project.mapIcons = next.mapIcons || [];
-  selectedUid = next.selectedUid;
+  miUndoStack.push(miSnapshot());
+  miRestore(miRedoStack.pop());
   app.editor?.syncAll();
   updateSidebarList();
   updateSidebarFields();
@@ -135,9 +183,11 @@ export function initMapIconDialog() {
 
   setupDialogEvents();
   setupPickerModalEvents();
+  app.on?.('project-closing', resetMapIconHistory);
 }
 
 function getSelectedMapIcon() {
+  if (isMulti()) return null;
   if (!app.project?.mapIcons || !app.project.mapIcons.length) return null;
   if (selectedUid) {
     const found = app.project.mapIcons.find(m => m.uid === selectedUid);
@@ -194,7 +244,7 @@ function setupDialogEvents() {
       if (!app.project.mapIcons) app.project.mapIcons = [];
       app.project.mapIcons.push(item);
       app.project.modified = true;
-      selectedUid = item.uid;
+      setSelection(new Set([item.uid]));
       app.editor?.syncAll();
       updateSidebarList();
       updateSidebarFields();
@@ -294,12 +344,14 @@ function setupDialogEvents() {
     if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
     const arrow = !e.ctrlKey && !e.metaKey && arrowStep(e);
     if (arrow) {
-      const m = getSelectedMapIcon();
-      if (!m || (!arrow.dx && !arrow.dy)) return;
+      const targets = selectedIcons();
+      if (!targets.length || (!arrow.dx && !arrow.dy)) return;
       if (arrow.first) miPushUndo();
       const round = (v) => Math.round(v * 10000) / 10000;
-      m.x = round(m.x + arrow.dx);
-      m.y = round(m.y - arrow.dy);
+      for (const m of targets) {
+        m.x = round(m.x + arrow.dx);
+        m.y = round(m.y - arrow.dy);
+      }
       app.project.modified = true;
       app.editor?.syncAll();
       updateSidebarFields();
@@ -307,18 +359,9 @@ function setupDialogEvents() {
       return;
     }
     if (e.key === 'Delete' || e.key === 'Backspace') {
-      const m = getSelectedMapIcon();
-      if (!m) return;
+      if (!selectedIcons().length) return;
       e.preventDefault();
-      miPushUndo();
-      app.project.mapIcons = (app.project.mapIcons || []).filter(x => x.uid !== m.uid);
-      app.project.modified = true;
-      selectedUid = app.project.mapIcons?.[0]?.uid || null;
-      app.editor?.syncAll();
-      updateSidebarList();
-      updateSidebarFields();
-      redrawCanvas();
-      toast('MapIcon removido', 'info');
+      deleteSelectedMapIcons();
     } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
       e.preventDefault();
       if (e.shiftKey) miRedo();
@@ -394,20 +437,24 @@ function setupDialogEvents() {
 
   const btnDel = dialogEl.querySelector('#miBtnDelete');
   if (btnDel) {
-    btnDel.onclick = () => {
-      const m = getSelectedMapIcon();
-      if (!m) return;
-      miPushUndo();
-      app.project.mapIcons = (app.project.mapIcons || []).filter(x => x.uid !== m.uid);
-      app.project.modified = true;
-      selectedUid = app.project.mapIcons?.[0]?.uid || null;
-      app.editor?.syncAll();
-      updateSidebarList();
-      updateSidebarFields();
-      redrawCanvas();
-      toast('MapIcon removido', 'info');
-    };
+    btnDel.onclick = () => deleteSelectedMapIcons();
   }
+}
+
+function deleteSelectedMapIcons() {
+  const targets = selectedIcons();
+  if (!targets.length) return;
+  miPushUndo();
+  const gone = new Set(targets.map(m => m.uid));
+  app.project.mapIcons = (app.project.mapIcons || []).filter(x => !gone.has(x.uid));
+  app.project.modified = true;
+  const first = app.project.mapIcons[0]?.uid;
+  setSelection(new Set(first ? [first] : []));
+  app.editor?.syncAll();
+  updateSidebarList();
+  updateSidebarFields();
+  redrawCanvas();
+  toast(targets.length > 1 ? `${targets.length} MapIcons removidos` : 'MapIcon removido', 'info');
 }
 
 function duplicateSelectedMapIcon() {
@@ -454,7 +501,7 @@ function duplicateSelectedMapIcon() {
   if (!app.project.mapIcons) app.project.mapIcons = [];
   app.project.mapIcons.push(item);
   app.project.modified = true;
-  selectedUid = item.uid;
+  setSelection(new Set([item.uid]));
   app.editor?.syncAll();
   updateSidebarList();
   updateSidebarFields();
@@ -484,7 +531,7 @@ function setupCanvasEvents() {
     const cy = e.clientY - rect.top;
     const w = canvasToWorld(cx, cy);
 
-    if (e.button === 2 || e.button === 1 || e.shiftKey || e.altKey) {
+    if (e.button === 2 || e.button === 1 || e.altKey) {
       isPanning = true;
       panStart = { x: e.clientX - view.panX, y: e.clientY - view.panY };
       canvasEl.style.cursor = 'grabbing';
@@ -493,13 +540,32 @@ function setupCanvasEvents() {
 
     if (e.button === 0) {
       const hit = findIconAtCanvas(cx, cy);
+      const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+      if (additive) {
+        // Shift/Ctrl on empty ground does nothing (no accidental new icon)
+        if (!hit) return;
+        dragStartMiSnapshot = miSnapshot();
+        toggleIconSelection(hit.uid);
+        if (isMulti() && multiUids.has(hit.uid)) {
+          isDraggingIcon = hit;
+          dragGroup = { startX: w.x, startY: w.y, items: selectedIcons().map(m => ({ m, x: m.x, y: m.y })) };
+        }
+        updateSidebarList();
+        updateSidebarFields();
+        redrawCanvas();
+        return;
+      }
       if (hit) {
-        selectedUid = hit.uid;
+        dragStartMiSnapshot = miSnapshot();
+        // Plain click on an icon of the multi-selection keeps it and drags them all
+        if (isMulti() && multiUids.has(hit.uid)) {
+          isDraggingIcon = hit;
+          dragGroup = { startX: w.x, startY: w.y, items: selectedIcons().map(m => ({ m, x: m.x, y: m.y })) };
+          return;
+        }
+        setSelection(new Set([hit.uid]));
         isDraggingIcon = hit;
-        dragStartMiSnapshot = JSON.stringify({
-          mapIcons: JSON.parse(JSON.stringify(app.project?.mapIcons || [])),
-          selectedUid
-        });
+        dragGroup = null;
         updateSidebarList();
         updateSidebarFields();
         redrawCanvas();
@@ -524,9 +590,10 @@ function setupCanvasEvents() {
       if (!app.project.mapIcons) app.project.mapIcons = [];
       app.project.mapIcons.push(item);
       app.project.modified = true;
-      selectedUid = item.uid;
+      setSelection(new Set([item.uid]));
       isDraggingIcon = item;
       dragStartMiSnapshot = null;
+      dragGroup = null;
       app.editor?.syncAll();
       updateSidebarList();
       updateSidebarFields();
@@ -554,8 +621,16 @@ function setupCanvasEvents() {
     }
 
     if (isDraggingIcon) {
-      isDraggingIcon.x = Math.round(w.x * 100) / 100;
-      isDraggingIcon.y = Math.round(w.y * 100) / 100;
+      if (dragGroup) {
+        const dx = w.x - dragGroup.startX, dy = w.y - dragGroup.startY;
+        for (const g of dragGroup.items) {
+          g.m.x = Math.round((g.x + dx) * 100) / 100;
+          g.m.y = Math.round((g.y + dy) * 100) / 100;
+        }
+      } else {
+        isDraggingIcon.x = Math.round(w.x * 100) / 100;
+        isDraggingIcon.y = Math.round(w.y * 100) / 100;
+      }
       app.editor?.syncAll();
       updateSidebarFields();
       updateSidebarList();
@@ -574,10 +649,7 @@ function setupCanvasEvents() {
     }
     if (isDraggingIcon) {
       if (dragStartMiSnapshot) {
-        const curSnapshot = JSON.stringify({
-          mapIcons: JSON.parse(JSON.stringify(app.project?.mapIcons || [])),
-          selectedUid
-        });
+        const curSnapshot = miSnapshot();
         if (curSnapshot !== dragStartMiSnapshot) {
           miPushUndoSnapshot(dragStartMiSnapshot);
           app.project.modified = true;
@@ -585,6 +657,7 @@ function setupCanvasEvents() {
         dragStartMiSnapshot = null;
       }
       isDraggingIcon = null;
+      dragGroup = null;
       redrawCanvas();
     }
   });
@@ -603,8 +676,6 @@ export function openMapIconDialog() {
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
 
-  miUndoStack = [];
-  miRedoStack = [];
   updateMiUndoButtons();
 
   const wrap = dialogEl.querySelector('#miCanvasWrap');
@@ -615,7 +686,7 @@ export function openMapIconDialog() {
     view.height = canvasEl.height;
   }
 
-  if (!selectedUid && app.project?.mapIcons?.length) {
+  if (!selectedUid && !isMulti() && app.project?.mapIcons?.length) {
     selectedUid = app.project.mapIcons[0].uid;
   }
 
@@ -676,7 +747,7 @@ function redrawCanvas() {
   const list = app.project?.mapIcons || [];
   for (const m of list) {
     const pt = worldToCanvas(m.x, m.y);
-    const isSel = m.uid === selectedUid;
+    const isSel = m.uid === selectedUid || multiUids.has(m.uid);
     const size = isSel ? 28 : 22;
 
     if (isSel) {
@@ -712,7 +783,7 @@ function updateSidebarList() {
 
   list.forEach((m, idx) => {
     const item = document.createElement('div');
-    item.className = 'gz-list-item' + (m.uid === selectedUid ? ' selected' : '');
+    item.className = 'gz-list-item' + ((m.uid === selectedUid || multiUids.has(m.uid)) ? ' selected' : '');
     const info = getMapIconInfo(m.type ?? 0);
     item.innerHTML = `
       <img src="${getMapIconUrl(m.type ?? 0)}" width="24" height="24" style="image-rendering:pixelated; flex-shrink:0;">
@@ -721,8 +792,9 @@ function updateSidebarList() {
         <span class="gz-sub">Slot ${idx} · (${m.x.toFixed(1)}, ${m.y.toFixed(1)}, ${m.z.toFixed(1)})</span>
       </div>
     `;
-    item.onclick = () => {
-      selectedUid = m.uid;
+    item.onclick = (e) => {
+      if (e.shiftKey || e.ctrlKey || e.metaKey) toggleIconSelection(m.uid);
+      else setSelection(new Set([m.uid]));
       updateSidebarList();
       updateSidebarFields();
       redrawCanvas();
@@ -734,6 +806,19 @@ function updateSidebarList() {
 function updateSidebarFields() {
   const panel = dialogEl?.querySelector('#miDetailsPanel');
   const m = getSelectedMapIcon();
+  // With several icons selected, everything but Delete is locked
+  const multi = isMulti();
+  const hint = dialogEl?.querySelector('#miMultiHint');
+  if (hint) hint.style.display = multi ? 'block' : 'none';
+  if (panel) {
+    panel.querySelectorAll('input,button,select').forEach(el => {
+      el.disabled = multi && el.id !== 'miBtnDelete';
+    });
+  }
+  if (multi) {
+    if (panel) panel.style.display = 'block';
+    return;
+  }
   if (!m) {
     if (panel) panel.style.display = 'none';
     return;

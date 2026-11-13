@@ -50,11 +50,73 @@ let activeSnapLines = []; // Snap guide lines
 let gzUndoStack = [];
 let gzRedoStack = [];
 
-function gzPushUndo() {
-  const current = JSON.stringify({
+// Multi-selection: with more than one zone selected, selectedUid is null and the uids live here.
+// Only moving and deleting are allowed in that state.
+let multiUids = new Set();
+
+function isMulti() { return multiUids.size > 1; }
+
+// The zones that move/delete act on: the whole multi-selection or the single selected zone
+function selectedZones() {
+  const zones = appRef?.project?.gangZones || [];
+  if (isMulti()) return zones.filter(z => multiUids.has(z.uid));
+  const z = getSelectedZone();
+  return z ? [z] : [];
+}
+
+// Shift/Ctrl+click: adds or removes a zone from the selection
+function toggleZoneSelection(uid) {
+  const cur = isMulti() ? new Set(multiUids) : new Set(selectedUid ? [selectedUid] : []);
+  if (cur.has(uid)) cur.delete(uid); else cur.add(uid);
+  setSelection(cur);
+}
+
+function setSelection(set) {
+  if (set.size > 1) {
+    multiUids = new Set(set);
+    selectedUid = null;
+  } else {
+    multiUids = new Set();
+    selectedUid = set.size === 1 ? [...set][0] : null;
+  }
+}
+
+function gzSnapshot() {
+  return JSON.stringify({
     zones: appRef?.project?.gangZones || [],
-    selectedUid
+    selectedUid,
+    multi: [...multiUids]
   });
+}
+
+function gzRestore(str) {
+  const st = JSON.parse(str);
+  appRef.project.gangZones = st.zones || [];
+  const ids = new Set(appRef.project.gangZones.map(z => z.uid));
+  const multi = (st.multi || []).filter(u => ids.has(u));
+  if (multi.length > 1) {
+    multiUids = new Set(multi);
+    selectedUid = null;
+  } else {
+    multiUids = new Set();
+    selectedUid = st.selectedUid;
+    if (!getSelectedZone() && appRef.project.gangZones.length > 0) {
+      selectedUid = appRef.project.gangZones[0].uid;
+    }
+  }
+}
+
+// Called when the whole project is closed: only then does the history start over
+export function resetGangZoneHistory() {
+  gzUndoStack = [];
+  gzRedoStack = [];
+  selectedUid = null;
+  multiUids = new Set();
+  updateGzUndoButtons();
+}
+
+function gzPushUndo() {
+  const current = gzSnapshot();
   if (gzUndoStack.length > 0 && gzUndoStack[gzUndoStack.length - 1] === current) return;
   gzUndoStack.push(current);
   if (gzUndoStack.length > 50) gzUndoStack.shift();
@@ -73,17 +135,8 @@ function gzPushUndoSnapshot(snapshotStr) {
 
 function gzUndo() {
   if (gzUndoStack.length === 0) return;
-  const current = JSON.stringify({
-    zones: appRef?.project?.gangZones || [],
-    selectedUid
-  });
-  gzRedoStack.push(current);
-  const prev = JSON.parse(gzUndoStack.pop());
-  appRef.project.gangZones = prev.zones || [];
-  selectedUid = prev.selectedUid;
-  if (!getSelectedZone() && appRef.project.gangZones.length > 0) {
-    selectedUid = appRef.project.gangZones[0].uid;
-  }
+  gzRedoStack.push(gzSnapshot());
+  gzRestore(gzUndoStack.pop());
   appRef.editor?.syncAll();
   updateSidebarFields();
   updateSidebarList();
@@ -93,17 +146,8 @@ function gzUndo() {
 
 function gzRedo() {
   if (gzRedoStack.length === 0) return;
-  const current = JSON.stringify({
-    zones: appRef?.project?.gangZones || [],
-    selectedUid
-  });
-  gzUndoStack.push(current);
-  const next = JSON.parse(gzRedoStack.pop());
-  appRef.project.gangZones = next.zones || [];
-  selectedUid = next.selectedUid;
-  if (!getSelectedZone() && appRef.project.gangZones.length > 0) {
-    selectedUid = appRef.project.gangZones[0].uid;
-  }
+  gzUndoStack.push(gzSnapshot());
+  gzRestore(gzRedoStack.pop());
   appRef.editor?.syncAll();
   updateSidebarFields();
   updateSidebarList();
@@ -163,6 +207,7 @@ export function initGangZoneDialog(app) {
   }
 
   setupDialogEvents();
+  app.on?.('project-closing', resetGangZoneHistory);
 }
 
 function setupDialogEvents() {
@@ -356,12 +401,14 @@ function setupDialogEvents() {
   dialogEl.addEventListener('keydown', (e) => {
     const arrow = !e.ctrlKey && !e.metaKey && arrowStep(e);
     if (arrow) {
-      const z = getSelectedZone();
-      if (!z || (!arrow.dx && !arrow.dy)) return;
+      const targets = selectedZones();
+      if (!targets.length || (!arrow.dx && !arrow.dy)) return;
       if (arrow.first) gzPushUndo();
       const round = (v) => Math.round(v * 10) / 10;
-      z.minx = round(z.minx + arrow.dx); z.maxx = round(z.maxx + arrow.dx);
-      z.miny = round(z.miny - arrow.dy); z.maxy = round(z.maxy - arrow.dy);
+      for (const z of targets) {
+        z.minx = round(z.minx + arrow.dx); z.maxx = round(z.maxx + arrow.dx);
+        z.miny = round(z.miny - arrow.dy); z.maxy = round(z.maxy - arrow.dy);
+      }
       appRef.project.modified = true;
       appRef.editor?.syncAll();
       updateSidebarFields();
@@ -393,10 +440,7 @@ function setupDialogEvents() {
       if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
       e.preventDefault();
       e.stopPropagation();
-      const z = getSelectedZone();
-      if (z) {
-        deleteSelectedZone();
-      }
+      deleteSelectedZone();
     }
   });
 }
@@ -427,8 +471,8 @@ function setupCanvasEvents() {
     const cy = e.clientY - rect.top;
     const w = canvasToWorld(cx, cy);
 
-    // Right button (2), middle button (1) or space bar/Shift/Alt = Pan / Move map
-    if (e.button === 2 || e.button === 1 || e.shiftKey || e.altKey) {
+    // Right button (2), middle button (1) or Alt = Pan / Move map (Shift/Ctrl+click selects several zones)
+    if (e.button === 2 || e.button === 1 || e.altKey) {
       isPanning = true;
       panStart = { x: e.clientX - view.panX, y: e.clientY - view.panY };
       canvasEl.style.cursor = 'grabbing';
@@ -436,10 +480,8 @@ function setupCanvasEvents() {
     }
 
     if (e.button === 0) {
-      dragStartSnapshot = JSON.stringify({
-        zones: appRef?.project?.gangZones || [],
-        selectedUid
-      });
+      dragStartSnapshot = gzSnapshot();
+      const additive = e.shiftKey || e.ctrlKey || e.metaKey;
 
       // Checks for a click on the selected zone's resize handles
       const selZone = getSelectedZone();
@@ -462,8 +504,27 @@ function setupCanvasEvents() {
 
       // Checks whether the click was inside any existing zone to select it
       const clickedZone = findZoneAtWorld(w.x, w.y);
+      const groupDrag = (zone) => ({
+        zone, handle: 'move', startX: w.x, startY: w.y,
+        group: selectedZones().map(z => ({ z, minx: z.minx, miny: z.miny, maxx: z.maxx, maxy: z.maxy })),
+      });
+      if (additive) {
+        // Shift/Ctrl on empty ground does nothing (no accidental new zone)
+        if (!clickedZone) return;
+        toggleZoneSelection(clickedZone.uid);
+        if (isMulti() && multiUids.has(clickedZone.uid)) isDraggingHandle = groupDrag(clickedZone);
+        updateSidebarFields();
+        updateSidebarList();
+        redrawCanvas();
+        return;
+      }
       if (clickedZone) {
-        selectedUid = clickedZone.uid;
+        // Plain click on a zone that is part of the multi-selection keeps it and drags them all
+        if (isMulti() && multiUids.has(clickedZone.uid)) {
+          isDraggingHandle = groupDrag(clickedZone);
+          return;
+        }
+        setSelection(new Set([clickedZone.uid]));
         isDraggingHandle = {
           zone: clickedZone,
           handle: 'move',
@@ -524,7 +585,13 @@ function setupCanvasEvents() {
       const snap = isSnapActive();
       activeSnapLines = [];
 
-      if (isDraggingHandle.handle === 'move') {
+      if (isDraggingHandle.group) {
+        const mx = Math.round(dx), my = Math.round(dy);
+        for (const g of isDraggingHandle.group) {
+          g.z.minx = g.minx + mx; g.z.maxx = g.maxx + mx;
+          g.z.miny = g.miny + my; g.z.maxy = g.maxy + my;
+        }
+      } else if (isDraggingHandle.handle === 'move') {
         const wLen = isDraggingHandle.origMaxX - isDraggingHandle.origMinX;
         const hLen = isDraggingHandle.origMaxY - isDraggingHandle.origMinY;
         let newMinX = isDraggingHandle.origMinX + dx;
@@ -631,10 +698,7 @@ function setupCanvasEvents() {
     if (isDraggingHandle) {
       isDraggingHandle = null;
       activeSnapLines = [];
-      const current = JSON.stringify({
-        zones: appRef?.project?.gangZones || [],
-        selectedUid
-      });
+      const current = gzSnapshot();
       if (dragStartSnapshot && dragStartSnapshot !== current) {
         gzPushUndoSnapshot(dragStartSnapshot);
         appRef.project.modified = true;
@@ -663,7 +727,7 @@ function setupCanvasEvents() {
         });
         appRef.project.gangZones.push(newZ);
         appRef.project.modified = true;
-        selectedUid = newZ.uid;
+        setSelection(new Set([newZ.uid]));
         appRef.editor?.syncAll();
         updateSidebarFields();
         updateSidebarList();
@@ -683,7 +747,7 @@ function snapPoint(x, y, zones, threshold = 30.0) {
   let minDiffX = threshold, minDiffY = threshold;
 
   for (const z of zones) {
-    if (selectedUid && z.uid === selectedUid) continue;
+    if ((selectedUid && z.uid === selectedUid) || multiUids.has(z.uid)) continue;
     // Testa minx e maxx
     for (const testX of [z.minx, z.maxx]) {
       const diffX = Math.abs(x - testX);
@@ -780,8 +844,6 @@ export function openGangZoneDialog() {
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
 
-  gzUndoStack = [];
-  gzRedoStack = [];
   updateGzUndoButtons();
 
   resizeCanvas();
@@ -877,7 +939,7 @@ function redrawCanvas() {
   // Draws all the project's GangZones
   const zones = appRef.project?.gangZones || [];
   for (const z of zones) {
-    drawZone(z, z.uid === selectedUid);
+    drawZone(z, z.uid === selectedUid, multiUids.has(z.uid));
   }
 
   // Draws the rectangle being created
@@ -923,7 +985,7 @@ function redrawCanvas() {
   }
 }
 
-function drawZone(z, isSelected) {
+function drawZone(z, isSelected, inMulti = false) {
   const cTopLeft = worldToCanvas(z.minx, z.maxy);
   const cBottomRight = worldToCanvas(z.maxx, z.miny);
   const w = cBottomRight.x - cTopLeft.x;
@@ -934,8 +996,8 @@ function drawZone(z, isSelected) {
   ctx.fillRect(cTopLeft.x, cTopLeft.y, w, h);
 
   // Borda
-  ctx.strokeStyle = isSelected ? '#FFFFFF' : 'rgba(0, 0, 0, 0.6)';
-  ctx.lineWidth = isSelected ? 2.5 : 1;
+  ctx.strokeStyle = (isSelected || inMulti) ? '#FFFFFF' : 'rgba(0, 0, 0, 0.6)';
+  ctx.lineWidth = (isSelected || inMulti) ? 2.5 : 1;
   ctx.strokeRect(cTopLeft.x, cTopLeft.y, w, h);
 
   // Zone name at the center
@@ -1006,7 +1068,7 @@ function updateSidebarList() {
 
   for (const z of zones) {
     const item = document.createElement('div');
-    item.className = 'gz-list-item' + (z.uid === selectedUid ? ' selected' : '');
+    item.className = 'gz-list-item' + ((z.uid === selectedUid || multiUids.has(z.uid)) ? ' selected' : '');
     const { hex, alpha } = gzColorToHexAndAlpha(z.color);
 
     item.innerHTML = `
@@ -1017,8 +1079,9 @@ function updateSidebarList() {
       </div>
     `;
 
-    item.onclick = () => {
-      selectedUid = z.uid;
+    item.onclick = (e) => {
+      if (e.shiftKey || e.ctrlKey || e.metaKey) toggleZoneSelection(z.uid);
+      else setSelection(new Set([z.uid]));
       updateSidebarFields();
       updateSidebarList();
       redrawCanvas();
@@ -1031,6 +1094,21 @@ function updateSidebarList() {
 function updateSidebarFields() {
   const panel = dialogEl.querySelector('#gzDetailsPanel');
   const z = getSelectedZone();
+  // With several zones selected, everything but Delete is locked
+  const multi = isMulti();
+  const hint = dialogEl.querySelector('#gzMultiHint');
+  if (hint) hint.style.display = multi ? 'block' : 'none';
+  if (panel) {
+    panel.querySelectorAll('input,button,select').forEach(el => {
+      el.disabled = multi && el.id !== 'gzBtnDelete';
+    });
+    const presets = panel.querySelector('#gzPresets');
+    if (presets) presets.style.pointerEvents = multi ? 'none' : '';
+  }
+  if (multi) {
+    if (panel) panel.style.display = 'block';
+    return;
+  }
   if (!z) {
     if (panel) panel.style.display = 'none';
     return;
@@ -1115,7 +1193,7 @@ function createNewZoneAtCenter() {
   if (spot.scaled) toast('A zona foi reduzida para caber no espaço livre mais próximo', 'info');
   appRef.project.gangZones.push(newZ);
   appRef.project.modified = true;
-  selectedUid = newZ.uid;
+  setSelection(new Set([newZ.uid]));
   appRef.editor?.syncAll();
   updateSidebarFields();
   updateSidebarList();
@@ -1123,20 +1201,18 @@ function createNewZoneAtCenter() {
 }
 
 function deleteSelectedZone() {
-  const z = getSelectedZone();
-  if (!z) return;
+  const targets = selectedZones();
+  if (!targets.length) return;
   gzPushUndo();
-  const idx = appRef.project.gangZones.indexOf(z);
-  if (idx >= 0) {
-    appRef.project.gangZones.splice(idx, 1);
-    appRef.project.modified = true;
-    selectedUid = null;
-    appRef.editor?.syncAll();
-    toast('GangZone excluída', 'info');
-    updateSidebarFields();
-    updateSidebarList();
-    redrawCanvas();
-  }
+  const gone = new Set(targets.map(z => z.uid));
+  appRef.project.gangZones = appRef.project.gangZones.filter(z => !gone.has(z.uid));
+  appRef.project.modified = true;
+  setSelection(new Set());
+  appRef.editor?.syncAll();
+  toast(targets.length > 1 ? `${targets.length} GangZones excluídas` : 'GangZone excluída', 'info');
+  updateSidebarFields();
+  updateSidebarList();
+  redrawCanvas();
 }
 
 function focusSelectedZone() {
@@ -1182,7 +1258,7 @@ function duplicateSelectedZone() {
   if (!appRef.project.gangZones) appRef.project.gangZones = [];
   appRef.project.gangZones.push(newZ);
   appRef.project.modified = true;
-  selectedUid = newZ.uid;
+  setSelection(new Set([newZ.uid]));
   appRef.editor?.syncAll();
   toast(spot.scaled ? 'GangZone duplicada e reduzida para caber no espaço livre mais próximo' : 'GangZone duplicada encostada no espaço livre mais próximo', 'ok');
   updateSidebarFields();
