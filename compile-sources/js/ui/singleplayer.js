@@ -15,7 +15,7 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
-import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
+import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels, npcHealth } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
 const NOT_OBJECTS = new Set(['cars', 'peds', 'weap', 'hier']);
@@ -669,7 +669,7 @@ export async function buildFiles(project, say = () => {}) {
   })), (p) => (p.action && p.action.type !== 'none' ? 3 : 2), pickupsScript);
   // As many scripts as needed: the NPCs that follow or chase (they share the door logic) go apart from the others, which fit more per script
   const npcs = (project.actors || []).map(a => ({
-    skin: a.skin, x: a.x, y: a.y, z: a.z, rz: a.rz, invulnerable: !!a.invulnerable, anim: a.weapon ? null : a.anim,
+    skin: a.skin, x: a.x, y: a.y, z: a.z, rz: a.rz, invulnerable: !!a.invulnerable, health: npcHealth(a.health), anim: a.weapon ? null : a.anim,
     weapon: a.weapon | 0, role: a.role || 'neutral', follow: !!a.follow, speedPct: Math.max(100, Math.min(200, Math.round(+a.speedPct || 100))), ammoInfinite: a.ammoInfinite !== false, ammo: Math.max(1, Math.round(+a.ammo || 100)), runFast: a.runFast !== false, respawn: a.invulnerable ? 0 : Math.max(0, +a.respawn || 0),
   }));
   let guardCount = 0;
