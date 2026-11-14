@@ -100,6 +100,8 @@ function taskGate(a, tag, skip) {
 const RED_PEDS = 0, RED_PEDS_N = 16, RED_CARS = 16, RED_CARS_N = 4, ATK_VARS = 20, ATK_N = 8, ATK_IDX = 28, ATK_TIME = 29, ATK_KEEP = 10000;
 // The radar markers of the game (CRadar::ms_RadarTrace): 175 of 0x28 bytes. +0 colour, +4 the handle of what it is on, +0x25 flags (bit 1 in use,
 // bit 3 friendly), +0x26 display (bits 0-1, 0 = hidden) and type (bits 2-5: 1 vehicle, 2 character)
+// An address read from the game is used only above this (0 or a small number is no object; above 0x7FFFFFFF it reads as negative)
+const PTR_MIN = 0x10000;
 const RADAR_TRACES = 0xBA86F0, RADAR_TRACE_SIZE = 0x28, RADAR_TRACE_COUNT = 175;
 
 // Counts the free places of the table of tasks of the game (a place is free when its three fields that matter are zero, as the game itself tests it)
@@ -231,7 +233,7 @@ export function taskGuardScript() {
 
   // A bullet hit something: the one who fired it (13, a character) shot at the player when it hit him, his vehicle, or anything within 4 m of him
   a.label('evb');
-  ifEq(13, 0, 'evr');
+  a.op(0x00D6, int(0)).op(0x0019, lv(13), int(PTR_MIN)).op(0x004D, ref('evr'));                    // no valid owner: never read
   a.op(0x0A8E, lv(13), int(0x36), lv(17)).op(0x0A8D, lv(17), int(1), int(0), lv(17)).op(0x0B10, lv(17), int(7), lv(17));
   ifNe(17, 3, 'evr');                                                                              // not a character
   a.op(0x0A96, lv(PLAYER), lv(17));
@@ -241,7 +243,7 @@ export function taskGuardScript() {
   a.op(0x03C0, lv(PLAYER), lv(18)).op(0x0A97, lv(18), lv(18));
   ifEq(14, lv(18), 'evh');
   a.label('evp');
-  ifEq(16, 0, 'evr');
+  a.op(0x00D6, int(0)).op(0x0019, lv(16), int(PTR_MIN)).op(0x004D, ref('evr'));
   a.op(0x0A8D, lv(16), int(4), int(0), lv(18));
   a.op(0x0A8E, lv(16), int(4), lv(19)).op(0x0A8D, lv(19), int(4), int(0), lv(19));
   a.op(0x0A8E, lv(16), int(8), lv(20)).op(0x0A8D, lv(20), int(4), int(0), lv(20));
@@ -922,14 +924,30 @@ export function actorsScript(items) {
         a.op(0x0E44, lv(v), lv(T0));
         a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(PLAYER)).op(0x004D, ref(yes));
         a.op(0x00D6, int(0)).op(0x0E42, lv(v), int(1017)).op(0x004D, ref(L(pre + 'n')));
-        a.op(0x0E43, lv(v), int(1017), lv(T6)).op(0x0A8E, lv(T6), int(0x1C), lv(T6)).op(0x0A8D, lv(T6), int(4), int(0), lv(T6));
-        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'n')));
+        a.op(0x0E43, lv(v), int(1017), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(PTR_MIN)).op(0x004D, ref(L(pre + 'n')));                // no task (or not a valid address): never read
+        a.op(0x0A8E, lv(T6), int(0x1C), lv(T6)).op(0x0A8D, lv(T6), int(4), int(0), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(PTR_MIN)).op(0x004D, ref(L(pre + 'n')));
         a.op(0x0A96, lv(PLAYER), lv(T0));
         a.op(0x00D6, int(0)).op(0x8039, lv(T6), lv(T0)).op(0x004D, ref(yes));
         a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L(pre + 'n')));
         a.op(0x03C0, lv(PLAYER), lv(T0)).op(0x0A97, lv(T0), lv(T0));
         a.op(0x00D6, int(0)).op(0x8039, lv(T6), lv(T0)).op(0x004D, ref(yes));
         a.label(L(pre + 'n'));
+        // The player sits in a vehicle and it fights or shoots right next to him (within 4 m): it is hitting his vehicle (a bat on it does not
+        // even lower its health, so there is no damage to tell it). Not someone inside a vehicle (a friend of a mission shooting from his car).
+        // Uses T7 too
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L(pre + 'm')));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(v)).op(0x004D, ref(L(pre + 'm1')));
+        a.jump(L(pre + 'm'));
+        a.label(L(pre + 'm1'));
+        a.op(0x00A0, lv(PLAYER), lv(T0), lv(T6), lv(T7));
+        a.op(0x00D6, int(0)).op(0x00FE, lv(v), lv(T0), lv(T6), lv(T7), flt(4), flt(4), flt(3), int(0)).op(0x004D, ref(L(pre + 'm')));
+        a.op(0x00D6, int(0)).op(0x0E47, lv(v)).op(0x004D, ref(L(pre + 'm2')));
+        a.jump(yes);
+        a.label(L(pre + 'm2'));
+        a.op(0x00D6, int(0)).op(0x82E0, lv(v)).op(0x004D, ref(yes));
+        a.label(L(pre + 'm'));
       };
       // Jumps to `notStory` when the character in `v` is not one of the story (the ped types of the characters of the missions, 23 to 31). Uses T6
       const storyCheck = (v, notStory) => {
@@ -984,16 +1002,15 @@ export function actorsScript(items) {
         a.op(0x03C0, lv(v), lv(T6)).op(0x02AA, lv(T6), int(0));
         a.label(L(pre + 'nc'));
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L(pre + 'f')));
-        if (driveWeapon) {
-          a.op(0x041A, lv(h), int(e.weapon), lv(T6));
-          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'x')));
-          a.op(0x0713, lv(h), lv(v), int(-1), flt(0), flt(0), flt(0), flt(60), int(8), int(0), int(100));
-          a.jump(L(pre + 'e'));
-        }
-        // It cannot shoot from the vehicle: it gets out to fight once the vehicle has (nearly) stopped
-        a.label(L(pre + 'x'));
+        // Sitting in a vehicle (the player's, following him): once it has (nearly) stopped it gets out to fight (from inside, the game does not
+        // shoot with most weapons, nor at someone hitting the vehicle); while it moves, it shoots from the window when the weapon allows it
         a.op(0x03C0, lv(h), lv(T6)).op(0x02E3, lv(T6), lv(T7));
         a.op(0x00D6, int(0)).op(0x0021, lv(T7), flt(3)).op(0x004D, ref(L(pre + 'xo')));
+        if (driveWeapon) {
+          a.op(0x041A, lv(h), int(e.weapon), lv(T6));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'e')));
+          a.op(0x0713, lv(h), lv(v), int(-1), flt(0), flt(0), flt(0), flt(60), int(8), int(0), int(100));
+        }
         a.jump(L(pre + 'e'));
         a.label(L(pre + 'xo'));
         a.op(0x0633, lv(h));
@@ -1341,6 +1358,7 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('sk')));
         storyCheck(T0, L('sk'));
         redCheck(T0, 'sr', L('sk'));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(tgt)).op(0x004D, ref(L('sk')));             // the script chose it (it attacked the player): it stays
         a.op(0x0085, lv(T4), lv(T0));
         aimsAtPlayer(T4, 'ssa', L('sk'));                                                         // unless it attacks the player
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('sc')));
