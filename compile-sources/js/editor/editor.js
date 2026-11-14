@@ -11,7 +11,7 @@ import { getNextGangZoneName } from '../world/gangzones.js';
 import { createCheckpointNode, updateRaceCheckpointsChain, refreshCheckpointVisual } from '../world/checkpoints.js';
 import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
 import { createSpawnNode } from '../world/spawn.js';
-import { roadSnap, warmRoad } from './roadSnap.js';
+import { roadSnap, warmRoad, isRoadSnappable } from './roadSnap.js';
 import { isRoadModel } from '../world/roadPieces.js';
 
 const GIZMO_MIN_DIST = 2.5, GIZMO_MIN_SIZE = 0.45, GIZMO_FULL_DIST = 7;     // the manipulator that follows the camera: nearest to the camera (m) and smallest (the fraction of its size)
@@ -1027,7 +1027,7 @@ export class Editor extends EventTarget {
   roadSnapFor(uid, node, kind) {
     if (this.snap.roads === false || this.altDown || kind !== 'objects') return null;
     const item = this.findProjectOf(uid)?.find(uid);
-    if (!item || !isRoadModel(item.model) || item.attach?.to) return null;
+    if (!item || !isRoadSnappable(item.model) || item.attach?.to) return null;
     const e = new THREE.Euler().setFromQuaternion(node.quaternion, 'ZXY');
     const p = { uid, model: item.model, x: node.position.x, y: node.position.y, z: node.position.z, rx: e.x * R2D, ry: e.y * R2D, rz: e.z * R2D };
     return roadSnap(p, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
@@ -1783,7 +1783,7 @@ export class Editor extends EventTarget {
     // Automatic snap of tracks, ramps and roads: the new piece shows where it would join the nearest one
     pl.snapRot = null;
     let roadHit = null;
-    if (this.snap.roads !== false && !this.altDown && !pl.options?.kind && isRoadModel(pl.model)) {
+    if (this.snap.roads !== false && !this.altDown && !pl.options?.kind && isRoadSnappable(pl.model)) {
       roadHit = roadSnap({ uid: 'ghost', model: pl.model, x: p.x, y: p.y, z: p.z, rx: 0, ry: 0, rz: pl.rz }, this.project.objects || [], this.snap.roadDist || 8, (id) => warmRoad(this.models, [id]));
       // The surface under the pointer may be far above or below the piece to join (the ground, a wall...): the same position is tried at the height of the road pieces around
       if (!roadHit) {

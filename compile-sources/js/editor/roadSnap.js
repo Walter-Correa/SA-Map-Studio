@@ -7,12 +7,15 @@
 //   (the same table the other way round), with every kind each model can be joined by. Supports, lights and covers go on the tube (their own table).
 // - Ramps, jumps and stunt pieces of the original game: the two ends of the long side of the model are read from the model itself (the point of the
 //   surface in the middle of the end and the slope there), and two pieces join with their ends face to face, the surfaces continuing one the other.
+// - Stunt roads of SA-MP (MRoad, 18788 to 18801): the ends come from the table of the tool Road Construction (see world/roadMRoad.js), exact, and its
+//   point lights (19281 to 19284) go to the places of the lights on the sides of the piece.
 import * as THREE from 'three';
 import {
   TUBE_TYPES, TUBE_REL, TUBE_COUNTER, TUBE_COVERS, TUBE_LIGHTS, TUBE_SUPPORT_1, TUBE_SUPPORT_2, TUBE_SUPPORT_3,
 } from '../world/roadTubes.js';
 import { isRoadModel, isTubeModel, isShapeTube, roadKind, TUBE_EXTRAS, ROAD_TUNNEL_IDS as TUNNELS } from '../world/roadPieces.js';
 import { computeEnds } from './roadEnds.js';
+import { MROAD_ENDS, MROAD_WIDTH, MROAD_LIGHTS, MROAD_LIGHT_MODELS } from '../world/roadMRoad.js';
 
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 const ONE = new THREE.Vector3(1, 1, 1);
@@ -166,6 +169,32 @@ function tubeSockets(model) {
   return out;
 }
 
+// ---------------------------------------------------------------- stunt roads (MRoad): the ends of the table
+const mroadCache = new Map();
+function mroadSockets(model) {
+  let out = mroadCache.get(model);
+  if (!out) {
+    out = MROAD_ENDS[model].map((e) => {
+      const m = new THREE.Matrix4().compose(new THREE.Vector3(e[0], e[1], e[2]), quatOf(e[3], e[4], e[5]), ONE).multiply(X_TO_Y);
+      return { m, width: MROAD_WIDTH, height: 0, kind: 'surface', fz: m.elements[6] };
+    });
+    mroadCache.set(model, out);
+  }
+  return out;
+}
+const isMRoad = (id) => MROAD_ENDS[id] !== undefined;
+const isRoadLight = (id) => MROAD_LIGHT_MODELS.includes(id);
+// A piece that the snap takes: the pieces of the category and the lights of the stunt roads
+export const isRoadSnappable = (id) => isRoadModel(id) || isRoadLight(id);
+
+// The places of a light p on the piece q (the light keeps its rotation)
+function lightCandidates(p, q, cur, out) {
+  const pts = MROAD_LIGHTS[q.model];
+  if (!pts) return;
+  const wq = realMatrix(q);
+  for (const v of pts) out.push({ pos: new THREE.Vector3(v[0], v[1], v[2]).applyMatrix4(wq), rot: [p.rx || 0, p.ry || 0, p.rz || 0], quat: cur });
+}
+
 // ---------------------------------------------------------------- ramps with a sloped surface (the waterjump, the landjump, the funbox ramps...)
 // The sloped face of the model (the faces that look up and to one side, the biggest group of them, whatever their slope: the ramps of the game are
 // curved) gives the way up, and its lowest and highest edge. Two ramps join with the highest edge of one on the lowest edge of the other and the same
@@ -255,30 +284,23 @@ function rampCandidates(p, q, out) {
 }
 const bothRamps = (a, b) => !!(rampOf(a) && rampOf(b));
 
-// The ends that are read from some models are not all real: the loop (18801) has its road ends at the bottom of the circle, and the two extra ones that are
-// read at the sides of the circle (halfway up) are not places where a road joins, so only the two lowest are kept
-function fixSockets(id, list) {
-  if (id === 18801 && Array.isArray(list) && list.length > 2) return [...list].sort((a, b) => a.m.elements[14] - b.m.elements[14]).slice(0, 2);
-  return list;
-}
-
 // Reads the ends of the models that are not known yet (the model must be loaded: it is done while it is shown)
 export function warmRoad(models, ids) {
   for (const id of ids) {
-    if (!ramps.has(id) && !isTubeModel(id) && !TUBE_EXTRAS.includes(id) && isRoadModel(id) && roadKind(id) === 'surface') {
+    if (!ramps.has(id) && !isTubeModel(id) && !isMRoad(id) && !TUBE_EXTRAS.includes(id) && isRoadModel(id) && roadKind(id) === 'surface') {
       ramps.set(id, null);
       Promise.resolve(models.getModel(id)).then((obj) => ramps.set(id, obj ? computeRamp(obj) : false)).catch(() => ramps.set(id, false));
     }
   }
   for (const id of ids) {
-    if (isTubeModel(id) || TUBE_EXTRAS.includes(id) || sockets.has(id) || !isRoadModel(id)) continue;
+    if (isTubeModel(id) || isMRoad(id) || TUBE_EXTRAS.includes(id) || sockets.has(id) || !isRoadModel(id)) continue;
     sockets.set(id, null);
     const kind = roadKind(id);
     const read = kind === 'tube' ? computeTubeSockets : (root) => computeEnds(root, kind, null, TUNNELS.includes(id));
-    Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? fixSockets(id, read(obj)) : false)).catch(() => sockets.set(id, false));
+    Promise.resolve(models.getModel(id)).then((obj) => sockets.set(id, obj ? read(obj) : false)).catch(() => sockets.set(id, false));
   }
 }
-export const roadSockets = (id) => (isTubeModel(id) ? tubeSockets(id) : sockets.get(id)) || null;
+export const roadSockets = (id) => (isTubeModel(id) ? tubeSockets(id) : isMRoad(id) ? mroadSockets(id) : sockets.get(id)) || null;
 
 const FLIP = new THREE.Matrix4().makeRotationZ(Math.PI);
 function socketCandidates(p, q, out) {
@@ -311,12 +333,14 @@ function socketCandidates(p, q, out) {
 // p: the moved piece { model, x, y, z, rx, ry, rz }; others: the objects of the project (the ones that are not road pieces are ignored)
 // maxDist: how far (m) the piece has to be from the place where it joins to be taken there. Returns { pos, rot: [rx, ry, rz], quat } or null
 export function roadSnap(p, others, maxDist = 8, want = null) {
-  if (!isRoadModel(p.model)) return null;
+  const light = isRoadLight(p.model);
+  if (!light && !isRoadModel(p.model)) return null;
   const here = new THREE.Vector3(p.x, p.y, p.z);
   const cur = quatOf(p.rx || 0, p.ry || 0, p.rz || 0);
   const near = [];
   for (const o of others) {
     if (o === p || o.uid === p.uid || !isRoadModel(o.model)) continue;
+    if (light && !MROAD_LIGHTS[o.model]) continue;
     if (Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z) > 160) continue;
     near.push(o);
   }
@@ -326,9 +350,12 @@ export function roadSnap(p, others, maxDist = 8, want = null) {
   const list = [];
   for (const q of near) {
     list.length = 0;
-    const pt = isTubeModel(p.model), qt = isTubeModel(q.model), pe = TUBE_EXTRAS.includes(p.model);
-    if (qt && (pt || pe)) tubeCandidates(p, q, list);                                         // the table of the tool
-    if (!(pt && qt) && !pe) { if (!(bothRamps(p.model, q.model) && rampCandidates(p, q, list))) socketCandidates(p, q, list); }     // two ramps: slope on slope; every other pair: by the ends of the models
+    if (light) lightCandidates(p, q, cur, list);
+    else {
+      const pt = isTubeModel(p.model), qt = isTubeModel(q.model), pe = TUBE_EXTRAS.includes(p.model);
+      if (qt && (pt || pe)) tubeCandidates(p, q, list);                                         // the table of the tool
+      if (!(pt && qt) && !pe) { if (!(bothRamps(p.model, q.model) && rampCandidates(p, q, list))) socketCandidates(p, q, list); }     // two ramps: slope on slope; every other pair: by the ends of the models
+    }
     for (const c of list) {
       const d = c.pos.distanceTo(here);
       if (d > maxDist) continue;
