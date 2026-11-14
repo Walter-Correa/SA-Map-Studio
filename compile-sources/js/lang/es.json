@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [modelo] - Crear vehículo (ej.: /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Resincronizar animaciones de los actores",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilidades generales",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Posición: %.4f, %.4f, %.4f Ángulo: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Una versión antigua no se abre en una carpeta de una versión más nueva, para no dañar tus proyectos y ajustes.",
  "Use a versão {0} ou mais nova.": "Usa la versión {0} o más nueva.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Volver al tamaño predeterminado",
  "Voltar o zoom para 100%": "Volver el zoom al 100 %",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Varios elementos seleccionados: solo se pueden mover o eliminar todos juntos.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "No disponible con varios elementos seleccionados: solo se pueden mover o eliminar todos juntos."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "No disponible con varios elementos seleccionados: solo se pueden mover o eliminar todos juntos.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Abrir la página de SA Map Studio en GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Una mira discreta en el centro de la pantalla, que muestra hacia dónde mira la cámara",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Un círculo rojo marca el punto del mundo donde hiciste clic",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Vida infinita y el vehículo siempre reparado; en el juego, /god lo activa y desactiva",
+ "Mostrar mira no centro da tela": "Mostrar mira en el centro de la pantalla",
+ "Marcar o ponto do clique": "Marcar el punto del clic",
+ "Entrar em god mode": "Entrar en modo dios",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Modo dios activado: vida infinita y vehículo siempre reparado. Escribe /god para salir.",
+ "God mode desativado.": "Modo dios desactivado.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Vida infinita (otra vez: la desactiva)",
+ "Aumentar": "Aumentar",
+ "Diminuir": "Disminuir",
+ "Movimento": "Movimiento"
 }

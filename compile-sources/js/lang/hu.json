@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [modell] - Jármű létrehozása (pl. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Szereplők animációinak újraszinkronizálása",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Általános segédeszközök",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Parancsok: /fly /map /w [időjárás] /t [óra] /anim /jetpack /v [modell] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Pozíció: %.4f, %.4f, %.4f Szög: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Egy régi verzió nem nyílik meg egy újabb verzió mappájában, így a projektjeid és beállításaid nem sérülnek.",
  "Use a versão {0} ou mais nova.": "Használd a(z) {0} vagy újabb verziót.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Vissza az alapméretre",
  "Voltar o zoom para 100%": "Nagyítás visszaállítása 100%-ra",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Több elem kijelölve: csak együtt mozgathatók vagy törölhetők.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Nem érhető el, ha több elem van kijelölve: csak együtt mozgathatók vagy törölhetők."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Nem érhető el, ha több elem van kijelölve: csak együtt mozgathatók vagy törölhetők.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Parancsok: /fly /map /w [időjárás] /t [óra] /anim /jetpack /v [modell] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Az SA Map Studio oldalának megnyitása a GitHubon",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Halvány célkereszt a képernyő közepén, amely mutatja, hová néz a kamera",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Piros kör jelöli a világ azon pontját, ahová kattintottál",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Végtelen élet és mindig megjavított jármű; játékban a /god be- és kikapcsolja",
+ "Mostrar mira no centro da tela": "Célkereszt a képernyő közepén",
+ "Marcar o ponto do clique": "A kattintás helyének jelölése",
+ "Entrar em god mode": "Indulás god módban",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God mód bekapcsolva: végtelen élet és mindig megjavított jármű. Kilépés: /god.",
+ "God mode desativado.": "God mód kikapcsolva.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Végtelen élet (újra: kikapcsolja)",
+ "Aumentar": "Növelés",
+ "Diminuir": "Csökkentés",
+ "Movimento": "Mozgatás"
 }

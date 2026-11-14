@@ -163,6 +163,9 @@ body.cursor-hidden * {
 /* ---------------------------------------------------------------- topo */
 .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-cond); font-weight: 700; font-size: 14.5px; white-space: nowrap; flex-shrink: 0; }
 .brand-mark { width: 34px; height: 34px; display: block; flex-shrink: 0; }
+.brand-link { color: inherit; text-decoration: none; cursor: pointer; }
+.brand-link:hover > span { text-decoration: underline; }
+
 .project-box { display: flex; align-items: center; gap: var(--btn-gap); min-width: 0; padding-left: 6px; border-left: 1px solid var(--line); flex-shrink: 0; }
 .project-name {
   width: 100px; min-width: 80px; flex-shrink: 0;
@@ -500,7 +503,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--sodium); width
 }
 .vec-arrow-btn:hover { background: var(--sodium); color: var(--sodium-ink); border-color: var(--sodium); }
 .vec-arrow-btn:active { background: var(--paper); color: #000; }
-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+/* Crosshair in the middle of the 3D view (View > Show crosshair) */
+.crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; opacity: .45; }
+.crosshair[hidden], body:has(dialog[open]) .crosshair { display: none; }
+
+.crosshair::before, .crosshair::after { content: ""; position: absolute; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.45); }
+.crosshair::before { left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
+.crosshair::after { top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; }
+.cam-flash { outline: 2px solid var(--sodium); outline-offset: -2px; transition: outline-color .3s; }
+.num-step { position: relative; display: block; width: 100%; }
+
+.num-step > input { padding-right: 26px; }
+input[type="number"] { -moz-appearance: textfield;
+ appearance: textfield; }
 input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; width: 100%; box-sizing: border-box; }
 .pair label { display: grid; gap: 3px; color: var(--paper-mute); font-size: 12px; min-width: 0; }

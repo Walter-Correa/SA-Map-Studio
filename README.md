@@ -234,8 +234,10 @@ never changed and removing the mod is deleting its folder.
   vehicles with their real tuning/paintjobs (`AddVehicleComponent`, `ChangeVehiclePaintjob`), 3D Texts
   (`Create3DTextLabel`), Pickups (`CreatePickup`), GangZones (`GangZoneCreate`), TextDraws and progress bars, opening
   SA-MP already connected and spawning where the camera is looking. Changes in the map are synchronized with the server.
-- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos`, `/som [id]`, `/cp` and `/help`.
+- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos`, `/som [id]`, `/cp`, `/god` (infinite health, the vehicle always repaired and upright; once more turns it off) and `/help`.
   The messages follow the editor language.
+- Options before testing: start in god mode and use the Streamer plugin (both on by default), start with a jetpack and
+  open the game by itself.
 
 ### Import and export
 - **Imports any file**, detecting the format by itself: Pawn code (Map Construction, Texture Studio and others, with

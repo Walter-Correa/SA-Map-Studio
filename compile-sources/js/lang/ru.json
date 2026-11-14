@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [модель] - Создать транспорт (напр. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Заново синхронизировать анимации актёров",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Общие утилиты",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Команды: /fly /map /w [погода] /t [час] /anim /jetpack /v [модель] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Позиция: %.4f, %.4f, %.4f Угол: %.1f Интерьер: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Старая версия не открывается в папке более новой версии, чтобы ваши проекты и настройки не пострадали.",
  "Use a versão {0} ou mais nova.": "Используйте версию {0} или новее.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Вернуть стандартный размер",
  "Voltar o zoom para 100%": "Вернуть масштаб 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Выбрано несколько элементов: их можно только перемещать или удалять вместе.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Недоступно при выборе нескольких элементов: их можно только перемещать или удалять вместе."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Недоступно при выборе нескольких элементов: их можно только перемещать или удалять вместе.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Команды: /fly /map /w [погода] /t [час] /anim /jetpack /v [модель] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Открыть страницу SA Map Studio на GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Неяркий прицел в центре экрана, показывающий, куда смотрит камера",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Красный круг отмечает точку мира, по которой вы щёлкнули",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Бесконечное здоровье и всегда исправный транспорт; в игре /god включает и выключает",
+ "Mostrar mira no centro da tela": "Показывать прицел в центре экрана",
+ "Marcar o ponto do clique": "Отмечать точку щелчка",
+ "Entrar em god mode": "Войти в режим бога",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Режим бога включён: бесконечное здоровье и всегда исправный транспорт. Введите /god, чтобы выйти.",
+ "God mode desativado.": "Режим бога выключен.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Бесконечное здоровье (ещё раз: выключает)",
+ "Aumentar": "Увеличить",
+ "Diminuir": "Уменьшить",
+ "Movimento": "Перемещение"
 }

@@ -38,6 +38,17 @@ export function setupCameras() {
   panel.addEventListener('change', onChange);
   app.on('project', () => { closedByUser = false; openPath = null; autoOpenSingle(); render(); drawHelper(); });
   app.on('cameras-tab', () => { if (autoOpenSingle()) { render(); drawHelper(); } });
+  // A click on a point of the open movement in the 3D view shows that movement in the Cameras tab
+  app.editor.addEventListener('camera-point', (e) => {
+    const { path, key } = e.detail || {};
+    if (!cams().paths.some(p => p.id === path)) return;
+    openPath = path; closedByUser = false;
+    app.emit('expand-sidebar', 'left');
+    app.emit('show-tab', 'cameras');
+    render(); drawHelper();
+    const el = $(`#camPanel [data-path="${path}"] [data-key="${key}"]`) || $(`#camPanel [data-path="${path}"]`);
+    if (el) { el.scrollIntoView({ block: 'nearest' }); el.classList.add('cam-flash'); setTimeout(() => el.classList.remove('cam-flash'), 1200); }
+  });
   app.on('project-closing', stopPreview);
   app.vp.onFrame((dt) => tickPreview(dt));
   window.addEventListener('keydown', (e) => { if (preview && e.key === 'Escape') { e.stopImmediatePropagation(); stopPreview(); } }, true);
@@ -210,7 +221,13 @@ function drawHelper() {
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([v3(s.pos), v3(s.look)]), lookMat);
     l.computeLineDistances(); g.add(l);
   }
-  g.traverse(o => { o.userData.noPick = true; o.renderOrder = 10; if (o.isMesh || o.isLine) o.raycast = () => {}; });
+  // In multiplayer the points of the open movement can be clicked (editor.js): they open it in the Cameras tab
+  const clickable = [];
+  if (p && app.project.mode !== 'sp') g.children.forEach(o => { if (o.isMesh && o.material === dotMat) clickable.push(o); });
+  g.traverse(o => { o.userData.noPick = true; o.renderOrder = 10; if ((o.isMesh || o.isLine) && !clickable.includes(o)) o.raycast = () => {}; });
+  clickable.forEach((o, i) => { o.userData.noPick = false; o.userData.camPoint = { path: p.id, key: i }; });
+  app.editor.camPickables = preview ? [] : clickable;
+
   g.visible = !preview;
   helper = g;
   app.vp.scene.add(g);

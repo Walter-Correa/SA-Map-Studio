@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [model] - Stwórz pojazd (np. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Ponownie zsynchronizuj animacje aktorów",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Narzędzia ogólne",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Komendy: /fly /map /w [pogoda] /t [godzina] /anim /jetpack /v [model] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Pozycja: %.4f, %.4f, %.4f Kąt: %.1f Wnętrze: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Stara wersja nie otwiera się w folderze nowszej wersji, dzięki czemu twoje projekty i ustawienia nie zostaną uszkodzone.",
  "Use a versão {0} ou mais nova.": "Użyj wersji {0} lub nowszej.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Powrót do domyślnego rozmiaru",
  "Voltar o zoom para 100%": "Przywróć powiększenie 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Zaznaczono kilka elementów: można je tylko przesuwać lub usuwać razem.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Niedostępne, gdy zaznaczono kilka elementów: można je tylko przesuwać lub usuwać razem."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Niedostępne, gdy zaznaczono kilka elementów: można je tylko przesuwać lub usuwać razem.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Komendy: /fly /map /w [pogoda] /t [godzina] /anim /jetpack /v [model] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Otwórz stronę SA Map Studio na GitHubie",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Dyskretny celownik na środku ekranu, pokazujący, gdzie patrzy kamera",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Czerwone kółko zaznacza punkt świata, w który kliknięto",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Nieskończone zdrowie i pojazd zawsze naprawiony; w grze /god włącza i wyłącza",
+ "Mostrar mira no centro da tela": "Pokaż celownik na środku ekranu",
+ "Marcar o ponto do clique": "Zaznaczaj kliknięty punkt",
+ "Entrar em god mode": "Zacznij w trybie boga",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Tryb boga włączony: nieskończone zdrowie i pojazd zawsze naprawiony. Wpisz /god, aby wyjść.",
+ "God mode desativado.": "Tryb boga wyłączony.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Nieskończone zdrowie (ponownie: wyłącza)",
+ "Aumentar": "Zwiększ",
+ "Diminuir": "Zmniejsz",
+ "Movimento": "Ruch"
 }

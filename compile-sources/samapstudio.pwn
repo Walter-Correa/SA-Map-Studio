@@ -59,11 +59,11 @@ new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
 // Messages shown in game. The editor sends the translation in the chosen language (MSG|id|text lines in
 // mapa.txt); with no translation Portuguese is used. The order is the same as TEST_MESSAGES in the editor's dialogs.js.
-#define SAMSP_MAX_MSGS        27
+#define SAMSP_MAX_MSGS        30
 new gMsg[SAMSP_MAX_MSGS][192] =
 {
     "SA Map Studio: teste do mapa.",
-    "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos",
+    "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god",
     "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly para sair.",
     "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.",
     "Animações dos actors sincronizadas e reaplicadas.",
@@ -88,7 +88,10 @@ new gMsg[SAMSP_MAX_MSGS][192] =
     "  /t [0-23] [min] - Alterar horário (ex: /t 12 ou /t 22:30)",
     "  /v [modelo] - Criar veículo (ex: /v 411)",
     "  /anim - Ressincronizar animações dos actors",
-    "  /jetpack, /spawn, /pos - Utilidades gerais"
+    "  /jetpack, /spawn, /pos - Utilidades gerais",
+    "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.",
+    "God mode desativado.",
+    "  /god - Vida infinita (de novo: desativa)"
 };
 
 new bool:gPlayerSpawned[MAX_PLAYERS];
@@ -249,6 +252,9 @@ new Float:gSpawn[4] = {0.0, 0.0, 3.0, 0.0};
 new gSpawnInterior;
 new gSpawnMundo;
 new bool:gJetpack = true;
+// God mode (/god): infinite health, and the vehicle the player is in is kept repaired and upright. gGodOnSpawn comes from the test options
+new bool:gGodOnSpawn = false;
+new bool:gGod[MAX_PLAYERS];
 
 // Weather, Time and Map Center
 new gClima = 10;
@@ -508,6 +514,7 @@ stock SAMSP_CarregarMapa()
                 gSpawnInterior = SAMSP_Int(linha, 5);
                 gSpawnMundo = SAMSP_Int(linha, 6);
                 gJetpack = (SAMSP_Int(linha, 7) != 0);
+                gGodOnSpawn = (SAMSP_Int(linha, 8) != 0);
             }
             case 'E':
             {
@@ -1005,6 +1012,46 @@ public OnGameModeInit()
     AddPlayerClass(0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SetWorldTime(gHora);
     SetWeather(gClima);
+    SetTimer("SAMSP_GodTick", 100, true);
+    return 1;
+}
+
+stock bool:IsVehicleUpsideDown(vehicleid)
+{
+    new Float:quat_w, Float:quat_x, Float:quat_y, Float:quat_z;
+    GetVehicleRotationQuat(vehicleid, quat_w, quat_x, quat_y, quat_z);
+    new Float:y = atan2(2 * ((quat_y * quat_z) + (quat_w * quat_x)), (quat_w * quat_w) - (quat_x * quat_x) - (quat_y * quat_y) + (quat_z * quat_z));
+    return (y > 90 || y < -90);
+}
+
+stock SAMSP_SetGod(playerid, bool:on)
+{
+    gGod[playerid] = on;
+    SetPlayerHealth(playerid, on ? (Float:0x7F800000) : 100.0);
+}
+
+// Every 100 ms: keeps the health of the players in god mode, and repairs and turns upright the vehicle they are in
+forward SAMSP_GodTick();
+public SAMSP_GodTick()
+{
+    for (new playerid = 0; playerid < MAX_PLAYERS; playerid++)
+    {
+        if (!gGod[playerid] || !gPlayerSpawned[playerid] || !IsPlayerConnected(playerid)) continue;
+        new Float:health;
+        GetPlayerHealth(playerid, health);
+        if (health < 1000000.0) SetPlayerHealth(playerid, (Float:0x7F800000));
+        if (!IsPlayerInAnyVehicle(playerid)) continue;
+        new vehicleid = GetPlayerVehicleID(playerid);
+        RepairVehicle(vehicleid);
+        SetVehicleHealth(vehicleid, 1000.0);
+        UpdateVehicleDamageStatus(vehicleid, 0, 0, 0, 0);
+        if (IsVehicleUpsideDown(vehicleid))
+        {
+            new Float:angle;
+            GetVehicleZAngle(vehicleid, angle);
+            SetVehicleZAngle(vehicleid, angle);
+        }
+    }
     return 1;
 }
 
@@ -1272,6 +1319,7 @@ public OnPlayerConnect(playerid)
     gNoClip[playerid][noclip_lastmove] = 0;
     gNoClip[playerid][noclip_accelmul] = 0.0;
     gReturningFromFly[playerid] = false;
+    gGod[playerid] = gGodOnSpawn;
 
     SetSpawnInfo(playerid, NO_TEAM, 0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SetPlayerTime(playerid, gHora, gMinuto);
@@ -1650,6 +1698,7 @@ public OnPlayerSpawn(playerid)
 {
     gPlayerSpawned[playerid] = true;
     gSpawnRequested[playerid] = false;
+    if (gGod[playerid]) SAMSP_SetGod(playerid, true);
     if (gReturningFromFly[playerid])
     {
         SAMSP_RestaurarPosVoo(playerid);
@@ -1876,6 +1925,14 @@ public OnPlayerCommandText(playerid, cmdtext[])
         return 1;
     }
 
+    // God mode: infinite health and the vehicle always repaired; once more turns it off (the health goes back to 100)
+    if (!strcmp(cmdtext, "/god", true))
+    {
+        SAMSP_SetGod(playerid, !gGod[playerid]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[gGod[playerid] ? 27 : 28]);
+        return 1;
+    }
+
     if (!strcmp(cmdtext, "/jetpack", true))
     {
         SetPlayerSpecialAction(playerid, SPECIAL_ACTION_USEJETPACK);
@@ -2070,6 +2127,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
         SendClientMessage(playerid, SAMSP_COR_OK, gMsg[24]);
         SendClientMessage(playerid, SAMSP_COR_OK, gMsg[25]);
         SendClientMessage(playerid, SAMSP_COR_OK, gMsg[26]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[29]);
+
         return 1;
     }
     return 0;

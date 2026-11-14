@@ -265,6 +265,13 @@ async function start(cfg) {
   setupTest();
   setupKeys();
   setupAbout();
+  // The logo opens the project page in the user's browser (the program window must not navigate away from the editor)
+  $('#brandLink')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const url = e.currentTarget.href;
+    postJSON('/api/open_url', { url }).catch(() => window.open(url, '_blank', 'noopener'));
+  });
+
   setupLogsDialog();
   setupAnimPicker();
   setupSkinPicker();
@@ -344,7 +351,17 @@ function setupToolbar(cfg) {
   ed.on('selection', updateUndoButtons);
 
   // View
-  const view = store.get('view', { dist: 500, speed: 25, lod: true, water: true, interiors: false, showSelectionBox: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
+  // The crosshair in the middle of the 3D view: only while editing in the world, never over a window, dialog or notice
+  let crosshairOn = false;
+  const updateCrosshair = () => {
+    const el = $('#crosshair');
+    if (!el) return;
+    const show = crosshairOn && !document.querySelector('dialog[open]') && !$('#app').hidden;
+    if (el.hidden === show) el.hidden = !show;
+  };
+  vp.onFrame(updateCrosshair);
+  const view = store.get(
+'view', { dist: 500, speed: 25, lod: true, water: true, interiors: false, showSelectionBox: false, removeLod: true, autoCollapseSidebars: false, weather: 10, time: '10:00' });
   if (view.dist === 600 && !store.get('viewDist500', false)) { view.dist = 500; store.set('viewDist500', true); }
   const applyView = () => {
     const v = {
@@ -355,6 +372,8 @@ function setupToolbar(cfg) {
       interiors: $('#showInteriors').checked,
       showSelectionBox: $('#showSelectionBox')?.checked ?? false,
       gizmoToCamera: $('#gizmoToCamera')?.checked ?? true,
+      crosshair: $('#showCrosshair')?.checked ?? false,
+      clickMark: $('#showClickMark')?.checked ?? true,
       removeLod: $('#removeLod').checked,
       autoCollapseSidebars: $('#autoCollapseSidebars')?.checked ?? false,
       weather: Math.max(0, Math.min(45, +($('#viewWeather')?.value ?? 10) || 10)),
@@ -372,6 +391,10 @@ function setupToolbar(cfg) {
     if (water) water.visible = v.water && !v.interiors;
     ed.removeLodToo = v.removeLod;
     ed.gizmoToCamera = v.gizmoToCamera;
+    ed.showClickMark = v.clickMark;
+    crosshairOn = v.crosshair;
+    updateCrosshair();
+
     if (ed.showSelectionBox !== v.showSelectionBox) {
       ed.showSelectionBox = v.showSelectionBox;
       ed.refreshSelectionBoxes();
@@ -396,10 +419,12 @@ function setupToolbar(cfg) {
   $('#showWater').checked = view.water; $('#showInteriors').checked = view.interiors; $('#removeLod').checked = view.removeLod;
   if ($('#showSelectionBox')) $('#showSelectionBox').checked = view.showSelectionBox === true;
   if ($('#gizmoToCamera')) $('#gizmoToCamera').checked = view.gizmoToCamera !== false;
+  if ($('#showCrosshair')) $('#showCrosshair').checked = view.crosshair === true;
+  if ($('#showClickMark')) $('#showClickMark').checked = view.clickMark !== false;
   if ($('#autoCollapseSidebars')) $('#autoCollapseSidebars').checked = view.autoCollapseSidebars ?? false;
   if ($('#viewWeather')) $('#viewWeather').value = view.weather !== undefined ? view.weather : 10;
   if ($('#viewTime')) $('#viewTime').value = view.time || '10:00';
-  ['#viewDist', '#camSpeed', '#showLod', '#showWater', '#showInteriors', '#showSelectionBox', '#gizmoToCamera', '#removeLod', '#autoCollapseSidebars', '#viewWeather', '#viewTime'].forEach(s => {
+  ['#viewDist', '#camSpeed', '#showLod', '#showWater', '#showInteriors', '#showSelectionBox', '#gizmoToCamera', '#showCrosshair', '#showClickMark', '#removeLod', '#autoCollapseSidebars', '#viewWeather', '#viewTime'].forEach(s => {
     const el = $(s);
     if (el) el.addEventListener('input', applyView);
     if (el) el.addEventListener('change', applyView);
@@ -461,6 +486,7 @@ function setupToolbar(cfg) {
   setupTopbarFit();
 
   $('#btnToggleLeftSidebar')?.addEventListener('click', () => setLeftCollapsed(!leftCollapsed));
+  app.on('expand-sidebar', (side) => { if (side === 'left') setLeftCollapsed(false); else setRightCollapsed(false); });
   $('#btnToggleRightSidebar')?.addEventListener('click', () => setRightCollapsed(!rightCollapsed));
 
   window.addEventListener('keydown', (e) => {

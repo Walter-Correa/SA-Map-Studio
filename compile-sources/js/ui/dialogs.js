@@ -273,7 +273,7 @@ export function setupImport() {
 // to the editor's language (MSG|id|text lines); in Portuguese the gamemode already has the text.
 const TEST_MESSAGES = [
   'SA Map Studio: teste do mapa.',
-  'Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos',
+  'Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god',
   'Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly para sair.',
   'Modo de voo desativado. Você retornou à posição onde o voo foi ativado.',
   'Animações dos actors sincronizadas e reaplicadas.',
@@ -299,6 +299,9 @@ const TEST_MESSAGES = [
   '  /v [modelo] - Criar veículo (ex: /v 411)',
   '  /anim - Ressincronizar animações dos actors',
   '  /jetpack, /spawn, /pos - Utilidades gerais',
+  'God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.',
+  'God mode desativado.',
+  '  /god - Vida infinita (de novo: desativa)',
 ];
 
 // The SA-MP chat only shows Windows-1252: letters outside it lose their accent (ł → l, ș → s, ơ → o);
@@ -322,7 +325,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
   const clean = (s) => String(s ?? '').replace(/[|\r\n]/g, ' ');
   const lines = [
     `X|${useStreamer ? 1 : 0}`,
-    `S|${spawn.x.toFixed(4)}|${spawn.y.toFixed(4)}|${spawn.z.toFixed(4)}|${spawn.a.toFixed(2)}|${spawn.interior}|${spawn.world}|${spawn.jetpack ? 1 : 0}`
+    `S|${spawn.x.toFixed(4)}|${spawn.y.toFixed(4)}|${spawn.z.toFixed(4)}|${spawn.a.toFixed(2)}|${spawn.interior}|${spawn.world}|${spawn.jetpack ? 1 : 0}|${spawn.god ? 1 : 0}`
   ];
   if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}`);
   if (center) lines.push(`C|${center.x.toFixed(4)}|${center.y.toFixed(4)}|${center.z.toFixed(4)}`);
@@ -473,9 +476,13 @@ function spawnPoint(kind) {
 export function setupTest() {
   const dlg = $('#dlgTest');
   const saved = store.get('test', {});
-  if (saved.spawn) { const r = $(`input[name="testSpawn"][value="${saved.spawn}"]`); if (r) r.checked = true; }
+  // The Streamer plugin became the default: turned on once for those who had the old default (off) saved
+  if (!store.get('testStreamerOn', false)) { saved.streamer = true; store.set('testStreamerOn', true); }
+  if (saved.spawn) {
+ const r = $(`input[name="testSpawn"][value="${saved.spawn}"]`); if (r) r.checked = true; }
   $('#testJetpack').checked = saved.jetpack ?? false;
-  if ($('#testStreamer')) $('#testStreamer').checked = saved.streamer ?? false;
+  if ($('#testStreamer')) $('#testStreamer').checked = saved.streamer ?? true;
+  if ($('#testGod')) $('#testGod').checked = saved.god ?? true;
   if (saved.launch !== undefined) $('#testLaunch').checked = saved.launch;
   if (saved.weather !== undefined && $('#testWeather')) $('#testWeather').value = Math.max(0, Math.min(45, saved.weather));
   else if ($('#testWeather')) $('#testWeather').value = 10;
@@ -527,13 +534,14 @@ export function setupTest() {
     store.set('test', {
       spawn: kind,
       jetpack: $('#testJetpack').checked,
+      god: Boolean($('#testGod')?.checked),
       streamer,
       launch: $('#testLaunch').checked,
       weather,
       time: timeVal
     });
     const sp = spawnPoint(kind);
-    const spawn = { ...sp, interior: Math.max(0, +$('#testInterior').value | 0), world: Math.max(0, +$('#testWorld').value | 0), jetpack: $('#testJetpack').checked };
+    const spawn = { ...sp, interior: Math.max(0, +$('#testInterior').value | 0), world: Math.max(0, +$('#testWorld').value | 0), jetpack: $('#testJetpack').checked, god: Boolean($('#testGod')?.checked) };
     const env = { weather, hour, minute };
     const center = projectCenter(app.project);
 

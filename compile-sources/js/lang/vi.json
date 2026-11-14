@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [mô hình] - Tạo xe (VD: /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Đồng bộ lại hoạt ảnh diễn viên",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Tiện ích chung",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Lệnh: /fly /map /w [thời tiết] /t [giờ] /anim /jetpack /v [mô hình] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Vị trí: %.4f, %.4f, %.4f Góc: %.1f Nội thất: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Phiên bản cũ không mở trong thư mục của phiên bản mới hơn, để dự án và cài đặt của bạn không bị hỏng.",
  "Use a versão {0} ou mais nova.": "Hãy dùng phiên bản {0} hoặc mới hơn.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Trở về kích thước mặc định",
  "Voltar o zoom para 100%": "Đưa thu phóng về 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Đã chọn nhiều phần tử: chỉ có thể di chuyển hoặc xóa tất cả cùng lúc.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Không khả dụng khi chọn nhiều phần tử: chỉ có thể di chuyển hoặc xóa tất cả cùng lúc."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Không khả dụng khi chọn nhiều phần tử: chỉ có thể di chuyển hoặc xóa tất cả cùng lúc.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Lệnh: /fly /map /w [thời tiết] /t [giờ] /anim /jetpack /v [mô hình] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Mở trang SA Map Studio trên GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Một tâm ngắm mờ ở giữa màn hình, cho biết camera đang nhìn về đâu",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Một vòng tròn đỏ đánh dấu điểm trong thế giới mà bạn đã nhấp",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Máu vô hạn và xe luôn được sửa; trong game, /god bật và tắt",
+ "Mostrar mira no centro da tela": "Hiện tâm ngắm ở giữa màn hình",
+ "Marcar o ponto do clique": "Đánh dấu điểm đã nhấp",
+ "Entrar em god mode": "Vào chế độ bất tử",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Đã bật chế độ bất tử: máu vô hạn và xe luôn được sửa. Gõ /god để thoát.",
+ "God mode desativado.": "Đã tắt chế độ bất tử.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Máu vô hạn (gõ lại: tắt)",
+ "Aumentar": "Tăng",
+ "Diminuir": "Giảm",
+ "Movimento": "Di chuyển"
 }

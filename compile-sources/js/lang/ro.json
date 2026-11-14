@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [model] - Creează un vehicul (ex.: /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Resincronizează animațiile actorilor",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilitare generale",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Comenzi: /fly /map /w [vreme] /t [oră] /anim /jetpack /v [model] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Poziție: %.4f, %.4f, %.4f Unghi: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "O versiune veche nu se deschide într-un folder al unei versiuni mai noi, ca proiectele și setările tale să nu fie stricate.",
  "Use a versão {0} ou mais nova.": "Folosește versiunea {0} sau mai nouă.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Înapoi la dimensiunea implicită",
  "Voltar o zoom para 100%": "Readu zoomul la 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Mai multe elemente selectate: pot fi doar mutate sau șterse împreună.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Indisponibil cu mai multe elemente selectate: pot fi doar mutate sau șterse împreună."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Indisponibil cu mai multe elemente selectate: pot fi doar mutate sau șterse împreună.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Comenzi: /fly /map /w [vreme] /t [oră] /anim /jetpack /v [model] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Deschide pagina SA Map Studio pe GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "O țintă discretă în centrul ecranului, care arată unde privește camera",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Un cerc roșu marchează punctul din lume pe care ai dat clic",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Viață infinită și vehiculul mereu reparat; în joc, /god pornește și oprește",
+ "Mostrar mira no centro da tela": "Arată ținta în centrul ecranului",
+ "Marcar o ponto do clique": "Marchează punctul clicului",
+ "Entrar em god mode": "Intră în god mode",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God mode activat: viață infinită și vehicul mereu reparat. Scrie /god pentru a ieși.",
+ "God mode desativado.": "God mode dezactivat.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Viață infinită (din nou: dezactivează)",
+ "Aumentar": "Mărește",
+ "Diminuir": "Micșorează",
+ "Movimento": "Mișcare"
 }
