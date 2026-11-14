@@ -710,12 +710,101 @@ def sp_legacy_dir(name):
     return os.path.join(State.gta_path, "modloader", safe_name(name)) if State.gta_path else ""
 
 
-def sp_installed_dir(name):
-    """The folder where this project's mod is installed now ('' if it is not)."""
-    for d in (sp_install_dir(name), sp_legacy_dir(name)):
-        if d and os.path.isfile(os.path.join(d, SP_MARK)):
+SP_ID_RE = re.compile(r"[0-9a-f]{16}")
+
+
+def sp_clean_id(value):
+    """The permanent id of a project ('' when missing or malformed)."""
+    value = str(value or "")
+    return value if SP_ID_RE.fullmatch(value) else ""
+
+
+def sp_mod_dirs():
+    """Every installed mod folder of this editor, with its marker: [(folder, marker)]."""
+    out = []
+    for base in (sp_group_dir(), os.path.join(State.gta_path, "modloader") if State.gta_path else ""):
+        if base and os.path.isdir(base):
+            for n in sorted(os.listdir(base), key=str.lower):
+                d = os.path.join(base, n)
+                if os.path.isfile(os.path.join(d, SP_MARK)):
+                    out.append((d, sp_marker(d)))
+    return out
+
+
+def sp_find_id(mod_id):
+    """The installed mod folder that carries this project id ('' if none)."""
+    if not mod_id:
+        return ""
+    for d, m in sp_mod_dirs():
+        if m.get("id") == mod_id:
             return d
     return ""
+
+
+def sp_adopt(folder, name):
+    """The project's mod sits under another folder name (the project was renamed, or an old version installed it
+    straight inside modloader): it moves to the project's current name. Stays put when that name is taken or the
+    folder cannot be moved (the game holds its files)."""
+    dst = sp_install_dir(name)
+    if not dst or os.path.normcase(os.path.abspath(folder)) == os.path.normcase(os.path.abspath(dst)):
+        return folder
+    if os.path.exists(dst):
+        return folder
+    try:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        os.rename(folder, dst)
+    except OSError:
+        return folder
+    mark = sp_marker(dst)
+    if mark:
+        mark["name"] = name
+        try:
+            with open(os.path.join(dst, SP_MARK), "w", encoding="utf-8") as f:
+                json.dump(mark, f)
+        except OSError:
+            pass
+    sp_tidy_group()
+    return dst
+
+
+def sp_installed_dir(name, mod_id=""):
+    """The folder where this project's mod is installed now ('' if it is not). The permanent id wins over the name:
+    a mod found by id is renamed to the project's current name. Mods without an id are still found by the name."""
+    mod_id = sp_clean_id(mod_id)
+    if mod_id:
+        d = sp_find_id(mod_id)
+        if d:
+            return sp_adopt(d, name)
+    for d in (sp_install_dir(name), sp_legacy_dir(name)):
+        if d and os.path.isfile(os.path.join(d, SP_MARK)):
+            other = sp_clean_id(sp_marker(d).get("id"))
+            if not mod_id or not other or other == mod_id:
+                return d
+    return ""
+
+
+def sp_project_ids():
+    """Permanent id -> name of the Singleplayer projects (ids shared by two projects are left out)."""
+    ids, seen = {}, set()
+    pdir = projects_dir("sp")
+    if os.path.isdir(pdir):
+        for n in os.listdir(pdir):
+            if not n.lower().endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(pdir, n), "r", encoding="utf-8", errors="replace") as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+            mod_id = sp_clean_id(data.get("modId")) if isinstance(data, dict) else ""
+            if not mod_id:
+                continue
+            if mod_id in seen:
+                ids.pop(mod_id, None)
+                continue
+            seen.add(mod_id)
+            ids[mod_id] = str(data.get("name") or n[:-5])
+    return ids
 
 
 def sp_tidy_group():
@@ -786,11 +875,11 @@ def sp_missing():
     return out
 
 
-def sp_status(name, was=""):
+def sp_status(name, was="", mod_id=""):
     gta = State.gta_path or ""
     exe = sp_game_exe()
     built = sp_build_dir(name)
-    inst = sp_installed_dir(name)
+    inst = sp_installed_dir(name, mod_id)
     renamed = False
     if not inst and was and was != name:
         # The project was renamed after the mod was installed: the mod is still there with the old name
@@ -834,16 +923,21 @@ def sp_marker(folder):
 
 
 def sp_list_installed():
-    """The mods of this editor inside the game's modloader folder (the ones with its marker)."""
+    """The mods of this editor inside the game's modloader folder (the ones with its marker). A mod whose id belongs
+    to a project is renamed to that project's current name first."""
+    ids = sp_project_ids()
+    for d, m in sp_mod_dirs():
+        proj = ids.get(sp_clean_id(m.get("id")))
+        if proj:
+            sp_adopt(d, proj)
     out = []
     # the editor's folder, and (mods installed by the first versions) the folder of modloader itself
-    for base in (sp_group_dir(), os.path.join(State.gta_path, "modloader") if State.gta_path else ""):
-        if base and os.path.isdir(base):
-            for n in sorted(os.listdir(base), key=str.lower):
-                mark = os.path.join(base, n, SP_MARK)
-                if os.path.isfile(mark) and not any(o["folder"] == n for o in out):
-                    m = sp_marker(os.path.join(base, n))
-                    out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "time": os.path.getmtime(mark)})
+    for d, m in sp_mod_dirs():
+        n = os.path.basename(d)
+        if not any(o["folder"] == n for o in out):
+            mod_id = sp_clean_id(m.get("id"))
+            out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "id": mod_id,
+                        "project": ids.get(mod_id, ""), "time": os.path.getmtime(os.path.join(d, SP_MARK))})
     return out
 
 
@@ -868,7 +962,8 @@ def sp_write_files(root, files, meta=None):
         with open(full, "wb") as f:
             f.write(data)
     mark = {"app": "SA Map Studio", "note": "Created by SA Map Studio. Delete this folder to remove the mod.",
-            "name": str((meta or {}).get("name") or ""), "hash": str((meta or {}).get("hash") or "")}
+            "name": str((meta or {}).get("name") or ""), "hash": str((meta or {}).get("hash") or ""),
+            "id": sp_clean_id((meta or {}).get("id"))}
     with open(os.path.join(root, SP_MARK), "w", encoding="utf-8") as f:
         json.dump(mark, f)
     return len(clean)
@@ -914,13 +1009,14 @@ def sp_zip(name):
     return out
 
 
-def sp_install(name, was=""):
+def sp_install(name, was="", mod_id=""):
     src = sp_build_dir(name)
     dst = sp_install_dir(name)
     if not dst:
         raise ValueError("Pasta do GTA não definida")
     if not os.path.isfile(os.path.join(src, SP_MARK)):
         raise ValueError("Gere o mod antes de instalar")
+    cur = sp_installed_dir(name, mod_id)  # by id: a mod installed under an older name moves to this one
     if os.path.exists(dst) and not os.path.isfile(os.path.join(dst, SP_MARK)):
         raise ValueError("Já existe uma pasta do Modloader com esse nome que não foi criada por este programa")
     if os.path.isdir(dst):
@@ -930,12 +1026,11 @@ def sp_install(name, was=""):
         shutil.rmtree(old)  # installed by an older version straight inside modloader: it moves to the editor's folder
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copytree(src, dst)
-    if was and was != name:
-        # The project was renamed: the mod installed with the old name goes away
-        old = sp_installed_dir(was)
-        if old and os.path.normcase(old) != os.path.normcase(dst):
-            shutil.rmtree(old)
-        sp_tidy_group()
+    # The project was renamed: the mod installed with the old name goes away (found by id, or by the old name)
+    old = cur if cur and os.path.isdir(cur) else (sp_installed_dir(was) if was and was != name else "")
+    if old and os.path.normcase(os.path.abspath(old)) != os.path.normcase(os.path.abspath(dst)):
+        shutil.rmtree(old)
+    sp_tidy_group()
     return dst
 
 
@@ -2920,18 +3015,19 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json({"ok": False, "error": "Projeto sem nome"}, 400)
             try:
                 if action == "status":
-                    return self.send_json(sp_status(name, str(body.get("was") or "")))
+                    return self.send_json(sp_status(name, str(body.get("was") or ""), body.get("id")))
                 if action == "build":
                     files = dict(body.get("files") or {})
                     files["README.txt"] = base64.b64encode(sp_readme(name, body.get("info")).encode("utf-8")).decode("ascii")
-                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": (body.get("meta") or {}).get("hash")})
-                    return self.send_json({**sp_status(name), "files": n})
+                    meta = body.get("meta") or {}
+                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": meta.get("hash"), "id": meta.get("id")})
+                    return self.send_json({**sp_status(name, "", meta.get("id")), "files": n})
                 if action == "install":
                     missing = sp_missing()
                     if missing:
-                        return self.send_json({**sp_status(name), "ok": False, "error": "Falta algo no jogo"}, 400)
-                    sp_install(name, str(body.get("was") or ""))
-                    return self.send_json(sp_status(name))
+                        return self.send_json({**sp_status(name, "", body.get("id")), "ok": False, "error": "Falta algo no jogo"}, 400)
+                    sp_install(name, str(body.get("was") or ""), body.get("id"))
+                    return self.send_json(sp_status(name, "", body.get("id")))
                 if action == "uninstall":
                     sp_uninstall(name)
                     return self.send_json(sp_status(name))
@@ -3197,11 +3293,13 @@ class Handler(SimpleHTTPRequestHandler):
                         "textDraws": 0, "removed": 0
                     }
                     mode = "mp"
+                    mod_id = ""
                     try:
                         with open(full, "r", encoding="utf-8", errors="replace") as pf:
                             pdata = json.load(pf)
                             if isinstance(pdata, dict):
                                 mode = "sp" if pdata.get("mode") == "sp" else "mp"
+                                mod_id = sp_clean_id(pdata.get("modId"))
                                 counts["objects"] = len(pdata.get("objects") or [])
                                 counts["vehicles"] = len(pdata.get("vehicles") or [])
                                 counts["actors"] = len(pdata.get("actors") or [])
@@ -3219,6 +3317,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "modified": os.path.getmtime(full),
                         "size": os.path.getsize(full),
                         "mode": mode,
+                        "modId": mod_id,
                         "counts": counts
                     })
             items.sort(key=lambda i: -i["modified"])

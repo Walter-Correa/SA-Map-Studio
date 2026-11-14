@@ -295,6 +295,54 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
   }
 }
 
+// ---------------------------------------------------------------------------  the menu of a checkpoint or a pickup
+// menu: { title, titleKey, hint, options: [{ ...action, key, text }] }. The texts become entries of the game's text table (CLEO's
+// 0ADF, under keys of up to 7 letters) and the game's own menu panel shows them; the player picks a row with the sprint key or
+// leaves with the enter/exit key. Uses the locals MENU_H and MENU_ROW, which the pickups and checkpoints scripts keep free.
+export const MENU_H = 22, MENU_ROW = 23;
+function emitMenu(a, menu, x, y, z, id, dist) {
+  const u = (n) => n + id;
+  const opts = menu.options.slice(0, 12);
+  if (!opts.length) return;
+  a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(1)).op(0x004D, ref(u('ms')));                  // the player could not pay the action before it: no menu
+  a.op(0x0ADF, str(menu.titleKey), str(menu.title));
+  opts.forEach(o => a.op(0x0ADF, str(o.key), str(o.text)));
+  const longest = Math.max(menu.title.length, ...opts.map(o => o.text.length));
+  a.op(0x01B4, int(0), int(0));                                                                // the player stands still while it is open
+  a.op(0x08D4, str(menu.titleKey), flt(29), flt(150), flt(Math.min(400, Math.max(160, longest * 9 + 24))), int(1), int(1), int(1), int(1), lv(MENU_H));
+  const keys = opts.map(o => o.key);
+  while (keys.length < 12) keys.push('DUMMY');
+  a.op(0x08DB, lv(MENU_H), int(0), str('DUMMY'), ...keys.map(k => str(k)));
+  if (menu.hint) a.op(0x0ACA, str(menu.hint));
+  // the keys may still be down (the player came running): it waits until both are up
+  a.label(u('mr')).op(0x0001, int(0));
+  a.op(0x00D6, int(21)).op(0x00E1, int(0), int(16)).op(0x00E1, int(0), int(15)).op(0x004D, ref(u('mw')));
+  a.jump(u('mr'));
+  a.label(u('mw')).op(0x0001, int(0));
+  a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref(u('mx')));                          // the player died or was arrested
+  a.op(0x00D6, int(0)).op(0x00E1, int(0), int(15)).op(0x004D, ref(u('ma')));
+  a.jump(u('mx'));                                                                              // leaves without choosing
+  a.label(u('ma'));
+  a.op(0x00D6, int(0)).op(0x00E1, int(0), int(16)).op(0x004D, ref(u('mw')));
+  a.op(0x08D7, lv(MENU_H), lv(MENU_ROW));
+  a.op(0x08DA, lv(MENU_H)).op(0x03E6).op(0x01B4, int(0), int(1));
+  opts.forEach((o, k) => {
+    a.op(0x00D6, int(0)).op(0x0039, lv(MENU_ROW), int(k)).op(0x004D, ref(u('mo' + k)));
+    emitAction(a, o, x, y, z, id + 'o' + k, dist);
+    a.jump(u('me'));
+    a.label(u('mo' + k));
+  });
+  a.jump(u('me'));
+  a.label(u('mx'));
+  a.op(0x08DA, lv(MENU_H)).op(0x03E6).op(0x01B4, int(0), int(1));
+  a.label(u('me'));
+  a.op(0x0006, lv(T6), int(1));                                                                 // the item was used (whatever the option cost)
+  a.label(u('ms'));
+}
+const hasAction = (e) => !!(e.action && e.action.type !== 'none');
+const hasMenu = (e) => !!(e.menu && e.menu.options.length);
+export const usesMenuOrAction = (e) => hasAction(e) || hasMenu(e);
+
 // The stats of the player that an action can change: the id(s) of the stat, whether it is a float or an integer stat, the least value the game allows
 // (and 1000 the most), whether the look of the player has to be built again and, for respect and sex appeal, the flag of the cheat of the game.
 // Fat, stamina, muscle, lung capacity and max health are capped at 1000 by the game (it clamps them to 1000 when they grow); the least is 0, except the
@@ -314,7 +362,7 @@ const STAT_ACTIONS = {
 
 // pickups: { model, type, x, y, z, action }. One with an action keeps the pickup, and gives it back some seconds after it was taken
 export function pickupsScript(items) {
-  const list = items.map(e => ({ ...e, vars: e.action && e.action.type !== 'none' ? 3 : 2 }));
+  const list = items.map(e => ({ ...e, vars: usesMenuOrAction(e) ? 3 : 2 }));
   return nearScript(list, {
     radius: 150, wait: 250,
     save: (a, e, i, base) => {
@@ -333,15 +381,22 @@ export function pickupsScript(items) {
       // state 1: waiting to be taken; state 3: taken, counting to come back (state 2: taken for good)
       a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('t' + i));
       a.op(0x00D6, int(0)).op(0x0214, lv(base + 1)).op(0x004D, ref('n' + i));
-      emitAction(a, e.action, e.x, e.y, e.z, 'p' + i);
+      if (hasAction(e)) emitAction(a, e.action, e.x, e.y, e.z, 'p' + i);
+      else a.op(0x0006, lv(T6), int(1));
+      if (hasMenu(e)) emitMenu(a, e.menu, e.x, e.y, e.z, 'p' + i, 3);
       a.op(0x0215, lv(base + 1));
       a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(0)).op(0x004D, ref('pk' + i));               // could not pay: the pickup stays
+      if (hasMenu(e)) {
+        // with a menu it comes back later instead (made again under the player, it would be taken and open the menu again)
+        a.op(0x0006, lv(base), int(3)).op(0x0006, lv(base + 2), int(40));
+        a.jump('n' + i);
+      }
       loadModel(a, e.model, 'q' + i);
       a.op(0x0213, int(e.model), int(e.type), flt(e.x), flt(e.y), flt(e.z), lv(base + 1));
       a.op(0x0249, int(e.model));
       a.jump('n' + i);
       a.label('pk' + i);
-      a.op(0x0006, lv(base), int(e.action.once ? 2 : 3)).op(0x0006, lv(base + 2), int(40));
+      a.op(0x0006, lv(base), int(hasAction(e) && e.action.once ? 2 : 3)).op(0x0006, lv(base + 2), int(40));
       a.jump('n' + i);
       a.label('t' + i);
       a.op(0x00D6, int(0)).op(0x0039, lv(base), int(3)).op(0x004D, ref('n' + i));
@@ -446,15 +501,18 @@ export function checkpointsScript(items) {
     a.op(0x03BD, lv(base + 2));
     a.op(0x0006, lv(base), int(0)).jump('n' + i);
     a.label('k' + i);
-    if (e.action && e.action.type !== 'none') {
+    if (usesMenuOrAction(e)) {
       const r = Math.max(1, e.radius);
       a.op(0x00D6, int(0)).op(0x00FE, lv(PLAYER), flt(e.x), flt(e.y), flt(e.z), flt(r), flt(r), flt(Math.max(r, 3)), int(0)).op(0x004D, ref('o' + i));
       a.op(0x00D6, int(0)).op(0x0039, lv(base), int(1)).op(0x004D, ref('n' + i));              // already inside: nothing new
-      emitAction(a, e.action, e.x, e.y, e.z, 'c' + i, Math.max(3, e.radius + 1));
+      if (hasAction(e)) emitAction(a, e.action, e.x, e.y, e.z, 'c' + i, Math.max(3, e.radius + 1));
+      else a.op(0x0006, lv(T6), int(1));
+      if (hasMenu(e)) emitMenu(a, e.menu, e.x, e.y, e.z, 'c' + i, Math.max(3, e.radius + 1));
       a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(0)).op(0x004D, ref('u' + i));
+      if (hasMenu(e)) a.op(0x0006, lv(base), int(2));                                           // with a menu it opens again only when the player comes back in
       a.jump('n' + i);                                                                           // could not pay: it tries again when the player comes back in
       a.label('u' + i);
-      if (e.action.once) {
+      if (hasAction(e) && e.action.once) {
         if (e.blip) a.op(0x0164, lv(base + 1));
         a.op(0x03BD, lv(base + 2));
         a.op(0x0006, lv(base), int(3));

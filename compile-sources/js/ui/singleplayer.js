@@ -4,9 +4,9 @@
 // Burying keeps every index of the IPL files intact (LOD links between text and streamed IPLs point to positions),
 // which is what makes it safe to patch the files in place.
 import { app, $, esc, store, toast, postJSON, showConfirm, showAlert, plural } from './common.js';
-import { t } from './i18n.js';
+import { t, getLanguage } from './i18n.js';
 import { quatOfItem } from '../editor/editor.js';
-import { Project } from '../editor/project.js';
+import { Project, MOD_ID_RE, newModId } from '../editor/project.js';
 import { isText, isNoneTexture, keepsTexture, parseColor } from '../editor/materials.js';
 import { splitTxd, renameNative, recolorNative, buildTxd, listColBlocks, cloneColBlock } from '../formats/rwwrite.js';
 import { saveNow, listProjects } from './projects.js';
@@ -15,7 +15,8 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
-import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
+import { actionName, gameText } from './spInspector.js';
+import { usesMenuOrAction, vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
 const NOT_OBJECTS = new Set(['cars', 'peds', 'weap', 'hier']);
@@ -122,7 +123,9 @@ export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.
 
 // A short fingerprint of what goes into the mod: the installed mod remembers it, to tell whether it is up to date
 export function projectHash(project) {
-  const text = JSON.stringify([project.objects, project.vehicles, project.removed, project.doors || [], project.actors, project.pickups, project.mapIcons, project.checkpoints, project.world, project.customModels, project.retex, project.handling, project.drawDist, project.weapons, project.spawns]);
+  let text = JSON.stringify([project.objects, project.vehicles, project.removed, project.doors || [], project.actors, project.pickups, project.mapIcons, project.checkpoints, project.world, project.customModels, project.retex, project.handling, project.drawDist, project.weapons, project.spawns]);
+  const menus = [...(project.pickups || []), ...(project.checkpoints || [])].some(i => i.menu?.on);
+  if (menus) text += getLanguage();
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0') + '-' + text.length.toString(16);
@@ -664,9 +667,22 @@ export async function buildFiles(project, say = () => {}) {
     const c = clones.get(o.uid);
     return { model: c ? c.id : o.model, x: o.x, y: o.y, z: o.z, rx: o.rx, ry: o.ry, rz: o.rz, tx: o.move.targetX, ty: o.move.targetY, tz: o.move.targetZ, speed: o.move.speed };
   }), () => 3, moversScript);
+  // The menus of pickups and checkpoints: their texts go into the game's text table under keys of this mod
+  let menuKeys = 0;
+  const tag = (parseInt(String(project.modId || '').slice(0, 8), 16) || 0) % 46656;
+  const key = () => ('Z' + tag.toString(36).padStart(3, '0') + (menuKeys++).toString(36).padStart(3, '0')).toUpperCase();
+  const hint = gameText(t('Escolher: ~k~~PED_SPRINT~  Sair: ~k~~VEHICLE_ENTER_EXIT~'), true);
+  const menuOf = (item) => {
+    const m = item.menu;
+    if (!m || !m.on || !m.options?.length) return null;
+    return {
+      title: m.title || gameText(t('Escolha uma opção')) || 'Menu', titleKey: key(), hint,
+      options: m.options.slice(0, 12).map(o => ({ ...o, key: key(), text: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
+    };
+  };
   putScripts('pickups', (project.pickups || []).map(p => ({
-    model: p.model, type: p.type === 3 || p.model === 1212 ? 3 : 2, x: p.x, y: p.y, z: p.z, action: p.action,
-  })), (p) => (p.action && p.action.type !== 'none' ? 3 : 2), pickupsScript);
+    model: p.model, type: p.type === 3 || p.model === 1212 ? 3 : 2, x: p.x, y: p.y, z: p.z, action: p.action, menu: menuOf(p),
+  })), (p) => (usesMenuOrAction(p) ? 3 : 2), pickupsScript, 22);
   // As many scripts as needed: the NPCs that follow or chase (they share the door logic) go apart from the others, which fit more per script
   const npcs = (project.actors || []).map(a => ({
     skin: a.skin, x: a.x, y: a.y, z: a.z, rz: a.rz, invulnerable: !!a.invulnerable, anim: a.weapon ? null : a.anim,
@@ -683,7 +699,7 @@ export async function buildFiles(project, say = () => {}) {
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
   if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());
-  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, blip: !!c.radarIcon })), () => 3, checkpointsScript, 21);
+  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, menu: menuOf(c), blip: !!c.radarIcon })), () => 3, checkpointsScript, 21);
   const w = project.world || {};
   putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);
   if (worldSettings(project)) {
@@ -773,7 +789,8 @@ function setupSingleplayer() {
     const projects = (await listProjects()).projects || [];
     const rows = [];
     for (const m of mods) {
-      const proj = projects.find(p => modFolder(p.name) === m.folder);
+      // the permanent id links a mod to its project even after a rename; mods without one go by the folder name
+      const proj = (m.id && projects.find(p => p.modId === m.id)) || projects.find(p => modFolder(p.name) === m.folder && (!m.id || !p.modId));
       let state = 'none';
       if (proj) {
         let hash = '';
@@ -814,7 +831,7 @@ function setupSingleplayer() {
       + (p.retex?.length ? stat('Texturas trocadas no mapa', p.retex.length) : '') + (Object.keys(p.handling || {}).length ? stat('Handlings alterados', Object.keys(p.handling).length) : '') + (Object.keys(p.drawDist || {}).length ? stat('Distâncias de visão', Object.keys(p.drawDist).length) : '') + (Object.keys(p.weapons || {}).length ? stat('Armas alteradas', Object.keys(p.weapons).length) : '')
       + (p.objects.filter(isMover).length ? stat('Objetos em movimento', p.objects.filter(isMover).length) : '') + stat('Modelos com textura nova', texturedGroups(p).size) + stat('Objetos originais movidos', moved) + stat('Objetos originais removidos', total) + stat('Arquivos IPL alterados', byFile.size);
     let st;
-    try { st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' }); } catch { st = null; }
+    try { st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '', id: app.project.modId }); } catch { st = null; }
     $('#spOpen').disabled = !st?.built;
     $('#spInstall').disabled = busy;
     renderMods();
@@ -827,12 +844,13 @@ function setupSingleplayer() {
   };
 
   const build = async () => {
+    if (!MOD_ID_RE.test(app.project.modId || '')) { app.project.modId = newModId(); app.project.touch('installed'); } // older projects get their id now
     await saveNow();
     say('Gerando os arquivos…');
     const { files, info } = await buildFiles(app.project, say);
     const payload = {};
     for (const [path, bytes] of files) payload[path] = toBase64(bytes);
-    const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project) } });
+    const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project), id: app.project.modId } });
     if (!r.ok) throw new Error(r.error || 'erro');
     $('#spFiles').innerHTML = [...files].map(([p, b]) => `<li>${p.replace(/[<>&]/g, '')} · ${(b.length / 1024).toFixed(1)} KB</li>`).join('');
     if (info.noCol) say(`${info.noCol} modelo(s) com textura nova ficaram sem colisão.`, 'warn');
@@ -879,7 +897,7 @@ function setupSingleplayer() {
       if (!ok) return false;
     }
     await build();
-    const r = await postJSON('/api/sp/install', { name: name(), was: app.project.installedAs || '' });
+    const r = await postJSON('/api/sp/install', { name: name(), was: app.project.installedAs || '', id: app.project.modId });
     if (!r.ok) throw new Error(r.error || 'erro');
     app.project.installedAs = name();
     app.project.touch('installed');
@@ -887,7 +905,7 @@ function setupSingleplayer() {
     return true;
   };
   $('#spInstall').onclick = () => run(async () => {
-    const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' });
+    const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '', id: app.project.modId });
     if (await warnMissing(st, usesCleo(app.project), usesCleoPlus(app.project))) return;
     if (!await install(st.installed)) return;
     toast('Mod instalado no jogo', 'ok', 4000);
@@ -898,7 +916,7 @@ function setupSingleplayer() {
     if (busy) return;
     busy = true;
     try {
-      const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' });
+      const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '', id: app.project.modId });
       if (await warnMissing(st, usesCleo(app.project), usesCleoPlus(app.project))) return;
       if (st.gameRunning) { toast('O jogo já está em execução. Feche-o antes de testar.', 'warn', 6000); return; }
       toast('Instalando o mod…', 'ok', 2500);

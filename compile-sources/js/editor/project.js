@@ -222,6 +222,25 @@ export function makeLabel(data) {
 // What happens when the player enters a checkpoint or takes a pickup (Singleplayer): a type and its settings, a price and a message
 export const ACTION_TYPES = ['none', 'message', 'health', 'armour', 'money', 'weapon', 'ammo', 'skills', 'wanted', 'teleport', 'vehicle', 'repair', 'nitro', 'jetpack', 'save', 'skin', 'weather', 'time', 'explosion',
   'statFat', 'statMuscle', 'statStamina', 'statLung', 'statMaxHealth', 'statRespect', 'statSex', 'hungerOff'];
+// Permanent id of a Singleplayer project (16 hex digits): links the project to its installed mod even after a rename
+export const MOD_ID_RE = /^[0-9a-f]{16}$/;
+export function newModId() {
+  const b = new Uint8Array(8);
+  crypto.getRandomValues(b);
+  return [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+// Singleplayer menu of a pickup or checkpoint: options chosen from the actions, shown by the game's own menu panel.
+// The game's menu takes up to 12 rows, and its font only draws plain letters and a few signs
+export const MENU_MAX = 12;
+export const MENU_TEXT_MAX = 30;
+export const MENU_BAD_CHARS = /[^A-Za-z0-9 .,!?'()\-+/:$]/g;
+export const menuText = (s) => String(s || '').replace(MENU_BAD_CHARS, '').replace(/\s+/g, ' ').slice(0, MENU_TEXT_MAX);
+export function makeMenu(d) {
+  if (!d || typeof d !== 'object') return null;
+  const options = (Array.isArray(d.options) ? d.options : []).slice(0, MENU_MAX).map(o => ({ ...makeAction(o), once: false, label: menuText(o && o.label) }))
+    .filter(o => o.type !== 'none');
+  return { on: !!d.on, title: menuText(d.title), options };
+}
 export const STAT_RANGE = { statMaxHealth: [569, 1000] }; // the least and the most of the stats an action changes (0 to 1000 for the others)
 export function makeAction(data) {
   const d = data || {};
@@ -262,6 +281,7 @@ export function makePickup(data) {
     x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
     world: data.world !== undefined ? (data.world | 0) : 0,
     action: data.action ? makeAction(data.action) : null,
+    menu: data.menu ? makeMenu(data.menu) : null,
     comment: data.comment ? String(data.comment) : '',
     preComment: data.preComment ? String(data.preComment) : '',
     blankLinesBefore: +data.blankLinesBefore || 0,
@@ -739,6 +759,7 @@ export function makeCheckpoint(data) {
     nextz: data.nextz !== undefined ? +data.nextz : z,
     size: Math.max(0.5, +data.size || (isRace ? 6.0 : 4.0)),
     action: data.action ? makeAction(data.action) : null,
+    menu: data.menu ? makeMenu(data.menu) : null,
     radarIcon: Boolean(data.radarIcon),
     world: data.world ?? -1,
     interior: data.interior ?? -1,
@@ -819,6 +840,7 @@ export class Project {
     this.drawDist = {};  // model id -> view distance
     this.weapons = {};   // weapon.dat line key -> its changed values
     this.installedAs = ''; // Singleplayer: the name the mod was last installed with (the project may have been renamed since)
+    this.modId = newModId(); // Singleplayer: permanent id of the project, written in its installed mod (survives renames)
     this.pwnHeader = '';
     this.rawPawn = '';
     this.camera = null;
@@ -841,6 +863,7 @@ export class Project {
     p.handling = {};
     for (const [k, v] of Object.entries(data.handling || {})) if (Array.isArray(v) && v.length === 35) p.handling[k] = v.map(String);
     p.installedAs = String(data.installedAs || '');
+    p.modId = MOD_ID_RE.test(data.modId || '') ? data.modId : ''; // old projects get one at the next install
     p.weapons = {};
     for (const [k, v] of Object.entries(data.weapons || {})) if (Array.isArray(v) && v.length >= 8) p.weapons[k] = v.map(String);
     p.drawDist = {};
@@ -868,7 +891,7 @@ export class Project {
       objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,
       labels: this.labels, pickups: this.pickups, gangZones: this.gangZones, textDraws: this.textDraws,
       checkpoints: this.checkpoints, mapIcons: this.mapIcons, spawns: this.spawns, doors: this.doors, world: this.world, customModels: this.customModels,
-      retex: this.retex, handling: this.handling, drawDist: this.drawDist, weapons: this.weapons, installedAs: this.installedAs
+      retex: this.retex, handling: this.handling, drawDist: this.drawDist, weapons: this.weapons, installedAs: this.installedAs, modId: this.modId
     };
   }
 
