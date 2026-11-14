@@ -75,7 +75,7 @@ def package_bundle(staging_dir, output_zip):
 
     compressed_size = os.path.getsize(output_zip)
     dur = time.time() - t0
-    print(f"\nPacking finished successfully!")
+    print("\nPacking finished successfully!")
     print(f"  Files included: {total_files}")
     print(f"  Uncompressed size: {total_uncompressed / (1024 * 1024):.2f} MB")
     print(f"  Compressed size (ZIP): {compressed_size / (1024 * 1024):.2f} MB")

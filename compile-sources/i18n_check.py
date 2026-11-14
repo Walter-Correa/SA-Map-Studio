@@ -491,7 +491,6 @@ def quality_warnings(lang, data):
     """Quality warnings of a language (they do not block the build): {kind: [keys]}."""
     same = same_keys()
     cyr = re.compile("[Ѐ-ӿ]")
-    letters = re.compile(r"[A-Za-zÀ-ÿЀ-ӿ]")
     ender = re.compile(r"(\.\.\.|…|[:?!.;])$")
     latin_only = lang["code"] in ("en", "de", "hu", "id")
     out = {}

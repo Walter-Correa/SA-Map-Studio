@@ -206,7 +206,6 @@ class TeeLogger:
 
 def setup_logging():
     """Sets up the redirection of the logs to the log file."""
-    global LOG_FILE_PATH
     if sys.stdout is None or sys.stderr is None:
         try:
             os.makedirs(LOGS_DIR, exist_ok=True)
@@ -2229,11 +2228,6 @@ UPDATE_REPO_URL = "https://github.com/Walter-Correa/SA-Map-Studio/"
 UPDATE_API = os.environ.get("SAMAP_UPDATE_API") or "https://api.github.com/repos/Walter-Correa/SA-Map-Studio/releases/latest"
 _update_lock = threading.Lock()
 _update_cache = {"at": 0.0, "data": None}
-
-
-def _version_tuple(text):
-    m = re.match(r"\s*v?(\d+(?:\.\d+)*)", str(text or ""))
-    return tuple(int(x) for x in m.group(1).split(".")) if m else ()
 
 
 def check_update():

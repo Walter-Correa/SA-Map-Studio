@@ -112,7 +112,7 @@ btn primary
 da nang
 312 skins
 567 sprites
-# Nomes originais do jogo (MapIcons, pickups, armas e peças de tuning em inglês)
+# Original game names (MapIcons, pickups, weapons and tuning parts, in English)
 Los Santos
 San Fierro
 Las Venturas
