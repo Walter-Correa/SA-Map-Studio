@@ -1966,7 +1966,7 @@ export class Editor extends EventTarget {
           }
           dir.normalize();
 
-          const cpSize = Math.max(0.5, +itemCopy.size || 4.0);
+          const cpSize = Math.max(1, +itemCopy.size || 4.0);
           const dist = Math.max(cpSize * 1.0, (cpSize + 6.0) * 0.5, 6.0);
           itemCopy.x = Math.round((itemCopy.x + dir.x * dist) * 100) / 100;
           itemCopy.y = Math.round((itemCopy.y + dir.y * dist) * 100) / 100;
