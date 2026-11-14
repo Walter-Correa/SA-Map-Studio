@@ -96,7 +96,13 @@ const num = (v, def = 0) => {
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
 const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 
-const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?\b(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)\s*\(`, 'g');
+// A wrapped function name also counts: the known name must be a whole word inside the identifier, with an optional
+// prefix ending in "_" (new_CreatePlayerTextDraw) and an optional suffix starting with "Ex" or "_" (CreatePlayerTextDrawEx).
+// The lookbehind keeps TextDrawFont from matching inside PlayerTextDrawFont; group 3 is the suffix.
+const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?(?<![\w@])(?:[\w@]*_)?(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)((?:Ex(?![a-z])|_)[\w@]*)?\s*\(`, 'g');
+// Streamer functions whose Ex version has a different parameter order: their Ex suffix is not a wrapper
+const STREAMER_EX = new Set(['CreateDynamicPickup', 'CreateDynamic3DTextLabel', 'CreateDynamicCP', 'CreateDynamicRaceCP', 'CreateDynamicMapIcon', 'CreateDynamicObject']);
+const DECL_BEFORE_RE = /\b(?:stock|public|static|forward|native|hook|function)\s+(?:[A-Za-z_@][\w@]*:\s*)?$/;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
 // Color written as a number (0xRRGGBBAA or decimal); anything else is 0 (default color)
@@ -306,7 +312,7 @@ export function parsePwn(source) {
         let fromLook = null, toLook = null;
         let timerDelay = null;
 
-        const posM = /InterpolateCameraPos\s*\(([^)]+)\)/.exec(caseBody);
+        const posM = /(?<![\w@])(?:[\w@]*_)?InterpolateCameraPos(?:(?:Ex(?![a-z])|_)[\w@]*)?\s*\(([^)]+)\)/.exec(caseBody);
         if (posM) {
           const cArgs = splitArgs(posM[1]);
           const o = (cArgs.length >= 8 && isNaN(Number(cArgs[0]))) ? 1 : 0;
@@ -318,7 +324,7 @@ export function parsePwn(source) {
           }
         }
 
-        const lookM = /InterpolateCameraLookAt\s*\(([^)]+)\)/.exec(caseBody);
+        const lookM = /(?<![\w@])(?:[\w@]*_)?InterpolateCameraLookAt(?:(?:Ex(?![a-z])|_)[\w@]*)?\s*\(([^)]+)\)/.exec(caseBody);
         if (lookM) {
           const cArgs = splitArgs(lookM[1]);
           const o = (cArgs.length >= 7 && isNaN(Number(cArgs[0]))) ? 1 : 0;
@@ -402,8 +408,24 @@ export function parsePwn(source) {
     const inner = masked.slice(re.lastIndex, i - 1);
     re.lastIndex = i;
     const stmtEnd = i;
-    let { pos: a, named } = splitNamed(splitArgs(inner));
     let fn = m[2];
+    if (m[3] && /^Ex/.test(m[3]) && STREAMER_EX.has(fn)) continue;
+    // Declarations and definitions of wrappers (stock new_CreatePlayerTextDraw(...) { ... }) and #define lines are not items
+    const defBody = /^\s*\{/.exec(masked.slice(stmtEnd, stmtEnd + 200));
+    if (defBody) {
+      // The wrapper's own body forwards its parameters to the real function: skip it too
+      let j = stmtEnd + defBody[0].length, d = 1, q = false;
+      for (; j < masked.length && d > 0; j++) {
+        const ch = masked[j];
+        if (q) { if (ch === '\\') j++; else if (ch === '"') q = false; continue; }
+        if (ch === '"') q = true; else if (ch === '{') d++; else if (ch === '}') d--;
+      }
+      re.lastIndex = j;
+      continue;
+    }
+    if (DECL_BEFORE_RE.test(masked.slice(Math.max(0, stmtStart - 48), stmtStart))) continue;
+    if (/^[ \t]*#/.test(masked.slice(masked.lastIndexOf('\n', stmtStart) + 1, stmtStart))) continue;
+    let { pos: a, named } = splitNamed(splitArgs(inner));
     const variable = m[1] ? varKey(m[1]) : null;
     // PlayerTextDraw* (with playerid first) set the same things as TextDraw*
     if (/^PlayerTextDraw(Font|Color|BoxColor|BackgroundColor|LetterSize|TextSize|SetOutline|SetShadow|Alignment|SetSelectable|SetProportional|SetPreviewModel|SetPreviewRot|SetPreviewVehCol|UseBox)$/.test(fn)) {
