@@ -1825,7 +1825,7 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [model] - Creează un vehicul (ex.: /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Resincronizează animațiile actorilor",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilitare generale",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Comenzi: /fly /map /w [vreme] /t [oră] /anim /jetpack /v [model] /spawn /pos",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Comenzi: /fly /map /w [vreme] /t [oră] /anim /jetpack /v [model] /spawn /pos /god",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Poziție: %.4f, %.4f, %.4f Unghi: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "O versiune veche nu se deschide într-un folder al unei versiuni mai noi, ca proiectele și setările tale să nu fie stricate.",
  "Use a versão {0} ou mais nova.": "Folosește versiunea {0} sau mai nouă.",
@@ -2606,5 +2606,18 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include-ul activează caseta. Aliniat la stânga sau la dreapta, valoarea este X-ul unde se termină caseta; centrat, este lățimea casetei.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Benzile sunt casete negre late cât ecranul; efectul doar le mută. Înălțimea lor vine din mărimea literei Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Ales pe un text, textul rămâne și apare treptat împreună cu benzile, ca în demo.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Ales pe un text, editorul creează o bară proprie sub el și textul numără de la 0 la 100%, ca în demo."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Ales pe un text, editorul creează o bară proprie sub el și textul numără de la 0 la 100%, ca în demo.",
+ "Abrir a página do SA Map Studio no GitHub": "Deschide pagina SA Map Studio pe GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "O țintă discretă în centrul ecranului, care arată unde privește camera",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Un cerc roșu marchează punctul din lume pe care ai dat clic",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Viață infinită și vehiculul mereu reparat; în joc, /god pornește și oprește",
+ "Mostrar mira no centro da tela": "Arată ținta în centrul ecranului",
+ "Marcar o ponto do clique": "Marchează punctul clicului",
+ "Entrar em god mode": "Intră în god mode",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God mode activat: viață infinită și vehicul mereu reparat. Scrie /god pentru a ieși.",
+ "God mode desativado.": "God mode dezactivat.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Viață infinită (din nou: dezactivează)",
+ "Aumentar": "Mărește",
+ "Diminuir": "Micșorează",
+ "Movimento": "Mișcare"
 }

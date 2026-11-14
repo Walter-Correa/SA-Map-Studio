@@ -1825,7 +1825,7 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [модел] - Създаване на превозно средство (напр. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Повторно синхронизиране на анимациите на актьорите",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Общи помощни команди",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Команди: /fly /map /w [време] /t [час] /anim /jetpack /v [модел] /spawn /pos",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Команди: /fly /map /w [време] /t [час] /anim /jetpack /v [модел] /spawn /pos /god",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Позиция: %.4f, %.4f, %.4f Ъгъл: %.1f Интериор: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Стара версия не се отваря в папка на по-нова версия, за да не се повредят проектите и настройките ви.",
  "Use a versão {0} ou mais nova.": "Използвайте версия {0} или по-нова.",
@@ -2606,5 +2606,18 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include включва кутията. При подравняване вляво или вдясно стойността е X, където кутията свършва; при центриране е ширината на кутията.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Лентите са черни кутии с ширината на екрана; ефектът само ги мести. Височината им идва от размера на буквата Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Избран върху текст, текстът остава и се появява постепенно заедно с лентите, както в демото.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Избран върху текст, редакторът създава отделна лента под него и текстът брои от 0 до 100%, както в демото."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Избран върху текст, редакторът създава отделна лента под него и текстът брои от 0 до 100%, както в демото.",
+ "Abrir a página do SA Map Studio no GitHub": "Отваряне на страницата на SA Map Studio в GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Дискретен мерник в центъра на екрана, който показва накъде гледа камерата",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Червен кръг отбелязва точката от света, върху която сте щракнали",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Безкраен живот и превозното средство винаги поправено; в играта /god включва и изключва",
+ "Mostrar mira no centro da tela": "Показване на мерник в центъра на екрана",
+ "Marcar o ponto do clique": "Отбелязване на точката на щракване",
+ "Entrar em god mode": "Влизане в god mode",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God mode е включен: безкраен живот и винаги поправено превозно средство. Напишете /god за изход.",
+ "God mode desativado.": "God mode е изключен.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Безкраен живот (отново: изключва)",
+ "Aumentar": "Увеличаване",
+ "Diminuir": "Намаляване",
+ "Movimento": "Движение"
 }

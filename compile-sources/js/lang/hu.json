@@ -1825,7 +1825,7 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [modell] - Jármű létrehozása (pl. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Szereplők animációinak újraszinkronizálása",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Általános segédeszközök",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Parancsok: /fly /map /w [időjárás] /t [óra] /anim /jetpack /v [modell] /spawn /pos",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Parancsok: /fly /map /w [időjárás] /t [óra] /anim /jetpack /v [modell] /spawn /pos /god",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Pozíció: %.4f, %.4f, %.4f Szög: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Egy régi verzió nem nyílik meg egy újabb verzió mappájában, így a projektjeid és beállításaid nem sérülnek.",
  "Use a versão {0} ou mais nova.": "Használd a(z) {0} vagy újabb verziót.",
@@ -2606,5 +2606,18 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Az include bekapcsolja a dobozt. Balra vagy jobbra igazítva az érték az az X, ahol a doboz véget ér; középre igazítva a doboz szélessége.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "A sávok képernyőszéles fekete dobozok; az effektus csak mozgatja őket. A magasságuk az Y betűméretből jön.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Szövegen választva a szöveg megmarad, és a sávokkal együtt fokozatosan megjelenik, mint a demóban.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Szövegen választva a szerkesztő saját sávot készít alá, és a szöveg 0-tól 100%-ig számol, mint a demóban."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Szövegen választva a szerkesztő saját sávot készít alá, és a szöveg 0-tól 100%-ig számol, mint a demóban.",
+ "Abrir a página do SA Map Studio no GitHub": "Az SA Map Studio oldalának megnyitása a GitHubon",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Halvány célkereszt a képernyő közepén, amely mutatja, hová néz a kamera",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Piros kör jelöli a világ azon pontját, ahová kattintottál",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Végtelen élet és mindig megjavított jármű; játékban a /god be- és kikapcsolja",
+ "Mostrar mira no centro da tela": "Célkereszt a képernyő közepén",
+ "Marcar o ponto do clique": "A kattintás helyének jelölése",
+ "Entrar em god mode": "Indulás god módban",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God mód bekapcsolva: végtelen élet és mindig megjavított jármű. Kilépés: /god.",
+ "God mode desativado.": "God mód kikapcsolva.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Végtelen élet (újra: kikapcsolja)",
+ "Aumentar": "Növelés",
+ "Diminuir": "Csökkentés",
+ "Movimento": "Mozgatás"
 }

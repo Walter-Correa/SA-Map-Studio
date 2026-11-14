@@ -111,11 +111,12 @@
 
 <div class="app" id="app" hidden>
   <header class="topbar">
-    <div class="brand">
+    <a class="brand brand-link" id="brandLink" href="https://github.com/Walter-Correa/SA-Map-Studio" target="_blank" rel="noopener" title="Abrir a página do SA Map Studio no GitHub">
       <svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#i-brand-logo"/></svg>
       <span>SA Map Studio</span>
-    </div>
-    <button id="btnMode" class="btn ghost mode-chip" title="Voltar à escolha entre Multiplayer e Singleplayer"><svg><use href="#i-globe"/></svg><span id="modeChipLabel">Multiplayer</span></button>
+    </a>
+    <button id="btnMode"
+ class="btn ghost mode-chip" title="Voltar à escolha entre Multiplayer e Singleplayer"><svg><use href="#i-globe"/></svg><span id="modeChipLabel">Multiplayer</span></button>
     <div class="project-box">
       <button id="btnProjects" class="btn ghost" title="Abrir, criar ou apagar projetos"><svg><use href="#i-folder"/></svg><span class="lbl">Projetos</span></button>
       <input id="projectName" class="project-name" aria-label="Nome do projeto" spellcheck="false">
@@ -184,6 +185,8 @@
           <label class="check"><input type="checkbox" id="showInteriors"> Ver só os interiores</label>
           <label class="check"><input type="checkbox" id="showSelectionBox"> Mostrar caixa de seleção</label>
           <label class="check" title="O gizmo desliza sobre o objeto na direção da câmera, sem sair dele, e fica menor quanto mais perto a câmera estiver"><input type="checkbox" id="gizmoToCamera" checked> Mover o gizmo na direção da câmera</label>
+          <label class="check" title="Uma mira discreta no centro da tela, mostrando para onde a câmera olha"><input type="checkbox" id="showCrosshair"> Mostrar mira no centro da tela</label>
+          <label class="check" title="Um círculo vermelho marca o ponto do mundo onde você clicou"><input type="checkbox" id="showClickMark" checked> Marcar o ponto do clique</label>
           <label class="check"><input type="checkbox" id="removeLod" checked> Ao remover um objeto, remover o LOD junto</label>
           <label class="check"><input type="checkbox" id="autoCollapseSidebars"> Recolher menus laterais ao mover a câmera</label>
         </div>
@@ -289,6 +292,8 @@
       <div class="sign-coords" id="signCoords">0.0  0.0  0.0</div>
     </div>
     <div class="hud" id="hud"></div>
+    <div class="crosshair" id="crosshair" hidden aria-hidden="true"></div>
+
     <div class="placing-hint" id="placingHint" hidden></div>
     <div class="cam-preview-bar" id="camPreviewBar" hidden><span id="camPreviewText"></span><button type="button" class="btn small" id="camPreviewStop"><svg><use href="#i-stop"/></svg>Parar (Esc)</button></div>
     <div class="empty-hint" id="emptyHint" hidden>
@@ -711,7 +716,9 @@
         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
           <div class="insp-label" style="font-size: 13.5px;">Opções</div>
           <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
-          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testStreamer"> Usar plugin Streamer (itens dinâmicos)</label>
+          <label class="check" style="font-size: 13.5px;" title="Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga"><input type="checkbox" id="testGod" checked> Entrar em god mode</label>
+          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testStreamer" checked> Usar plugin Streamer (itens dinâmicos)</label>
+
           <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
           <div class="insp-note" id="testWarn"></div>
           <pre class="code log" id="testLog" hidden style="max-height: 120px; margin-top: 6px;"></pre>

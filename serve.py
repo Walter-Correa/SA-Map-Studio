@@ -690,6 +690,8 @@ def sp_build_dir(name):
 
 
 OPEN_URLS = {
+    "https://github.com/Walter-Correa/SA-Map-Studio",
+
     "https://github.com/cleolibrary/CLEO5/releases",
     "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases",
     "https://www.mixmods.com.br/2026/05/modloader/",
@@ -2958,7 +2960,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json({"ok": False, "error": str(e)}, 400)
             return self.send_error(HTTPStatus.NOT_FOUND)
         if path == "/api/open_url":
-            # Only the download pages of the tools the mod needs (the window of the program has no browser bar)
+            # Only the editor page and the download pages of the tools the mod needs (the window of the program has no browser bar)
             body = self.read_json() or {}
             url = str(body.get("url") or "")
             if url not in OPEN_URLS:

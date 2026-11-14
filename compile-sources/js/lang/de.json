@@ -1825,7 +1825,7 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [Modell] - Fahrzeug erzeugen (z. B. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Animationen der Aktoren neu synchronisieren",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Allgemeine Hilfsmittel",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Befehle: /fly /map /w [Wetter] /t [Uhrzeit] /anim /jetpack /v [Modell] /spawn /pos",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Befehle: /fly /map /w [Wetter] /t [Uhrzeit] /anim /jetpack /v [Modell] /spawn /pos /god",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Position: %.4f, %.4f, %.4f Winkel: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Eine alte Version öffnet sich nicht in einem Ordner einer neueren Version, damit deine Projekte und Einstellungen nicht beschädigt werden.",
  "Use a versão {0} ou mais nova.": "Verwende Version {0} oder neuer.",
@@ -2606,5 +2606,18 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Die Include schaltet die Box ein. Links oder rechts ausgerichtet ist der Wert das X, an dem die Box endet; zentriert ist es die Breite der Box.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Die Balken sind schwarze Boxen in Bildschirmbreite; der Effekt bewegt sie nur. Ihre Höhe kommt von der Buchstabengröße Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Auf einem Text gewählt, bleibt der Text erhalten und blendet zusammen mit den Balken ein, wie in der Demo.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Auf einem Text gewählt, erstellt der Editor einen eigenen Balken darunter und der Text zählt von 0 bis 100%, wie in der Demo."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Auf einem Text gewählt, erstellt der Editor einen eigenen Balken darunter und der Text zählt von 0 bis 100%, wie in der Demo.",
+ "Abrir a página do SA Map Studio no GitHub": "Die Seite von SA Map Studio auf GitHub öffnen",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Ein dezentes Fadenkreuz in der Bildschirmmitte, das zeigt, wohin die Kamera schaut",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Ein roter Kreis markiert die Stelle der Welt, auf die du geklickt hast",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Unendliche Gesundheit und das Fahrzeug immer repariert; im Spiel schaltet /god es ein und aus",
+ "Mostrar mira no centro da tela": "Fadenkreuz in der Bildschirmmitte anzeigen",
+ "Marcar o ponto do clique": "Angeklickte Stelle markieren",
+ "Entrar em god mode": "Im God-Mode starten",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God-Mode an: unendliche Gesundheit und das Fahrzeug immer repariert. Tippe /god zum Beenden.",
+ "God mode desativado.": "God-Mode aus.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Unendliche Gesundheit (nochmal: aus)",
+ "Aumentar": "Erhöhen",
+ "Diminuir": "Verringern",
+ "Movimento": "Bewegung"
 }

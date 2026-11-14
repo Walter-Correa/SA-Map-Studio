@@ -77,7 +77,11 @@ export class Editor extends EventTarget {
     });
     this.selOverlays = [];
     this.showSelectionBox = false;
-    this.gizmoToCamera = true;      // the manipulator slides over the object toward the camera, and gets smaller as the camera gets near
+    this.showClickMark = true;      // the red mark where the world was clicked
+    this.camPickables = [];         // the points of the open camera movement that can be clicked (cameras.js)
+
+    this.gizmoToCamera = true;
+      // the manipulator slides over the object toward the camera, and gets smaller as the camera gets near
     this.removeLodToo = true;
 
     // Gizmo
@@ -956,6 +960,7 @@ export class Editor extends EventTarget {
     this.tc.enabled = !this.directDragging; // during click and drag the manipulator stays still
     this.gizmo.visible = true;
     this.applySnap();
+    this.followCameraGizmo(true);     // when it follows the camera it goes straight there, without passing by the middle of the selection
   }
 
   setMode(mode) {
@@ -1037,10 +1042,12 @@ export class Editor extends EventTarget {
   // place of the object to that line when it misses it), without leaving the object (the limits are its edges), and its size follows the distance: the
   // nearer the camera, the smaller it is, so it fits on the screen. It never goes nearer to the camera than GIZMO_MIN_DIST nor gets smaller than
   // GIZMO_MIN_SIZE, so it does not leave the screen. Also to rotate (the rotation still turns around the middle of the object)
-  followCameraGizmo() {
+  // snap: goes straight to the place (after the gizmo is attached again), instead of sliding there
+  followCameraGizmo(snap = false) {
     if (this.dragging || this.externalGizmo) return;
     const items = this.selection.length && !this.placing && this.gizmo.visible && this.tc.object === this.pivot ? this.selectedItems() : [];
-    if (!this.gizmoToCamera || !items.length || (this.mode !== 'translate' && this.mode !== 'rotate')) {
+    // pickups are left out: the gizmo stays at the middle of the selection
+    if (!this.gizmoToCamera || !items.length || items.some(s => s.kind === 'pickups') || (this.mode !== 'translate' && this.mode !== 'rotate')) {
       if (this._camShifted) { this._camShifted = false; this._gizmoSize = 0.9; this.tc.setSize(0.9); this.attachGizmo(); }
       return;
     }
@@ -1076,7 +1083,7 @@ export class Editor extends EventTarget {
     if (!target) return;
     // never nearer than the minimum (the camera inside the object, or touching it): the point goes forward along the line of sight
     if (cam.distanceTo(target) < GIZMO_MIN_DIST) target = cam.clone().addScaledVector(dir, GIZMO_MIN_DIST);
-    this.pivot.position.lerp(target, 0.4);
+    if (snap) this.pivot.position.copy(target); else this.pivot.position.lerp(target, 0.4);
     this.pivot.updateMatrixWorld(true);
     this._camShifted = true;
     // the size is the normal one (the manipulator keeps its size on the screen as the camera moves, as it does when it does not follow the camera); only
@@ -1702,6 +1709,10 @@ export class Editor extends EventTarget {
   pick(e) {
     const hit = this.vp.raycast(this.vp.ndc(e), this.pickTargets());
     if (this.mode === 'texture') { this.pickSlot(hit, e); return; }
+    // The points of the open camera movement (drawn over everything) come first
+    const camHit = this.camPickables.length ? this.vp.raycast(this.vp.ndc(e), this.camPickables) : null;
+    if (camHit?.object.userData.camPoint && camHit.object.parent?.visible) { this.setClickMark(null); this.emit('camera-point', camHit.object.userData.camPoint); return; }
+    this.setClickMark(hit && !hit.object.userData.uid ? hit : null);
     if (!hit) { if (!e.shiftKey && !e.ctrlKey) this.clearSelection(); return; }
     const uid = hit.object.userData.uid;
     if (uid) {
@@ -1715,6 +1726,42 @@ export class Editor extends EventTarget {
     }
     const inst = hit.object.userData.instance;
     if (inst) this.selectWorld([inst], e.shiftKey || e.ctrlKey);
+  }
+
+  // The mark of the click: a see-through red circle lying on the surface of the world where it was clicked (only one at a time). A click on an
+  // item of the project (or on nothing) takes it away, and it goes away with the building it lies on when that building is removed
+  setClickMark(hit) {
+    if (this.clickMark) {
+      this.vp.scene.remove(this.clickMark);
+      this.clickMark.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
+      this.clickMark = null;
+    }
+    if (!hit || !this.showClickMark) return;
+    const normal = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 0, 1);
+    if (normal.dot(this.vp.camera.position.clone().sub(hit.point)) < 0) normal.negate();
+    const r = Math.min(3, Math.max(0.25, this.vp.camera.position.distanceTo(hit.point) * 0.02));
+    const mat = (opacity) => new THREE.MeshBasicMaterial({ color: 0xc62828, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+    const mark = new THREE.Group();
+    mark.add(new THREE.Mesh(new THREE.CircleGeometry(r, 32), mat(0.35)));
+    mark.add(new THREE.Mesh(new THREE.RingGeometry(r * 0.82, r, 32), mat(0.6)));
+    mark.position.copy(hit.point).addScaledVector(normal, 0.02);
+    mark.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    mark.renderOrder = 3;
+    mark.traverse(o => { o.userData.noPick = true; o.renderOrder = 3; });
+    let owner = hit.object;
+    while (owner.parent && owner.parent.userData.instance === hit.object.userData.instance && owner.parent.userData.instance) owner = owner.parent;
+    mark.userData.owner = owner;
+    this.vp.scene.add(mark);
+    this.clickMark = mark;
+  }
+
+  // The building under the mark was removed (it left the scene or was hidden), or the option was turned off: the mark goes too
+  checkClickMark() {
+    const m = this.clickMark;
+    if (!m) return;
+    let o = m.userData.owner, alive = this.showClickMark;
+    while (alive && o && o !== this.vp.scene) { if (!o.visible) alive = false; o = o.parent; }
+    if (!alive || o !== this.vp.scene) this.setClickMark(null);
   }
 
   // World point under the mouse (to place objects)
@@ -2359,6 +2406,7 @@ export class Editor extends EventTarget {
   frame() {
     this.streamer.update(this.vp.camera);
     this.followCameraGizmo();
+    this.checkClickMark();
     if (this.nodes) {
       for (const node of this.nodes.values()) {
         if (node.userData?.isPickup) {

@@ -1825,7 +1825,7 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [modelo] - Crear vehículo (ej.: /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Resincronizar animaciones de los actores",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilidades generales",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Posición: %.4f, %.4f, %.4f Ángulo: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Una versión antigua no se abre en una carpeta de una versión más nueva, para no dañar tus proyectos y ajustes.",
  "Use a versão {0} ou mais nova.": "Usa la versión {0} o más nueva.",
@@ -2606,5 +2606,18 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "La include activa la caja. Alineado a la izquierda o a la derecha, el valor es la X donde termina la caja; centrado, es el ancho de la caja.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Las franjas son cajas negras del ancho de la pantalla; el efecto solo las mueve. Su altura viene del tamaño de letra Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Elegido en un texto, el texto se mantiene y aparece poco a poco junto con las franjas, como en la demo.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Elegido en un texto, el editor crea una barra propia debajo y el texto cuenta de 0 a 100%, como en la demo."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Elegido en un texto, el editor crea una barra propia debajo y el texto cuenta de 0 a 100%, como en la demo.",
+ "Abrir a página do SA Map Studio no GitHub": "Abrir la página de SA Map Studio en GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Una mira discreta en el centro de la pantalla, que muestra hacia dónde mira la cámara",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Un círculo rojo marca el punto del mundo donde hiciste clic",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Vida infinita y el vehículo siempre reparado; en el juego, /god lo activa y desactiva",
+ "Mostrar mira no centro da tela": "Mostrar mira en el centro de la pantalla",
+ "Marcar o ponto do clique": "Marcar el punto del clic",
+ "Entrar em god mode": "Entrar en modo dios",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Modo dios activado: vida infinita y vehículo siempre reparado. Escribe /god para salir.",
+ "God mode desativado.": "Modo dios desactivado.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Vida infinita (otra vez: la desactiva)",
+ "Aumentar": "Aumentar",
+ "Diminuir": "Disminuir",
+ "Movimento": "Movimiento"
 }

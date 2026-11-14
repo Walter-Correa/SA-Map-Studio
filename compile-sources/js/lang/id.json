@@ -1825,7 +1825,7 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [model] - Munculkan kendaraan (mis. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Sinkronkan ulang animasi aktor",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilitas umum",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Perintah: /fly /map /w [cuaca] /t [jam] /anim /jetpack /v [model] /spawn /pos",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Perintah: /fly /map /w [cuaca] /t [jam] /anim /jetpack /v [model] /spawn /pos /god",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Posisi: %.4f, %.4f, %.4f Sudut: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Versi lama tidak dibuka di folder versi yang lebih baru, agar proyek dan pengaturan kamu tidak rusak.",
  "Use a versão {0} ou mais nova.": "Gunakan versi {0} atau yang lebih baru.",
@@ -2606,5 +2606,18 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include menyalakan kotak. Rata kiri atau kanan, nilainya adalah X tempat kotak berakhir; rata tengah, nilainya lebar kotak.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Pita adalah kotak hitam selebar layar; efek hanya menggerakkannya. Tingginya berasal dari ukuran huruf Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Jika dipilih pada teks, teks tetap ada dan muncul perlahan bersama garis-garisnya, seperti di demo.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Jika dipilih pada teks, editor membuat bilah sendiri di bawahnya dan teks menghitung dari 0 sampai 100%, seperti di demo."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Jika dipilih pada teks, editor membuat bilah sendiri di bawahnya dan teks menghitung dari 0 sampai 100%, seperti di demo.",
+ "Abrir a página do SA Map Studio no GitHub": "Buka halaman SA Map Studio di GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Bidikan samar di tengah layar, menunjukkan ke mana kamera melihat",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Lingkaran merah menandai titik dunia yang Anda klik",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Nyawa tak terbatas dan kendaraan selalu diperbaiki; di dalam game, /god menyalakan dan mematikannya",
+ "Mostrar mira no centro da tela": "Tampilkan bidikan di tengah layar",
+ "Marcar o ponto do clique": "Tandai titik yang diklik",
+ "Entrar em god mode": "Masuk ke mode dewa",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Mode dewa aktif: nyawa tak terbatas dan kendaraan selalu diperbaiki. Ketik /god untuk keluar.",
+ "God mode desativado.": "Mode dewa nonaktif.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Nyawa tak terbatas (sekali lagi: menonaktifkan)",
+ "Aumentar": "Tambah",
+ "Diminuir": "Kurangi",
+ "Movimento": "Gerakan"
 }

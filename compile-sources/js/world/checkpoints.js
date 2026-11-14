@@ -136,8 +136,8 @@ export function createCheckpointNode(cp) {
     group.add(ringHolder);
   } else {
     // Vertical cylinder on the ground (regular Checkpoint or Race Checkpoint 0, 1, 2)
-    // Height proportional to the checkpoint diameter
-    const height = isRace ? Math.max(3.5, radius * 1.5) : Math.max(2.4, Math.min(18.0, radius * 1.6));
+    // Height proportional to the checkpoint size (a regular Checkpoint of size 1 is 1 m tall, never less than 1 m)
+    const height = isRace ? Math.max(3.5, radius * 1.5) : Math.max(1, +cp.size || 4.0);
     const cylGeo = new THREE.CylinderGeometry(radius, radius, height, 32, 1, true);
     cylGeo.rotateX(Math.PI / 2);
     cylGeo.translate(0, 0, height * 0.5);
