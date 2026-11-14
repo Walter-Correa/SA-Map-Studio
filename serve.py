@@ -843,7 +843,8 @@ def sp_list_installed():
                 mark = os.path.join(base, n, SP_MARK)
                 if os.path.isfile(mark) and not any(o["folder"] == n for o in out):
                     m = sp_marker(os.path.join(base, n))
-                    out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "time": os.path.getmtime(mark)})
+                    out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "time": os.path.getmtime(mark),
+                                "npcs": m.get("npcs"), "enemies": m.get("enemies")})
     return out
 
 
@@ -869,6 +870,10 @@ def sp_write_files(root, files, meta=None):
             f.write(data)
     mark = {"app": "SA Map Studio", "note": "Created by SA Map Studio. Delete this folder to remove the mod.",
             "name": str((meta or {}).get("name") or ""), "hash": str((meta or {}).get("hash") or "")}
+    # how many NPCs (and enemies) the mod has: the editor adds them up with the other mods against the game's limit
+    for k in ("npcs", "enemies"):
+        if isinstance((meta or {}).get(k), int):
+            mark[k] = meta[k]
     with open(os.path.join(root, SP_MARK), "w", encoding="utf-8") as f:
         json.dump(mark, f)
     return len(clean)
@@ -2924,7 +2929,8 @@ class Handler(SimpleHTTPRequestHandler):
                 if action == "build":
                     files = dict(body.get("files") or {})
                     files["README.txt"] = base64.b64encode(sp_readme(name, body.get("info")).encode("utf-8")).decode("ascii")
-                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": (body.get("meta") or {}).get("hash")})
+                    meta = body.get("meta") or {}
+                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": meta.get("hash"), "npcs": meta.get("npcs"), "enemies": meta.get("enemies")})
                     return self.send_json({**sp_status(name), "files": n})
                 if action == "install":
                     missing = sp_missing()

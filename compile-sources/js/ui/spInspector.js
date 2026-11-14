@@ -1,6 +1,7 @@
 // Singleplayer inspector parts: what a NPC carries and does, and what happens when a checkpoint or a pickup is used.
 import { app, $, esc, toast } from './common.js';
-import { makeAction, STAT_RANGE } from '../editor/project.js';
+import { makeAction, STAT_RANGE, NPC_LIMIT_ENEMIES } from '../editor/project.js';
+import { t } from './i18n.js';
 import { NPC_WEAPONS, WEAPONS, optionsHtml } from '../world/spWeapons.js';
 import { npcHealth, NPC_HEALTH_MAX } from '../formats/cleo.js';
 
@@ -40,7 +41,15 @@ export function bindNpc(a, project, rerender) {
   const w = $('#npcWeapon');
   if (w) w.onchange = () => set('Alterar arma do NPC', (o) => { o.weapon = parseInt(w.value, 10) || 0; if (o.weapon) o.anim = null; });
   const r = $('#npcRole');
-  if (r) r.onchange = () => set('Alterar comportamento do NPC', (o) => { o.role = r.value; if (r.value === 'neutral') o.follow = false; });
+  if (r) r.onchange = () => {
+    // With enemies the project holds fewer NPCs (see npcLimit)
+    if (r.value === 'enemy' && a.role !== 'enemy' && project.actors.length > NPC_LIMIT_ENEMIES && !project.actors.some(o => o.role === 'enemy')) {
+      r.value = a.role || 'neutral';
+      toast(t('Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.', NPC_LIMIT_ENEMIES, project.actors.length), 'warn', 7000);
+      return;
+    }
+    set('Alterar comportamento do NPC', (o) => { o.role = r.value; if (r.value === 'neutral') o.follow = false; });
+  };
   const hp = $('#npcHealth');
   if (hp) hp.onchange = () => set('Alterar a vida do NPC', (o) => { o.health = npcHealth(hp.value); });
   const rs = $('#npcRespawn');

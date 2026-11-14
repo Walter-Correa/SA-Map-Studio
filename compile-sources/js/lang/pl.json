@@ -2619,5 +2619,8 @@
  "Vida (1 a {0})": "Zdrowie (1 do {0})",
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Strzela do każdego, kto atakuje, celuje lub strzela do gracza albo jego pojazdu (nawet bez zadawania obrażeń), do każdego, kto strzela w jego pobliżu, i do każdego, kogo gra oznacza na czerwono przeciwko niemu. Postacie z fabuły tylko wtedy, gdy są oznaczone na czerwono. Bez opcji podążania pilnuje miejsca, w którym stoi.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Stoi nieruchomo tam, gdzie go umieszczono, tylko z animacją, i na nic nie reaguje.",
- "Alterar a vida do NPC": "Zmień zdrowie NPC"
+ "Alterar a vida do NPC": "Zmień zdrowie NPC",
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "Osiągnięto limit {0} NPC: {1} NPC nie zostało dodanych. Z wrogami limit wynosi {2}, bez nich {3}.",
+ "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Z wrogami projekt mieści do {0} NPC, a ma już {1}. Najpierw usuń NPC.",
+ "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Ten mod ma {0} NPC, a pozostałe zainstalowane mody łącznie {1}. Razem przekraczają limit {2} NPC w grze (z wrogami limit wynosi {3}, bez nich {4}). Najpierw odinstaluj mod lub usuń NPC."
 }

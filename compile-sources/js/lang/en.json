@@ -2619,5 +2619,8 @@
  "Vida (1 a {0})": "Health (1 to {0})",
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Shoots at whoever attacks, aims or shoots at the player or his vehicle (even without causing damage), at whoever is shooting near him and at whoever the game marks red against him. Story characters only when marked red. Without the follow option, it guards the place where it is.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Stays still where it was placed, only with its animation, and reacts to nothing.",
- "Alterar a vida do NPC": "Change NPC health"
+ "Alterar a vida do NPC": "Change NPC health",
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "NPC limit of {0} reached: {1} NPC(s) were left out. With enemies the limit is {2}; without them, {3}.",
+ "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "With enemies the project holds up to {0} NPCs, and it already has {1}. Remove NPCs first.",
+ "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "This mod has {0} NPCs and the other installed mods add up to {1}. Together they go past the limit of {2} NPCs in the game (with enemies the limit is {3}; without them, {4}). Uninstall a mod or remove NPCs first."
 }

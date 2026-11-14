@@ -2619,5 +2619,8 @@
  "Vida (1 a {0})": "Viață (1 până la {0})",
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Trage în oricine atacă, ochește sau trage în jucător ori în vehiculul lui (chiar fără să provoace damage), în oricine trage lângă el și în oricine e marcat cu roșu de joc împotriva lui. Personajele din poveste doar când sunt marcate cu roșu. Fără opțiunea de a urmări, păzește locul unde se află.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Stă nemișcat unde a fost pus, doar cu animația lui, și nu reacționează la nimic.",
- "Alterar a vida do NPC": "Modifică viața NPC-ului"
+ "Alterar a vida do NPC": "Modifică viața NPC-ului",
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "Limita de {0} NPC-uri a fost atinsă: {1} NPC-uri au rămas pe dinafară. Cu inamici limita este {2}; fără ei, {3}.",
+ "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Cu inamici proiectul acceptă până la {0} NPC-uri și are deja {1}. Elimină mai întâi NPC-uri.",
+ "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Acest mod are {0} NPC-uri, iar celelalte moduri instalate însumează {1}. Împreună depășesc limita de {2} NPC-uri în joc (cu inamici limita este {3}; fără ei, {4}). Dezinstalează un mod sau elimină NPC-uri mai întâi."
 }

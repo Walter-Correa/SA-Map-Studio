@@ -112,6 +112,12 @@ export function makeVehicle(data) {
   };
 }
 
+// Singleplayer NPC limits measured in the game: NPCs are never removed, so they pile up against the 140 peds of the game,
+// and with enemies fighting the game crashed from about 60 peds on
+export const NPC_LIMIT = 80, NPC_LIMIT_ENEMIES = 40;
+export const npcLimit = (roles) => roles.includes('enemy') ? NPC_LIMIT_ENEMIES : NPC_LIMIT;
+const npcRole = (a) => (['guard', 'enemy'].includes(a?.role) ? a.role : 'neutral');
+
 export function makeActor(data) {
   return {
     uid: data.uid || newUid(),
@@ -980,7 +986,27 @@ export class Project {
 
   // Import in a single undo step: removes the items (replace), adds the new ones and swaps the header,
   // original code and project cameras
+  // Singleplayer: drops the new NPCs that would go past the limit (tells Project.onNpcLimit how many were left out)
+  fitNpcs(items, removeUids = [], kind = null) {
+    if (this.mode !== 'sp') return items;
+    const isNpc = (it) => (it?.kind || kind) === 'actors';
+    if (!items.some(isNpc)) return items;
+    const rm = new Set(removeUids);
+    const roles = this.actors.filter(a => !rm.has(a.uid)).map(npcRole);
+    let dropped = 0;
+    const out = items.filter(it => {
+      if (!isNpc(it)) return true;
+      const r = npcRole(it);
+      if (roles.length + 1 > npcLimit([...roles, r])) { dropped++; return false; }
+      roles.push(r);
+      return true;
+    });
+    if (dropped) Project.onNpcLimit?.(dropped, npcLimit(roles));
+    return out;
+  }
+
   importItems(label, removeUids, items, meta = null) {
+    items = this.fitNpcs(items, removeUids);
     const fields = () => JSON.parse(JSON.stringify({ pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '', cameras: this.cameras }));
     const metaBefore = fields();
     const uids = [];
@@ -1055,6 +1081,7 @@ export class Project {
   // Adds an item of any supported type with undo/redo recording
   add(kind, data, label = 'Adicionar') {
     let created = null;
+    if (!this.fitNpcs([data || {}], [], kind).length) return null;
     this.transact(label, [], () => {
       const maker = MAKERS[kind] || makeObject;
       created = maker(data || {});
@@ -1081,6 +1108,8 @@ export class Project {
       items = [];
     }
 
+    items = this.fitNpcs(items, [], kind);
+    if (!items.length) return [];
     const uids = [];
     this.transact(label, [], () => {
       for (const it of items) {

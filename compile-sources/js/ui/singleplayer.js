@@ -6,7 +6,7 @@
 import { app, $, esc, store, toast, postJSON, showConfirm, showAlert, plural } from './common.js';
 import { t } from './i18n.js';
 import { quatOfItem } from '../editor/editor.js';
-import { Project } from '../editor/project.js';
+import { Project, npcLimit, NPC_LIMIT, NPC_LIMIT_ENEMIES } from '../editor/project.js';
 import { isText, isNoneTexture, keepsTexture, parseColor } from '../editor/materials.js';
 import { splitTxd, renameNative, recolorNative, buildTxd, listColBlocks, cloneColBlock } from '../formats/rwwrite.js';
 import { saveNow, listProjects } from './projects.js';
@@ -764,6 +764,7 @@ function setupSingleplayer() {
   const say = (msg, kind = '') => { status.textContent = msg; status.className = 'sp-status ' + kind; };
   const name = () => app.project.name;
   let busy = false;
+  Project.onNpcLimit = (dropped, limit) => toast(t('Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.', limit, dropped, NPC_LIMIT_ENEMIES, NPC_LIMIT), 'warn', 8000);
 
   // The mods this editor installed in the game, against the projects it has: up to date, out of date or without a project
   const renderMods = async () => {
@@ -832,7 +833,7 @@ function setupSingleplayer() {
     const { files, info } = await buildFiles(app.project, say);
     const payload = {};
     for (const [path, bytes] of files) payload[path] = toBase64(bytes);
-    const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project) } });
+    const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project), npcs: (app.project.actors || []).length, enemies: (app.project.actors || []).filter(a => a.role === 'enemy').length } });
     if (!r.ok) throw new Error(r.error || 'erro');
     $('#spFiles').innerHTML = [...files].map(([p, b]) => `<li>${p.replace(/[<>&]/g, '')} · ${(b.length / 1024).toFixed(1)} KB</li>`).join('');
     if (info.noCol) say(`${info.noCol} modelo(s) com textura nova ficaram sem colisão.`, 'warn');
@@ -872,6 +873,35 @@ function setupSingleplayer() {
     toast('ZIP gerado', 'ok', 4000);
   });
   // Builds and copies the mod into modloader/ (asks first when it was not there yet); false when the user said no
+  // The NPCs of the other installed mods pile up with these in the game: warns and returns true when together they pass the limit
+  const npcsOver = async () => {
+    const mine = (app.project.actors || []).map(a => a.role);
+    if (!mine.length) return false;
+    let mods = [];
+    try { mods = (await postJSON('/api/sp/list', {})).mods || []; } catch { return false; }
+    const skip = new Set([modFolder(name()), modFolder(app.project.installedAs || name())]);
+    let projects = null, others = 0;
+    const roles = [...mine];
+    for (const m of mods) {
+      if (skip.has(m.folder)) continue;
+      let n = m.npcs, e = m.enemies;
+      if (typeof n !== 'number') { // installed before the mods told their NPCs: its project says, when there is one
+        projects ??= (await listProjects()).projects || [];
+        const proj = projects.find(p => modFolder(p.name) === m.folder);
+        if (!proj) continue;
+        try {
+          const actors = (await (await fetch('/api/projects/' + encodeURIComponent(proj.name) + '?mode=sp')).json()).actors || [];
+          n = actors.length; e = actors.filter(a => a.role === 'enemy').length;
+        } catch { continue; }
+      }
+      others += n;
+      for (let i = 0; i < n; i++) roles.push(i < (e | 0) ? 'enemy' : 'neutral');
+    }
+    const limit = npcLimit(roles);
+    if (roles.length <= limit) return false;
+    await showAlert(t('Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.', mine.length, others, limit, NPC_LIMIT_ENEMIES, NPC_LIMIT));
+    return true;
+  };
   const installedAt = new Map(); // project name -> project.version of the last install (to know when it is out of date)
   const install = async (installed, ask = true) => {
     if (!installed && ask) {
@@ -889,6 +919,7 @@ function setupSingleplayer() {
   $('#spInstall').onclick = () => run(async () => {
     const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' });
     if (await warnMissing(st, usesCleo(app.project), usesCleoPlus(app.project))) return;
+    if (await npcsOver()) return;
     if (!await install(st.installed)) return;
     toast('Mod instalado no jogo', 'ok', 4000);
     say('Mod instalado no jogo.');
@@ -901,6 +932,7 @@ function setupSingleplayer() {
       const st = await postJSON('/api/sp/status', { name: name(), was: app.project.installedAs || '' });
       if (await warnMissing(st, usesCleo(app.project), usesCleoPlus(app.project))) return;
       if (st.gameRunning) { toast('O jogo já está em execução. Feche-o antes de testar.', 'warn', 6000); return; }
+      if (await npcsOver()) return;
       toast('Instalando o mod…', 'ok', 2500);
       await install(st.installed, false);
       const r = await postJSON('/api/sp/launch', { name: name() });
