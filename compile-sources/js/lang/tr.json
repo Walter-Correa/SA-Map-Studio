@@ -2620,7 +2620,12 @@
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Oyuncuya veya aracına saldıran, nişan alan ya da ateş eden herkese (hasar vermese bile), yakınında ateş eden herkese ve oyunun ona karşı kırmızıyla işaretlediği herkese ateş eder. Hikâye karakterlerine yalnızca kırmızıyla işaretliyse. Takip seçeneği olmadan bulunduğu yeri korur.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Konduğu yerde hareketsiz durur, yalnızca animasyonuyla, ve hiçbir şeye tepki vermez.",
  "Alterar a vida do NPC": "NPC'nin canını değiştir",
- "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "{0} NPC sınırına ulaşıldı: {1} NPC eklenmedi. Düşmanlarla sınır {2}, düşmansız {3}.",
- "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Düşmanlarla proje en fazla {0} NPC alır ve şu an {1} NPC var. Önce NPC kaldırın.",
- "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Bu modda {0} NPC var, kurulu diğer modlarda toplam {1}. Birlikte oyundaki {2} NPC sınırını aşıyorlar (düşmanlarla sınır {3}, düşmansız {4}). Önce bir modu kaldırın veya NPC kaldırın."
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; com protetores, {3}; só com neutros, {4}.": "{0} NPC sınırına ulaşıldı: {1} NPC eklenmedi. Düşmanlarla sınır {2}, korumalarla {3}, yalnızca nötrlerle {4}.",
+ "Com esse comportamento o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Bu davranışla proje en fazla {0} NPC alır ve şu an {1} NPC var. Önce NPC kaldırın.",
+ "{0}: {1} NPCs ({2} protetores, {3} inimigos)": "{0}: {1} NPC ({2} koruma, {3} düşman)",
+ "{0} (este mod)": "{0} (bu mod)",
+ "Estes mods foram instalados por uma versão antiga do editor e não informam quantos NPCs têm. Instale-os de novo pelo projeto deles ou desinstale-os antes:": "Bu modlar editörün eski bir sürümüyle kuruldu ve kaç NPC içerdiklerini belirtmiyor. Kendi projelerinden yeniden kurun veya önce kaldırın:",
+ "Juntos, os mods passam do limite de NPCs do jogo: {0} no total, e o limite é {1}.": "Modlar birlikte oyunun NPC sınırını aşıyor: toplam {0}, sınır {1}.",
+ "Com inimigos o limite é {0}; com protetores, {1}; só com neutros, {2}. Desinstale um mod ou remova NPCs antes.": "Düşmanlarla sınır {0}, korumalarla {1}, yalnızca nötrlerle {2}. Önce bir modu kaldırın veya NPC kaldırın.",
+ "Limite de NPCs": "NPC sınırı"
 }

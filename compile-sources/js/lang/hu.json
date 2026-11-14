@@ -2620,7 +2620,12 @@
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Rálő arra, aki megtámadja, célba veszi vagy lövi a játékost vagy a járművét (akkor is, ha nem okoz sebzést), arra, aki a közelében lő, és arra, akit a játék pirossal jelöl ellene. A történet szereplőit csak akkor, ha pirossal jelöltek. A követés opció nélkül a helyét őrzi.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Mozdulatlanul áll ott, ahová tették, csak az animációjával, és semmire sem reagál.",
  "Alterar a vida do NPC": "NPC életerejének módosítása",
- "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "Elérted a(z) {0} NPC-s korlátot: {1} NPC kimaradt. Ellenségekkel a korlát {2}, nélkülük {3}.",
- "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Ellenségekkel a projekt legfeljebb {0} NPC-t fogad, és már {1} van benne. Előbb távolíts el NPC-ket.",
- "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Ebben a modban {0} NPC van, a többi telepített modban összesen {1}. Együtt túllépik a játékban a(z) {2} NPC-s korlátot (ellenségekkel a korlát {3}, nélkülük {4}). Előbb távolíts el egy modot vagy NPC-ket."
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; com protetores, {3}; só com neutros, {4}.": "Elérted a(z) {0} NPC-s korlátot: {1} NPC kimaradt. Ellenségekkel a korlát {2}, védelmezőkkel {3}, csak semlegesekkel {4}.",
+ "Com esse comportamento o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Ezzel a viselkedéssel a projekt legfeljebb {0} NPC-t fogad, és már {1} van benne. Előbb távolíts el NPC-ket.",
+ "{0}: {1} NPCs ({2} protetores, {3} inimigos)": "{0}: {1} NPC ({2} védelmező, {3} ellenség)",
+ "{0} (este mod)": "{0} (ez a mod)",
+ "Estes mods foram instalados por uma versão antiga do editor e não informam quantos NPCs têm. Instale-os de novo pelo projeto deles ou desinstale-os antes:": "Ezeket a modokat a szerkesztő egy régi verziója telepítette, és nem adják meg, hány NPC van bennük. Telepítsd újra őket a projektjükből, vagy előbb távolítsd el őket:",
+ "Juntos, os mods passam do limite de NPCs do jogo: {0} no total, e o limite é {1}.": "A modok együtt túllépik a játék NPC-korlátját: összesen {0}, a korlát {1}.",
+ "Com inimigos o limite é {0}; com protetores, {1}; só com neutros, {2}. Desinstale um mod ou remova NPCs antes.": "Ellenségekkel a korlát {0}, védelmezőkkel {1}, csak semlegesekkel {2}. Előbb távolíts el egy modot vagy NPC-ket.",
+ "Limite de NPCs": "NPC-korlát"
 }

@@ -2620,7 +2620,12 @@
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Menembak siapa pun yang menyerang, membidik, atau menembak pemain atau kendaraannya (meski tanpa menimbulkan kerusakan), siapa pun yang menembak di dekatnya, dan siapa pun yang ditandai merah oleh game melawannya. Karakter cerita hanya jika ditandai merah. Tanpa opsi mengikuti, ia menjaga tempatnya berada.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Diam di tempat ia ditaruh, hanya dengan animasinya, dan tidak bereaksi terhadap apa pun.",
  "Alterar a vida do NPC": "Ubah nyawa NPC",
- "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "Batas {0} NPC tercapai: {1} NPC tidak ditambahkan. Dengan musuh batasnya {2}; tanpa musuh, {3}.",
- "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Dengan musuh proyek menampung hingga {0} NPC, dan sudah ada {1}. Hapus NPC terlebih dahulu.",
- "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Mod ini punya {0} NPC dan mod lain yang terpasang berjumlah {1}. Bersama-sama melewati batas {2} NPC dalam game (dengan musuh batasnya {3}; tanpa musuh, {4}). Copot sebuah mod atau hapus NPC terlebih dahulu."
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; com protetores, {3}; só com neutros, {4}.": "Batas {0} NPC tercapai: {1} NPC tidak ditambahkan. Dengan musuh batasnya {2}; dengan pelindung, {3}; hanya netral, {4}.",
+ "Com esse comportamento o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Dengan perilaku ini proyek menampung hingga {0} NPC, dan sudah ada {1}. Hapus NPC terlebih dahulu.",
+ "{0}: {1} NPCs ({2} protetores, {3} inimigos)": "{0}: {1} NPC ({2} pelindung, {3} musuh)",
+ "{0} (este mod)": "{0} (mod ini)",
+ "Estes mods foram instalados por uma versão antiga do editor e não informam quantos NPCs têm. Instale-os de novo pelo projeto deles ou desinstale-os antes:": "Mod ini dipasang oleh versi lama editor dan tidak menyebutkan jumlah NPC-nya. Pasang ulang dari proyeknya atau copot terlebih dahulu:",
+ "Juntos, os mods passam do limite de NPCs do jogo: {0} no total, e o limite é {1}.": "Bersama-sama, mod-mod ini melewati batas NPC game: total {0}, dan batasnya {1}.",
+ "Com inimigos o limite é {0}; com protetores, {1}; só com neutros, {2}. Desinstale um mod ou remova NPCs antes.": "Dengan musuh batasnya {0}; dengan pelindung, {1}; hanya netral, {2}. Copot sebuah mod atau hapus NPC terlebih dahulu.",
+ "Limite de NPCs": "Batas NPC"
 }

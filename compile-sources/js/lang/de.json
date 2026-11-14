@@ -2620,7 +2620,12 @@
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Schießt auf jeden, der den Spieler oder sein Fahrzeug angreift, anvisiert oder beschießt (auch ohne Schaden), auf jeden, der in seiner Nähe schießt, und auf jeden, den das Spiel rot gegen ihn markiert. Story-Figuren nur, wenn sie rot markiert sind. Ohne die Option Folgen bewacht er seinen Platz.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Bleibt still an seinem Platz, nur mit seiner Animation, und reagiert auf nichts.",
  "Alterar a vida do NPC": "NPC-Gesundheit ändern",
- "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "NPC-Limit von {0} erreicht: {1} NPC(s) wurden nicht hinzugefügt. Mit Gegnern liegt das Limit bei {2}, ohne sie bei {3}.",
- "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Mit Gegnern fasst das Projekt bis zu {0} NPCs, und es hat bereits {1}. Entferne zuerst NPCs.",
- "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Dieser Mod hat {0} NPCs und die anderen installierten Mods zusammen {1}. Zusammen überschreiten sie das Limit von {2} NPCs im Spiel (mit Gegnern liegt das Limit bei {3}, ohne sie bei {4}). Deinstalliere zuerst einen Mod oder entferne NPCs."
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; com protetores, {3}; só com neutros, {4}.": "NPC-Limit von {0} erreicht: {1} NPC(s) wurden nicht hinzugefügt. Mit Gegnern liegt das Limit bei {2}, mit Beschützern bei {3}, nur mit Neutralen bei {4}.",
+ "Com esse comportamento o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Mit diesem Verhalten fasst das Projekt bis zu {0} NPCs, und es hat bereits {1}. Entferne zuerst NPCs.",
+ "{0}: {1} NPCs ({2} protetores, {3} inimigos)": "{0}: {1} NPCs ({2} Beschützer, {3} Gegner)",
+ "{0} (este mod)": "{0} (dieser Mod)",
+ "Estes mods foram instalados por uma versão antiga do editor e não informam quantos NPCs têm. Instale-os de novo pelo projeto deles ou desinstale-os antes:": "Diese Mods wurden von einer alten Version des Editors installiert und geben nicht an, wie viele NPCs sie haben. Installiere sie erneut aus ihrem Projekt oder deinstalliere sie zuerst:",
+ "Juntos, os mods passam do limite de NPCs do jogo: {0} no total, e o limite é {1}.": "Zusammen überschreiten die Mods das NPC-Limit des Spiels: {0} insgesamt, das Limit ist {1}.",
+ "Com inimigos o limite é {0}; com protetores, {1}; só com neutros, {2}. Desinstale um mod ou remova NPCs antes.": "Mit Gegnern liegt das Limit bei {0}, mit Beschützern bei {1}, nur mit Neutralen bei {2}. Deinstalliere zuerst einen Mod oder entferne NPCs.",
+ "Limite de NPCs": "NPC-Limit"
 }

@@ -113,10 +113,10 @@ export function makeVehicle(data) {
 }
 
 // Singleplayer NPC limits measured in the game: NPCs are never removed, so they pile up against the 140 peds of the game,
-// and with enemies fighting the game crashed from about 60 peds on
-export const NPC_LIMIT = 80, NPC_LIMIT_ENEMIES = 40;
-export const npcLimit = (roles) => roles.includes('enemy') ? NPC_LIMIT_ENEMIES : NPC_LIMIT;
-const npcRole = (a) => (['guard', 'enemy'].includes(a?.role) ? a.role : 'neutral');
+// and with enemies fighting the game crashed from about 60 peds on (the same limits hold for all the installed mods together)
+export const NPC_LIMIT_ENEMIES = 40, NPC_LIMIT_GUARDS = 80, NPC_LIMIT_NEUTRAL = 90;
+export const npcLimit = (roles) => roles.includes('enemy') ? NPC_LIMIT_ENEMIES : roles.includes('guard') ? NPC_LIMIT_GUARDS : NPC_LIMIT_NEUTRAL;
+export const npcRole = (a) => (['guard', 'enemy'].includes(a?.role) ? a.role : 'neutral');
 
 export function makeActor(data) {
   return {

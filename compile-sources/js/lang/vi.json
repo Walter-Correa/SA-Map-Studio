@@ -2620,7 +2620,12 @@
  "Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.": "Bắn bất kỳ ai tấn công, nhắm hoặc bắn vào người chơi hay xe của họ (kể cả khi không gây sát thương), bất kỳ ai đang bắn gần họ và bất kỳ ai bị game đánh dấu đỏ chống lại họ. Nhân vật cốt truyện chỉ khi bị đánh dấu đỏ. Không có tùy chọn đi theo thì canh giữ chỗ đang đứng.",
  "Fica parado onde foi colocado, só com a animação, e não reage a nada.": "Đứng yên tại chỗ được đặt, chỉ với hoạt ảnh của mình, và không phản ứng với bất cứ điều gì.",
  "Alterar a vida do NPC": "Đổi máu của NPC",
- "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; sem eles, {3}.": "Đã đạt giới hạn {0} NPC: {1} NPC không được thêm. Có kẻ địch thì giới hạn là {2}; không có thì {3}.",
- "Com inimigos o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Có kẻ địch thì dự án chứa tối đa {0} NPC, và hiện đã có {1}. Hãy xóa bớt NPC trước.",
- "Este mod tem {0} NPCs e os outros mods instalados somam {1}. Juntos passam do limite de {2} NPCs no jogo (com inimigos o limite é {3}; sem eles, {4}). Desinstale um mod ou remova NPCs antes.": "Mod này có {0} NPC và các mod đã cài khác có tổng cộng {1}. Gộp lại vượt quá giới hạn {2} NPC trong game (có kẻ địch thì giới hạn là {3}; không có thì {4}). Hãy gỡ một mod hoặc xóa bớt NPC trước."
+ "Limite de {0} NPCs atingido: {1} NPC(s) ficaram de fora. Com inimigos o limite é {2}; com protetores, {3}; só com neutros, {4}.": "Đã đạt giới hạn {0} NPC: {1} NPC không được thêm. Có kẻ địch thì giới hạn là {2}; có người bảo vệ, {3}; chỉ trung lập, {4}.",
+ "Com esse comportamento o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.": "Với hành vi này dự án chứa tối đa {0} NPC, và hiện đã có {1}. Hãy xóa bớt NPC trước.",
+ "{0}: {1} NPCs ({2} protetores, {3} inimigos)": "{0}: {1} NPC ({2} người bảo vệ, {3} kẻ địch)",
+ "{0} (este mod)": "{0} (mod này)",
+ "Estes mods foram instalados por uma versão antiga do editor e não informam quantos NPCs têm. Instale-os de novo pelo projeto deles ou desinstale-os antes:": "Các mod này được cài bởi phiên bản cũ của trình chỉnh sửa và không cho biết có bao nhiêu NPC. Hãy cài lại từ dự án của chúng hoặc gỡ chúng trước:",
+ "Juntos, os mods passam do limite de NPCs do jogo: {0} no total, e o limite é {1}.": "Gộp lại, các mod vượt quá giới hạn NPC của game: tổng cộng {0}, giới hạn là {1}.",
+ "Com inimigos o limite é {0}; com protetores, {1}; só com neutros, {2}. Desinstale um mod ou remova NPCs antes.": "Có kẻ địch thì giới hạn là {0}; có người bảo vệ, {1}; chỉ trung lập, {2}. Hãy gỡ một mod hoặc xóa bớt NPC trước.",
+ "Limite de NPCs": "Giới hạn NPC"
 }
