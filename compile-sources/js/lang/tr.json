@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [model] - Araç oluştur (örn. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Aktör animasyonlarını yeniden eşitle",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Genel araçlar",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Komutlar: /fly /map /w [hava] /t [saat] /anim /jetpack /v [model] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Konum: %.4f, %.4f, %.4f Açı: %.1f İç mekân: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Eski bir sürüm daha yeni bir sürümün klasöründe açılmaz; böylece projelerin ve ayarların bozulmaz.",
  "Use a versão {0} ou mais nova.": "{0} veya daha yeni bir sürüm kullan.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Varsayılan boyuta dön",
  "Voltar o zoom para 100%": "Yakınlaştırmayı %100'e döndür",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Birden fazla öğe seçili: yalnızca birlikte taşınabilir veya silinebilirler.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Birden fazla öğe seçiliyken kullanılamaz: yalnızca birlikte taşınabilir veya silinebilirler."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Birden fazla öğe seçiliyken kullanılamaz: yalnızca birlikte taşınabilir veya silinebilirler.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Komutlar: /fly /map /w [hava] /t [saat] /anim /jetpack /v [model] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "SA Map Studio'nun GitHub sayfasını aç",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Ekranın ortasında, kameranın nereye baktığını gösteren soluk bir nişangâh",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Kırmızı bir daire, dünyada tıkladığınız noktayı işaretler",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Sonsuz can ve araç her zaman tamir edilmiş; oyunda /god açar ve kapatır",
+ "Mostrar mira no centro da tela": "Ekranın ortasında nişangâh göster",
+ "Marcar o ponto do clique": "Tıklanan noktayı işaretle",
+ "Entrar em god mode": "Ölümsüz modda başla",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Ölümsüz mod açık: sonsuz can ve araç her zaman tamir edilmiş. Çıkmak için /god yazın.",
+ "God mode desativado.": "Ölümsüz mod kapalı.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Sonsuz can (tekrar: kapatır)",
+ "Aumentar": "Artır",
+ "Diminuir": "Azalt",
+ "Movimento": "Hareket"
 }

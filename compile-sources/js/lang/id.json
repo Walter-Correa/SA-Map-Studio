@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [model] - Munculkan kendaraan (mis. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Sinkronkan ulang animasi aktor",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilitas umum",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Perintah: /fly /map /w [cuaca] /t [jam] /anim /jetpack /v [model] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Posisi: %.4f, %.4f, %.4f Sudut: %.1f Interior: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Versi lama tidak dibuka di folder versi yang lebih baru, agar proyek dan pengaturan kamu tidak rusak.",
  "Use a versão {0} ou mais nova.": "Gunakan versi {0} atau yang lebih baru.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Kembali ke ukuran bawaan",
  "Voltar o zoom para 100%": "Kembalikan zoom ke 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Beberapa elemen dipilih: hanya bisa dipindahkan atau dihapus bersama.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Tidak tersedia saat beberapa elemen dipilih: elemen hanya dapat dipindahkan atau dihapus bersama."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Tidak tersedia saat beberapa elemen dipilih: elemen hanya dapat dipindahkan atau dihapus bersama.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Perintah: /fly /map /w [cuaca] /t [jam] /anim /jetpack /v [model] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Buka halaman SA Map Studio di GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Bidikan samar di tengah layar, menunjukkan ke mana kamera melihat",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Lingkaran merah menandai titik dunia yang Anda klik",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Nyawa tak terbatas dan kendaraan selalu diperbaiki; di dalam game, /god menyalakan dan mematikannya",
+ "Mostrar mira no centro da tela": "Tampilkan bidikan di tengah layar",
+ "Marcar o ponto do clique": "Tandai titik yang diklik",
+ "Entrar em god mode": "Masuk ke mode dewa",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Mode dewa aktif: nyawa tak terbatas dan kendaraan selalu diperbaiki. Ketik /god untuk keluar.",
+ "God mode desativado.": "Mode dewa nonaktif.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Nyawa tak terbatas (sekali lagi: menonaktifkan)",
+ "Aumentar": "Tambah",
+ "Diminuir": "Kurangi",
+ "Movimento": "Gerakan"
 }

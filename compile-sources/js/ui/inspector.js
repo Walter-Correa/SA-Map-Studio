@@ -252,6 +252,16 @@ const vecInputs = (prefix, labels, values, step) => `<div class="vec">${labels.m
      </div>
    </label>`).join('')}</div>`;
 
+// A number field with up and down arrows beside it (data: the data-* attributes of the buttons, without the direction)
+const numArrows = (input, data, what) => {
+  const attrs = Object.entries(data).map(([k, v]) => `data-${k.replace(/[A-Z]/g, c => '-' + c.toLowerCase())}="${v}"`).join(' ');
+  return `<span class="num-step">${input}<span class="vec-arrows">
+     <button type="button" class="vec-arrow-btn up" ${attrs} data-step-dir="1" title="Aumentar" aria-label="Aumentar ${what}">▲</button>
+     <button type="button" class="vec-arrow-btn down" ${attrs} data-step-dir="-1" title="Diminuir" aria-label="Diminuir ${what}">▼</button>
+   </span></span>`;
+};
+const angleZInput = (v) => numArrows(`<input type="number" step="1" data-field="rz" value="${fmt(v)}">`, { stepField: 'rz', stepBase: 1 }, 'Ângulo Z');
+
 const titleBlock = (model, sub, initialSrc = null) => {
   const isSkin0 = (model === 0 || model === '0');
   const src = initialSrc || (isSkin0 ? (app.thumbs.url(0) || '') : '');
@@ -270,7 +280,7 @@ const speedText = (v) => { const t = String(clampTransformSpeed(v)); return t.in
 
 function speedSection() {
   const sp = app.editor.transformSpeed || { move: 1.0, rotate: 1.0 };
-  const input = (type, v) => `<input type="number" data-speed="${type}" min="${TRANSFORM_SPEED.min}" max="${TRANSFORM_SPEED.max}" step="0.001" value="${speedText(v)}" style="font-weight:600;">`;
+  const input = (type, v) => numArrows(`<input type="number" data-speed="${type}" min="${TRANSFORM_SPEED.min}" max="${TRANSFORM_SPEED.max}" step="0.001" value="${speedText(v)}" style="font-weight:600;">`, { speedStep: type }, type === 'move' ? 'Movimento' : 'Rotação');
   return `<div class="insp-section">
     <div class="insp-label">Velocidade <span class="tag">0,001 a 10,0</span></div>
     <div class="pair">
@@ -420,7 +430,7 @@ function vehicleInspector(v) {
     ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [v.x, v.y, v.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">${app.project.mode === 'sp' ? 'Ângulo' : 'Ângulo e respawn'}</div>
-      <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(v.rz)}"></label><label data-mp>Respawn (s)<input type="number" step="10" min="-1" data-field="respawn" value="${v.respawn}"></label></div>
+      <div class="pair"><label><span>Ângulo Z</span>${angleZInput(v.rz)}</label><label data-mp>Respawn (s)<input type="number" step="10" min="-1" data-field="respawn" value="${v.respawn}"></label></div>
     </div>
     ${speedSection()}
     ${actionGrid()}
@@ -554,7 +564,7 @@ function spawnInspector(s) {
     ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [s.x, s.y, s.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Direção</div>
-      <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(s.rz)}"></label></div>
+      <div class="pair"><label><span>Ângulo Z</span>${angleZInput(s.rz)}</label></div>
     </div>
     ${speedSection()}
     ${actionGrid()}`;
@@ -582,7 +592,8 @@ function actorInspector(a) {
     ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [a.x, a.y, a.z], 0.1)}</div>
     <div class="insp-section"><div class="insp-label">Ângulo (FacingAngle)</div>
-      <div class="pair"><label>Ângulo Z<input type="number" step="1" data-field="rz" value="${fmt(a.rz)}"></label></div>
+      <div class="pair"><label><span>Ângulo Z</span>${angleZInput(a.rz)}</label></div>
+
     </div>
     ${speedSection()}
     ${actionGrid()}
@@ -787,7 +798,19 @@ function bindSpeedControls() {
     inp.addEventListener('input', () => apply(false));
     inp.addEventListener('change', () => apply(true));
   });
+  // The arrows: each click changes the speed by 0.1, within the limits
+  $$('#inspector [data-speed-step]').forEach(btn => btn.addEventListener('click', () => {
+    const type = btn.dataset.speedStep, dir = parseInt(btn.dataset.stepDir, 10) || 1;
+    const cur = app.editor.transformSpeed?.[type] ?? 1;
+    const next = Math.round((cur + dir * 0.1) * 1000) / 1000;
+    app.editor.setTransformSpeed({ [type]: Math.min(TRANSFORM_SPEED.max, Math.max(TRANSFORM_SPEED.min, next)) });
+
+    store.set('transformSpeed', app.editor.transformSpeed);
+    const inp = $(`#inspector [data-speed="${type}"]`);
+    if (inp) inp.value = speedText(app.editor.transformSpeed[type]);
+  }));
 }
+
 
 
 function bindStringFields(uid) {

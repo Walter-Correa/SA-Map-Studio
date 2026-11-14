@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [модель] - Створити транспорт (напр. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Знову синхронізувати анімації акторів",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Загальні утиліти",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Команди: /fly /map /w [погода] /t [година] /anim /jetpack /v [модель] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Позиція: %.4f, %.4f, %.4f Кут: %.1f Інтер'єр: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Стара версія не відкривається в папці новішої версії, щоб ваші проєкти й налаштування не постраждали.",
  "Use a versão {0} ou mais nova.": "Використовуйте версію {0} або новішу.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Повернути стандартний розмір",
  "Voltar o zoom para 100%": "Повернути масштаб 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Вибрано кілька елементів: їх можна лише переміщувати або видаляти разом.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Недоступно, коли вибрано кілька елементів: їх можна лише переміщувати або видаляти разом."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Недоступно, коли вибрано кілька елементів: їх можна лише переміщувати або видаляти разом.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Команди: /fly /map /w [погода] /t [година] /anim /jetpack /v [модель] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Відкрити сторінку SA Map Studio на GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Неяскравий приціл у центрі екрана, що показує, куди дивиться камера",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Червоне коло позначає точку світу, на яку ви клацнули",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Нескінченне здоров'я і завжди справний транспорт; у грі /god вмикає і вимикає",
+ "Mostrar mira no centro da tela": "Показувати приціл у центрі екрана",
+ "Marcar o ponto do clique": "Позначати точку клацання",
+ "Entrar em god mode": "Увійти в режим бога",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Режим бога ввімкнено: нескінченне здоров'я і завжди справний транспорт. Введіть /god, щоб вийти.",
+ "God mode desativado.": "Режим бога вимкнено.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Нескінченне здоров'я (ще раз: вимикає)",
+ "Aumentar": "Збільшити",
+ "Diminuir": "Зменшити",
+ "Movimento": "Переміщення"
 }

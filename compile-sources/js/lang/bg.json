@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [модел] - Създаване на превозно средство (напр. /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Повторно синхронизиране на анимациите на актьорите",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Общи помощни команди",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Команди: /fly /map /w [време] /t [час] /anim /jetpack /v [модел] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Позиция: %.4f, %.4f, %.4f Ъгъл: %.1f Интериор: %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Стара версия не се отваря в папка на по-нова версия, за да не се повредят проектите и настройките ви.",
  "Use a versão {0} ou mais nova.": "Използвайте версия {0} или по-нова.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Връщане към стандартния размер",
  "Voltar o zoom para 100%": "Връщане на мащаба на 100%",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Избрани са няколко елемента: могат само да се преместват или изтриват заедно.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Не е налично при избрани няколко елемента: те могат само да се местят или изтриват заедно."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Не е налично при избрани няколко елемента: те могат само да се местят или изтриват заедно.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Команди: /fly /map /w [време] /t [час] /anim /jetpack /v [модел] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Отваряне на страницата на SA Map Studio в GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Дискретен мерник в центъра на екрана, който показва накъде гледа камерата",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Червен кръг отбелязва точката от света, върху която сте щракнали",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Безкраен живот и превозното средство винаги поправено; в играта /god включва и изключва",
+ "Mostrar mira no centro da tela": "Показване на мерник в центъра на екрана",
+ "Marcar o ponto do clique": "Отбелязване на точката на щракване",
+ "Entrar em god mode": "Влизане в god mode",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "God mode е включен: безкраен живот и винаги поправено превозно средство. Напишете /god за изход.",
+ "God mode desativado.": "God mode е изключен.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Безкраен живот (отново: изключва)",
+ "Aumentar": "Увеличаване",
+ "Diminuir": "Намаляване",
+ "Movimento": "Движение"
 }

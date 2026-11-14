@@ -1823,7 +1823,6 @@
  "/v [modelo] - Criar veículo (ex: /v 411)": "/v [modèle] - Créer un véhicule (ex. : /v 411)",
  "/anim - Ressincronizar animações dos actors": "/anim - Resynchroniser les animations des acteurs",
  "/jetpack, /spawn, /pos - Utilidades gerais": "/jetpack, /spawn, /pos - Utilitaires généraux",
- "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos": "Commandes : /fly /map /w [météo] /t [heure] /anim /jetpack /v [modèle] /spawn /pos",
  "Posição: %.4f, %.4f, %.4f Ângulo: %.1f Interior: %d": "Position : %.4f, %.4f, %.4f Angle : %.1f Intérieur : %d",
  "Uma versão antiga não abre numa pasta de versão mais nova, para não estragar os seus projetos e configurações.": "Une ancienne version ne s'ouvre pas dans le dossier d'une version plus récente, pour ne pas abîmer vos projets et réglages.",
  "Use a versão {0} ou mais nova.": "Utilisez la version {0} ou plus récente.",
@@ -2615,5 +2614,19 @@
  "Voltar ao tamanho padrão": "Revenir à la taille par défaut",
  "Voltar o zoom para 100%": "Remettre le zoom à 100 %",
  "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Plusieurs éléments sélectionnés : ils ne peuvent être que déplacés ou supprimés ensemble.",
- "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Indisponible avec plusieurs éléments sélectionnés : ils ne peuvent être que déplacés ou supprimés ensemble."
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Indisponible avec plusieurs éléments sélectionnés : ils ne peuvent être que déplacés ou supprimés ensemble.",
+ "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god": "Commandes : /fly /map /w [météo] /t [heure] /anim /jetpack /v [modèle] /spawn /pos /god",
+ "Abrir a página do SA Map Studio no GitHub": "Ouvrir la page de SA Map Studio sur GitHub",
+ "Uma mira discreta no centro da tela, mostrando para onde a câmera olha": "Un viseur discret au centre de l'écran, qui montre où regarde la caméra",
+ "Um círculo vermelho marca o ponto do mundo onde você clicou": "Un cercle rouge marque le point du monde où vous avez cliqué",
+ "Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga": "Vie infinie et véhicule toujours réparé ; en jeu, /god l'active et le désactive",
+ "Mostrar mira no centro da tela": "Afficher un viseur au centre de l'écran",
+ "Marcar o ponto do clique": "Marquer le point cliqué",
+ "Entrar em god mode": "Commencer en mode dieu",
+ "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.": "Mode dieu activé : vie infinie et véhicule toujours réparé. Tapez /god pour quitter.",
+ "God mode desativado.": "Mode dieu désactivé.",
+ "/god - Vida infinita (de novo: desativa)": "/god - Vie infinie (encore une fois : désactive)",
+ "Aumentar": "Augmenter",
+ "Diminuir": "Diminuer",
+ "Movimento": "Mouvement"
 }
