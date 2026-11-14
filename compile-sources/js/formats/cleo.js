@@ -296,7 +296,7 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
 }
 
 // ---------------------------------------------------------------------------  the menu of a checkpoint or a pickup
-// menu: { title, titleKey, hint, options: [{ ...action, key, text }] }. The texts become entries of the game's text table (CLEO's
+// menu: { title, titleKey, hint, options: [{ ...action, key, row }] } (row: the text of its line). The texts become entries of the game's text table (CLEO's
 // 0ADF, under keys of up to 7 letters) and the game's own menu panel shows them; the player picks a row with the sprint key or
 // leaves with the enter/exit key. Uses the locals MENU_H and MENU_ROW, which the pickups and checkpoints scripts keep free.
 export const MENU_H = 22, MENU_ROW = 23;
@@ -306,13 +306,14 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   if (!opts.length) return;
   a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(1)).op(0x004D, ref(u('ms')));                  // the player could not pay the action before it: no menu
   a.op(0x0ADF, str(menu.titleKey), str(menu.title));
-  opts.forEach(o => a.op(0x0ADF, str(o.key), str(o.text)));
-  const longest = Math.max(menu.title.length, ...opts.map(o => o.text.length));
+  opts.forEach(o => a.op(0x0ADF, str(o.key), str(o.row)));
+  const longest = Math.max(menu.title.length, ...opts.map(o => o.row.length));
   a.op(0x01B4, int(0), int(0));                                                                // the player stands still while it is open
   a.op(0x08D4, str(menu.titleKey), flt(29), flt(150), flt(Math.min(400, Math.max(160, longest * 9 + 24))), int(1), int(1), int(1), int(1), lv(MENU_H));
   const keys = opts.map(o => o.key);
   while (keys.length < 12) keys.push('DUMMY');
   a.op(0x08DB, lv(MENU_H), int(0), str('DUMMY'), ...keys.map(k => str(k)));
+  a.op(0x090E, lv(MENU_H), int(0));                                                             // the first option starts selected
   if (menu.hint) a.op(0x0ACA, str(menu.hint));
   // the keys may still be down (the player came running): it waits until both are up
   a.label(u('mr')).op(0x0001, int(0));

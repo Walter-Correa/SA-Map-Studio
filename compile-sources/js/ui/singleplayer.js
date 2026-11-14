@@ -677,7 +677,7 @@ export async function buildFiles(project, say = () => {}) {
     if (!m || !m.on || !m.options?.length) return null;
     return {
       title: m.title || gameText(t('Escolha')), titleKey: key(), hint,
-      options: m.options.slice(0, 12).map(o => ({ ...o, key: key(), text: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
+      options: m.options.slice(0, 12).map(o => ({ ...o, key: key(), row: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
     };
   };
   putScripts('pickups', (project.pickups || []).map(p => ({
