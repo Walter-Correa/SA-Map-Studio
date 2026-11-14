@@ -679,7 +679,7 @@ export async function buildFiles(project, say = () => {}) {
   let enemyCount = 0;
   for (const n of npcs) n.eid = n.role === 'enemy' && enemyCount < 300 ? enemyCount++ : -1;
   for (const n of npcs) n.enemyTotal = enemyCount;
-  putScripts('npcs', npcs.filter(n => !npcTravels(n)), npcVars, actorsScript);
+  putScripts('npcs', npcs.filter(n => !npcTravels(n)), npcVars, actorsScript, ACTORS_BUDGET);
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
   if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());

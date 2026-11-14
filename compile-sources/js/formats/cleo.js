@@ -110,9 +110,8 @@ export function taskGuardScript() {
   a.op(0x0000);
   waitPlayer(a);
   for (let k = 0; k <= ATK_TIME; k++) a.op(0x0AB3, int(k), int(0));
-  // CLEO+ runs these pieces when a character is hurt, when a vehicle is hit by a weapon and when a bullet hits anything
-  a.op(0x0EDE, int(1), ref('evd'), lv(11));
-  a.op(0x0EDF, int(1), ref('evc'), lv(12));
+  // CLEO+ runs this piece when a bullet hits anything. Its events for a character hurt and a vehicle hit by a weapon brought the game down
+  // in a fight of many NPCs (a crash inside CLEO+, found in the game): the bullets alone tell who shoots at the player or his vehicle
   a.op(0x0EE0, int(1), ref('evb'), lv(13), lv(14), lv(15), lv(16));
   a.label('loop').op(0x0001, int(250));
   a.op(0x0006, lv(0), int(0));                                   // free places
@@ -217,20 +216,6 @@ export function taskGuardScript() {
   a.label('pt').op(0x01BD, lv(14)).op(0x0AB3, int(ATK_TIME), lv(14));
   a.label('pr').op(0x0051);
 
-  // A character was hurt (11): when it is the player, whoever did it
-  a.label('evd');
-  ifNe(11, lv(PLAYER), 'evr');
-  a.op(0x00D6, int(0)).op(0x0EB5, lv(PLAYER), lv(12), lv(17), lv(18), lv(19)).op(0x004D, ref('evr'));
-  a.op(0x0050, ref('push'));
-  a.jump('evr');
-  // A vehicle was hit by a weapon (12): when it is the player's, whoever did it
-  a.label('evc');
-  a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('evr'));
-  a.op(0x03C0, lv(PLAYER), lv(13));
-  ifNe(12, lv(13), 'evr');
-  a.op(0x00D6, int(0)).op(0x0EB6, lv(12), lv(17), lv(18), lv(19)).op(0x004D, ref('evr'));
-  a.op(0x0085, lv(12), lv(17)).op(0x0050, ref('push'));
-  a.jump('evr');
   // A bullet hit something: the one who fired it (13, a character) shot at the player when it hit him, his vehicle, or anything within 4 m of him
   a.label('evb');
   ifEq(13, 0, 'evr');
@@ -725,6 +710,9 @@ function playAnim(a, e, h, tag) {
 
 export function actorsScript(items) {
   const list = items.map(e => ({ ...e, vars: npcVars(e) }));
+  // The NPCs keep the variables below 20 (ACTORS_BUDGET): 20 to 23 are T10 to T7. A script of 24 that mixed protectors with other NPCs had their
+  // characters written over by the protectors' work and the game fell at the next order given to them (found in the game: a crash at 0x40491E)
+  if (list.reduce((n, e) => n + e.vars, 0) > ACTORS_BUDGET) throw new Error('actors budget');
   const guards = list.filter(e => e.role === 'guard');
   return nearScript(list, {
     radius: 120, wait: 125,
