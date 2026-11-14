@@ -671,12 +671,12 @@ export async function buildFiles(project, say = () => {}) {
   let menuKeys = 0;
   const tag = (parseInt(String(project.modId || '').slice(0, 8), 16) || 0) % 46656;
   const key = () => ('Z' + tag.toString(36).padStart(3, '0') + (menuKeys++).toString(36).padStart(3, '0')).toUpperCase();
-  const hint = gameText(t('Escolher: ~k~~PED_SPRINT~  Sair: ~k~~VEHICLE_ENTER_EXIT~'), true);
+  const hint = gameText(t('Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~'), true);
   const menuOf = (item) => {
     const m = item.menu;
     if (!m || !m.on || !m.options?.length) return null;
     return {
-      title: m.title || gameText(t('Escolha uma opção')) || 'Menu', titleKey: key(), hint,
+      title: m.title || gameText(t('Escolha')), titleKey: key(), hint,
       options: m.options.slice(0, 12).map(o => ({ ...o, key: key(), text: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
     };
   };

@@ -2606,5 +2606,15 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Include-ul activează caseta. Aliniat la stânga sau la dreapta, valoarea este X-ul unde se termină caseta; centrat, este lățimea casetei.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Benzile sunt casete negre late cât ecranul; efectul doar le mută. Înălțimea lor vine din mărimea literei Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Ales pe un text, textul rămâne și apare treptat împreună cu benzile, ca în demo.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Ales pe un text, editorul creează o bară proprie sub el și textul numără de la 0 la 100%, ca în demo."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Ales pe un text, editorul creează o bară proprie sub el și textul numără de la 0 la 100%, ca în demo.",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Alege: ~k~~PED_SPRINT~ Ieșire: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Alege",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "Jocul afișează doar litere fără diacritice, cifre, spații și . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Meniu în joc",
+ "Abrir um menu ao entrar ou pegar": "Deschide un meniu la intrare sau la ridicare",
+ "Título do menu": "Titlul meniului",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "În joc: săgeți pentru a alege, sprint pentru a confirma, urcă în vehicul pentru a ieși. Până la {0} opțiuni.",
+ "Opção {0}": "Opțiunea {0}",
+ "Nome no menu": "Numele din meniu",
+ "Alterar menu": "Schimbă meniul"
 }

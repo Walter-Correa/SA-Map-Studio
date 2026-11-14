@@ -87,8 +87,7 @@ export const actionName = (type) => (TYPES.find(([v]) => v === type) || TYPES[0]
 // A text for the game (menus): its font only draws plain letters. Cyrillic is written in Latin letters, accents go away;
 // `codes` keeps the game's ~k~ codes (for the help text)
 const LATIN = { ł: 'l', Ł: 'L', ı: 'i', İ: 'I', đ: 'd', Đ: 'D', ß: 'ss', ø: 'o', Ø: 'O', æ: 'ae', Æ: 'AE', œ: 'oe', Œ: 'OE' };
-const CYR = 'а:a б:b в:v г:g д:d е:e ё:e ж:zh з:z и:i й:y к:k л:l м:m н:n о:o п:p р:r с:s т:t у:u ф:f х:h ц:ts ч:ch ш:sh щ:sht ъ:a ь: ю:yu я:ya і:i ї:yi є:ye ґ:g ы:y э:e';
-const CYR_MAP = Object.fromEntries(CYR.split(' ').map(p => p.split(':')));
+const CYR_MAP = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: '', ю: 'yu', я: 'ya', і: 'i', ї: 'yi', є: 'ye', ґ: 'g', ы: 'y', э: 'e' };
 function plainLetters(text) {
   let out = '';
   for (const ch of String(text || '')) {
@@ -108,32 +107,32 @@ export function gameText(text, codes = false) {
 function paramsHtml(act, P) {
   const t = act.type;
   let params = '';
-  if (t === 'health' || t === 'armour') params = field(P + 'Amount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
-  else if (STAT_RANGE[t] || t.startsWith('stat')) params = field(P + 'Stat', STAT_RANGE[t] ? 'Valor (569 a 1000)' : 'Valor (0 a 1000)', act.statValue, { min: (STAT_RANGE[t] || [0])[0], max: 1000, step: 1 });
-  else if (t === 'money') params = field(P + 'Amount', 'Valor (US$)', act.amount, { min: 1, step: 100 });
-  else if (t === 'weapon') params = `<label class="field">Arma<select id="${P}Weapon">${WEAPONS.map(w => `<option value="${w.id}" ${w.id === act.weapon ? 'selected' : ''}>${w.name}</option>`).join('')}</select></label>`
-    + field(P + 'Ammo', 'Munição', act.ammo, { min: 1, max: 99999, step: 10 });
-  else if (t === 'wanted') params = field(P + 'Stars', 'Estrelas (0 limpa)', act.stars, { min: 0, max: 6, step: 1 });
-  else if (t === 'teleport') params = `<div class="door-row">${field(P + 'X', 'X', act.x, { step: 0.1 })}${field(P + 'Y', 'Y', act.y, { step: 0.1 })}${field(P + 'Z', 'Z', act.z, { step: 0.1 })}${field(P + 'Rot', 'Direção (°)', act.rot, { step: 1 })}</div>
-    <button type="button" class="btn small" id="${P}Here">Usar a câmera</button>`;
-  else if (t === 'vehicle') params = field(P + 'Model', 'Modelo do veículo (400 a 611)', act.model, { min: 400, max: 611, step: 1 });
-  else if (t === 'skin') params = field(P + 'Model', 'Skin (0 a 311)', act.model, { min: 0, max: 311, step: 1 });
-  else if (t === 'weather') params = field(P + 'Weather', 'Clima (0 a 45)', act.weather, { min: 0, max: 45, step: 1 });
-  else if (t === 'time') params = `<div class="door-row">${field(P + 'Hour', 'Hora', act.hour, { min: 0, max: 23, step: 1 })}${field(P + 'Minute', 'Minuto', act.minute, { min: 0, max: 59, step: 1 })}</div>`;
-  else if (t === 'explosion') params = `<label class="field">Tipo<select id="${P}Explosion">${[[0, 'Granada'], [1, 'Molotov'], [2, 'Foguete'], [4, 'Carro']].map(([v, n]) => `<option value="${v}" ${v === act.explosion ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
+  if (t === 'health' || t === 'armour') params = field(P + '-amount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
+  else if (STAT_RANGE[t] || t.startsWith('stat')) params = field(P + '-stat', STAT_RANGE[t] ? 'Valor (569 a 1000)' : 'Valor (0 a 1000)', act.statValue, { min: (STAT_RANGE[t] || [0])[0], max: 1000, step: 1 });
+  else if (t === 'money') params = field(P + '-amount', 'Valor (US$)', act.amount, { min: 1, step: 100 });
+  else if (t === 'weapon') params = `<label class="field">Arma<select id="${P}-weapon">${WEAPONS.map(w => `<option value="${w.id}" ${w.id === act.weapon ? 'selected' : ''}>${w.name}</option>`).join('')}</select></label>`
+    + field(P + '-ammo', 'Munição', act.ammo, { min: 1, max: 99999, step: 10 });
+  else if (t === 'wanted') params = field(P + '-stars', 'Estrelas (0 limpa)', act.stars, { min: 0, max: 6, step: 1 });
+  else if (t === 'teleport') params = `<div class="door-row">${field(P + '-x', 'X', act.x, { step: 0.1 })}${field(P + '-y', 'Y', act.y, { step: 0.1 })}${field(P + '-z', 'Z', act.z, { step: 0.1 })}${field(P + '-rot', 'Direção (°)', act.rot, { step: 1 })}</div>
+    <button type="button" class="btn small" id="${P}-here">Usar a câmera</button>`;
+  else if (t === 'vehicle') params = field(P + '-model', 'Modelo do veículo (400 a 611)', act.model, { min: 400, max: 611, step: 1 });
+  else if (t === 'skin') params = field(P + '-model', 'Skin (0 a 311)', act.model, { min: 0, max: 311, step: 1 });
+  else if (t === 'weather') params = field(P + '-weather', 'Clima (0 a 45)', act.weather, { min: 0, max: 45, step: 1 });
+  else if (t === 'time') params = `<div class="door-row">${field(P + '-hour', 'Hora', act.hour, { min: 0, max: 23, step: 1 })}${field(P + '-minute', 'Minuto', act.minute, { min: 0, max: 59, step: 1 })}</div>`;
+  else if (t === 'explosion') params = `<label class="field">Tipo<select id="${P}-explosion">${[[0, 'Granada'], [1, 'Molotov'], [2, 'Foguete'], [4, 'Carro']].map(([v, n]) => `<option value="${v}" ${v === act.explosion ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
   return params;
 }
 
 function extrasHtml(act, P, once = true) {
   return `
     <div class="door-row">
-      ${field(P + 'Price', 'Preço (US$, 0 = de graça)', act.price, { min: 0, step: 10 })}
-      ${once ? `<label class="check"><input type="checkbox" id="${P}Once" ${act.once ? 'checked' : ''}> Só uma vez</label>` : ''}
+      ${field(P + '-price', 'Preço (US$, 0 = de graça)', act.price, { min: 0, step: 10 })}
+      ${once ? `<label class="check"><input type="checkbox" id="${P}-once" ${act.once ? 'checked' : ''}> Só uma vez</label>` : ''}
     </div>
-    <label class="field">Mensagem (opcional)<input type="text" id="${P}Text" maxlength="200" value="${esc(act.text)}" spellcheck="false"></label>
-    <div class="color-codes" id="${P}Colors">${COLORS.map(([c, name, css]) => `<button type="button" class="btn small" data-code="${c}" title="${name}" style="color:${css}">~${c}~</button>`).join('')}</div>
-    <label class="field">Estilo da mensagem<select id="${P}Style"><option value="text" ${act.msgStyle !== 'box' ? 'selected' : ''}>Texto na tela</option><option value="box" ${act.msgStyle === 'box' ? 'selected' : ''}>Caixa de ajuda (fundo preto)</option></select></label>
-    <div class="msg-preview ${act.msgStyle === 'box' ? 'box' : ''}" id="${P}Preview" ${act.text ? '' : 'hidden'}>${previewHtml(act.text)}</div>`;
+    <label class="field">Mensagem (opcional)<input type="text" id="${P}-text" maxlength="200" value="${esc(act.text)}" spellcheck="false"></label>
+    <div class="color-codes" id="${P}-colors">${COLORS.map(([c, name, css]) => `<button type="button" class="btn small" data-code="${c}" title="${name}" style="color:${css}">~${c}~</button>`).join('')}</div>
+    <label class="field">Estilo da mensagem<select id="${P}-style"><option value="text" ${act.msgStyle !== 'box' ? 'selected' : ''}>Texto na tela</option><option value="box" ${act.msgStyle === 'box' ? 'selected' : ''}>Caixa de ajuda (fundo preto)</option></select></label>
+    <div class="msg-preview ${act.msgStyle === 'box' ? 'box' : ''}" id="${P}-preview" ${act.text ? '' : 'hidden'}>${previewHtml(act.text)}</div>`;
 }
 
 export function actionSection(item) {
@@ -169,22 +168,22 @@ function bindFields(P, save) {
     const el = $('#' + P + id);
     if (el) el.onchange = () => { const v = num(id); if (Number.isFinite(v)) save(() => ({ [key]: int ? Math.round(v) : v })); };
   };
-  bindNum('Amount', 'amount'); bindNum('Stat', 'statValue'); bindNum('Ammo', 'ammo'); bindNum('Stars', 'stars'); bindNum('Model', 'model');
-  bindNum('Weather', 'weather'); bindNum('Hour', 'hour'); bindNum('Minute', 'minute'); bindNum('Price', 'price');
-  bindNum('X', 'x', false); bindNum('Y', 'y', false); bindNum('Z', 'z', false); bindNum('Rot', 'rot', false);
-  for (const [id, key] of [['Weapon', 'weapon'], ['Explosion', 'explosion']]) {
+  bindNum('-amount', 'amount'); bindNum('-stat', 'statValue'); bindNum('-ammo', 'ammo'); bindNum('-stars', 'stars'); bindNum('-model', 'model');
+  bindNum('-weather', 'weather'); bindNum('-hour', 'hour'); bindNum('-minute', 'minute'); bindNum('-price', 'price');
+  bindNum('-x', 'x', false); bindNum('-y', 'y', false); bindNum('-z', 'z', false); bindNum('-rot', 'rot', false);
+  for (const [id, key] of [['-weapon', 'weapon'], ['-explosion', 'explosion']]) {
     const el = $('#' + P + id);
     if (el) el.onchange = () => save(() => ({ [key]: parseInt(el.value, 10) || 0 }));
   }
-  const once = $('#' + P + 'Once');
+  const once = $('#' + P + '-once');
   if (once) once.onchange = () => save(() => ({ once: once.checked }));
-  const text = $('#' + P + 'Text');
-  const preview = () => { const p = $('#' + P + 'Preview'); if (p && text) { p.hidden = !text.value; p.innerHTML = previewHtml(text.value); } };
+  const text = $('#' + P + '-text');
+  const preview = () => { const p = $('#' + P + '-preview'); if (p && text) { p.hidden = !text.value; p.innerHTML = previewHtml(text.value); } };
   if (text) {
     text.onchange = () => save(() => ({ text: text.value }));
     text.addEventListener('input', preview);
   }
-  const colors = $('#' + P + 'Colors');
+  const colors = $('#' + P + '-colors');
   if (colors) colors.onclick = (e) => {
     const b = e.target.closest('[data-code]');
     if (!b || !text) return;
@@ -195,9 +194,9 @@ function bindFields(P, save) {
     preview();
     save(() => ({ text: text.value }));
   };
-  const style = $('#' + P + 'Style');
+  const style = $('#' + P + '-style');
   if (style) style.onchange = () => save(() => ({ msgStyle: style.value }), true);
-  const here = $('#' + P + 'Here');
+  const here = $('#' + P + '-here');
   if (here) here.onclick = () => {
     const cam = app.vp.camera;
     const dir = cam.getWorldDirection(new cam.position.constructor());
@@ -221,7 +220,7 @@ export function menuSection(item) {
     <label class="check"><input type="checkbox" id="mnuOn" ${m.on ? 'checked' : ''}> Abrir um menu ao entrar ou pegar</label>`;
   if (m.on) {
     const k = Math.min(menuSel.get(item.uid) ?? 0, m.options.length - 1);
-    html += `<label class="field">Título do menu<input type="text" id="mnuTitle" maxlength="${MENU_TEXT_MAX}" value="${esc(m.title)}" placeholder="${esc(gameText(t('Escolha uma opção')))}" spellcheck="false"></label>
+    html += `<label class="field">Título do menu<input type="text" id="mnuTitle" maxlength="${MENU_TEXT_MAX}" value="${esc(m.title)}" placeholder="${esc(gameText(t('Escolha')))}" spellcheck="false"></label>
     <p class="insp-note warn" id="mnuBad" hidden>${BAD_NOTE}</p>
     <ul class="menu-opts" id="mnuList">${m.options.map((o, i) => `<li class="menu-opt ${i === k ? 'sel' : ''}" data-k="${i}"><span>${esc(o.label || defaultLabel(o.type))}</span><button type="button" class="btn small icon" data-del="${i}" title="Remover opção"><svg><use href="#i-trash"/></svg></button></li>`).join('')}</ul>
     <button type="button" class="btn small" id="mnuAdd" ${m.options.length >= MENU_MAX ? 'disabled' : ''}><svg><use href="#i-plus"/></svg>Adicionar opção</button>
