@@ -21,6 +21,7 @@
 #define SAMSP_MAX_CHECKPOINTS 256
 #define SAMSP_MAX_MAPICONS    200
 #define SAMSP_MAX_PBARS       32
+#define SAMSP_MAX_GATES       200
 #define SAMSP_COR_INFO       0xF0A630FF
 #define SAMSP_COR_OK         0x57B77AFF
 
@@ -102,6 +103,13 @@ new bool:gHudShown[MAX_PLAYERS];
 
 new gObjetos[SAMSP_MAX_OBJETOS];
 new gTotalObjetos;
+// Gates and doors: the object (index in gObjetos), closed X Y Z RX RY RZ, open X Y Z RX RY RZ, speed, range,
+// and key, horn (1 = only the driver), move time (ms), close delay (ms), sound (1 = on)
+new gGateObj[SAMSP_MAX_GATES];
+new Float:gGatePos[SAMSP_MAX_GATES][14];
+new gGateCfg[SAMSP_MAX_GATES][5];
+new gGateState[SAMSP_MAX_GATES]; // 0 closed, 1 opening, 2 open, 3 closing
+new gTotalGates;
 new Float:gRemovidos[SAMSP_MAX_REMOVIDOS][4];
 new gRemovidosModelo[SAMSP_MAX_REMOVIDOS];
 new gTotalRemovidos;
@@ -874,6 +882,32 @@ stock SAMSP_CarregarMapa()
                 sumZ += pz;
                 countCoords++;
             }
+            case 'K':
+            {
+                // K|object index|closed x|y|z|rx|ry|rz|open x|y|z|rx|ry|rz|move time|close delay|key|horn|range|sound
+                new indice = SAMSP_Int(linha, 1);
+                if (gTotalGates >= SAMSP_MAX_GATES || indice < 0 || indice >= gTotalObjetos || gObjetos[indice] == INVALID_OBJECT_ID || gObjetos[indice] == 0) continue;
+                new g = gTotalGates;
+                gGateObj[g] = indice;
+                for (new k = 0; k < 12; k++) gGatePos[g][k] = SAMSP_Float(linha, 2 + k);
+                gGateCfg[g][2] = SAMSP_Int(linha, 14);
+                if (gGateCfg[g][2] < 100) gGateCfg[g][2] = 100;
+                gGateCfg[g][3] = SAMSP_Int(linha, 15);
+                gGateCfg[g][0] = SAMSP_Int(linha, 16);
+                gGateCfg[g][1] = SAMSP_Int(linha, 17);
+                gGatePos[g][13] = SAMSP_Float(linha, 18);
+                gGateCfg[g][4] = SAMSP_Int(linha, 19);
+                new Float:dist = VectorSize(gGatePos[g][6] - gGatePos[g][0], gGatePos[g][7] - gGatePos[g][1], gGatePos[g][8] - gGatePos[g][2]);
+                // MoveObject turns while it moves: a gate that only turns moves a millimetre so the turn takes its time
+                if (dist < 0.001)
+                {
+                    gGatePos[g][8] += 0.001;
+                    dist = 0.001;
+                }
+                gGatePos[g][12] = dist / (float(gGateCfg[g][2]) / 1000.0);
+                gGateState[g] = 0;
+                gTotalGates++;
+            }
             case 'G':
             {
                 if (gTotalGangZones >= SAMSP_MAX_GANGZONES) continue;
@@ -1174,6 +1208,73 @@ public OnVehicleSpawn(vehicleid)
             break;
         }
     }
+    return 1;
+}
+
+// Gates and doors: a key (or the horn) near a closed gate opens it; it closes on its own after its delay
+public OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
+{
+    for (new g = 0; g < gTotalGates; g++)
+    {
+        if (gGateState[g] != 0) continue;
+        new key = gGateCfg[g][0];
+        if (!(_:newkeys & key) || (_:oldkeys & key)) continue;
+        if (gGateCfg[g][1] && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) continue;
+        if (!IsPlayerInRangeOfPoint(playerid, gGatePos[g][13], gGatePos[g][0], gGatePos[g][1], gGatePos[g][2])) continue;
+        SAMSP_GateMove(g, true);
+    }
+    return 1;
+}
+
+stock SAMSP_GateMove(g, bool:open)
+{
+    new p = open ? 6 : 0;
+    new id = gObjetos[gGateObj[g]];
+    if (gGateCfg[g][4]) SAMSP_GateSound(g, 1153);
+    gGateState[g] = open ? 1 : 3;
+    if (gUseStreamer)
+    {
+        MoveDynamicObject(STREAMER_TAG_OBJECT:id, gGatePos[g][p], gGatePos[g][p + 1], gGatePos[g][p + 2], gGatePos[g][12], gGatePos[g][p + 3], gGatePos[g][p + 4], gGatePos[g][p + 5]);
+    }
+    else
+    {
+        MoveObject(id, gGatePos[g][p], gGatePos[g][p + 1], gGatePos[g][p + 2], gGatePos[g][12], gGatePos[g][p + 3], gGatePos[g][p + 4], gGatePos[g][p + 5]);
+    }
+    SetTimerEx("SAMSP_GateArrive", gGateCfg[g][2], false, "i", g);
+    return 1;
+}
+
+// The sound plays where the gate is when it starts and when it stops
+stock SAMSP_GateSound(g, soundid)
+{
+    new Float:x, Float:y, Float:z;
+    new id = gObjetos[gGateObj[g]];
+    if (gUseStreamer) GetDynamicObjectPos(STREAMER_TAG_OBJECT:id, x, y, z);
+    else GetObjectPos(id, x, y, z);
+    for (new i = 0; i < MAX_PLAYERS; i++)
+    {
+        if (IsPlayerConnected(i)) PlayerPlaySound(i, soundid, x, y, z);
+    }
+    return 1;
+}
+
+forward SAMSP_GateArrive(g);
+public SAMSP_GateArrive(g)
+{
+    if (gGateCfg[g][4]) SAMSP_GateSound(g, 1154);
+    if (gGateState[g] == 1)
+    {
+        gGateState[g] = 2;
+        SetTimerEx("SAMSP_GateClose", gGateCfg[g][3], false, "i", g);
+    }
+    else gGateState[g] = 0;
+    return 1;
+}
+
+forward SAMSP_GateClose(g);
+public SAMSP_GateClose(g)
+{
+    if (gGateState[g] == 2) SAMSP_GateMove(g, false);
     return 1;
 }
 

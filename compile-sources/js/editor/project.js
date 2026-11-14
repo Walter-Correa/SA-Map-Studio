@@ -4,6 +4,7 @@ import { normalizeMaterial } from './materials.js';
 import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
 import { t as tr } from '../ui/i18n.js';
 import { makeFx, tdfxPawn } from './tdfx.js';
+import { normalizeGate } from './gates.js';
 
 let uidCounter = 1;
 let _globalOpSeq = 0;
@@ -82,6 +83,7 @@ export function makeObject(data) {
       targetRy: data.move.targetRy !== undefined ? +data.move.targetRy : -1000,
       targetRz: data.move.targetRz !== undefined ? +data.move.targetRz : -1000,
     } : null,
+    gate: data.gate ? normalizeGate(data.gate, data) : null,
     attach: data.attach ? {
       to: data.attach.to || '',
       type: data.attach.type || 'object',
