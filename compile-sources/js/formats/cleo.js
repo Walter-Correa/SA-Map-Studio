@@ -309,16 +309,18 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   opts.forEach(o => a.op(0x0ADF, str(o.key), str(o.row)));
   const longest = Math.max(menu.title.length, ...opts.map(o => o.row.length));
   a.op(0x01B4, int(0), int(0));                                                                // the player stands still while it is open
+  // the keys may still be down (the player came running): it waits until they are up, before the panel exists, or walking
+  // forward would move its selection up to the last row
+  a.label(u('mr')).op(0x0001, int(0));
+  a.op(0x00D6, int(22)).op(0x00E1, int(0), int(16)).op(0x00E1, int(0), int(15)).op(0x00E1, int(0), int(1)).op(0x004D, ref(u('mk')));
+  a.jump(u('mr'));
+  a.label(u('mk'));
   a.op(0x08D4, str(menu.titleKey), flt(29), flt(150), flt(Math.min(400, Math.max(160, longest * 9 + 24))), int(1), int(1), int(1), int(1), lv(MENU_H));
   const keys = opts.map(o => o.key);
   while (keys.length < 12) keys.push('DUMMY');
   a.op(0x08DB, lv(MENU_H), int(0), str('DUMMY'), ...keys.map(k => str(k)));
   a.op(0x090E, lv(MENU_H), int(0));                                                             // the first option starts selected
   if (menu.hint) a.op(0x0ACA, str(menu.hint));
-  // the keys may still be down (the player came running): it waits until both are up
-  a.label(u('mr')).op(0x0001, int(0));
-  a.op(0x00D6, int(21)).op(0x00E1, int(0), int(16)).op(0x00E1, int(0), int(15)).op(0x004D, ref(u('mw')));
-  a.jump(u('mr'));
   a.label(u('mw')).op(0x0001, int(0));
   a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref(u('mx')));                          // the player died or was arrested
   a.op(0x00D6, int(0)).op(0x00E1, int(0), int(15)).op(0x004D, ref(u('ma')));
