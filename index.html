@@ -24,6 +24,8 @@
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></symbol>
     <symbol id="i-out" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 17v3h16v-3"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M16 8V4H4v12h4"/></symbol>
@@ -1067,7 +1069,10 @@
 <dialog class="dialog wide" id="dlgTextDraw" style="max-width: 1560px; width: 96vw; height: 92vh;">
   <div class="dialog-head">
     <div class="dialog-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; margin: 0;"><svg style="width: 20px; height: 20px; flex-shrink: 0;"><use href="#i-text"/></svg><span>Editor de TextDraws</span></div>
-    <button class="modal-close" aria-label="Fechar">&times;</button>
+    <div class="td-head-buttons">
+      <button type="button" class="td-expand" id="tdBtnExpand" title="Expandir" aria-label="Expandir"><svg><use href="#i-expand"/></svg></button>
+      <button class="modal-close" aria-label="Fechar">&times;</button>
+    </div>
   </div>
   <div class="td-dialog-body" style="display: flex; gap: 14px; flex: 1; height: calc(100% - 95px); overflow: hidden;">
     <div class="td-canvas-container" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--stage-td, #07090e); border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--line);">
@@ -1078,8 +1083,9 @@
         <button type="button" class="btn small ghost" id="tdBtnUndo" title="Desfazer (Ctrl+Z)" disabled><svg><use href="#i-undo"/></svg></button>
         <button type="button" class="btn small ghost" id="tdBtnRedo" title="Refazer (Ctrl+Y)" disabled><svg><use href="#i-redo"/></svg></button>
         <span class="divider"></span>
-        <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Arraste os elementos para mover ou use a alça no canto para redimensionar</span>
-        <span style="margin-left: auto; font-family: monospace; color: var(--accent); font-weight: 600;">640 x 448</span>
+        <span style="color: var(--text-muted); font-size: 11px; margin-left: 8px;" title="Shift ou Ctrl + clique seleciona vários elementos. A roda do mouse amplia a tela; com zoom, arraste o fundo para navegar.">Arraste para mover · roda do mouse amplia</span>
+        <button type="button" class="btn small ghost" id="tdZoomReset" style="margin-left: auto; font-family: monospace; min-width: 52px; justify-content: center;" title="Voltar o zoom para 100%"><span id="tdZoomLabel" translate="no">100%</span></button>
+        <span style="font-family: monospace; color: var(--accent); font-weight: 600;">640 x 448</span>
       </div>
       <div id="tdCanvasWrap" style="flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 6px; background: var(--td-wrap, radial-gradient(circle, #10141f 0%, #06080d 100%));">
         <canvas id="tdCanvas" width="1920" height="1080" style="max-width: 100%; max-height: 100%; width: auto; height: 100%; aspect-ratio: 16/9; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.8); border: 1px solid var(--line); border-radius: 4px; cursor: default;"></canvas>
@@ -1105,6 +1111,7 @@
       </div>
 
       <div id="tdDetailsPanel" style="display: none; border-top: 1px solid var(--line); padding-top: 6px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px;">
+        <div id="tdMultiNote" class="td-multi-note" hidden>Vários elementos selecionados: só é possível mover ou excluir todos juntos.</div>
         <label class="td-std" style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--paper-mute);">
           <span>Texto</span>
           <textarea id="tdText" rows="2" style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px; resize: vertical; min-height: 48px; border-radius: 4px; background: var(--asphalt-800); border: 1px solid var(--line); color: var(--paper); padding: 6px;" placeholder="Texto ou {RRGGBB}Tags"></textarea>
@@ -1192,8 +1199,8 @@
           </div>
           <div id="tdPbStyleNote" class="insp-note" style="display: none; font-size: 11px; margin: 0;"></div>
           <div class="pair">
-            <label>Largura<input type="number" id="tdPbWidth" step="0.1" min="2"></label>
-            <label title="Numa barra deitada (direita ou esquerda), a altura até 4,5 vira 2,5 vezes maior no jogo (no mínimo 6): o editor já mostra a altura do jogo">Altura<input type="number" id="tdPbHeight" step="0.1" min="2.25"></label>
+            <label title="Tamanho mínimo no jogo: barra 3 x 3, círculo 8 x 8 e anel 16 x 16">Largura<input type="number" id="tdPbWidth" step="0.1" min="3"></label>
+            <label title="Tamanho mínimo no jogo: barra 3 x 3, círculo 8 x 8 e anel 16 x 16">Altura<input type="number" id="tdPbHeight" step="0.1" min="3"></label>
           </div>
           <div class="pair">
             <label title="Valor da barra vazia (SetPlayerProgressBarMinValue)">Valor mínimo<input type="number" id="tdPbMin" step="1"></label>
@@ -1234,7 +1241,7 @@
           </div>
           <label class="check" style="font-size: 12px;" title="SetPlayerProgressBarLabel: um texto sobre a barra que mostra o valor"><input type="checkbox" id="tdPbLabel"> Texto na barra</label>
           <div id="tdPbLabelFields" style="display: none; flex-direction: column; gap: 6px;">
-            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Use {PERCENT}, {VALUE}, {MAX} e {MIN}; até 31 caracteres">Texto<input type="text" id="tdPbLabelText" spellcheck="false" maxlength="31" placeholder="{PERCENT}%"></label>
+            <label style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;" title="Valor mostrado sobre a barra">Texto<select id="tdPbLabelText" translate="no"><option value="{PERCENT}%">{PERCENT}%</option><option value="{PERCENT}">{PERCENT}</option><option value="{VALUE}">{VALUE}</option><option value="{VALUE}/{MAX}">{VALUE}/{MAX}</option><option value="{MIN} - {MAX}">{MIN} - {MAX}</option><option value="{MIN}">{MIN}</option><option value="{MAX}">{MAX}</option></select></label>
             <label class="check" style="font-size: 12px;"><input type="checkbox" id="tdPbLabelFollow"> Na cor da barra</label>
             <label id="tdPbLabelColorRow" style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;">Cor do texto<input type="color" id="tdPbLabelColor" value="#ffffff"></label>
             <div class="pair">
@@ -1301,7 +1308,7 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 6px; margin-top: 6px;">
+        <div id="tdActionsRow" style="display: flex; gap: 6px; margin-top: 6px;">
           <button type="button" class="btn small" id="tdBtnDuplicate" title="Duplicar"><svg><use href="#i-copy"/></svg>Duplicar</button>
           <button type="button" class="btn small primary" id="tdBtnCopyPwn" style="flex: 1;"><svg><use href="#i-doc"/></svg>Copiar Pawn</button>
           <button type="button" class="btn small danger" id="tdBtnDelete" title="Excluir"><svg><use href="#i-trash"/></svg></button>
