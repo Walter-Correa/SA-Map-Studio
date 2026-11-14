@@ -61,6 +61,11 @@ never changed and removing the mod is deleting its folder.
   armour, money, weapon, maximum ammo, wanted level, teleport, give a vehicle, repair, nitro, jetpack, save the game, put fat, muscle, stamina, lung capacity, health, armour, sex appeal or respect at the most or the least, remove hunger,
   change skin, weather or time, or an explosion trap, optionally only once. Checkpoints are the red mission cylinder with
   an optional radar point (off by default) and are created only near the player.
+- **In-game menu on pickups and checkpoints**: besides the action, a pickup or checkpoint can open the game's own menu with up
+  to 12 options chosen from the actions, each with its own settings and price. The options show in the editor language and
+  can be renamed (only the letters and signs the game font draws are accepted).
+- **Installed mods follow their project**: each project has a permanent id saved in its mod, so a renamed project still finds
+  its installed mod and the mod folder is renamed to the new name. Older mods without the id are found by the name.
 - **NPCs**: skin, animation, invulnerability, weapon with infinite ammunition (no reloading) or a chosen amount (the weapon
   is thrown away when it runs out and the NPC fights with its hands), time to come back after dying, and a role:
   - *Neutral*: stays in place and never reacts; if moved more than 0.5 m it is put back with its angle and animation.

@@ -1633,6 +1633,12 @@ body:not(:has(.app.mode-sp)) #dlgImport .sp-only, body:has(.app.mode-sp) #dlgImp
 .color-codes .btn { padding: 2px 6px; background: #1a1d22; font-weight: 700; font-family: monospace; }
 .msg-preview { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(0, 0, 0, .55); font-weight: 700; text-shadow: 0 0 2px #000; word-break: break-word; }
 .msg-preview.box { background: #000; border: 1px solid #555; font-weight: 400; text-shadow: none; }
+/* Singleplayer menu of a pickup or checkpoint: its options, the selected one is edited below */
+.menu-opts { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.menu-opt { display: flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border-radius: 6px; background: #1a1d22; cursor: pointer; }
+.menu-opt > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+.menu-opt.sel { outline: 1px solid var(--sodium); }
+.menu-edit { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .08); }
 
 /* Newer release: alert on the version history button and highlight inside the history */
 #btnAbout { position: relative; }

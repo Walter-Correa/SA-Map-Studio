@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Végtelen élet (újra: kikapcsolja)",
  "Aumentar": "Növelés",
  "Diminuir": "Csökkentés",
- "Movimento": "Mozgatás"
+ "Movimento": "Mozgatás",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Választás: ~k~~PED_SPRINT~ Kilépés: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Válassz",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "A játék csak ékezet nélküli betűket, számokat, szóközt és ezeket mutatja: . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Játékbeli menü",
+ "Abrir um menu ao entrar ou pegar": "Menü megnyitása belépéskor vagy felvételkor",
+ "Título do menu": "Menü címe",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "A játékban: nyilak a választáshoz, sprint a megerősítéshez, beszállás a kilépéshez. Legfeljebb {0} opció.",
+ "Opção {0}": "{0}. opció",
+ "Nome no menu": "Név a menüben",
+ "Alterar menu": "Menü módosítása"
 }

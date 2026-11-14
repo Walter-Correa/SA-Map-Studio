@@ -1,7 +1,7 @@
 import { uiLocale, t } from './i18n.js';
 // Projects: autosave, open (saving and closing the current one), create, rename and delete.
 import * as THREE from 'three';
-import { Project } from '../editor/project.js';
+import { Project, newModId } from '../editor/project.js';
 import { sampMissing } from '../editor/importers.js';
 import { app, $, esc, store, toast, showConfirm } from './common.js';
 
@@ -382,6 +382,8 @@ export function setupProjects() {
         const nameFromFile = file.name.replace(/\.[^/.]+$/, '').trim();
         if (!json.name && nameFromFile) json.name = nameFromFile;
         const project = Project.fromJSON(json);
+        // a copy of a project that is already here gets its own permanent id (the installed mod stays with the original)
+        if (project.modId && ((await listProjects()).projects || []).some(p => p.modId === project.modId && p.name !== project.name)) project.modId = newModId();
         await switchTo(project);
         $('#dlgProjects').close();
         toast(`Projeto "${project.name}" carregado com sucesso!`, 'ok');

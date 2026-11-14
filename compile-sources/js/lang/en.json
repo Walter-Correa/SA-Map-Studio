@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Infinite health (once more: turns it off)",
  "Aumentar": "Increase",
  "Diminuir": "Decrease",
- "Movimento": "Movement"
+ "Movimento": "Movement",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Choose: ~k~~PED_SPRINT~ Exit: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Choose",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "The game only shows letters without accents, numbers, spaces and . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "In-game menu",
+ "Abrir um menu ao entrar ou pegar": "Open a menu when entering or picking up",
+ "Título do menu": "Menu title",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "In the game: arrows to choose, sprint to confirm, enter vehicle to leave. Up to {0} options.",
+ "Opção {0}": "Option {0}",
+ "Nome no menu": "Name in the menu",
+ "Alterar menu": "Change menu"
 }
