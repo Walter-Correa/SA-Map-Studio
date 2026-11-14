@@ -709,13 +709,18 @@ const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed i
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
 export const npcTravels = (e) => e.role !== 'neutral' && !!e.follow;
 
-// Plays the animation of the NPC (asking for it first and waiting until it is there, then letting go of it)
+// Plays the animation of the NPC (asking for it first and waiting until it is there, then letting go of it). The PED library is never asked
+// for nor let go of: the game loads it at the start and keeps it (it holds the walking and standing of every character); letting go of it
+// took it out of memory and the game froze at the next model it loaded (found in the game: protectors with a neutral NPC playing IDLE_chat)
 function playAnim(a, e, h, tag) {
-  a.op(0x04ED, strn(e.anim.lib));
-  a.label('aw' + tag).op(0x0001, int(0));
-  a.op(0x00D6, int(0)).op(0x04EE, strn(e.anim.lib)).op(0x004D, ref('aw' + tag));
+  const permanent = String(e.anim.lib).toUpperCase() === 'PED';
+  if (!permanent) {
+    a.op(0x04ED, strn(e.anim.lib));
+    a.label('aw' + tag).op(0x0001, int(0));
+    a.op(0x00D6, int(0)).op(0x04EE, strn(e.anim.lib)).op(0x004D, ref('aw' + tag));
+  }
   a.op(0x0605, lv(h), strn(e.anim.name), strn(e.anim.lib), flt(e.anim.delta), int(e.anim.loop ? 1 : 0), int(e.anim.lockx ? 1 : 0), int(e.anim.locky ? 1 : 0), int(e.anim.freeze ? 1 : 0), int(e.anim.time | 0));
-  a.op(0x04EF, strn(e.anim.lib));
+  if (!permanent) a.op(0x04EF, strn(e.anim.lib));
 }
 
 export function actorsScript(items) {
