@@ -1,8 +1,9 @@
 // Singleplayer inspector parts: what a NPC carries and does, and what happens when a checkpoint or a pickup is used.
 import { app, $, esc, toast } from './common.js';
 import { t } from './i18n.js';
-import { makeAction, makeMenu, menuText, MENU_BAD_CHARS, MENU_MAX, MENU_TEXT_MAX, STAT_RANGE } from '../editor/project.js';
+import { makeAction, makeMenu, menuText, MENU_BAD_CHARS, MENU_MAX, MENU_TEXT_MAX, STAT_RANGE, npcLimit, npcRole } from '../editor/project.js';
 import { NPC_WEAPONS, WEAPONS, optionsHtml } from '../world/spWeapons.js';
+import { npcHealth, NPC_HEALTH_MAX } from '../formats/cleo.js';
 
 const isSp = () => app.project?.mode === 'sp';
 
@@ -22,6 +23,7 @@ export function npcSection(a) {
         <option value="guard" ${role === 'guard' ? 'selected' : ''}>Protetor do jogador</option>
         <option value="enemy" ${role === 'enemy' ? 'selected' : ''}>Inimigo do jogador</option>
       </select></label>
+    ${a.invulnerable ? '' : `<label class="field" title="Quanto dano o NPC aguenta (100 é a vida normal de um personagem)">Vida (1 a ${NPC_HEALTH_MAX})<input type="number" id="npcHealth" min="1" max="${NPC_HEALTH_MAX}" step="1" value="${npcHealth(a.health)}"></label>`}
     ${a.invulnerable ? '' : `<label class="field">Reaparecer depois de morrer (segundos, 0 = fica morto)<input type="number" id="npcRespawn" min="0" max="36000" step="1" value="${a.respawn | 0}"></label>`}
     ${role === 'neutral' ? '' : `<label class="check"><input type="checkbox" id="npcFollow" ${a.follow ? 'checked' : ''}> ${follow}</label>
     <label class="field">Velocidade ao correr até o jogador<select id="npcRun">
@@ -29,8 +31,8 @@ export function npcSection(a) {
       <option value="normal" ${a.runFast === false ? 'selected' : ''}>Correr normal</option>
     </select></label>
     <label class="field">Velocidade de movimento (100% a 200%)<input type="number" id="npcSpeed" min="100" max="200" step="5" value="${a.speedPct ?? 100}"></label>`}
-    <p class="insp-note">${role === 'guard' ? 'Atira em quem ataca o jogador ou está atirando perto dele. Sem a opção de seguir, protege o lugar onde está.'
-      : role === 'enemy' ? 'Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.' : 'Fica parado onde foi colocado.'}</p>
+    <p class="insp-note">${role === 'guard' ? 'Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.'
+      : role === 'enemy' ? 'Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.' : 'Fica parado onde foi colocado, só com a animação, e não reage a nada.'}</p>
   </div>`;
 }
 
@@ -39,7 +41,19 @@ export function bindNpc(a, project, rerender) {
   const w = $('#npcWeapon');
   if (w) w.onchange = () => set('Alterar arma do NPC', (o) => { o.weapon = parseInt(w.value, 10) || 0; if (o.weapon) o.anim = null; });
   const r = $('#npcRole');
-  if (r) r.onchange = () => set('Alterar comportamento do NPC', (o) => { o.role = r.value; if (r.value === 'neutral') o.follow = false; });
+  if (r) r.onchange = () => {
+    // Guards and enemies lower how many NPCs the project holds (see npcLimit)
+    const roles = project.actors.map(o => (o.uid === a.uid ? r.value : npcRole(o)));
+    const limit = npcLimit(roles);
+    if (roles.length > limit && limit < npcLimit(project.actors.map(npcRole))) {
+      r.value = npcRole(a);
+      toast(t('Com esse comportamento o projeto aceita até {0} NPCs, e ele já tem {1}. Remova NPCs antes.', limit, roles.length), 'warn', 7000);
+      return;
+    }
+    set('Alterar comportamento do NPC', (o) => { o.role = r.value; if (r.value === 'neutral') o.follow = false; });
+  };
+  const hp = $('#npcHealth');
+  if (hp) hp.onchange = () => set('Alterar a vida do NPC', (o) => { o.health = npcHealth(hp.value); });
   const rs = $('#npcRespawn');
   if (rs) rs.onchange = () => set('Alterar o reaparecimento do NPC', (o) => { o.respawn = Math.max(0, Math.min(36000, Math.round(parseFloat(rs.value) || 0))); });
   const ai = $('#npcAmmoInf');

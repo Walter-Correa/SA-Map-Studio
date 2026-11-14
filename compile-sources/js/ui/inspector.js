@@ -328,7 +328,7 @@ function objectInspector(o) {
 
     <!-- MoveObject -->
     <div class="insp-section">
-      <div class="insp-label">Movimento (MoveObject)</div>
+      <div class="insp-label">${app.project?.mode === 'sp' ? 'Movimento' : 'Movimento (MoveObject)'}</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkMoveObj" ${o.move ? 'checked' : ''} ${o.attach ? 'disabled' : ''}> Ativar movimento</label>
       ${o.attach ? '<div class="insp-note" style="color: var(--gold-400);">Objetos acoplados não podem se mover de forma independente. Somente o objeto ou veículo pai pode ter movimento.</div>' : (o.move ? `
         <div class="pair">
@@ -351,7 +351,7 @@ function objectInspector(o) {
           <button type="button" class="btn small" data-move-act="reset" title="Resetar posição"><svg><use href="#i-restore"/></svg>Resetar</button>
           <button type="button" class="btn small" data-move-act="settarg" title="Usar coordenadas atuais do objeto como alvo"><svg><use href="#i-pin"/></svg>Posição atual</button>
         </div>
-      ` : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>')}
+      ` : (app.project?.mode === 'sp' ? '<div class="insp-note">Move o objeto suavemente até outra coordenada.</div>' : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>'))}
     </div>
 
     <!-- AttachObjectToVehicle / AttachObjectToObject -->
@@ -591,7 +591,7 @@ function actorInspector(a) {
     <button type="button" class="btn danger block" data-act="del" style="margin: 8px 0 10px;"><svg><use href="#i-trash"/></svg>Apagar actor</button>
     ${scopeSection()}
     <div class="insp-section"><div class="insp-label">Posição</div>${vecInputs('', ['x', 'y', 'z'], [a.x, a.y, a.z], 0.1)}</div>
-    <div class="insp-section"><div class="insp-label">Ângulo (FacingAngle)</div>
+    <div class="insp-section"><div class="insp-label">${app.project?.mode === 'sp' ? 'Ângulo' : 'Ângulo (FacingAngle)'}</div>
       <div class="pair"><label><span>Ângulo Z</span>${angleZInput(a.rz)}</label></div>
 
     </div>
@@ -618,14 +618,14 @@ function actorInspector(a) {
         <label data-mp>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${a.world ?? -1}"></label>
         <label data-mp>Vida (Health)<input type="number" step="1" min="0" max="1000" data-field="health" value="${a.health ?? 100}"></label>
       </div>
-      <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkInvulnerable" ${a.invulnerable ? 'checked' : ''}> Invulnerável (SetActorInvulnerable)</label>
+      <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkInvulnerable" ${a.invulnerable ? 'checked' : ''}> ${app.project?.mode === 'sp' ? 'Invulnerável (tem prioridade sobre a vida)' : 'Invulnerável (SetActorInvulnerable)'}</label>
     </div>
 
     ${npcSection(a)}
 
     <!-- Animation -->
     <div class="insp-section">
-      <div class="insp-label">Animação (ApplyActorAnimation)</div>
+      <div class="insp-label">${app.project?.mode === 'sp' ? 'Animação' : 'Animação (ApplyActorAnimation)'}</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkActorAnim" ${a.anim ? 'checked' : ''} ${app.project?.mode === 'sp' && a.weapon ? 'disabled' : ''}> Ativar animação</label>
       ${app.project?.mode === 'sp' && a.weapon ? '<div class="insp-note">Com uma arma o NPC não usa animação.</div>' : ''}
       ${a.anim ? `
@@ -956,7 +956,7 @@ function bindItem(item) {
         toast('Objetos acoplados não podem se mover de forma independente. Somente o objeto ou veículo pai pode ter movimento.', 'warn');
         return;
       }
-      project.updateItems('Alterar MoveObject', [uid], (o) => {
+      project.updateItems(app.project?.mode === 'sp' ? 'Alterar movimento' : 'Alterar MoveObject', [uid], (o) => {
         if (chkMove.checked) {
           o.move = {
             targetX: o.x + 5, targetY: o.y, targetZ: o.z,
@@ -977,7 +977,7 @@ function bindItem(item) {
       const f = inp.dataset.move;
       const v = parseFloat(inp.value);
       if (!Number.isFinite(v)) return;
-      project.updateItems(`Editar MoveObject ${f}`, [uid], (o) => {
+      project.updateItems(app.project?.mode === 'sp' ? `Editar movimento ${f}` : `Editar MoveObject ${f}`, [uid], (o) => {
         if (!o.move) return;
         o.move[f] = v;
       });
@@ -1008,7 +1008,7 @@ function bindItem(item) {
       const act = btn.dataset.moveAct;
       if (act === 'test') {
         app.editor.testMoveObject(uid, false);
-        toast('Testando MoveObject (1 vez)');
+        toast(app.project?.mode === 'sp' ? 'Testando movimento (1 vez)' : 'Testando MoveObject (1 vez)');
       } else if (act === 'stop') {
         app.editor.stopMoveObject(uid);
         toast('Movimento parado');
@@ -1018,7 +1018,7 @@ function bindItem(item) {
       } else if (act === 'settarg') {
         const cur = project.find(uid);
         if (cur && cur.move) {
-          project.updateItems('Definir Alvo MoveObject', [uid], (o) => {
+          project.updateItems(app.project?.mode === 'sp' ? 'Definir alvo do movimento' : 'Definir Alvo MoveObject', [uid], (o) => {
             o.move.targetX = o.x;
             o.move.targetY = o.y;
             o.move.targetZ = o.z;
@@ -1893,7 +1893,7 @@ function textureEditor(cur, label, idx, info) {
   const t = cur && !isText(cur) && !keepsTexture(cur) ? cur : null;
   const orig = info[idx[0]];
   return `<div class="mat-body">
-    <div class="insp-note">SetObjectMaterial no ${esc(label)}. Clique numa textura na aba <a href="#" data-goto-tex>Texturas</a> ou digite abaixo.</div>
+    <div class="insp-note">${app.project?.mode === 'sp' ? `Textura do ${esc(label)}. Clique numa textura na aba` : `SetObjectMaterial no ${esc(label)}. Clique numa textura na aba`} <a href="#" data-goto-tex>Texturas</a> ou digite abaixo.</div>
     <div class="tex-fields">
       <label>modelid<input type="number" step="1" id="mtModel" value="${t ? t.model : -1}"></label>
       <label>txdname<input id="mtTxd" value="${esc(t ? t.txd : 'none')}" spellcheck="false"></label>
@@ -1901,7 +1901,7 @@ function textureEditor(cur, label, idx, info) {
     </div>
     <div class="mini-actions">
       <button type="button" class="btn primary" data-mat="applytex"><svg><use href="#i-check"/></svg>Aplicar textura</button>
-      <button type="button" class="btn" data-mat="makeInvisible" title="Remover textura tornando este índice invisível: SetObjectMaterial(objectid, 0, &quot;none&quot;, &quot;none&quot;, 0)"><svg><use href="#i-trash"/></svg>Tornar invisível</button>
+      <button type="button" class="btn" data-mat="makeInvisible" title="${app.project?.mode === 'sp' ? 'Remover textura tornando este índice invisível' : 'Remover textura tornando este índice invisível: SetObjectMaterial(objectid, 0, &quot;none&quot;, &quot;none&quot;, 0)'}"><svg><use href="#i-trash"/></svg>Tornar invisível</button>
       <button type="button" class="btn" data-mat="clear" title="Volta a textura e a cor originais${orig?.texture ? ' (' + esc(orig.texture) + ')' : ''}"><svg><use href="#i-restore"/></svg>Original</button>
     </div>
     <div class="insp-label">Cor (materialcolor) <span class="tag">multiplica a textura; o alfa deixa transparente</span></div>
@@ -2998,7 +2998,7 @@ function checkpointInspector(cp) {
       <div style="width:48px; height:48px; background:rgba(239,68,68,0.2); border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:16px; font-weight:bold;">${isRace ? 'RCP' : 'CP'}</div>
       <div>
         <div class="insp-name">${isRace ? 'Race Checkpoint' : 'Checkpoint'}</div>
-        <div class="insp-sub"><span class="tag">${isRace ? `Tipo ${cp.type ?? 0}` : 'SetPlayerCheckpoint'}</span> · Raio ${fmt(cp.size, 1)}</div>
+        ${!isRace && app.project?.mode === 'sp' ? `<div class="insp-sub">Raio ${fmt(cp.size, 1)}</div>` : `<div class="insp-sub"><span class="tag">${isRace ? `Tipo ${cp.type ?? 0}` : 'SetPlayerCheckpoint'}</span> · Raio ${fmt(cp.size, 1)}</div>`}
       </div>
     </div>
     <div style="display:flex; gap:6px; margin: 8px 0 10px;">
