@@ -15,6 +15,8 @@ import { initWorldDialog } from './worldDialog.js';
 import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
+import { gatesScript, GATE_VARS } from '../formats/cleoGates.js';
+import { isGate, gateOpenRot } from '../editor/gates.js';
 import { vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels } from '../formats/cleo.js';
 
 const BURIED_Z = -5000;
@@ -111,8 +113,8 @@ function enexLines(project) {
 // A car needs the CLEO script (and so the CLEO in the game) only when something was asked for it: tuning, paintjob,
 // indestructible or doors only for the player. A plain car is just a car generator of the game, which has its colors already.
 export const needsScript = (v) => (v.components?.length > 0) || (v.paintjob ?? -1) >= 0 || !!v.indestructible || !!v.npcLock;
-// Objects that move are created by the script too (an IPL object cannot move)
-export const isMover = (o) => !!o.move && !o.attach;
+// Objects that move (and gates) are created by the script too (an IPL object cannot move)
+export const isMover = (o) => (!!o.move || !!o.gate) && !o.attach;
 export const worldSettings = (project) => { const w = project.world || {}; return !!(project.spawns?.length || w.weather >= 0 || w.hour >= 0); };
 export const usesCleo = (project) => project.vehicles.some(v => app.gd.models.get(v.model)?.type === 'cars')
   || project.pickups?.length > 0 || project.actors?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0
@@ -582,7 +584,7 @@ function categoryOf(path) {
     if (/_checkpoints\d+\.cs$/.test(name)) return 'checkpoints';
     if (/_icons\d+\.cs$/.test(name)) return 'mapicons';
     if (/_world\.cs$/.test(name)) return 'world';
-    if (/_movers\d+\.cs$/.test(name)) return 'objects';
+    if (/_(movers|gates)\d+\.cs$/.test(name)) return 'objects';
     return 'vehicles'; // the parked cars (tuning, paintjob, doors)
   }
   if (name === 'handling.cfg') return 'vehicles';
@@ -651,7 +653,8 @@ export async function buildFiles(project, say = () => {}) {
   }
   // Objects that move, pickups, characters, radar icons, checkpoints and the world settings: scripts of the same mod
   const base = sanitize(project.name);
-  const movers = project.objects.filter(o => isMover(o) && isMapObject(o));
+  const movers = project.objects.filter(o => isMover(o) && isMapObject(o) && !o.gate);
+  const gates = project.objects.filter(o => isGate(o) && isMapObject(o));
   const putScripts = (name, list, varsOf, make, budget) => {
     chunkByVars(list, varsOf, budget).forEach((part, k) => files.set(`samsp_${base}_${name}${k + 1}.cs`, make(part)));
   };
@@ -664,6 +667,13 @@ export async function buildFiles(project, say = () => {}) {
     const c = clones.get(o.uid);
     return { model: c ? c.id : o.model, x: o.x, y: o.y, z: o.z, rx: o.rx, ry: o.ry, rz: o.rz, tx: o.move.targetX, ty: o.move.targetY, tz: o.move.targetZ, speed: o.move.speed };
   }), () => 3, moversScript);
+  putScripts('gates', gates.map(o => {
+    const c = clones.get(o.uid), g = o.gate, r = gateOpenRot(o);
+    return {
+      model: c ? c.id : o.model, x: o.x, y: o.y, z: o.z, rx: o.rx || 0, ry: o.ry || 0, rz: o.rz || 0, ox: g.ox, oy: g.oy, oz: g.oz, orx: r.rx, ory: r.ry, orz: r.rz,
+      time: g.time, closeDelay: g.closeDelay, horn: g.trigger === 'horn', vk: g.spKey, range: g.range, sound: g.sound,
+    };
+  }), () => GATE_VARS, gatesScript);
   putScripts('pickups', (project.pickups || []).map(p => ({
     model: p.model, type: p.type === 3 || p.model === 1212 ? 3 : 2, x: p.x, y: p.y, z: p.z, action: p.action,
   })), (p) => (p.action && p.action.type !== 'none' ? 3 : 2), pickupsScript);
@@ -691,7 +701,7 @@ export async function buildFiles(project, say = () => {}) {
       spawn: project.spawns?.[0] ? { x: project.spawns[0].x, y: project.spawns[0].y, z: project.spawns[0].z, rot: project.spawns[0].rz } : null, weather: w.weather ?? -1, hour: w.hour ?? -1, minute: w.minute ?? 0,
     }));
   }
-  const created = buildNewIpl(project, clones, new Set([...movedObjects, ...movers]), carsDone);
+  const created = buildNewIpl(project, clones, new Set([...movedObjects, ...movers, ...gates]), carsDone);
   Object.assign(info, { objects: created.objects, vehicles: created.vehicles + carsDone.size, skipped: created.skipped });
   if (created.objects || created.vehicles || created.doors) {
     // The Modloader only loads an IPL that has a matching gta.dat line. A gta.dat file in the mod would REPLACE the game's own

@@ -394,3 +394,14 @@ New version {0} available
 Update History - version {0} available
 You are using {0}{1}
 · released {0}
+Tab
+Enter / F
+Shift
+Num +
+Alt
+Num 8
+Num 2
+Num 4
+Num 6
+if (!(_:newkeys & key) || (_:oldkeys & key)) continue;
+attachtoid = {0};
