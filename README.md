@@ -522,7 +522,7 @@ Tools (in `compile-sources/`, run with Python 3):
 <details>
 <summary>Show the version history</summary>
 
-### 4.1.54 — 14/11/2026
+### 4.2.0 — 14/11/2026
 - Gates and doors: any object can become a gate or a door with a closed and an open position. A key or the vehicle horn (KEY_HORN) opens it, only when it is fully closed, and it closes again on its own after a set time (5000 ms by default), with the gate sounds 1153 and 1154. It goes into the Pawn export and import, the test server and the singleplayer mods, where the sound follows the object.
 - TextDraw editor: several items can be selected with Shift or Ctrl + click and then only moved or deleted together. The mouse wheel zooms the screen and either mouse button pans it. Items are dragged from anywhere inside the selection or its border, the resize handle is four arrows outside the corner, and an expand button sits next to the close button. Items may cross the screen edges but always keep a part visible, bar label types are picked from a list, and undo and redo last until the editor closes.
 - Progress Bar Plus updated with its new minimum sizes: bar 3 x 3, circle 8 x 8 and ring 16 x 16. Low bars of older projects only grow to the new minimum.

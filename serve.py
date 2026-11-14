@@ -41,7 +41,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlparse, parse_qs
 
-VERSION = "4.1.54"
+VERSION = "4.2.0"
 FROZEN = getattr(sys, "frozen", False)
 # Root folder where the .exe lives (or the repository root in development)
 if FROZEN:
