@@ -2,22 +2,65 @@
 import { app, $, $$, esc, fmt, toast } from './common.js';
 import { GATE_MP_KEYS, GATE_SP_KEYS, newGate } from '../editor/gates.js';
 
-let sounds = []; // the editor's audio elements of the gate test
+// Gate test sounds go through Web Audio: an <audio> loop leaves a gap and replays the attack at the start
+// of the sample on every turn, which sounds like the sound stopping and starting again. Here the start plays
+// once and only the steady part after it repeats, with no gap, like the looped sound of the game.
+let ctx = null;
+let sounds = []; // the playing sources of the gate test
+const buffers = new Map(); // sound id -> Promise<AudioBuffer|null>
+
+function loadBuffer(id) {
+  if (!buffers.has(id)) {
+    buffers.set(id, fetch(`/api/sound/${id}?v=2`)
+      .then(r => (r.ok && !r.headers.get('X-Sound-Silent') ? r.arrayBuffer() : null))
+      .then(data => (data ? ctx.decodeAudioData(data) : null))
+      .catch(() => null));
+  }
+  return buffers.get(id);
+}
+
+// Loop points: from the end of the attack (the envelope settles to its steady level) to the last sound before
+// the trailing silence, both moved to a rising zero crossing so the seam does not click
+function loopPoints(buf) {
+  const s = buf.getChannelData(0), sr = buf.sampleRate, step = Math.max(1, Math.round(sr * 0.05));
+  const env = [];
+  for (let i = 0; i < s.length; i += step) { let m = 0; for (let j = i; j < Math.min(i + step, s.length); j++) m = Math.max(m, Math.abs(s[j])); env.push(m); }
+  const loud = env.filter(v => v > 0.01);
+  if (loud.length < 6) return null;
+  const steady = [...loud].sort((a, b) => a - b)[Math.floor(loud.length / 2)];
+  let end = env.length - 1;
+  while (end > 0 && env[end] < steady * 0.25) end--;
+  let start = env.findIndex(v => v > steady * 0.25);
+  while (start < end && env[start] > steady * 1.3) start++;
+  start = Math.min(start + 1, Math.floor(end * 0.5));
+  if (end - start < 4) return null;
+  const zero = (i) => { for (let k = i; k < s.length - 1 && k < i + step; k++) if (s[k] <= 0 && s[k + 1] > 0) return k + 1; return i; };
+  return [zero(start * step) / sr, zero(end * step) / sr];
+}
 
 function playSound(id, loop) {
-  const audio = new Audio();
-  audio.loop = loop;
-  audio.volume = 0.85;
-  sounds.push(audio);
-  fetch(`/api/sound/${id}?v=2`).then(r => (r.ok && !r.headers.get('X-Sound-Silent') ? r.blob() : null)).then(blob => {
-    if (!blob || !sounds.includes(audio)) return;
-    audio.src = URL.createObjectURL(blob);
-    audio.play().catch(() => {});
-  }).catch(() => {});
+  try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  const entry = { src: null, stopped: false };
+  sounds.push(entry);
+  loadBuffer(id).then(buf => {
+    if (!buf || entry.stopped) return;
+    const src = ctx.createBufferSource(), gain = ctx.createGain();
+    src.buffer = buf;
+    gain.gain.value = 0.85;
+    const pts = loop ? loopPoints(buf) : null;
+    if (loop) {
+      src.loop = true;
+      if (pts) [src.loopStart, src.loopEnd] = pts;
+    }
+    src.connect(gain).connect(ctx.destination);
+    src.start();
+    entry.src = src;
+  });
 }
 
 function stopSounds() {
-  for (const a of sounds) { try { a.pause(); a.src = ''; } catch {} }
+  for (const e of sounds) { e.stopped = true; try { e.src?.stop(); } catch {} }
   sounds = [];
 }
 
