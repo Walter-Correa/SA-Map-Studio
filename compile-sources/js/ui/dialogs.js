@@ -232,12 +232,8 @@ export function setupImport() {
       if (sp) importSpExtras(p, parsed, merge, clone);
     });
     if (sp) for (const k of ['doors', 'world']) project.touch(k); // one undo step for the doors and settings that came
+    // Replace keeps the current project's name (projects are saved by name, so renaming would make another one)
     if (replace) {
-      if (projName) {
-        project.name = projName;
-        const nameInp = document.getElementById('projectName');
-        if (nameInp) nameInp.value = projName;
-      }
       if (parsed.camera) {
         const c = parsed.camera;
         if (typeof c.x === 'number' && typeof c.y === 'number' && typeof c.z === 'number') {
