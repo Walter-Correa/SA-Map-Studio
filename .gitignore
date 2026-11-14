@@ -2,18 +2,18 @@
 # SA Map Studio - Git Ignore
 # ==============================================================================
 
-# Executáveis e distribuições geradas (saída de build)
+# Generated executables and distributions (build output)
 compiled/
 build/
 build-info.json
 *.spec
 
-# Ambiente virtual isolado do Python e bytecode
+# Isolated Python virtual environment and bytecode
 compile-sources/.venv-build/
 __pycache__/
 *.pyc
 
-# Dados locais do usuário, projetos e configurações da máquina
+# Local user data, projects and machine settings
 /config.json
 /data/config.json
 !omp-server-source/config.json
@@ -24,17 +24,17 @@ projects/
 exported/
 test-server/
 
-# Pasta de testes (mantém a pasta testing/, ignora scripts temporários)
+# Test folder (keeps the testing/ folder, ignores temporary scripts)
 testing/*
 !testing/.gitkeep
 
-# Arquivos de execução, despejo e depuração do servidor
+# Server run, dump and debug files
 server_log.txt
 omp-server.log
 *.dmp
 *.pdb
 
-# Editores e sistema operacional
+# Editors and operating system
 .vscode/
 .idea/
 Thumbs.db

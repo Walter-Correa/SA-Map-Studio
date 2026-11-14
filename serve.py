@@ -7,25 +7,24 @@ os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
 """SA Map Studio - servidor local.
 
-Serve o editor e lê os arquivos da pasta do GTA San Andreas.
-Usa só a biblioteca padrão do Python (3.8 ou mais novo); o pacote opcional pywebview
-abre o editor numa janela própria (é o que o .exe usa).
+Serves the editor and reads the files of the GTA San Andreas folder.
+Uses only the Python standard library (3.8 or newer); the optional pywebview package
+opens the editor in its own window (this is what the .exe uses).
 
-Uso:
-    python serve.py                      (detecta a pasta do GTA sozinho)
+Usage:
+    python serve.py                      (detects the GTA folder by itself)
     python serve.py --gta "D:\\Jogos\\GTA San Andreas"
     python serve.py --port 8777 --no-browser
-    python serve.py --navegador          (abre no navegador mesmo com o pywebview instalado)
+    python serve.py --browser            (opens in the browser even with pywebview installed)
 
-Pastas (dentro de sa-map-studio):
-    projects/     projetos salvos (.json)
-    exported/     arquivos .pwn / .ipl gerados
-    data/         configuração, cache de texturas e miniaturas, dados da janela e registros
-    test-server/  servidor open.mp/SA-MP usado pelo "Testar no jogo"
-    system/       arquivos internos, runtime, bibliotecas e modelos 3D
+Folders (inside sa-map-studio):
+    projects/     saved projects (.json)
+    exported/     generated .pwn / .ipl files
+    data/         settings, texture and thumbnail cache, window data and logs
+    test-server/  open.mp/SA-MP server used by "Test in game"
+    system/       internal files, runtime, libraries and 3D models
 """
 import argparse
-import atexit
 import base64
 import json
 import re
@@ -62,7 +61,7 @@ else:
 
 
 def _dir_writable(path):
-    """Testa se dá para gravar na pasta (em Arquivos de Programas, sem administrador, não dá)."""
+    """Tests whether the folder can be written to (in Program Files, without administrator, it cannot)."""
     try:
         os.makedirs(path, exist_ok=True)
         probe = os.path.join(path, ".write-test-%d" % os.getpid())
@@ -76,8 +75,8 @@ def _dir_writable(path):
 
 
 def _in_protected_folder(path):
-    """Pasta que só o administrador grava (Arquivos de Programas ou Windows). Não grava nada para testar,
-    para nunca mexer na pasta do GTA."""
+    """Folder that only the administrator can write to (Program Files or Windows). Writes nothing to test it,
+    so the GTA folder is never touched."""
     full = os.path.normcase(os.path.abspath(path))
     for var in ("ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "SystemRoot"):
         base = os.environ.get(var)
@@ -117,12 +116,12 @@ COMPILE_MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
 THUMBS_DIR = os.path.join(CACHE_DIR, "thumbnails") if os.path.isdir(os.path.join(CACHE_DIR, "thumbnails")) or not os.path.isdir(os.path.join(CACHE_DIR, "miniaturas")) else os.path.join(CACHE_DIR, "miniaturas")
 ANIM_CACHE_DIR = os.path.join(CACHE_DIR, "animations") if os.path.isdir(os.path.join(CACHE_DIR, "animations")) or not os.path.isdir(os.path.join(CACHE_DIR, "animacoes")) else os.path.join(CACHE_DIR, "animacoes")
 def resolve_webview_dir():
-    """Resolve a pasta de dados do navegador (WebView2).
+    """Resolves the browser data folder (WebView2).
     
-    O Microsoft Edge WebView2 proíbe expressamente criar o User Data Folder
-    dentro de 'Program Files', 'Program Files (x86)', 'Windows' ou pastas protegidas,
-    pois os processos filhos de sandbox rodam com tokens restritos. Se o editor estiver
-    em Program Files ou a escrita falhar, utiliza fallback seguro em %LOCALAPPDATA%.
+    Microsoft Edge WebView2 explicitly forbids creating the User Data Folder
+    inside 'Program Files', 'Program Files (x86)', 'Windows' or protected folders,
+    because the sandboxed child processes run with restricted tokens. If the editor is
+    in Program Files or writing fails, it falls back safely to %LOCALAPPDATA%.
     """
     cand = os.path.join(DATA_DIR, "browser")
     abs_cand = os.path.abspath(cand).lower()
@@ -169,136 +168,10 @@ else:
 IS_WINDOWS = os.name == "nt"
 
 
-def migrate_old_layout():
-    """Move pastas e arquivos da raiz para dentro de sa-map-studio e remove pastas legadas e __pycache__."""
-    # The .exe can be in any folder (GTA's, Downloads, Desktop...).
-    # Only touches the root when it clearly belongs to the program: never inside GTA and, in the .exe,
-    # only in the old layout (which had the system folder next to the executable).
-    if editor_gta_folder() or looks_like_gta_dir(ROOT_DIR):
-        return
-    if FROZEN and not os.path.isdir(os.path.join(ROOT_DIR, "system")):
-        return
-
-    # Removes the __pycache__ folders from the source code (development mode only)
-    if not FROZEN:
-        for root, dirs, _ in os.walk(ROOT_DIR):
-            if "__pycache__" in dirs:
-                try:
-                    shutil.rmtree(os.path.join(root, "__pycache__"), ignore_errors=True)
-                except OSError:
-                    pass
-
-    def merge_and_remove(src_dir, dst_dir):
-        if not os.path.isdir(src_dir) or os.path.abspath(src_dir) == os.path.abspath(dst_dir):
-            return
-        os.makedirs(dst_dir, exist_ok=True)
-        for item in os.listdir(src_dir):
-            s = os.path.join(src_dir, item)
-            d = os.path.join(dst_dir, item)
-            if os.path.isdir(s):
-                merge_and_remove(s, d)
-            else:
-                if not os.path.exists(d):
-                    try:
-                        shutil.move(s, d)
-                    except OSError:
-                        pass
-                else:
-                    try:
-                        os.remove(s)
-                    except OSError:
-                        pass
-        try:
-            shutil.rmtree(src_dir, ignore_errors=True)
-        except OSError:
-            pass
-
-    # Migrates folders that may be loose in the root into BASE_DIR
-    for old_name, target_dir in (
-        ("sa-map-studio", BASE_DIR),
-        ("projects", PROJECTS_DIR),
-        ("projetos", PROJECTS_DIR),
-        ("Projetos", PROJECTS_DIR),
-        ("exported", EXPORTS_DIR),
-        ("exportados", EXPORTS_DIR),
-        ("Exportados", EXPORTS_DIR),
-        ("data", DATA_DIR),
-        ("dados", DATA_DIR),
-        ("Dados", DATA_DIR),
-        ("test-server", TEST_DIR),
-        ("servidor-teste", TEST_DIR),
-        ("Servidor de Teste", TEST_DIR),
-        ("teste", TEST_DIR),
-    ):
-        src = os.path.join(ROOT_DIR, old_name)
-        if old_name in ("data", "dados", "Dados"):
-            # Only moves the program's own data folder (never a GTA's data)
-            if resolve_ci(src, "gta.dat") or not any(
-                os.path.exists(os.path.join(src, marker)) for marker in ("config.json", "cache", "logs", "registros")
-            ):
-                continue
-        merge_and_remove(src, target_dir)
-
-    # Removes leftover/duplicate folders that must not exist inside sa-map-studio
-    for obsolete_dir in (
-        os.path.join(BASE_DIR, "models"),
-        os.path.join(BASE_DIR, "compile-sources"),
-        os.path.join(BASE_DIR, "system", "compile-sources"),
-    ):
-        if os.path.isdir(obsolete_dir):
-            try:
-                shutil.rmtree(obsolete_dir, ignore_errors=True)
-            except OSError:
-                pass
-
-    # Migrates loose files if they still exist loose
-    moves = [
-        ("config.json", CONFIG_FILE),
-        ("cache", CACHE_DIR),
-        ("dados-da-janela", WEBVIEW_DIR),
-        ("navegador", WEBVIEW_DIR),
-        ("registros", LOGS_DIR),
-        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
-        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
-    ]
-    for old_file, new_path in moves:
-        src = os.path.join(ROOT_DIR, old_file)
-        if os.path.exists(src) and not os.path.exists(new_path):
-            try:
-                os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                shutil.move(src, new_path)
-            except OSError:
-                pass
-        sub_src = os.path.join(DATA_DIR, old_file)
-        if os.path.exists(sub_src) and not os.path.exists(new_path):
-            try:
-                os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                shutil.move(sub_src, new_path)
-            except OSError:
-                pass
-
-    old_log = os.path.join(LOGS_DIR, "sa-map-studio.log")
-    new_log = os.path.join(LOGS_DIR, "sa-map-studio.log")
-    if os.path.exists(old_log):
-        if not os.path.exists(new_log):
-            try:
-                shutil.move(old_log, new_log)
-            except OSError:
-                pass
-        else:
-            try:
-                os.remove(old_log)
-            except OSError:
-                pass
-
-
-atexit.register(migrate_old_layout)
-
-
 LOG_FILE_PATH = os.path.join(LOGS_DIR, "sa-map-studio.log")
 
 def append_to_log(message, prefix="LOG"):
-    """Escreve uma linha com timestamp no arquivo sa-map-studio.log."""
+    """Writes a timestamped line to the sa-map-studio.log file."""
     now_str = time.strftime("[%Y-%m-%d %H:%M:%S]")
     line = f"{now_str} [{prefix}] {message}\n"
     try:
@@ -332,8 +205,7 @@ class TeeLogger:
 
 
 def setup_logging():
-    """Configura o redirecionamento de logs para o arquivo de registros."""
-    global LOG_FILE_PATH
+    """Sets up the redirection of the logs to the log file."""
     if sys.stdout is None or sys.stderr is None:
         try:
             os.makedirs(LOGS_DIR, exist_ok=True)
@@ -372,10 +244,10 @@ MIME = {
 
 
 # ---------------------------------------------------------------------------
-# Utilidades
+# Utilities
 # ---------------------------------------------------------------------------
 def resolve_ci(root, rel):
-    """Resolve um caminho relativo sem diferenciar maiúsculas (o gta.dat usa caixa mista)."""
+    """Resolves a relative path ignoring case (gta.dat uses mixed case)."""
     parts = [p for p in re.split(r"[\\/]+", rel) if p and p != "."]
     cur = root
     for part in parts:
@@ -400,7 +272,7 @@ GTA_EXES = ("gta_sa.exe", "gta-sa.exe", "gta.exe", "samp.exe")
 
 
 def get_canonical_default_gta():
-    """Pasta de instalação padrão do GTA San Andreas nesta máquina (Program Files (x86) do Windows)."""
+    """Default install folder of GTA San Andreas on this machine (Windows Program Files (x86))."""
     pf86 = os.environ.get("ProgramFiles(x86)")
     if pf86:
         return os.path.join(pf86, "Rockstar Games", "GTA San Andreas")
@@ -409,7 +281,7 @@ def get_canonical_default_gta():
 
 
 def get_default_gta_candidates():
-    """Pastas padrão de instalação, na ordem de prioridade (x86 primeiro, depois Program Files)."""
+    """Default install folders, in priority order (x86 first, then Program Files)."""
     cands = [get_canonical_default_gta()]
     for env in ("ProgramFiles", "ProgramW6432"):
         base = os.environ.get(env)
@@ -427,14 +299,14 @@ def has_gta_exe(path):
 
 
 def looks_like_gta_dir(path):
-    """Pasta que é uma instalação do GTA (tem o executável do jogo), mesmo que esteja incompleta."""
+    """Folder that is a GTA install (has the game executable), even if it is incomplete."""
     if not path or not os.path.isdir(path) or not has_gta_exe(path):
         return False
     return bool(resolve_ci(path, "models") or resolve_ci(path, "data") or resolve_ci(path, "anim"))
 
 
 def is_gta_dir(path):
-    """Verifica (só lendo, sem alterar nada) se a pasta é uma instalação completa do GTA San Andreas."""
+    """Checks (read-only, changes nothing) whether the folder is a complete GTA San Andreas install."""
     if not path or not os.path.isdir(path):
         return False
     if not os.path.isfile(resolve_ci(path, "data/gta.dat") or ""):
@@ -465,7 +337,7 @@ def update_config(**values):
 
 
 def gta_problem(path):
-    """Explica por que a pasta não serve (ou devolve "" se está tudo certo)."""
+    """Explains why the folder is not usable (or returns "" if everything is fine)."""
     if not path or not os.path.isdir(path):
         return "Não encontrei os arquivos do GTA San Andreas nessa pasta. Escolha a pasta onde fica o gta_sa.exe."
     if is_gta_dir(path):
@@ -480,7 +352,7 @@ def gta_problem(path):
 
 
 def registry_candidates():
-    """Caminhos conhecidos do GTA no registro do Windows (SAMP, Rockstar Games, Steam e MTA)."""
+    """Known GTA paths in the Windows registry (SAMP, Rockstar Games, Steam and MTA)."""
     out = []
     if not IS_WINDOWS:
         return out
@@ -540,7 +412,7 @@ def registry_candidates():
 
 
 def get_other_gta_candidates():
-    """Outros locais possíveis do GTA San Andreas (fora da pasta padrão), em qualquer máquina Windows."""
+    """Other possible locations of GTA San Andreas (outside the default folder), on any Windows machine."""
     out = []
     seen = {os.path.normcase(os.path.abspath(c)) for c in get_default_gta_candidates()}
 
@@ -594,11 +466,11 @@ def get_other_gta_candidates():
 
 
 def detect_gta(saved_path=""):
-    """Detecta a pasta do GTA San Andreas (só lendo, nunca altera as pastas do jogo):
-    1. Caminho já salvo, se continuar válido.
-    2. Pasta padrão de instalação, sempre em primeiro lugar quando tem os arquivos do jogo.
-    3. Se a padrão não existir ou estiver incompleta: registro do Windows e outros discos.
-    4. Se nada for encontrado: devolve a pasta padrão como sugestão (o erro só aparece ao avançar).
+    """Detects the GTA San Andreas folder (read-only, never changes the game folders):
+    1. The saved path, if it is still valid.
+    2. The default install folder, always first when it has the game files.
+    3. If the default one does not exist or is incomplete: Windows registry and other drives.
+    4. If nothing is found: returns the default folder as a suggestion (the error only shows when moving on).
     """
     if saved_path and is_gta_dir(saved_path):
         return saved_path
@@ -612,7 +484,7 @@ def detect_gta(saved_path=""):
 
 
 def browse_folder(initial="", title="Escolha uma pasta"):
-    """Abre a janela do Windows para escolher uma pasta."""
+    """Opens the Windows dialog to choose a folder."""
     if State.window is not None:
         try:
             import webview
@@ -953,9 +825,9 @@ _GDI_LOCK = threading.Lock()
 
 
 def gdi_font_metrics(face, size, bold):
-    """Métricas da fonte do jeito que o cliente do SA-MP cria a do SetObjectMaterialText
-    (D3DXCreateFont com altura = fontsize, peso 400/700, DEFAULT_CHARSET): altura da linha,
-    ascendente, tamanho da letra e a largura de cada caractere (cp1252), já com o hinting do Windows."""
+    """Font metrics the way the SA-MP client creates the one for SetObjectMaterialText
+    (D3DXCreateFont with height = fontsize, weight 400/700, DEFAULT_CHARSET): line height,
+    ascent, letter size and the width of each character (cp1252), already with Windows hinting."""
     face = str(face or "Arial")[:64]
     size = max(1, min(255, int(size)))
     key = (face.lower(), size, bool(bold))
@@ -1017,7 +889,7 @@ _COL_LOCK = threading.Lock()
 
 
 def _col_spheres_from(buf, out):
-    """Lê as esferas de colisão (centro e raio) de um arquivo .col (COLL, COL2, COL3, COL4)."""
+    """Reads the collision spheres (center and radius) of a .col file (COLL, COL2, COL3, COL4)."""
     pos = 0
     while pos + 48 <= len(buf):
         tag = buf[pos:pos + 4]
@@ -1051,8 +923,8 @@ def _img_entries(path):
 
 
 def col_sphere(model_name):
-    """Esfera de colisão de um modelo (o que o SA-MP usa para enquadrar a prévia de modelo 3D):
-    procura nos .col dos IMG do GTA e do SA-MP e em models/coll; veículos têm a colisão dentro do DFF."""
+    """Collision sphere of a model (what SA-MP uses to frame the 3D model preview):
+    looks in the .col files of the GTA and SA-MP IMGs and in models/coll; vehicles have the collision inside the DFF."""
     gta = State.gta_path
     if not gta:
         return None
@@ -1115,7 +987,7 @@ THUMB_CURRENT_WIDTH = 160   # object thumbnails narrower than this are the old l
 
 
 def webp_width(path):
-    """Largura em pixels de um arquivo WebP lendo só o cabeçalho (0 se não der)."""
+    """Width in pixels of a WebP file reading only the header (0 if it cannot)."""
     try:
         with open(path, "rb") as f:
             b = f.read(32)
@@ -1136,8 +1008,8 @@ def webp_width(path):
 SMEAR_FIX_NS = 1793337049 * 1_000_000_000          # 2026-10-30 (see thumbs_index)
 
 def thumb_widths(files):
-    """files: {id: (caminho, tamanho, mtime_ns)} -> {id: largura}. Um arquivo de cache guarda a largura de cada
-    miniatura pelo tamanho e pela data, então só os arquivos novos ou alterados têm o cabeçalho lido."""
+    """files: {id: (path, size, mtime_ns)} -> {id: width}. A cache file keeps the width of each
+    thumbnail by size and date, so only new or changed files have the header read."""
     cache_file = os.path.join(DATA_DIR, "cache", "thumb-widths.json")
     try:
         with open(cache_file, "r", encoding="utf-8") as f:
@@ -1224,7 +1096,7 @@ def asset_file(rel):
 
 
 def thumb_file(kind, key):
-    """Caminho da miniatura em disco. kind = obj | tex; key = id do modelo ou "txd/textura"."""
+    """Path of the thumbnail on disk. kind = obj | tex; key = model id or "txd/texture"."""
     key = str(key).lower()
     if kind in ("obj", "objects"):
         if not key.isdigit():
@@ -1279,8 +1151,8 @@ class State:
 
 
 def editor_gta_folder():
-    """Pasta do GTA onde o SA Map Studio.exe foi colocado (ou numa subpasta dela), ou "".
-    Devolve a pasta mesmo que a instalação esteja incompleta; quem chama confere com is_gta_dir."""
+    """Folder of the GTA where SA Map Studio.exe was placed (or in a subfolder of it), or "".
+    Returns the folder even if the install is incomplete; the caller checks it with is_gta_dir."""
     cur = os.path.abspath(ROOT_DIR)
     for _ in range(3):
         if looks_like_gta_dir(cur):
@@ -1293,14 +1165,14 @@ def editor_gta_folder():
 
 
 def is_editor_inside_gta():
-    """Caminho do GTA quando o editor está numa instalação completa do jogo (configuração automática)."""
+    """GTA path when the editor is in a complete game install (automatic setup)."""
     folder = editor_gta_folder()
     return folder if is_gta_dir(folder) else ""
 
 
 
 def watch_browser(httpd, grace=300, timeout=180):
-    """No .exe sem console, encerra o servidor quando a aba do navegador é fechada."""
+    """In the .exe without a console, shuts the server down when the browser tab is closed."""
     started = time.time()
     while True:
         time.sleep(5)
@@ -1310,13 +1182,13 @@ def watch_browser(httpd, grace=300, timeout=180):
                 break
         elif now - started > grace:
             break
-    print("Página fechada: encerrando o servidor.")
+    print("Page closed: shutting the server down.")
     State.stopping = True
     httpd.shutdown()
 
 
 def build_info():
-    """Data e hora da compilação (gravadas pelo Compilar EXE.bat em build-info.json)."""
+    """Date and time of the build (written by build.bat to build-info.json)."""
     try:
         with open(os.path.join(APP_DIR, "build-info.json"), "r", encoding="utf-8-sig") as f:
             data = json.load(f)
@@ -1467,7 +1339,7 @@ def server_exe_in(folder):
 
 
 def detect_servers():
-    """Procura pastas de servidor (omp-server.exe / samp-server.exe) nas pastas do usuário."""
+    """Looks for server folders (omp-server.exe / samp-server.exe) in the user folders."""
     home = os.path.expanduser("~")
     roots = [os.path.join(home, d) for d in ("Documents", "Documentos", "Desktop", "Área de Trabalho", "Downloads")]
     roots += [r"C:\\", r"D:\\"] if IS_WINDOWS else []
@@ -1596,7 +1468,7 @@ def samp_installed_client():
 
 
 def find_samapstudio_amx():
-    """Localiza o arquivo samapstudio.amx nas fontes de compilacao ou instalacao."""
+    """Locates the samapstudio.amx file in the build sources or the install."""
     for cand in (
         os.path.join(COMPILE_SOURCES_DIR, "samapstudio.amx"),
         os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
@@ -1683,7 +1555,7 @@ def copy_if_newer(src, dst):
 
 
 def port_free(port):
-    """True se ninguém está usando a porta UDP neste computador."""
+    """True if nobody is using the UDP port on this computer."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.bind(("0.0.0.0", port))
@@ -1713,7 +1585,7 @@ def start_test(body):
     os.makedirs(TEST_DIR, exist_ok=True)
     same = os.path.normcase(os.path.abspath(src)) == os.path.normcase(os.path.abspath(TEST_DIR))
     if not same:
-        # Copies the server to "Servidor de Teste" (the user's server and gamemode are not touched)
+        # Copies the server to the test-server folder (the user's server and gamemode are not touched)
         copy_if_newer(exe, os.path.join(TEST_DIR, os.path.basename(exe)))
         for n in os.listdir(src):
             full = os.path.join(src, n)
@@ -1771,13 +1643,15 @@ def start_test(body):
                 if os.path.normcase(os.path.abspath(streamer_src)) != os.path.normcase(os.path.abspath(dst_streamer)):
                     copy_if_newer(streamer_src, dst_streamer)
             load_streamer = bool(streamer_src or use_streamer)
-            plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
-            with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
-                f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 10\nport %d\n"
-                        "hostname SA Map Studio - Testing server\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
-                        "%s"
-                        "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
-                        "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage Portugues\n" % (rcon, TEST_PORT, plugins_line))
+            # open.mp reads config.json; server.cfg is only written for a classic SA-MP server
+            if not is_omp:
+                plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
+                with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
+                    f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 10\nport %d\n"
+                            "hostname SA Map Studio - Testing server\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
+                            "%s"
+                            "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
+                            "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage English\n" % (rcon, TEST_PORT, plugins_line))
             cfg = {
                 "name": "SA Map Studio - Testing server", "max_players": 10, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT},
@@ -1788,7 +1662,7 @@ def start_test(body):
             with open(os.path.join(td, "config.json"), "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2)
         except Exception as err:
-            print(f"[SA Map Studio] Erro ao preparar servidor de teste em {td}: {err}")
+            print(f"[SA Map Studio] Error preparing the test server in {td}: {err}")
     for name in ("log.txt", "server_log.txt"):
         try:
             os.remove(os.path.join(TEST_DIR, name))
@@ -2168,7 +2042,7 @@ def ensure_radarmap(gta_path, out_png):
         write_png(out_png, total_w, total_h, full_map)
         return True
     except Exception as e:
-        print(f"Erro em ensure_radarmap: {e}")
+        print(f"Error in ensure_radarmap: {e}")
         return False
 
 
@@ -2356,11 +2230,6 @@ _update_lock = threading.Lock()
 _update_cache = {"at": 0.0, "data": None}
 
 
-def _version_tuple(text):
-    m = re.match(r"\s*v?(\d+(?:\.\d+)*)", str(text or ""))
-    return tuple(int(x) for x in m.group(1).split(".")) if m else ()
-
-
 def check_update():
     """Latest release of the project and whether it is newer than this editor. Never raises; asks GitHub at most once
     every 6 hours (30 minutes after a failure, as when offline or while the repository is private)."""
@@ -2404,7 +2273,7 @@ _DEFAULT_UPDATE_API = "https://api.github.com/repos/Walter-Correa/SA-Map-Studio/
 
 
 # ---------------------------------------------------------------------------
-# Servidor HTTP
+# HTTP server
 # ---------------------------------------------------------------------------
 class Handler(SimpleHTTPRequestHandler):
     server_version = "SAMapStudio/" + VERSION
@@ -2528,7 +2397,7 @@ class Handler(SimpleHTTPRequestHandler):
                     return
                 remaining -= len(chunk)
 
-    # ---------- rotas ----------
+    # ---------- routes ----------
     def do_GET(self):
         url = urlparse(self.path)
         path = unquote(url.path)
@@ -2894,7 +2763,7 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/logs/clear":
             try:
                 with open(LOG_FILE_PATH, "w", encoding="utf-8") as f:
-                    f.write(f"{time.strftime('[%Y-%m-%d %H:%M:%S]')} [INFO] Registros reiniciados pelo usuário.\n")
+                    f.write(f"{time.strftime('[%Y-%m-%d %H:%M:%S]')} [INFO] Logs reset by the user.\n")
                 return self.send_json({"ok": True})
             except Exception as e:
                 return self.send_json({"ok": False, "error": str(e)}, 500)
@@ -3178,7 +3047,7 @@ class Handler(SimpleHTTPRequestHandler):
                     break
         self.send_json({"obj": objs, "stale": stale, "tex": texs})
 
-    # ---------- projetos ----------
+    # ---------- projects ----------
     def project_mode(self):
         """"sp" or "mp": which projects folder the request is about (?mode=sp)."""
         return "sp" if parse_qs(urlparse(self.path).query).get("mode", [""])[0] == "sp" else "mp"
@@ -3249,8 +3118,8 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 class StudioServer(ThreadingHTTPServer):
-    """Servidor que não cai por causa de um pedido: se faltar memória para abrir uma
-    thread, atende aquele pedido direto (ou descarta) e continua funcionando."""
+    """Server that does not go down because of one request: if memory runs out when opening a
+    thread, it handles that request directly (or drops it) and keeps working."""
     daemon_threads = True
     block_on_close = False
     request_queue_size = 64
@@ -3259,7 +3128,7 @@ class StudioServer(ThreadingHTTPServer):
         try:
             super().process_request(request, client_address)
         except (MemoryError, RuntimeError, OSError) as err:
-            print("Aviso: pedido atendido sem thread (%s)" % err.__class__.__name__)
+            print("Warning: request handled without a thread (%s)" % err.__class__.__name__)
             try:
                 self.finish_request(request, client_address)
             except Exception:
@@ -3275,18 +3144,18 @@ class StudioServer(ThreadingHTTPServer):
 
 
 def serve_forever_safely(httpd):
-    """Mantém o servidor de pé: se o laço principal cair por um erro, volta a atender."""
+    """Keeps the server up: if the main loop falls over because of an error, it goes back to serving."""
     while not State.stopping:
         try:
             httpd.serve_forever(poll_interval=0.5)
             break
         except Exception as err:
-            print("Servidor se recuperou de um erro: %r" % err)
+            print("Server recovered from an error: %r" % err)
             time.sleep(0.5)
 
 
 def make_server(port):
-    """Abre o servidor na porta pedida; se estiver ocupada, usa outra livre."""
+    """Opens the server on the requested port; if it is busy, uses another free one."""
     for p in (port, 0):
         try:
             httpd = StudioServer(("127.0.0.1", p), Handler)
@@ -3297,7 +3166,7 @@ def make_server(port):
 
 
 def get_initial_window_geometry():
-    """Calcula tamanho e posição inicial centralizada dentro dos limites visíveis da tela (work area)."""
+    """Calculates the size and centered start position within the visible limits of the screen (work area)."""
     min_w, min_h = 1050, 650
     work_left, work_top = 0, 0
     work_w, work_h = 1920, 1080
@@ -3359,7 +3228,7 @@ def get_initial_window_geometry():
 
 
 def on_window_closing():
-    """Fechar a janela: cancela o primeiro pedido, salva os projetos abertos e fecha em seguida."""
+    """Closing the window: cancels the first request, saves the open projects and then closes."""
     if State.close_ready or State.window is None:
         return True
     if not State.closing_started:
@@ -3375,9 +3244,9 @@ def save_projects_then_close():
         if win.evaluate_js("typeof window.__samapSaveAll === 'function'"):
             win.evaluate_js("window.__samapSaveAll()", lambda _result: done.set())
             if not done.wait(10):
-                print("Salvamento antes de fechar demorou demais; fechando assim mesmo.")
+                print("Saving before closing took too long; closing anyway.")
     except Exception as err:
-        print("Não foi possível salvar antes de fechar: %s" % err)
+        print("Could not save before closing: %s" % err)
     State.close_ready = True
     try:
         win.destroy()
@@ -3389,10 +3258,10 @@ APP_USER_MODEL_ID = "samapstudio.pro"
 
 
 def fix_taskbar_icon():
-    """Ícone da barra de tarefas. O editor usa um AppUserModelID próprio e, sem um atalho com esse
-    ID, a barra pode mostrar um ícone genérico guardado em cache. Grava o ícone do editor em todos os
-    lugares que a barra consulta: ícone da janela, ícone da classe e as propriedades de relançamento
-    da janela (System.AppUserModel.RelaunchIconResource, com o ID, o comando e o nome)."""
+    """Taskbar icon. The editor uses its own AppUserModelID and, without a shortcut with that
+    ID, the taskbar may show a generic cached icon. Writes the editor icon in all the
+    places the taskbar looks at: window icon, class icon and the window relaunch properties
+    (System.AppUserModel.RelaunchIconResource, with the ID, the command and the name)."""
     if not IS_WINDOWS:
         return
     try:
@@ -3483,11 +3352,11 @@ def fix_taskbar_icon():
             finally:
                 release(store)
     except Exception as err:
-        print("Não foi possível ajustar o ícone da barra de tarefas: %s" % err)
+        print("Could not set the taskbar icon: %s" % err)
 
 
 def open_window(url, httpd):
-    """Abre o editor numa janela própria (pywebview/WebView2) já maximizada. Retorna False se não der."""
+    """Opens the editor in its own window (pywebview/WebView2) already maximized. Returns False if it cannot."""
     try:
         import webview  # pywebview
     except ImportError:
@@ -3521,7 +3390,7 @@ def open_window(url, httpd):
         except TypeError:  # old pywebview versions
             webview.start()
     except Exception as err:  # no WebView2 or another problem: falls back to the browser
-        print("Janela própria indisponível (%s). Abrindo no navegador." % err)
+        print("Own window unavailable (%s). Opening in the browser." % err)
         return False
     State.stopping = True
     httpd.shutdown()
@@ -3536,7 +3405,7 @@ _ui_tables = {}
 
 
 def _lang_file(name):
-    """js/lang/<name>.json da interface (as mensagens do servidor usam as mesmas traduções)."""
+    """The interface js/lang/<name>.json (the server messages use the same translations)."""
     if name not in _ui_tables:
         _ui_tables[name] = {}
         dirs = [APP_DIR, COMPILE_SOURCES_DIR]
@@ -3558,8 +3427,8 @@ def _ui_table(code):
 
 
 def windows_langs():
-    """Idioma principal do Windows (GetUserDefaultUILanguage & 0x3FF) para a sigla do editor, lido do
-    campo "windows" de js/lang/languages.json (a lista única dos idiomas)."""
+    """Main Windows language (GetUserDefaultUILanguage & 0x3FF) to the editor code, read from the
+    "windows" field of js/lang/languages.json (the single list of languages)."""
     out = {}
     for lang in _lang_file("languages") or []:
         try:
@@ -3570,8 +3439,8 @@ def windows_langs():
 
 
 def ui_text(text, *args):
-    """Texto de janela do Windows no idioma do editor: o escolhido (config.json), senão o do Windows,
-    senão inglês. Sem tradução, fica o inglês e depois o português."""
+    """Windows dialog text in the editor language: the chosen one (config.json), otherwise the Windows one,
+    otherwise English. Without a translation, it stays English and then Portuguese."""
     code = str(load_config().get("language") or "")
     if not code and IS_WINDOWS:
         try:
@@ -3588,8 +3457,8 @@ def ui_text(text, *args):
 
 
 def version_compatible():
-    """A pasta guarda a versão mais nova que já a usou (config.json). Uma versão mais antiga não abre
-    nela, para não estragar projetos e configurações gravados pela nova. Senão, grava esta versão."""
+    """The folder keeps the newest version that has used it (config.json). An older version does not open
+    in it, so projects and settings written by the newer one are not damaged. Otherwise, it saves this version."""
     stored = load_config().get("app_version") or ""
     if stored and _version_tuple(stored) > _version_tuple(VERSION):
         text = "\n\n".join((
@@ -3614,8 +3483,8 @@ _EDITOR_MUTEX_HANDLE = None
 
 
 def single_instance():
-    """Um editor por vez: o mutex fica com este processo até ele fechar (o launcher também o consulta
-    antes de atualizar). Se já houver um aberto, a janela dele vem para a frente. False nesse caso."""
+    """One editor at a time: the mutex stays with this process until it closes (the launcher also checks it
+    before updating). If one is already open, its window is brought to the front. False in that case."""
     global _EDITOR_MUTEX_HANDLE
     if not IS_WINDOWS:
         return True
@@ -3652,16 +3521,15 @@ def main():
     if "--no-browser" not in sys.argv and not single_instance():
         return
     setup_logging()
-    migrate_old_layout()
     os.makedirs(DATA_DIR, exist_ok=True)
     if not version_compatible():
         return
 
     ap = argparse.ArgumentParser(description="SA Map Studio - servidor local")
-    ap.add_argument("--gta", help="pasta do GTA San Andreas")
+    ap.add_argument("--gta", help="GTA San Andreas folder")
     ap.add_argument("--port", type=int, default=None)
-    ap.add_argument("--no-browser", action="store_true", help="não abre navegador nem janela")
-    ap.add_argument("--navegador", action="store_true", help="abre no navegador em vez da janela própria")
+    ap.add_argument("--no-browser", action="store_true", help="opens neither the browser nor the window")
+    ap.add_argument("--browser", "--navegador", dest="navegador", action="store_true", help="opens in the browser instead of the own window (--navegador is the old name)")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -3688,9 +3556,9 @@ def main():
     url = "http://127.0.0.1:%d/" % httpd.server_address[1]
     print("=" * 60)
     print(" SA Map Studio %s" % VERSION)
-    print(" Endereço: %s" % url)
-    print(" Pasta do GTA: %s" % (State.gta_path or "(não encontrada - escolha no app)"))
-    print(" Pasta do programa: %s" % BASE_DIR)
+    print(" Address: %s" % url)
+    print(" GTA folder: %s" % (State.gta_path or "(not found - choose it in the app)"))
+    print(" Program folder: %s" % BASE_DIR)
     print("=" * 60)
 
     t = threading.Thread(target=serve_forever_safely, args=(httpd,), daemon=True)
@@ -3702,11 +3570,11 @@ def main():
             threading.Timer(0.8, lambda: webbrowser.open(url)).start()
             if FROZEN:  # no console to press Ctrl+C: closes along with the tab
                 threading.Thread(target=watch_browser, args=(httpd,), daemon=True).start()
-        print(" Para fechar: Ctrl+C")
+        print(" To close: Ctrl+C")
         while t.is_alive():
             t.join(0.5)
     except KeyboardInterrupt:
-        print("\nServidor encerrado.")
+        print("\nServer stopped.")
         State.stopping = True
         httpd.shutdown()
     finally:

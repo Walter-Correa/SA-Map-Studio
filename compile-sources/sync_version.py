@@ -1,5 +1,5 @@
-"""Grava no version_info.txt (metadados do .exe) a mesma versão do editor (VERSION do serve.py).
-Roda em todo build, antes do PyInstaller, para a versão do arquivo nunca ficar desatualizada."""
+"""Writes to version_info.txt (the .exe metadata) the same editor version (VERSION of serve.py).
+Runs on every build, before PyInstaller, so the file version is never out of date."""
 import os
 import re
 import sys
@@ -12,7 +12,7 @@ def main():
     with open(os.path.join(ROOT, "serve.py"), "r", encoding="utf-8") as f:
         m = re.search(r'^VERSION\s*=\s*"(\d+)\.(\d+)\.(\d+)"', f.read(), re.M)
     if not m:
-        print("ERRO: VERSION não encontrada no serve.py")
+        print("ERROR: VERSION not found in serve.py")
         return 1
     parts = [int(x) for x in m.groups()] + [0]
     dotted = ".".join(str(p) for p in parts)
@@ -28,7 +28,7 @@ def main():
     if out != raw:
         with open(path, "wb") as f:
             f.write(out)
-    print("Versao do executavel: " + dotted)
+    print("Executable version: " + dotted)
     return 0
 
 

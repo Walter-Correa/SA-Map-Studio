@@ -477,7 +477,7 @@ function vehicleInspector(v) {
       `}
     </div>
 
-    <!-- Tuning e Modificações com Múltiplas Marcações -->
+    <!-- Tuning and modifications with multiple selections -->
     <div class="insp-section">
       <div class="insp-label">Tuning e Modificações <span class="tag">${comps.length} ativo(s)</span></div>
       ${isVehicleValidForModding(v.model) ? `
@@ -511,7 +511,7 @@ function vehicleInspector(v) {
       `}
     </div>
 
-    <!-- Objetos Acoplados ao Veículo (AttachObjectToVehicle) -->
+    <!-- Objects attached to the vehicle (AttachObjectToVehicle) -->
     <div class="insp-section" data-mp>
       <div class="insp-label">Objetos Acoplados <span class="tag">${attachedObjs.length} / ${MAX_VEHICLE_ATTACHED_OBJECTS}</span></div>
       <div class="slots" style="max-height:160px; overflow-y:auto;">
@@ -612,7 +612,7 @@ function actorInspector(a) {
 
     ${npcSection(a)}
 
-    <!-- Animação -->
+    <!-- Animation -->
     <div class="insp-section">
       <div class="insp-label">Animação (ApplyActorAnimation)</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkActorAnim" ${a.anim ? 'checked' : ''} ${app.project?.mode === 'sp' && a.weapon ? 'disabled' : ''}> Ativar animação</label>
