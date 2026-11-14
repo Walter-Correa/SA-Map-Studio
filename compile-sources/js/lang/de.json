@@ -2609,5 +2609,6 @@
  "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Auf einem Text gewählt, erstellt der Editor einen eigenen Balken darunter und der Text zählt von 0 bis 100%, wie in der Demo.",
  "Seleção múltipla: só é possível mover (arrastar ou setas) ou excluir todos.": "Mehrfachauswahl: Du kannst alle nur verschieben (ziehen oder Pfeiltasten) oder löschen.",
  "{0} GangZones excluídas": "{0} GangZones gelöscht",
- "{0} MapIcons removidos": "{0} MapIcons entfernt"
+ "{0} MapIcons removidos": "{0} MapIcons entfernt",
+ "Indisponível com vários itens selecionados": "Nicht verfügbar bei Mehrfachauswahl"
 }

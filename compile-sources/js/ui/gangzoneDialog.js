@@ -541,7 +541,8 @@ function setupCanvasEvents() {
         return;
       }
 
-      // Starts creating a new zone by dragging
+      // Starts creating a new zone by dragging (not with several zones selected)
+      if (isMulti()) { toast('Indisponível com vários itens selecionados', 'info'); return; }
       const snapEnabled = isSnapActive();
       let startPt = { x: w.x, y: w.y };
       if (snapEnabled) {
@@ -1091,6 +1092,22 @@ function updateSidebarList() {
   }
 }
 
+// Buttons outside the panel that create or change things: locked (with a tooltip) while several are selected
+function lockForMulti(ids, multi) {
+  for (const id of ids) {
+    const el = dialogEl?.querySelector('#' + id);
+    if (!el) continue;
+    if (multi) {
+      if (el.dataset.origTitle === undefined) el.dataset.origTitle = el.title || '';
+      el.title = 'Indisponível com vários itens selecionados';
+    } else if (el.dataset.origTitle !== undefined) {
+      el.title = el.dataset.origTitle;
+      delete el.dataset.origTitle;
+    }
+    el.disabled = multi;
+  }
+}
+
 function updateSidebarFields() {
   const panel = dialogEl.querySelector('#gzDetailsPanel');
   const z = getSelectedZone();
@@ -1102,6 +1119,9 @@ function updateSidebarFields() {
     panel.querySelectorAll('input,button,select').forEach(el => {
       el.disabled = multi && el.id !== 'gzBtnDelete';
     });
+  }
+  lockForMulti(['gzBtnAdd', 'gzBtnCopyPwn'], multi);
+  if (panel) {
     const presets = panel.querySelector('#gzPresets');
     if (presets) presets.style.pointerEvents = multi ? 'none' : '';
   }

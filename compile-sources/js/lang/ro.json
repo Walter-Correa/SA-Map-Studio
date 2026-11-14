@@ -2609,5 +2609,6 @@
  "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Ales pe un text, editorul creează o bară proprie sub el și textul numără de la 0 la 100%, ca în demo.",
  "Seleção múltipla: só é possível mover (arrastar ou setas) ou excluir todos.": "Selecție multiplă: le poți doar muta (prin tragere sau cu săgețile) sau șterge pe toate.",
  "{0} GangZones excluídas": "{0} GangZones șterse",
- "{0} MapIcons removidos": "{0} MapIcons eliminate"
+ "{0} MapIcons removidos": "{0} MapIcons eliminate",
+ "Indisponível com vários itens selecionados": "Indisponibil cu mai multe elemente selectate"
 }

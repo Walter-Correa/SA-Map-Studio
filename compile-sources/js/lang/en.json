@@ -2609,5 +2609,6 @@
  "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Chosen on a text, the editor makes a bar of its own under it and the text counts from 0 to 100%, like in the demo.",
  "Seleção múltipla: só é possível mover (arrastar ou setas) ou excluir todos.": "Multiple selection: you can only move (drag or arrow keys) or delete them all.",
  "{0} GangZones excluídas": "{0} GangZones deleted",
- "{0} MapIcons removidos": "{0} MapIcons removed"
+ "{0} MapIcons removidos": "{0} MapIcons removed",
+ "Indisponível com vários itens selecionados": "Unavailable with several items selected"
 }

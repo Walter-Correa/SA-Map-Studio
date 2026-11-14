@@ -2609,5 +2609,6 @@
  "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Если выбрать на тексте, редактор создаёт под ним отдельную полосу, а текст считает от 0 до 100%, как в демо.",
  "Seleção múltipla: só é possível mover (arrastar ou setas) ou excluir todos.": "Множественный выбор: их можно только переместить (перетаскиванием или стрелками) или удалить все сразу.",
  "{0} GangZones excluídas": "Удалено GangZones: {0}",
- "{0} MapIcons removidos": "Удалено MapIcons: {0}"
+ "{0} MapIcons removidos": "Удалено MapIcons: {0}",
+ "Indisponível com vários itens selecionados": "Недоступно при выборе нескольких элементов"
 }

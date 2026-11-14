@@ -572,6 +572,8 @@ function setupCanvasEvents() {
         return;
       }
 
+      // Creating a new icon by clicking is not allowed with several icons selected
+      if (isMulti()) { toast('Indisponível com vários itens selecionados', 'info'); return; }
       let zGuess = 15.0;
       if (app.editor?.getSurfaceZAt) {
         const gz = app.editor.getSurfaceZAt(w.x, w.y);
@@ -803,6 +805,22 @@ function updateSidebarList() {
   });
 }
 
+// Buttons outside the panel that create or change things: locked (with a tooltip) while several are selected
+function lockForMulti(ids, multi) {
+  for (const id of ids) {
+    const el = dialogEl?.querySelector('#' + id);
+    if (!el) continue;
+    if (multi) {
+      if (el.dataset.origTitle === undefined) el.dataset.origTitle = el.title || '';
+      el.title = 'Indisponível com vários itens selecionados';
+    } else if (el.dataset.origTitle !== undefined) {
+      el.title = el.dataset.origTitle;
+      delete el.dataset.origTitle;
+    }
+    el.disabled = multi;
+  }
+}
+
 function updateSidebarFields() {
   const panel = dialogEl?.querySelector('#miDetailsPanel');
   const m = getSelectedMapIcon();
@@ -815,6 +833,7 @@ function updateSidebarFields() {
       el.disabled = multi && el.id !== 'miBtnDelete';
     });
   }
+  lockForMulti(['miBtnAdd', 'miBtnPickDefault', 'miBtnCopyPwn'], multi);
   if (multi) {
     if (panel) panel.style.display = 'block';
     return;

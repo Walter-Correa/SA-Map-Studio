@@ -2609,5 +2609,6 @@
  "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Scelto su un testo, l'editor crea una barra propria sotto e il testo conta da 0 a 100%, come nella demo.",
  "Seleção múltipla: só é possível mover (arrastar ou setas) ou excluir todos.": "Selezione multipla: puoi solo spostarli (trascinando o con le frecce) o eliminarli tutti.",
  "{0} GangZones excluídas": "{0} GangZone eliminate",
- "{0} MapIcons removidos": "{0} MapIcon rimossi"
+ "{0} MapIcons removidos": "{0} MapIcon rimossi",
+ "Indisponível com vários itens selecionados": "Non disponibile con più elementi selezionati"
 }
