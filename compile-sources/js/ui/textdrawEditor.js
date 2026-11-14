@@ -2027,9 +2027,15 @@ function applyMultiLock() {
   }
   const note = dialogEl.querySelector('#tdMultiNote');
   if (note) note.hidden = !multi;
-  for (const id of ['#tdBtnDuplicate', '#tdBtnCopyPwn', '#tdOrderBack', '#tdOrderDown', '#tdOrderUp', '#tdOrderFront']) {
+  // Creating, duplicating, copying and reordering are off too; the tooltip tells why and the original one comes back afterwards
+  const why = t('Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.');
+  for (const id of ['#tdBtnAdd', '#tdBtnAddBox', '#tdBtnAddModel', '#tdBtnAddSprite', '#tdBtnAddProgress',
+    '#tdBtnDuplicate', '#tdBtnCopyPwn', '#tdOrderBack', '#tdOrderDown', '#tdOrderUp', '#tdOrderFront']) {
     const b = dialogEl.querySelector(id);
-    if (b) b.disabled = multi;
+    if (!b) continue;
+    if (multi) { if (!('tdTitle' in b.dataset)) b.dataset.tdTitle = b.title; b.title = why; }
+    else if ('tdTitle' in b.dataset) { b.title = b.dataset.tdTitle; delete b.dataset.tdTitle; }
+    b.disabled = multi;
   }
 }
 

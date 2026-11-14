@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Value shown over the bar",
  "Voltar ao tamanho padrão": "Back to the default size",
  "Voltar o zoom para 100%": "Reset the zoom to 100%",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Several elements selected: they can only be moved or deleted together."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Several elements selected: they can only be moved or deleted together.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Unavailable with several elements selected: they can only be moved or deleted together."
 }

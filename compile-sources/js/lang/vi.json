@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Giá trị hiển thị trên thanh",
  "Voltar ao tamanho padrão": "Trở về kích thước mặc định",
  "Voltar o zoom para 100%": "Đưa thu phóng về 100%",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Đã chọn nhiều phần tử: chỉ có thể di chuyển hoặc xóa tất cả cùng lúc."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Đã chọn nhiều phần tử: chỉ có thể di chuyển hoặc xóa tất cả cùng lúc.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Không khả dụng khi chọn nhiều phần tử: chỉ có thể di chuyển hoặc xóa tất cả cùng lúc."
 }

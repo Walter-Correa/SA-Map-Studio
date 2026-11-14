@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Значення, показане на смузі",
  "Voltar ao tamanho padrão": "Повернути стандартний розмір",
  "Voltar o zoom para 100%": "Повернути масштаб 100%",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Вибрано кілька елементів: їх можна лише переміщувати або видаляти разом."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Вибрано кілька елементів: їх можна лише переміщувати або видаляти разом.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Недоступно, коли вибрано кілька елементів: їх можна лише переміщувати або видаляти разом."
 }

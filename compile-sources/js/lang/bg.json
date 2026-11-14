@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Стойност, показана върху лентата",
  "Voltar ao tamanho padrão": "Връщане към стандартния размер",
  "Voltar o zoom para 100%": "Връщане на мащаба на 100%",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Избрани са няколко елемента: могат само да се преместват или изтриват заедно."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Избрани са няколко елемента: могат само да се преместват или изтриват заедно.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Не е налично при избрани няколко елемента: те могат само да се местят или изтриват заедно."
 }

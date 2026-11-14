@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Çubuğun üzerinde gösterilen değer",
  "Voltar ao tamanho padrão": "Varsayılan boyuta dön",
  "Voltar o zoom para 100%": "Yakınlaştırmayı %100'e döndür",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Birden fazla öğe seçili: yalnızca birlikte taşınabilir veya silinebilirler."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Birden fazla öğe seçili: yalnızca birlikte taşınabilir veya silinebilirler.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Birden fazla öğe seçiliyken kullanılamaz: yalnızca birlikte taşınabilir veya silinebilirler."
 }

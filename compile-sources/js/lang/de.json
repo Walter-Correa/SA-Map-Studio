@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Über dem Balken angezeigter Wert",
  "Voltar ao tamanho padrão": "Zurück zur Standardgröße",
  "Voltar o zoom para 100%": "Zoom auf 100 % zurücksetzen",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Mehrere Elemente ausgewählt: Sie können nur gemeinsam verschoben oder gelöscht werden."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Mehrere Elemente ausgewählt: Sie können nur gemeinsam verschoben oder gelöscht werden.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Nicht verfügbar, wenn mehrere Elemente ausgewählt sind: Sie können nur gemeinsam verschoben oder gelöscht werden."
 }

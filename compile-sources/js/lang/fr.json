@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "Valeur affichée sur la barre",
  "Voltar ao tamanho padrão": "Revenir à la taille par défaut",
  "Voltar o zoom para 100%": "Remettre le zoom à 100 %",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Plusieurs éléments sélectionnés : ils ne peuvent être que déplacés ou supprimés ensemble."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Plusieurs éléments sélectionnés : ils ne peuvent être que déplacés ou supprimés ensemble.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Indisponible avec plusieurs éléments sélectionnés : ils ne peuvent être que déplacés ou supprimés ensemble."
 }

@@ -2611,5 +2611,6 @@
  "Valor mostrado sobre a barra": "A sáv fölött megjelenő érték",
  "Voltar ao tamanho padrão": "Vissza az alapméretre",
  "Voltar o zoom para 100%": "Nagyítás visszaállítása 100%-ra",
- "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Több elem kijelölve: csak együtt mozgathatók vagy törölhetők."
+ "Vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Több elem kijelölve: csak együtt mozgathatók vagy törölhetők.",
+ "Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.": "Nem érhető el, ha több elem van kijelölve: csak együtt mozgathatók vagy törölhetők."
 }
