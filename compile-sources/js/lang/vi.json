@@ -2337,7 +2337,7 @@
  "{0} está na pasta do jogo, ele é focado no multiplayer e causa conflito com o singleplayer, prejudica missões e outros mods! Deseja continuar mesmo assim ou pretende desinstalar?": "{0} nằm trong thư mục game, nó dành cho multiplayer và xung đột với singleplayer, gây hại cho nhiệm vụ và các mod khác! Bạn muốn tiếp tục dù vậy hay định gỡ cài đặt?",
  "Objetos do SA-MP não carregados porque o SA-MP não está instalado: {0}.": "Đối tượng SA-MP không được tải vì SA-MP chưa được cài đặt: {0}.",
  "Objetos do SA-MP carregados como objetos do mod: {0}.": "Đối tượng SA-MP được tải như đối tượng của mod: {0}.",
- "Uma peça da categoria Pistas, rampas e estradas, ao ser movida perto da borda de outra, encaixa nela de forma perfeita (posição e rotação). Segure Alt para soltar a peça sem encaixar": "Một mảnh thuộc nhóm Đường đua, dốc và đường, khi di chuyển gần mép của mảnh khác, sẽ khớp hoàn hảo với nó (vị trí và góc xoay). Giữ Alt để thả mảnh mà không ghép",
+ "Uma peça da categoria Pistas, rampas e estradas, ao ser movida perto da borda de outra, encaixa nela de forma perfeita (posição e rotação), por qualquer uma das pontas. As luzes 19281 a 19284 encaixam nas laterais das estradas de stunt (MRoad 18788 a 18801). Segure Alt para soltar a peça sem encaixar": "Một mảnh thuộc nhóm Đường đua, dốc và đường, khi di chuyển gần mép của mảnh khác, sẽ khớp hoàn hảo với nó (vị trí và góc xoay), ở bất kỳ đầu nào. Đèn 19281 đến 19284 khớp vào hai bên đường biểu diễn (MRoad 18788 đến 18801). Giữ Alt để thả mảnh mà không ghép",
  "Encaixe automático de pistas, rampas, estradas, etc.": "Tự động ghép đường đua, dốc, đường, v.v.",
  "Encaixar peças pelas bordas": "Ghép các mảnh theo mép",
  "Distância do encaixe (m)": "Khoảng cách ghép (m)",
