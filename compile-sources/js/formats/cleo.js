@@ -182,6 +182,19 @@ export function taskGuardScript() {
   a.op(0x0A8E, int(RED_CARS), lv(8), lv(10)).op(0x0AB3, lv(10), int(0)).op(0x000A, lv(8), int(1));
   a.jump('bg');
   a.label('bh');
+  // Whoever damaged the player's vehicle, with any weapon (a bat too) or by hitting it: the characters within 25 m are asked (21 the vehicle,
+  // 22 how many were looked at). The vehicle forgets it afterwards, so the same hit is not taken again
+  a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('dk'));
+  a.op(0x03C0, lv(PLAYER), lv(21)).op(0x00A0, lv(PLAYER), lv(9), lv(10), lv(11)).op(0x0006, lv(22), int(0));
+  a.label('dn');
+  a.op(0x00D6, int(0)).op(0x001B, int(32), lv(22)).op(0x004D, ref('dc'));
+  a.op(0x00D6, int(0)).op(0x0AE1, lv(9), lv(10), lv(11), flt(25), lv(22), int(1), lv(12)).op(0x004D, ref('dc'));
+  a.op(0x00D6, int(0)).op(0x051C, lv(21), lv(12)).op(0x004D, ref('dm'));
+  a.op(0x0050, ref('push'));
+  a.label('dm').op(0x000A, lv(22), int(1));
+  a.jump('dn');
+  a.label('dc').op(0x054F, lv(21));
+  a.label('dk');
   // nobody attacked the player for a while: the list of attackers is cleared
   a.op(0x01BD, lv(9)).op(0x0AB4, int(ATK_TIME), lv(10)).op(0x0A8F, lv(9), lv(10), lv(9));
   a.op(0x00D6, int(0)).op(0x0019, lv(9), int(ATK_KEEP)).op(0x004D, ref('loop'));
@@ -902,6 +915,22 @@ export function actorsScript(items) {
         a.jump(L(pre + 'ga'));
         a.label(L(pre + 'gk'));
       };
+      // Jumps to `yes` when the character in `v` attacks the player, whether it hurts him or not (an invulnerable player takes no damage): the
+      // player is the kill target of its tasks (CLEO+), or the target of the gun it is aiming or shooting (the task of using a gun, 1017, keeps
+      // it at +0x1C), the player or his vehicle. Uses T0 and T6
+      const aimsAtPlayer = (v, pre, yes) => {
+        a.op(0x0E44, lv(v), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(PLAYER)).op(0x004D, ref(yes));
+        a.op(0x00D6, int(0)).op(0x0E42, lv(v), int(1017)).op(0x004D, ref(L(pre + 'n')));
+        a.op(0x0E43, lv(v), int(1017), lv(T6)).op(0x0A8E, lv(T6), int(0x1C), lv(T6)).op(0x0A8D, lv(T6), int(4), int(0), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'n')));
+        a.op(0x0A96, lv(PLAYER), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T6), lv(T0)).op(0x004D, ref(yes));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L(pre + 'n')));
+        a.op(0x03C0, lv(PLAYER), lv(T0)).op(0x0A97, lv(T0), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T6), lv(T0)).op(0x004D, ref(yes));
+        a.label(L(pre + 'n'));
+      };
       // Jumps to `notStory` when the character in `v` is not one of the story (the ped types of the characters of the missions, 23 to 31). Uses T6
       const storyCheck = (v, notStory) => {
         a.op(0x089F, lv(v), lv(T6));
@@ -949,12 +978,25 @@ export function actorsScript(items) {
       // The order to attack the target in `v`. Sitting in a vehicle (a passenger): a drive by, only with a weapon that can do it and with ammunition,
       // and nothing otherwise (it stays in the car). On foot: kill it, or shoot at it when it is in a vehicle
       const attackTask = (v, pre) => {
+        // The missions make their enemies (and their vehicles) take damage only from the player: that is lifted, or the protectors could not hurt them
+        a.op(0x02A9, lv(v), int(0));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(v)).op(0x004D, ref(L(pre + 'nc')));
+        a.op(0x03C0, lv(v), lv(T6)).op(0x02AA, lv(T6), int(0));
+        a.label(L(pre + 'nc'));
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L(pre + 'f')));
         if (driveWeapon) {
           a.op(0x041A, lv(h), int(e.weapon), lv(T6));
-          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'e')));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(0)).op(0x004D, ref(L(pre + 'x')));
           a.op(0x0713, lv(h), lv(v), int(-1), flt(0), flt(0), flt(0), flt(60), int(8), int(0), int(100));
+          a.jump(L(pre + 'e'));
         }
+        // It cannot shoot from the vehicle: it gets out to fight once the vehicle has (nearly) stopped
+        a.label(L(pre + 'x'));
+        a.op(0x03C0, lv(h), lv(T6)).op(0x02E3, lv(T6), lv(T7));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T7), flt(3)).op(0x004D, ref(L(pre + 'xo')));
+        a.jump(L(pre + 'e'));
+        a.label(L(pre + 'xo'));
+        a.op(0x0633, lv(h));
         a.jump(L(pre + 'e'));
         a.label(L(pre + 'f'));
         a.op(0x00D6, int(0)).op(0x00DF, lv(v)).op(0x004D, ref(L(pre + 'k')));
@@ -1292,12 +1334,15 @@ export function actorsScript(items) {
       }
       if (e.role === 'guard') {
         // A protector never fights a character of the story on its own either (the game makes it hit back when one of them hurts it or shoots
-        // at it): when what it is attacking is one of them and is not marked red, its tasks are cleared. Not in a vehicle (it would be taken out)
+        // at it): when what it is attacking is one of them, is not marked red and does not attack the player, its tasks are cleared. Not in a
+        // vehicle (it would be taken out)
         a.op(0x0E44, lv(h), lv(T0));
         a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('sk')));
         a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('sk')));
         storyCheck(T0, L('sk'));
         redCheck(T0, 'sr', L('sk'));
+        a.op(0x0085, lv(T4), lv(T0));
+        aimsAtPlayer(T4, 'ssa', L('sk'));                                                         // unless it attacks the player
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('sc')));
         a.jump(L('sk'));
         a.label(L('sc'));
@@ -1436,10 +1481,11 @@ export function actorsScript(items) {
           a.jump(L(P + 'gn'));
           a.label(L(P + 'g1'));
           allyCheck(P + 'g', L(P + 'gn'));
-          // A character of the story (the ped types the game gives to the characters of its missions, 23 to 31) is never a target, whatever
-          // it does to the player or to the protectors, unless the game marks it red against the player
+          // A character of the story (the ped types the game gives to the characters of its missions, 23 to 31) is a target only when the game
+          // marks it red against the player or when it attacks the player himself (what it does to the protectors does not count)
           storyCheck(T4, L(P + 'gso'));
           redCheck(T4, P + 'gr', L(P + 'gf'));
+          aimsAtPlayer(T4, P + 'gsa', L(P + 'gf'));
           a.jump(L(P + 'gn'));
           a.label(L(P + 'gso'));
           a.op(0x00D6, int(0)).op(0x051A, lv(PLAYER), lv(T4)).op(0x004D, ref(L(P + 'g2')));            // it hurt the player
@@ -1447,10 +1493,7 @@ export function actorsScript(items) {
           a.label(L(P + 'g2'));
           // Anyone who has the player as the target of its attack (shooting at him, fighting him, running to him to attack), whether it hurts him
           // or not (with a cheat that takes no damage nobody hurts him): the kill target of the tasks of the ped, read with CLEO+
-          a.op(0x0E44, lv(T4), lv(T0));
-          a.op(0x00D6, int(0)).op(0x0039, lv(T0), lv(PLAYER)).op(0x004D, ref(L(P + 'g2b')));
-          a.jump(L(P + 'gf'));
-          a.label(L(P + 'g2b'));
+          aimsAtPlayer(T4, P + 'gpa', L(P + 'gf'));
           a.op(0x00D6, int(0)).op(0x02E0, lv(T4)).op(0x004D, ref(L(P + 'g3')));                         // it is shooting
           a.jump(L(P + 'gf'));
           a.label(L(P + 'g3'));
@@ -1525,6 +1568,7 @@ export function actorsScript(items) {
           a.op(0x000A, lv(cnt), int(1));
           a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
           a.op(0x0006, lv(cnt), int(0));
+          a.op(0x02AA, lv(T4), int(0));                                                           // a vehicle of a mission may take damage only from the player
           a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('rcf')));
           if (driveWeapon) a.op(0x0713, lv(h), int(-1), lv(T4), flt(0), flt(0), flt(0), flt(80), int(8), int(0), int(100));   // sitting in a vehicle: drive by
           a.jump(done);
