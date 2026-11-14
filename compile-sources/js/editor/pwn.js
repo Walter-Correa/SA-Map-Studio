@@ -100,8 +100,52 @@ const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 // prefix ending in "_" (new_CreatePlayerTextDraw) and an optional suffix starting with "Ex" or "_" (CreatePlayerTextDrawEx).
 // The lookbehind keeps TextDrawFont from matching inside PlayerTextDrawFont; group 3 is the suffix.
 const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?(?<![\w@])(?:[\w@]*_)?(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)((?:Ex(?![a-z])|_)[\w@]*)?\s*\(`, 'g');
-// Streamer functions whose Ex version has a different parameter order: their Ex suffix is not a wrapper
-const STREAMER_EX = new Set(['CreateDynamicPickup', 'CreateDynamic3DTextLabel', 'CreateDynamicCP', 'CreateDynamicRaceCP', 'CreateDynamicMapIcon', 'CreateDynamicObject']);
+// Streamer functions whose Ex version has its own parameter order (streamer.inc): parameter names of the base
+// function and of the Ex one. The Ex call is rewritten in the base order; worlds/interiors/players lists keep
+// only their first value, areas and priority are dropped.
+const STREAMER_PARAMS = {
+  CreateDynamicObject: [
+    'modelid,x,y,z,rx,ry,rz,worldid,interiorid,playerid,streamdistance,drawdistance',
+    'modelid,x,y,z,rx,ry,rz,streamdistance,drawdistance,worlds,interiors,players'],
+  CreateDynamicPickup: [
+    'modelid,type,x,y,z,worldid,interiorid,playerid,streamdistance',
+    'modelid,type,x,y,z,streamdistance,worlds,interiors,players'],
+  CreateDynamicCP: [
+    'x,y,z,size,worldid,interiorid,playerid,streamdistance',
+    'x,y,z,size,streamdistance,worlds,interiors,players'],
+  CreateDynamicRaceCP: [
+    'type,x,y,z,nextx,nexty,nextz,size,worldid,interiorid,playerid,streamdistance',
+    'type,x,y,z,nextx,nexty,nextz,size,streamdistance,worlds,interiors,players'],
+  CreateDynamicMapIcon: [
+    'x,y,z,type,color,worldid,interiorid,playerid,streamdistance,style',
+    'x,y,z,type,color,style,streamdistance,worlds,interiors,players'],
+  CreateDynamic3DTextLabel: [
+    'text,color,x,y,z,drawdistance,attachedplayer,attachedvehicle,testlos,worldid,interiorid,playerid,streamdistance',
+    'text,color,x,y,z,drawdistance,attachedplayer,attachedvehicle,testlos,streamdistance,worlds,interiors,players'],
+};
+const STREAMER_EX = new Set(Object.keys(STREAMER_PARAMS));
+const EX_LISTS = { worlds: 'worldid', interiors: 'interiorid', players: 'playerid' };
+// First value of an array argument: "{ 3, 4 }" -> "3"; a plain value stays as it is
+const firstOfList = (v) => {
+  if (v === undefined) return undefined;
+  const s = String(v).trim();
+  if (!s.startsWith('{')) return s;
+  return splitArgs(s.replace(/^\{|\}$/g, ''))[0];
+};
+function streamerExToBase(base, pos, named) {
+  const [baseNames, exNames] = STREAMER_PARAMS[base].map(s => s.split(','));
+  const vals = {}, rest = {};
+  exNames.forEach((n, i) => { if (pos[i] !== undefined) vals[n] = pos[i]; });
+  for (const [k, v] of Object.entries(named)) {
+    if (exNames.includes(k)) vals[k] = v; else rest[k] = v;
+  }
+  for (const [list, id] of Object.entries(EX_LISTS)) {
+    if (vals[list] !== undefined) vals[id] = firstOfList(vals[list]);
+  }
+  const out = baseNames.map(n => vals[n]);
+  while (out.length && out[out.length - 1] === undefined) out.pop();
+  return { pos: out, named: rest };
+}
 const DECL_BEFORE_RE = /\b(?:stock|public|static|forward|native|hook|function)\s+(?:[A-Za-z_@][\w@]*:\s*)?$/;
 
 const varKey = (s) => String(s || '').replace(/\s+/g, '');
@@ -409,7 +453,9 @@ export function parsePwn(source) {
     re.lastIndex = i;
     const stmtEnd = i;
     let fn = m[2];
-    if (m[3] && /^Ex/.test(m[3]) && STREAMER_EX.has(fn)) continue;
+    // CreateDynamicObjectEx is in the list on its own; the other streamer Ex functions come as base name + "Ex" suffix
+    const exBase = fn === 'CreateDynamicObjectEx' ? 'CreateDynamicObject'
+      : (m[3] && /^Ex/.test(m[3]) && STREAMER_EX.has(fn) ? fn : null);
     // Declarations and definitions of wrappers (stock new_CreatePlayerTextDraw(...) { ... }) and #define lines are not items
     const defBody = /^\s*\{/.exec(masked.slice(stmtEnd, stmtEnd + 200));
     if (defBody) {
@@ -426,6 +472,10 @@ export function parsePwn(source) {
     if (DECL_BEFORE_RE.test(masked.slice(Math.max(0, stmtStart - 48), stmtStart))) continue;
     if (/^[ \t]*#/.test(masked.slice(masked.lastIndexOf('\n', stmtStart) + 1, stmtStart))) continue;
     let { pos: a, named } = splitNamed(splitArgs(inner));
+    if (exBase) {
+      ({ pos: a, named } = streamerExToBase(exBase, a, named));
+      fn = exBase;
+    }
     const variable = m[1] ? varKey(m[1]) : null;
     // PlayerTextDraw* (with playerid first) set the same things as TextDraw*
     if (/^PlayerTextDraw(Font|Color|BoxColor|BackgroundColor|LetterSize|TextSize|SetOutline|SetShadow|Alignment|SetSelectable|SetProportional|SetPreviewModel|SetPreviewRot|SetPreviewVehCol|UseBox)$/.test(fn)) {
@@ -464,7 +514,7 @@ export function parsePwn(source) {
     }
     lastTopStmtEnd = (nextNl < source.length ? nextNl + 1 : source.length);
 
-    if (fn === 'CreateObject' || fn === 'CreateDynamicObject' || fn === 'CreateDynamicObjectEx' || fn === 'CreatePlayerObject') {
+    if (fn === 'CreateObject' || fn === 'CreateDynamicObject' || fn === 'CreatePlayerObject') {
       const o = fn === 'CreatePlayerObject' ? 1 : 0;
       if (a.length < 7 + o) continue;
       // A model that is not a number (e.g. the array loop, MapObjects[i][0]) is not a map object
@@ -472,8 +522,8 @@ export function parsePwn(source) {
       const raw = {
         x: a[o + 1], y: a[o + 2], z: a[o + 3],
         rx: a[o + 4], ry: a[o + 5], rz: a[o + 6],
-        drawDist: fn === 'CreateDynamicObject' ? a[11] : (fn === 'CreateDynamicObjectEx' ? a[7] : a[7 + o]),
-        streamDist: fn === 'CreateDynamicObject' ? a[10] : (fn === 'CreateDynamicObjectEx' ? a[8] : undefined),
+        drawDist: fn === 'CreateDynamicObject' ? a[11] : a[7 + o],
+        streamDist: fn === 'CreateDynamicObject' ? a[10] : undefined,
       };
       const obj = {
         model: int(a[o]), x: num(a[o + 1]), y: num(a[o + 2]), z: num(a[o + 3]),
@@ -491,17 +541,6 @@ export function parsePwn(source) {
         if (named.interiorid !== undefined || named.interior !== undefined) obj.interior = int(named.interiorid ?? named.interior, -1);
         if (named.streamdistance !== undefined || named.streamdist !== undefined) obj.streamDist = num(named.streamdistance ?? named.streamdist, 0);
         if (named.drawdistance !== undefined || named.drawdist !== undefined) obj.drawDist = num(named.drawdistance ?? named.drawdist, 0);
-      } else if (fn === 'CreateDynamicObjectEx') {
-        if (a[7] !== undefined) obj.drawDist = num(a[7], 0);
-        if (a[8] !== undefined) obj.streamDist = num(a[8], 0);
-        if (a[9] !== undefined) {
-          const w = int(String(a[9]).replace(/[{}]/g, '').trim(), -1);
-          if (w !== -1) obj.world = w;
-        }
-        if (a[10] !== undefined) {
-          const it = int(String(a[10]).replace(/[{}]/g, '').trim(), -1);
-          if (it !== -1) obj.interior = it;
-        }
       } else if (a[7 + o] !== undefined) obj.drawDist = num(a[7 + o], 0);
       if (obj.streamDist < 0) obj.streamDist = 0;
       if (obj.drawDist < 0) obj.drawDist = 0;
