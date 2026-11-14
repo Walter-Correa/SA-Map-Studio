@@ -13,6 +13,7 @@ import { createMapIconNode, getNextMapIconName } from '../world/mapicons.js';
 import { createSpawnNode } from '../world/spawn.js';
 import { roadSnap, warmRoad } from './roadSnap.js';
 import { isRoadModel } from '../world/roadPieces.js';
+import { gatePose } from './gates.js';
 
 const GIZMO_MIN_DIST = 2.5, GIZMO_MIN_SIZE = 0.45, GIZMO_FULL_DIST = 7;     // the manipulator that follows the camera: nearest to the camera (m) and smallest (the fraction of its size)
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -1386,6 +1387,49 @@ export class Editor extends EventTarget {
       }
     };
 
+    this.activeMoveAnims.set(uid, requestAnimationFrame(loop));
+    this.emit('move-started', { uid });
+  }
+
+  // Real-time test of a gate: opens, waits the close delay and closes. on.moveStart / on.moveEnd play its sound.
+  testGate(uid, on = {}) {
+    this.stopMoveObject(uid);
+    const obj = this.project.find(uid);
+    const node = this.nodes.get(uid);
+    if (!obj || !obj.gate || !node) return;
+    if (!this.activeMoveAnims) this.activeMoveAnims = new Map();
+    const g = obj.gate;
+    const place = (t) => {
+      const p = gatePose(obj, t);
+      node.position.set(p.x, p.y, p.z);
+      node.quaternion.setFromEuler(new THREE.Euler(p.rx * D2R, p.ry * D2R, p.rz * D2R, 'ZXY'));
+      node.updateMatrixWorld(true);
+      this.refreshSelectionBoxes();
+      this.updateAttachedChildren();
+    };
+    // phases: opening, open (waiting), closing
+    const phases = [[0, 1, g.time], [1, 1, g.closeDelay], [1, 0, g.time]];
+    let k = 0, start = performance.now();
+    on.moveStart?.(uid);
+    place(0);
+    const loop = (now) => {
+      const [a, b, dur] = phases[k];
+      const t = dur > 0 ? Math.min(1, (now - start) / dur) : 1;
+      place(a + (b - a) * t);
+      if (t >= 1) {
+        if (a !== b) on.moveEnd?.(uid);
+        k++;
+        start = now;
+        if (k < phases.length && phases[k][0] !== phases[k][1]) on.moveStart?.(uid);
+      }
+      if (k >= phases.length) {
+        this.activeMoveAnims.delete(uid);
+        this.stopMoveObject(uid);
+        this.emit('move-ended', { uid });
+        return;
+      }
+      this.activeMoveAnims.set(uid, requestAnimationFrame(loop));
+    };
     this.activeMoveAnims.set(uid, requestAnimationFrame(loop));
     this.emit('move-started', { uid });
   }

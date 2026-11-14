@@ -4,6 +4,7 @@ import { normalizeMaterial, materialCall, parseColor, toInt } from './materials.
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
 import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, textDrawPawn, PB_INCLUDE, PB_LABEL_ORIENTS } from './project.js';
 import { TDFX_FUNCTIONS, TDFX_INCLUDE, tdfxActive, tdfxFromCall } from './tdfx.js';
+import { gatePawn, gateVar, importGates } from './gates.js';
 
 import { t as tr, uiLocale } from '../ui/i18n.js';
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
@@ -531,6 +532,7 @@ export function parsePwn(source) {
         if (!target.components.includes(cid)) target.components.push(cid);
       }
     } else if (fn === 'MoveDynamicObject' || fn === 'MoveObject') {
+      if (a[0] && a[0].includes('[') && !vars.has(varKey(a[0]))) continue; // e.g. the gate functions: not a map object
       const target = (a[0] ? vars.get(varKey(a[0])) : null) || last;
       if (target && a.length >= 5) {
         target.move = {
@@ -1022,6 +1024,7 @@ export function parsePwn(source) {
       if (a.length >= 1) interior = int(a[0]);
     }
   }
+  importGates(masked, vars);
   for (const { fx, ref } of fxRefs) {
     const o = vars.get(ref);
     if (o && o.type !== 'progress') { if (!o.uid) o.uid = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); fx.bottomBarTD = o.uid; }
@@ -1170,10 +1173,19 @@ export function exportPawn(project, options = {}) {
   const attFn = opt.objectFn === 'CreateObject' ? 'AttachObjectToObject' : 'AttachDynamicObjectToObject';
   const attVehFn = opt.objectFn === 'CreateObject' ? 'AttachObjectToVehicle' : 'AttachDynamicObjectToVehicle';
 
+  // Gates and doors: their objects go into the gate system's array (see gates.js)
+  const gateId = sanitizeIdent(project.name).slice(0, 17).replace(/_+$/, '');
+  const gateObjs = objs.filter(o => o.gate && !o.attach);
+  const gateIdx = new Map(gateObjs.map((o, k) => [o.uid, k]));
   const emitObjectBlock = (targetArr, o, varName = 'objectid') => {
-    const hasExtras = (o.materials && o.materials.length) || o.move || o.attach || parentObjUids.has(o.uid);
+    const hasExtras = (o.materials && o.materials.length) || o.move || o.attach || parentObjUids.has(o.uid) || gateIdx.has(o.uid);
     const cmt = commentSuffix(o);
-    if (hasExtras) {
+    if (gateIdx.has(o.uid)) {
+      const gv = gateVar(gateId, gateIdx.get(o.uid));
+      targetArr.push(`${gv} = ${objectLine(o, opt, center)};${cmt}`);
+      if (o.materials?.length) targetArr.push(...materialLines(o, opt, gv));
+      if (parentObjUids.has(o.uid)) targetArr.push(`attachtoid = ${gv};`);
+    } else if (hasExtras) {
       targetArr.push(`${varName} = ${objectLine(o, opt, center)};${cmt}`);
       if (o.materials?.length) targetArr.push(...materialLines(o, opt, varName));
       if (o.move) {
@@ -1402,7 +1414,8 @@ export function exportPawn(project, options = {}) {
   }
 
   const cams = opt.includeCameras ? cameraFunctions(project.cameras) : { code: '', usage: [] };
-  const needObjId = objs.some(o => (o.materials && o.materials.length) || o.move || o.attach);
+  const needObjId = objs.some(o => !gateIdx.has(o.uid) && ((o.materials && o.materials.length) || o.move || o.attach));
+  const gates = gatePawn(gateObjs, { id: gateId, dynamic: opt.objectFn !== 'CreateObject', center, fmt: (v) => f(v, d), tr });
   const needAttachToId = parentObjUids.size > 0;
   const needVehId = vehs.some(v => (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || objs.some(o => o.attach && o.attach.to === v.uid));
   const needActorId = actorLines.length > 0;
@@ -1412,7 +1425,7 @@ export function exportPawn(project, options = {}) {
   const arrayLines = [];
   // Only simple objects go in the array; those with texture, movement or attachment are created separately
   // (otherwise the object would be created twice in the game)
-  const arrayObjs = objs.filter(o => !(o.materials && o.materials.length) && !o.move && !o.attach);
+  const arrayObjs = objs.filter(o => !(o.materials && o.materials.length) && !o.move && !o.attach && !gateIdx.has(o.uid));
   if (opt.exportArray && arrayObjs.length) {
     arrayLines.push('// Object coordinates array: Model, X, Y, Z, RX, RY, RZ');
     arrayLines.push('new Float:MapObjects[][7] = {');
@@ -1455,7 +1468,7 @@ export function exportPawn(project, options = {}) {
       lines.push('for (new i = 0; i < sizeof(MapObjects); i++) {');
       lines.push(`    ${opt.objectFn === 'CreateObject' ? 'CreateObject' : 'CreateDynamicObject'}(floatround(MapObjects[i][0]), MapObjects[i][1], MapObjects[i][2], MapObjects[i][3], MapObjects[i][4], MapObjects[i][5], MapObjects[i][6]);`);
       lines.push('}');
-      const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach) && !(o.attach && vehUidSet.has(o.attach.to)));
+      const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach || gateIdx.has(o.uid)) && !(o.attach && vehUidSet.has(o.attach.to)));
       if (extraObjs.length) {
         lines.push('', '// Object extras (textures, movement and attachment):');
         if (needObjId) lines.push('new objectid;');
@@ -1482,6 +1495,7 @@ export function exportPawn(project, options = {}) {
     if (textDrawLines.length) lines.push('', '// TextDraws:', ...textDrawLines);
     if (remLines.length) lines.push('', '// Removed objects (put in OnPlayerConnect):', ...remLines);
     if (cams.code) lines.push('', cams.code);
+    if (gates.code) lines.push('', gates.decl, '', gates.code);
     return withIncludes(lines, incAt, incs);
   }
 
@@ -1501,6 +1515,7 @@ export function exportPawn(project, options = {}) {
   lines.push(`// ${tr('Como usar:')}`);
   lines.push(`//   OnGameModeInit():   Map_${id}_Load();`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
+  for (const u of gates.usage) lines.push('//   ' + u);
   if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
   if (opt.relative) lines.push(`//   ${tr('Posições relativas: some ({0}) ou passe a origem.', `${f(center.x, 4)}, ${f(center.y, 4)}, ${f(center.z, 4)}`)}`);
   lines.push('// ================================================================');
@@ -1511,6 +1526,7 @@ export function exportPawn(project, options = {}) {
     lines.push('');
   }
 
+  if (gates.decl) lines.push(gates.decl, '');
   lines.push(`stock Map_${id}_Load()`);
   lines.push('{');
   if (needObjId) lines.push('    new objectid;');
@@ -1525,7 +1541,7 @@ export function exportPawn(project, options = {}) {
     lines.push('    {');
     lines.push(`        ${opt.objectFn === 'CreateObject' ? 'CreateObject' : 'CreateDynamicObject'}(floatround(MapObjects[i][0]), MapObjects[i][1], MapObjects[i][2], MapObjects[i][3], MapObjects[i][4], MapObjects[i][5], MapObjects[i][6]);`);
     lines.push('    }');
-    const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach) && !(o.attach && vehUidSet.has(o.attach.to)));
+    const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach || gateIdx.has(o.uid)) && !(o.attach && vehUidSet.has(o.attach.to)));
     if (extraObjs.length) {
       lines.push('    // Object extras (textures, movement and attachment):');
       const tmp = [];
@@ -1557,6 +1573,7 @@ export function exportPawn(project, options = {}) {
     lines.push('}');
   }
   if (cams.code) { lines.push(''); lines.push(cams.code); }
+  if (gates.code) lines.push('', gates.code);
   return withIncludes(lines, incAt, incs);
 }
 export const exportPwn = exportPawn;

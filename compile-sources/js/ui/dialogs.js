@@ -6,6 +6,7 @@ import { importAny, sampMissing, sampInstalled } from '../editor/importers.js';
 import { t, tFallback, getLanguage } from './i18n.js';
 import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, pbMinOf, clampPbLerpMs, clampPbLabelText, PB_LABEL_DEFAULT } from '../editor/project.js';
 import { tdfxMapLine } from '../editor/tdfx.js';
+import { isGate, gateTestLine } from '../editor/gates.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
 import { toSingleplayerImport, isSampModel } from './singleplayer.js';
@@ -346,6 +347,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
         if (isText(m)) lines.push(`T|${objIdx}|${m.index}|${m.size}|${m.fontSize}|${m.bold ? 1 : 0}|${signed(m.fontColor)}|${signed(m.backColor)}|${m.align}|${clean(m.font)}|${String(m.text).replace(/\r?\n/g, '\\n').replace(/\r/g, '')}`);
         else lines.push(`M|${objIdx}|${m.index}|${keepsTexture(m) ? -1 : m.model}|${clean(keepsTexture(m) ? 'none' : m.txd)}|${clean(keepsTexture(m) ? 'none' : m.texture)}|${signed(m.color)}`);
       }
+      if (isGate(o)) lines.push(gateTestLine(o, objIdx));
       objIdx++;
     }
     for (const r of p.removed || []) lines.push(`R|${r.model}|${r.x.toFixed(4)}|${r.y.toFixed(4)}|${r.z.toFixed(4)}|${(r.radius ?? 0.25).toFixed(2)}`);

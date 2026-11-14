@@ -136,14 +136,14 @@ function saveGuard(a) {
 }
 
 // Waits (one tick at a time) until the model is in memory
-function loadModel(a, model, tag) {
+export function loadModel(a, model, tag) {
   a.op(0x0247, int(model));
   a.label('lm' + tag).op(0x0001, int(0));
   a.op(0x00D6, int(0)).op(0x0248, int(model)).op(0x004D, ref('lm' + tag));
 }
 
 // items: each one has x, y, z and `vars` (variables kept). spawn(a, e, i, base) creates it; manage(a, e, i, base) runs while it exists.
-function nearScript(items, { radius, wait, spawn, manage, init, pre, save }) {
+export function nearScript(items, { radius, wait, spawn, manage, init, pre, save }) {
   const a = new Asm();
   a.op(0x0000);
   waitPlayer(a);

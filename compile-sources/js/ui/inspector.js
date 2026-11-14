@@ -343,6 +343,7 @@ function objectInspector(o) {
         </div>
       ` : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>')}
     </div>
+    ${gateSection(o)}
 
     <!-- AttachObjectToVehicle / AttachObjectToObject -->
     <div class="insp-section" data-mp>
@@ -544,6 +545,7 @@ function vehicleInspector(v) {
 }
 
 import { npcSection, bindNpc, actionSection, bindAction } from './spInspector.js';
+import { gateSection, bindGate } from './gateInspector.js';
 
 function spawnInspector(s) {
   return `<div class="insp-title">
@@ -935,6 +937,7 @@ function bindItem(item) {
       }
       project.updateItems('Alterar MoveObject', [uid], (o) => {
         if (chkMove.checked) {
+          o.gate = null;
           o.move = {
             targetX: o.x + 5, targetY: o.y, targetZ: o.z,
             speed: 3.0,
@@ -949,6 +952,7 @@ function bindItem(item) {
     };
   }
 
+  bindGate(uid, renderInspector);
   $$('#inspector [data-move]').forEach(inp => {
     inp.addEventListener('change', () => {
       const f = inp.dataset.move;
@@ -1027,6 +1031,7 @@ function bindItem(item) {
         if (chkAttach.checked) {
           app.editor.stopMoveObject(uid);
           o.move = null;
+          o.gate = null;
           const otherObjs = (project.objects || []).filter(x => x.uid !== uid && (!x.attach || x.attach.to !== uid));
           const availVehs = (project.vehicles || []).filter(v => getVehicleAttachedObjects(v.uid, project).filter(x => x.uid !== uid).length < MAX_VEHICLE_ATTACHED_OBJECTS);
 
