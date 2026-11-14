@@ -712,7 +712,7 @@ export function actorsScript(items) {
   const list = items.map(e => ({ ...e, vars: npcVars(e) }));
   // The NPCs keep the variables below 20 (ACTORS_BUDGET): 20 to 23 are T10 to T7. A script of 24 that mixed protectors with other NPCs had their
   // characters written over by the protectors' work and the game fell at the next order given to them (found in the game: a crash at 0x40491E)
-  if (list.reduce((n, e) => n + e.vars, 0) > ACTORS_BUDGET) throw new Error('actors budget');
+  if (list.reduce((n, e) => n + e.vars, 0) > ACTORS_BUDGET) throw new Error('actors_budget');
   const guards = list.filter(e => e.role === 'guard');
   return nearScript(list, {
     radius: 120, wait: 125,
