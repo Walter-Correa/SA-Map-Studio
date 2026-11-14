@@ -355,18 +355,11 @@ export function maxPbBorder(width, height) {
   const limit = Math.min(PB_LIMITS.borderMax, (w - PB_LIMITS.minInner) / 2, (h - PB_LIMITS.minInner) / (2 * PB_LIMITS.borderYRatio));
   return Math.max(PB_LIMITS.borderMin, Math.floor(limit * 100) / 100);
 }
-// Smallest width and height at which the minimum border still leaves interior
-export const PB_MIN_WIDTH = PB_LIMITS.borderMin * 2 + PB_LIMITS.minInner;
-export const PB_MIN_HEIGHT = PB_LIMITS.borderMin * 2 * PB_LIMITS.borderYRatio + PB_LIMITS.minInner;
 export const fitPbBorder = (v, width, height) => Math.min(clampPbBorder(v), maxPbBorder(width, height));
-// A horizontal bar (style bar, right or left) up to 4.5 high is made 2.5 times higher by the include, with at least 6
-// (CreatePlayerProgressBar and SetPlayerProgressBarSize/Height): the editor keeps the height the game really draws
-export const PB_LEGACY_HEIGHT = 4.5;
-export function pbRealHeight(height, style, dir) {
-  const h = Number(height) || 0;
-  if (h <= PB_LEGACY_HEIGHT && (style | 0) === 0 && ((dir | 0) === 0 || (dir | 0) === 1)) return Math.max(6, Math.round(h * 2.5 * 100) / 100);
-  return h;
-}
+// Smallest bar of each style, in PB_STYLE_* order (PB_BAR/RING/CIRCLE_MIN_WIDTH and _HEIGHT in the include):
+// CreatePlayerProgressBar and the size setters raise anything smaller to these values
+export const PB_MIN_SIZE = [{ w: 3, h: 3 }, { w: 16, h: 16 }, { w: 8, h: 8 }];
+export const pbMinSize = (style) => PB_MIN_SIZE[clampPbStyle(style)];
 export const clampPbBlinkInterval = (v) => Math.round(clampNum(v, PB_LIMITS.blinkMin, PB_LIMITS.blinkMax, PB_LIMITS.blinkDefault));
 export const clampPbBlinkDuration = (v) => Math.round(clampNum(v, 0, 86400000, 0));
 // Bar styles (the same PB_STYLE_* as the include) and ring segments (PB_RING_MIN to PB_RING_MAX)
@@ -644,8 +637,9 @@ export function textDrawPawn(td, varName, fmt, createText, comment = '', refVar 
 export function makeTextDraw(data) {
   if (data.tdv === undefined && data.uid) data = migrateLegacyTextDraw(data);
   // Size of a bar as the include draws it (defaults 60 x 8, like CreatePlayerProgressBar)
-  const pbW = data.pbWidth !== undefined ? +data.pbWidth : 60;
-  const pbH = pbRealHeight(data.pbHeight !== undefined ? +data.pbHeight : 8, data.pbStyle ?? 0, data.pbDir ?? 0);
+  const pbMin = pbMinSize(data.pbStyle ?? 0);
+  const pbW = Math.max(pbMin.w, data.pbWidth !== undefined ? +data.pbWidth : 60);
+  const pbH = Math.max(pbMin.h, data.pbHeight !== undefined ? +data.pbHeight : 8);
   const alignVal = data.align !== undefined ? (data.align | 0) : (data.alignment !== undefined ? (data.alignment | 0) : 1);
   return {
     tdv: TD_VERSION,
