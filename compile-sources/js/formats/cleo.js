@@ -91,11 +91,28 @@ function taskGate(a, tag, skip) {
   a.label('tk' + tag);
 }
 
+// What the watcher script tells the protectors, in shared variables of CLEO:
+// - RED_PEDS: the characters the game marks as enemies of the player (a red radar marker on them, or on the vehicle they are in), up to 16
+// - RED_CARS: the vehicles with a red marker, up to 4 (the protectors shoot at them when nobody is inside)
+// - ATK_VARS: the last 8 characters that shot at the player or at his vehicle, or hurt them, whether the shot hit or did any damage or not
+//   (an invulnerable player takes no damage, and the game then says nobody hurt him). ATK_TIME is when the last one came: after ATK_KEEP
+//   without any, the list is cleared
+const RED_PEDS = 0, RED_PEDS_N = 16, RED_CARS = 16, RED_CARS_N = 4, ATK_VARS = 20, ATK_N = 8, ATK_IDX = 28, ATK_TIME = 29, ATK_KEEP = 10000;
+// The radar markers of the game (CRadar::ms_RadarTrace): 175 of 0x28 bytes. +0 colour, +4 the handle of what it is on, +0x25 flags (bit 1 in use,
+// bit 3 friendly), +0x26 display (bits 0-1, 0 = hidden) and type (bits 2-5: 1 vehicle, 2 character)
+const RADAR_TRACES = 0xBA86F0, RADAR_TRACE_SIZE = 0x28, RADAR_TRACE_COUNT = 175;
+
 // Counts the free places of the table of tasks of the game (a place is free when its three fields that matter are zero, as the game itself tests it)
-// and leaves the number plus 1 in TASK_FREE, four times a second. Only for the game version of SA-MP (1.0 US)
+// and leaves the number plus 1 in TASK_FREE, four times a second. Only for the game version of SA-MP (1.0 US).
+// It also watches who is against the player for the protectors (see RED_PEDS and ATK_VARS above)
 export function taskGuardScript() {
   const a = new Asm();
   a.op(0x0000);
+  waitPlayer(a);
+  for (let k = 0; k <= ATK_TIME; k++) a.op(0x0AB3, int(k), int(0));
+  // CLEO+ runs this piece when a bullet hits anything. Its events for a character hurt and a vehicle hit by a weapon brought the game down
+  // in a fight of many NPCs (a crash inside CLEO+, found in the game): the bullets alone tell who shoots at the player or his vehicle
+  a.op(0x0EE0, int(1), ref('evb'), lv(13), lv(14), lv(15), lv(16));
   a.label('loop').op(0x0001, int(250));
   a.op(0x0006, lv(0), int(0));                                   // free places
   a.op(0x0006, lv(1), int(TASK_TABLE));                          // address of the place being looked at
@@ -113,7 +130,112 @@ export function taskGuardScript() {
   a.op(0x00D6, int(0)).op(0x0019, lv(2), int(TASK_PLACES - 1)).op(0x004D, ref('next'));
   a.op(0x000A, lv(0), int(1));
   a.op(0x0AB3, int(TASK_FREE), lv(0));
+  // jumps to `to` when the variable is (ifEq) or is not (ifNe) the value
+  const ifEq = (v, c, to) => a.op(0x00D6, int(0)).op(0x8039, lv(v), typeof c === 'number' ? int(c) : c).op(0x004D, ref(to));
+  const ifNe = (v, c, to) => a.op(0x00D6, int(0)).op(0x0039, lv(v), typeof c === 'number' ? int(c) : c).op(0x004D, ref(to));
+  // The radar markers: 5 the address of the marker, 6 how many were looked at, 7 characters found, 8 vehicles found
+  a.op(0x0006, lv(5), int(RADAR_TRACES)).op(0x0006, lv(6), int(0)).op(0x0006, lv(7), int(0)).op(0x0006, lv(8), int(0));
+  a.label('bs');
+  a.op(0x0A8E, lv(5), int(0x24), lv(9)).op(0x0A8D, lv(9), int(4), int(0), lv(9));               // 9: the sprite and the flags
+  a.op(0x0B10, lv(9), int(0x200), lv(10));
+  ifEq(10, 0, 'bn');                                                                               // not in use
+  a.op(0x0B15, lv(9), int(16), lv(10)).op(0x0B10, lv(10), int(3), lv(10));
+  ifEq(10, 0, 'bn');                                                                               // hidden
+  a.op(0x0A8D, lv(5), int(4), int(0), lv(10));                                                   // the colour: red, or threat (red) when not friendly
+  ifEq(10, 0, 'br');
+  ifEq(10, 5, 'br');
+  ifNe(10, 7, 'bn');
+  a.op(0x0B10, lv(9), int(0x800), lv(10));
+  ifNe(10, 0, 'bn');
+  a.label('br');
+  a.op(0x0B15, lv(9), int(18), lv(10)).op(0x0B10, lv(10), int(15), lv(10));                      // 10: the type
+  a.op(0x0A8E, lv(5), int(4), lv(9)).op(0x0A8D, lv(9), int(4), int(0), lv(9));                  // 9: the handle
+  ifEq(10, 2, 'bp');
+  ifNe(10, 1, 'bn');
+  a.op(0x00D6, int(0)).op(0x056E, lv(9)).op(0x004D, ref('bn'));                                  // a vehicle: it and the ones inside
+  a.op(0x00D6, int(0)).op(0x001B, int(RED_CARS_N), lv(8)).op(0x004D, ref('bc'));
+  a.op(0x0A8E, int(RED_CARS), lv(8), lv(10)).op(0x0AB3, lv(10), lv(9)).op(0x000A, lv(8), int(1));
+  a.label('bc');
+  a.op(0x046C, lv(9), lv(12)).op(0x0050, ref('addped'));
+  a.op(0x01EA, lv(9), lv(14)).op(0x0006, lv(15), int(0));
+  a.label('bq');
+  a.op(0x00D6, int(0)).op(0x001D, lv(14), lv(15)).op(0x004D, ref('bn'));
+  a.op(0x00D6, int(0)).op(0x8431, lv(9), lv(15)).op(0x004D, ref('bq1'));                         // an empty seat has no character to ask for
+  a.op(0x0432, lv(9), lv(15), lv(12)).op(0x0050, ref('addped'));
+  a.label('bq1');
+  a.op(0x000A, lv(15), int(1));
+  a.jump('bq');
+  a.label('bp');
+  a.op(0x0085, lv(12), lv(9)).op(0x0050, ref('addped'));
+  a.label('bn');
+  a.op(0x0A8E, lv(5), int(RADAR_TRACE_SIZE), lv(5)).op(0x000A, lv(6), int(1));
+  a.op(0x00D6, int(0)).op(0x001B, int(RADAR_TRACE_COUNT), lv(6)).op(0x004D, ref('bz'));
+  a.jump('bs');
+  a.label('bz');
+  // the places left of the lists are cleared
+  a.label('bf');
+  a.op(0x00D6, int(0)).op(0x001B, int(RED_PEDS_N), lv(7)).op(0x004D, ref('bg'));
+  a.op(0x0A8E, int(RED_PEDS), lv(7), lv(10)).op(0x0AB3, lv(10), int(0)).op(0x000A, lv(7), int(1));
+  a.jump('bf');
+  a.label('bg');
+  a.op(0x00D6, int(0)).op(0x001B, int(RED_CARS_N), lv(8)).op(0x004D, ref('bh'));
+  a.op(0x0A8E, int(RED_CARS), lv(8), lv(10)).op(0x0AB3, lv(10), int(0)).op(0x000A, lv(8), int(1));
+  a.jump('bg');
+  a.label('bh');
+  // nobody attacked the player for a while: the list of attackers is cleared
+  a.op(0x01BD, lv(9)).op(0x0AB4, int(ATK_TIME), lv(10)).op(0x0A8F, lv(9), lv(10), lv(9));
+  a.op(0x00D6, int(0)).op(0x0019, lv(9), int(ATK_KEEP)).op(0x004D, ref('loop'));
+  for (let k = 0; k < ATK_N; k++) a.op(0x0AB3, int(ATK_VARS + k), int(0));
   a.jump('loop');
+
+  // Adds the character in 12 to the red list (7 = how many it has), when it exists and is not the player. Uses 13
+  a.label('addped');
+  a.op(0x00D6, int(0)).op(0x056D, lv(12)).op(0x004D, ref('ap0'));
+  ifEq(12, lv(PLAYER), 'ap0');
+  a.op(0x00D6, int(0)).op(0x001B, int(RED_PEDS_N), lv(7)).op(0x004D, ref('ap0'));
+  a.op(0x0A8E, int(RED_PEDS), lv(7), lv(13)).op(0x0AB3, lv(13), lv(12)).op(0x000A, lv(7), int(1));
+  a.label('ap0').op(0x0051);
+
+  // Adds the character in 12 to the attackers (once; the time of the last attack is renewed). Uses 13 and 14
+  a.label('push');
+  a.op(0x00D6, int(0)).op(0x056D, lv(12)).op(0x004D, ref('pr'));
+  ifEq(12, lv(PLAYER), 'pr');
+  a.op(0x0006, lv(13), int(0));
+  a.label('pl');
+  a.op(0x0A8E, int(ATK_VARS), lv(13), lv(14)).op(0x0AB4, lv(14), lv(14));
+  ifEq(14, lv(12), 'pt');
+  a.op(0x000A, lv(13), int(1));
+  a.op(0x00D6, int(0)).op(0x001B, int(ATK_N), lv(13)).op(0x004D, ref('pa'));
+  a.jump('pl');
+  a.label('pa');
+  a.op(0x0AB4, int(ATK_IDX), lv(13)).op(0x0A8E, int(ATK_VARS), lv(13), lv(14)).op(0x0AB3, lv(14), lv(12));
+  a.op(0x000A, lv(13), int(1));
+  a.op(0x00D6, int(0)).op(0x0019, lv(13), int(ATK_N - 1)).op(0x004D, ref('pb'));
+  a.op(0x0006, lv(13), int(0));
+  a.label('pb').op(0x0AB3, int(ATK_IDX), lv(13));
+  a.label('pt').op(0x01BD, lv(14)).op(0x0AB3, int(ATK_TIME), lv(14));
+  a.label('pr').op(0x0051);
+
+  // A bullet hit something: the one who fired it (13, a character) shot at the player when it hit him, his vehicle, or anything within 4 m of him
+  a.label('evb');
+  ifEq(13, 0, 'evr');
+  a.op(0x0A8E, lv(13), int(0x36), lv(17)).op(0x0A8D, lv(17), int(1), int(0), lv(17)).op(0x0B10, lv(17), int(7), lv(17));
+  ifNe(17, 3, 'evr');                                                                              // not a character
+  a.op(0x0A96, lv(PLAYER), lv(17));
+  ifEq(13, lv(17), 'evr');                                                                         // the player's own shot
+  ifEq(14, lv(17), 'evh');
+  a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('evp'));
+  a.op(0x03C0, lv(PLAYER), lv(18)).op(0x0A97, lv(18), lv(18));
+  ifEq(14, lv(18), 'evh');
+  a.label('evp');
+  ifEq(16, 0, 'evr');
+  a.op(0x0A8D, lv(16), int(4), int(0), lv(18));
+  a.op(0x0A8E, lv(16), int(4), lv(19)).op(0x0A8D, lv(19), int(4), int(0), lv(19));
+  a.op(0x0A8E, lv(16), int(8), lv(20)).op(0x0A8D, lv(20), int(4), int(0), lv(20));
+  a.op(0x00D6, int(0)).op(0x00FE, lv(PLAYER), lv(18), lv(19), lv(20), flt(4), flt(4), flt(4), int(0)).op(0x004D, ref('evr'));
+  a.label('evh');
+  a.op(0x0AEA, lv(13), lv(12)).op(0x0050, ref('push'));
+  a.label('evr').op(0x0ED0);
   return a.build();
 }
 
@@ -611,6 +733,12 @@ const TARGET_VARS = 400; // the shared variables (400 + guard) where each guard 
 const PH_HEALTH = 1001, PH_ARMOUR = 1002, CHAOS_VAR = 1005, CHAOS_TIME = 1006; // the health and the armour the player had a moment ago
 const GUARD_VARS = 700; // the shared variables of CLEO (0 to 1023) where the guards leave their characters
 export const ACTORS_BUDGET = 20;
+const DM_EMPTY = 65542; // the empty decision maker template of the game (m_empty.ped): no response to any event
+// The health of a NPC: 100 by default, 1 the least. The game keeps it as a float, and the higher it is the bigger the damages lost in the
+// rounding (at 100000 only those under 0.004 point; at 16.7 million everything under 1 point, and the NPC no longer dies of small damages):
+// 100000 is the most that still takes every damage the game deals
+export const NPC_HEALTH_MAX = 100000;
+export const npcHealth = (v) => { const n = Math.round(+v); return Number.isFinite(n) && v !== '' && v != null ? Math.max(1, Math.min(NPC_HEALTH_MAX, n)) : 100; };
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
 export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 7 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
@@ -627,17 +755,25 @@ const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed i
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
 export const npcTravels = (e) => e.role !== 'neutral' && !!e.follow;
 
-// Plays the animation of the NPC (asking for it first and waiting until it is there, then letting go of it)
+// Plays the animation of the NPC (asking for it first and waiting until it is there, then letting go of it). The PED library is never asked
+// for nor let go of: the game loads it at the start and keeps it (it holds the walking and standing of every character); letting go of it
+// took it out of memory and the game froze at the next model it loaded (found in the game: protectors with a neutral NPC playing IDLE_chat)
 function playAnim(a, e, h, tag) {
-  a.op(0x04ED, strn(e.anim.lib));
-  a.label('aw' + tag).op(0x0001, int(0));
-  a.op(0x00D6, int(0)).op(0x04EE, strn(e.anim.lib)).op(0x004D, ref('aw' + tag));
+  const permanent = String(e.anim.lib).toUpperCase() === 'PED';
+  if (!permanent) {
+    a.op(0x04ED, strn(e.anim.lib));
+    a.label('aw' + tag).op(0x0001, int(0));
+    a.op(0x00D6, int(0)).op(0x04EE, strn(e.anim.lib)).op(0x004D, ref('aw' + tag));
+  }
   a.op(0x0605, lv(h), strn(e.anim.name), strn(e.anim.lib), flt(e.anim.delta), int(e.anim.loop ? 1 : 0), int(e.anim.lockx ? 1 : 0), int(e.anim.locky ? 1 : 0), int(e.anim.freeze ? 1 : 0), int(e.anim.time | 0));
-  a.op(0x04EF, strn(e.anim.lib));
+  if (!permanent) a.op(0x04EF, strn(e.anim.lib));
 }
 
 export function actorsScript(items) {
   const list = items.map(e => ({ ...e, vars: npcVars(e) }));
+  // The NPCs keep the variables below 20 (ACTORS_BUDGET): 20 to 23 are T10 to T7. A script of 24 that mixed protectors with other NPCs had their
+  // characters written over by the protectors' work and the game fell at the next order given to them (found in the game: a crash at 0x40491E)
+  if (list.reduce((n, e) => n + e.vars, 0) > ACTORS_BUDGET) throw new Error('actors_budget');
   const guards = list.filter(e => e.role === 'guard');
   return nearScript(list, {
     radius: 120, wait: 125,
@@ -658,6 +794,12 @@ export function actorsScript(items) {
       a.op(0x0173, lv(h), flt(e.rz));
       if (e.invulnerable) a.op(0x02AB, lv(h), int(1), int(1), int(1), int(1), int(1));
       else a.op(0x02AB, lv(h), int(0), int(0), int(0), int(1), int(0));                        // a car does not hurt it: running it over is not a crime
+      // Its health (invulnerability comes first): the most goes up too, so the game keeps the value
+      const hp = npcHealth(e.health);
+      if (!e.invulnerable && hp !== 100) {
+        if (hp > 100) a.op(0x08AF, lv(h), int(hp));
+        a.op(0x0223, lv(h), int(hp));
+      }
       if (e.weapon) {
         const model = weaponModel(e.weapon);
         if (model) loadModel(a, model, 'w' + i);
@@ -666,8 +808,14 @@ export function actorsScript(items) {
         if (model) a.op(0x0249, int(model));
       }
       if (e.role === 'neutral') {
-        a.op(0x0350, lv(h), int(1));                                                            // it stays in its place when attacked
-        a.op(0x0688, lv(h), int(0), int(0), int(0));                                            // and does not look for threats
+        // It reacts to nothing: the empty decision maker of the game has no answer to any event (the player talking to it or aiming at it, being
+        // hit, pushed or shot, other characters, cars), it does not look for threats, stays in its place and plays no animation of being hurt
+        // (its position is also frozen once it stands on the ground, see holdPlace)
+        a.op(0x060B, lv(h), int(DM_EMPTY));
+        a.op(0x0350, lv(h), int(1));
+        a.op(0x0688, lv(h), int(0), int(0), int(0));
+        a.op(0x0946, lv(h), int(1));
+        a.op(0x0ED9, lv(h), int(1));
       } else {
         a.op(0x02E2, lv(h), int(e.role === 'guard' ? 100 : 80));                                // aim (the protectors never miss on purpose)
         a.op(0x07DD, lv(h), int(e.role === 'guard' ? 100 : 70));                                // how often it shoots
@@ -737,6 +885,39 @@ export function actorsScript(items) {
         a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7));
         a.op(0x00A0, lv(T4), lv(T8), lv(T9), lv(T10));
         a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(blocked));
+      };
+      // Jumps to `skip` when the candidate in T4 is a protector of the mod (each one, in any script, wrote its character in the shared variables
+      // of CLEO). Uses T6 and T0
+      const allyCheck = (pre, skip) => {
+        if (!(e.guardTotal > 0)) return;
+        a.op(0x0006, lv(T6), int(0));
+        a.label(L(pre + 'ga'));
+        a.op(0x00D6, int(0)).op(0x001B, int(e.guardTotal), lv(T6)).op(0x004D, ref(L(pre + 'gk')));
+        a.op(0x0A8E, int(GUARD_VARS), lv(T6), lv(T0));
+        a.op(0x0AB4, lv(T0), lv(T0));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T4), lv(T0)).op(0x004D, ref(L(pre + 'gb')));
+        a.jump(skip);
+        a.label(L(pre + 'gb'));
+        a.op(0x000A, lv(T6), int(1));
+        a.jump(L(pre + 'ga'));
+        a.label(L(pre + 'gk'));
+      };
+      // Jumps to `notStory` when the character in `v` is not one of the story (the ped types of the characters of the missions, 23 to 31). Uses T6
+      const storyCheck = (v, notStory) => {
+        a.op(0x089F, lv(v), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(22)).op(0x004D, ref(notStory));
+      };
+      // Jumps to `yes` when the character in `v` is in the red list of the watcher script. Uses T6 and T7
+      const redCheck = (v, pre, yes) => {
+        a.op(0x0006, lv(T6), int(0));
+        a.label(L(pre + 'rl'));
+        a.op(0x00D6, int(0)).op(0x001B, int(RED_PEDS_N), lv(T6)).op(0x004D, ref(L(pre + 'rx')));
+        a.op(0x0A8E, int(RED_PEDS), lv(T6), lv(T7));
+        a.op(0x0AB4, lv(T7), lv(T7));
+        a.op(0x00D6, int(0)).op(0x8039, lv(v), lv(T7)).op(0x004D, ref(yes));
+        a.op(0x000A, lv(T6), int(1));
+        a.jump(L(pre + 'rl'));
+        a.label(L(pre + 'rx'));
       };
       // A target inside a vehicle is only attacked with a weapon that shoots and still has ammunition, never when the vehicle is already destroyed
       // (nothing to hit) and never when it is a tank (Rhino) unless the weapon is a rocket launcher; otherwise it is ignored and another one is looked for
@@ -1110,6 +1291,21 @@ export function actorsScript(items) {
         a.label(L('nw'));
       }
       if (e.role === 'guard') {
+        // A protector never fights a character of the story on its own either (the game makes it hit back when one of them hurts it or shoots
+        // at it): when what it is attacking is one of them and is not marked red, its tasks are cleared. Not in a vehicle (it would be taken out)
+        a.op(0x0E44, lv(h), lv(T0));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('sk')));
+        a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('sk')));
+        storyCheck(T0, L('sk'));
+        redCheck(T0, 'sr', L('sk'));
+        a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('sc')));
+        a.jump(L('sk'));
+        a.label(L('sc'));
+        a.op(0x0687, lv(h));
+        a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0)).op(0x0006, lv(cnt), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        a.jump(done);
+        a.label(L('sk'));
         // First priority: a police helicopter (Police Maverick) within 60 m of the player while he is wanted. It lets go of any target it had and
         // shoots at the helicopter itself (they have no pilot). Only with a weapon that shoots and has ammunition. The order is given once a second,
         // not at every cycle (it would turn round all the time and never shoot)
@@ -1191,32 +1387,47 @@ export function actorsScript(items) {
         a.label(L('gw'));
         // Two passes: first the targets that no other protector is on (so they spread over the enemies), then any target (nobody stays still
         // while there is an enemy; they all go to the same one if there is only one)
-        const searchPass = (P, limit, endLabel) => {
-          if (e.enemyTotal > 0) {
-            // The enemy NPCs of the mod are always known (they do not have to be shooting at that moment): the first one near the player that is not
-            // already fought by two protectors
-            a.op(0x0006, lv(T5), int(0));
-            a.label(L(P + 'ys'));
-            a.op(0x00D6, int(0)).op(0x001B, int(e.enemyTotal), lv(T5)).op(0x004D, ref(L(P + 'yd')));
-            a.op(0x0A8E, int(ENEMY_VARS), lv(T5), lv(T4));
-            a.op(0x0AB4, lv(T4), lv(T4));
-            a.op(0x00D6, int(0)).op(0x0019, lv(T4), int(0)).op(0x004D, ref(L(P + 'yn')));
-            a.op(0x00D6, int(0)).op(0x056D, lv(T4)).op(0x004D, ref(L(P + 'yn')));
-            a.op(0x00D6, int(0)).op(0x0118, lv(T4)).op(0x004D, ref(L(P + 'ya')));
+        // A list of characters kept in shared variables (varBase, count of them): the first one near the player that can be hit and that is not
+        // already fought by too many protectors. `story`: a character of the story only when it is marked red; `ally`: never a protector
+        const listPass = (P, varBase, count, story, ally) => {
+          a.op(0x0006, lv(T5), int(0));
+          a.label(L(P + 'ys'));
+          a.op(0x00D6, int(0)).op(0x001B, int(count), lv(T5)).op(0x004D, ref(L(P + 'yd')));
+          a.op(0x0A8E, int(varBase), lv(T5), lv(T4));
+          a.op(0x0AB4, lv(T4), lv(T4));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T4), int(0)).op(0x004D, ref(L(P + 'yn')));
+          a.op(0x00D6, int(0)).op(0x056D, lv(T4)).op(0x004D, ref(L(P + 'yn')));
+          a.op(0x00D6, int(0)).op(0x0118, lv(T4)).op(0x004D, ref(L(P + 'ya')));
+          a.jump(L(P + 'yn'));
+          a.label(L(P + 'ya'));
+          a.op(0x00D6, int(0)).op(0x00FE, lv(T4), lv(T1), lv(T2), lv(T3), flt(90), flt(90), flt(90), int(0)).op(0x004D, ref(L(P + 'yn')));
+          if (ally) allyCheck(P + 'y', L(P + 'yn'));
+          if (story) {
+            storyCheck(T4, L(P + 'yo'));
+            redCheck(T4, P + 'yr', L(P + 'yo'));
             a.jump(L(P + 'yn'));
-            a.label(L(P + 'ya'));
-            a.op(0x00D6, int(0)).op(0x00FE, lv(T4), lv(T1), lv(T2), lv(T3), flt(80), flt(80), flt(80), int(0)).op(0x004D, ref(L(P + 'yn')));
-            wreckCheck(T4, P + 'ywk', L(P + 'yn'));
-            losCheck(L(P + 'yn'));
-            capCheck(P + 'y', L(P + 'yn'), limit);
-            attackTask(T4, P + 'yat');
-            a.op(0x0085, lv(tgt), lv(T4));
-            a.jump(L('gd'));
-            a.label(L(P + 'yn'));
-            a.op(0x000A, lv(T5), int(1));
-            a.jump(L(P + 'ys'));
-            a.label(L(P + 'yd'));
+            a.label(L(P + 'yo'));
           }
+          wreckCheck(T4, P + 'ywk', L(P + 'yn'));
+          losCheck(L(P + 'yn'));
+          capCheck(P + 'y', L(P + 'yn'), limit);
+          attackTask(T4, P + 'yat');
+          a.op(0x0085, lv(tgt), lv(T4));
+          a.jump(L('gd'));
+          a.label(L(P + 'yn'));
+          a.op(0x000A, lv(T5), int(1));
+          a.jump(L(P + 'ys'));
+          a.label(L(P + 'yd'));
+        };
+        let limit = 0;
+        const searchPass = (P, lim, endLabel) => {
+          limit = lim;
+          // The enemy NPCs of the mod are always known (they do not have to be shooting at that moment)
+          if (e.enemyTotal > 0) listPass(P + 'e', ENEMY_VARS, e.enemyTotal, false, false);
+          // The characters the game marks red against the player (on them or on their vehicle), even before they attack
+          listPass(P + 'r', RED_PEDS, RED_PEDS_N, false, true);
+          // Whoever shot at the player or at his vehicle lately, or hurt them, whether it did any damage or not
+          listPass(P + 'k', ATK_VARS, ATK_N, true, true);
           a.op(0x0006, lv(T5), int(0));
           a.label(L(P + 'gs'));
           a.op(0x00D6, int(0)).op(0x001B, int(48), lv(T5)).op(0x004D, ref(endLabel));               // tried enough
@@ -1224,25 +1435,12 @@ export function actorsScript(items) {
           a.op(0x00D6, int(0)).op(0x0039, lv(T4), lv(h)).op(0x004D, ref(L(P + 'g1')));
           a.jump(L(P + 'gn'));
           a.label(L(P + 'g1'));
-          // not an ally: every guard of the mod (in any script) wrote its character in the shared variables of CLEO
-          if (e.guardTotal > 0) {
-            a.op(0x0006, lv(T6), int(0));
-            a.label(L(P + 'ga'));
-            a.op(0x00D6, int(0)).op(0x001B, int(e.guardTotal), lv(T6)).op(0x004D, ref(L(P + 'gk')));
-            a.op(0x0A8E, int(GUARD_VARS), lv(T6), lv(T0));
-            a.op(0x0AB4, lv(T0), lv(T0));
-            a.op(0x00D6, int(0)).op(0x0039, lv(T4), lv(T0)).op(0x004D, ref(L(P + 'gb')));
-            a.jump(L(P + 'gn'));
-            a.label(L(P + 'gb'));
-            a.op(0x000A, lv(T6), int(1));
-            a.jump(L(P + 'ga'));
-            a.label(L(P + 'gk'));
-          }
-          // A character of the story (the ped types the game gives to the characters of its missions, 23 to 31) is never a target, unless it
-          // has hurt the player
-          a.op(0x089F, lv(T4), lv(T6));
-          a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(22)).op(0x004D, ref(L(P + 'gso')));
-          a.op(0x00D6, int(0)).op(0x051A, lv(PLAYER), lv(T4)).op(0x004D, ref(L(P + 'gn')));
+          allyCheck(P + 'g', L(P + 'gn'));
+          // A character of the story (the ped types the game gives to the characters of its missions, 23 to 31) is never a target, whatever
+          // it does to the player or to the protectors, unless the game marks it red against the player
+          storyCheck(T4, L(P + 'gso'));
+          redCheck(T4, P + 'gr', L(P + 'gf'));
+          a.jump(L(P + 'gn'));
           a.label(L(P + 'gso'));
           a.op(0x00D6, int(0)).op(0x051A, lv(PLAYER), lv(T4)).op(0x004D, ref(L(P + 'g2')));            // it hurt the player
           a.jump(L(P + 'gf'));
@@ -1305,6 +1503,39 @@ export function actorsScript(items) {
         attackTask(T4, 'gxat');
         a.jump(done);
         a.label(L('gu'));
+        // No character to fight: a vehicle marked red with nobody driving it, within 80 m of the player and in sight, is shot at (once a second),
+        // only with a weapon that shoots and has ammunition
+        if (ranged) {
+          a.op(0x0006, lv(T5), int(0));
+          a.label(L('rc'));
+          a.op(0x00D6, int(0)).op(0x001B, int(RED_CARS_N), lv(T5)).op(0x004D, ref(L('rcx')));
+          a.op(0x0A8E, int(RED_CARS), lv(T5), lv(T4));
+          a.op(0x0AB4, lv(T4), lv(T4));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T4), int(0)).op(0x004D, ref(L('rcn')));
+          a.op(0x00D6, int(0)).op(0x056E, lv(T4)).op(0x004D, ref(L('rcn')));
+          a.op(0x00D6, int(0)).op(0x8119, lv(T4)).op(0x004D, ref(L('rcn')));
+          a.op(0x046C, lv(T4), lv(T6));
+          a.op(0x00D6, int(0)).op(0x856D, lv(T6)).op(0x004D, ref(L('rcn')));                     // someone drives it: the character lists have him
+          a.op(0x00AA, lv(T4), lv(T0), lv(T6), lv(T7));
+          a.op(0x00D6, int(0)).op(0x00FE, lv(PLAYER), lv(T0), lv(T6), lv(T7), flt(80), flt(80), flt(80), int(0)).op(0x004D, ref(L('rcn')));
+          a.op(0x041A, lv(h), int(e.weapon), lv(T8));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T8), int(0)).op(0x004D, ref(L('rcn')));
+          a.op(0x00A0, lv(h), lv(T8), lv(T9), lv(T10));
+          a.op(0x00D6, int(0)).op(0x06BD, lv(T8), lv(T9), lv(T10), lv(T0), lv(T6), lv(T7), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('rcn')));
+          a.op(0x000A, lv(cnt), int(1));
+          a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
+          a.op(0x0006, lv(cnt), int(0));
+          a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('rcf')));
+          if (driveWeapon) a.op(0x0713, lv(h), int(-1), lv(T4), flt(0), flt(0), flt(0), flt(80), int(8), int(0), int(100));   // sitting in a vehicle: drive by
+          a.jump(done);
+          a.label(L('rcf'));
+          a.op(0x0668, lv(h), lv(T0), lv(T6), lv(T7), int(1500));
+          a.jump(done);
+          a.label(L('rcn'));
+          a.op(0x000A, lv(T5), int(1));
+          a.jump(L('rc'));
+          a.label(L('rcx'));
+        }
         if (e.follow) {
           // close to the player: it comes to him on foot; it gets in his car and out of it with him. Not while it fights
           a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(done));
@@ -1376,14 +1607,25 @@ export function actorsScript(items) {
   });
 }
 
-// The neutral NPC never moves: if it gets more than 0.5 m from its place it is reset there (tasks cleared, angle, animation again)
+// The neutral NPC never moves: if it gets more than 0.5 m from its place it is reset there (tasks cleared, angle, animation again). Once it
+// stands in its place its position is frozen (state 6): nothing pushes it, not even a car (frozen at once it would stay in the air where it
+// was made, above the ground). Its angle and its animation are checked every quarter of a second
 function holdPlace(a, e, i, base) {
-  const h = base + 1, cnt = base + 2, done = 'n' + i;
+  const st = base, h = base + 1, cnt = base + 2, done = 'n' + i;
   const L = (n) => n + i;
   a.op(0x00D6, int(0)).op(0x00FE, lv(h), flt(e.x), flt(e.y), flt(e.z), flt(0.5), flt(0.5), flt(2), int(0)).op(0x004D, ref(L('hm')));
   a.op(0x000A, lv(cnt), int(1));
-  a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(6)).op(0x004D, ref(done));
+  a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(1)).op(0x004D, ref(done));
   a.op(0x0006, lv(cnt), int(0));
+  a.op(0x0173, lv(h), flt(e.rz));
+  // states 1 to 5: a second to land on the ground; then frozen (6)
+  a.op(0x00D6, int(0)).op(0x0019, lv(st), int(5)).op(0x004D, ref(L('hf')));
+  a.jump(L('hz'));
+  a.label(L('hf'));
+  a.op(0x000A, lv(st), int(1));
+  a.op(0x00D6, int(0)).op(0x0039, lv(st), int(6)).op(0x004D, ref(L('hz')));
+  a.op(0x04D7, lv(h), int(1));
+  a.label(L('hz'));
   if (e.anim) {
     a.op(0x00D6, int(0)).op(0x0611, lv(h), strn(e.anim.name)).op(0x004D, ref(L('hq')));
     a.jump(done);
@@ -1392,6 +1634,8 @@ function holdPlace(a, e, i, base) {
   }
   a.jump(done);
   a.label(L('hm'));
+  a.op(0x04D7, lv(h), int(0));                                                                 // it lands again, then it is frozen again
+  a.op(0x0006, lv(st), int(1));
   a.op(0x0687, lv(h));
   a.op(0x00A1, lv(h), flt(e.x), flt(e.y), flt(e.z));
   a.op(0x0173, lv(h), flt(e.rz));

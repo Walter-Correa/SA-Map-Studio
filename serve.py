@@ -810,8 +810,15 @@ def sp_list_installed():
         n = os.path.basename(d)
         if not any(o["folder"] == n for o in out):
             mod_id = sp_clean_id(m.get("id"))
-            out.append({"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "id": mod_id,
-                        "project": ids.get(mod_id, ""), "time": os.path.getmtime(os.path.join(d, SP_MARK))})
+            row = {"folder": n, "name": m.get("name") or n, "hash": m.get("hash") or "", "id": mod_id,
+                   "project": ids.get(mod_id, ""), "time": os.path.getmtime(os.path.join(d, SP_MARK))}
+            if isinstance(m.get("npcs"), int):
+                row.update({k: m.get(k) if isinstance(m.get(k), int) else 0 for k in ("npcs", "guards", "enemies")})
+            else:
+                # built before the marker told the NPCs: whether it has NPC scripts at all
+                row["npcScripts"] = any(re.search(r"_(npcs|followers)\d+\.cs$", f, re.I)
+                                        for _, _, fs in os.walk(d) for f in fs)
+            out.append(row)
     return out
 
 
@@ -838,6 +845,10 @@ def sp_write_files(root, files, meta=None):
     mark = {"app": "SA Map Studio", "note": "Created by SA Map Studio. Delete this folder to remove the mod.",
             "name": str((meta or {}).get("name") or ""), "hash": str((meta or {}).get("hash") or ""),
             "id": sp_clean_id((meta or {}).get("id"))}
+    # how many NPCs (and enemies) the mod has: the editor adds them up with the other mods against the game's limit
+    for k in ("npcs", "guards", "enemies"):
+        if isinstance((meta or {}).get(k), int):
+            mark[k] = meta[k]
     with open(os.path.join(root, SP_MARK), "w", encoding="utf-8") as f:
         json.dump(mark, f)
     return len(clean)
@@ -2891,7 +2902,7 @@ class Handler(SimpleHTTPRequestHandler):
                     files = dict(body.get("files") or {})
                     files["README.txt"] = base64.b64encode(sp_readme(name, body.get("info")).encode("utf-8")).decode("ascii")
                     meta = body.get("meta") or {}
-                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": meta.get("hash"), "id": meta.get("id")})
+                    n = sp_write_files(sp_build_dir(name), files, {"name": name, "hash": meta.get("hash"), "id": meta.get("id"), "npcs": meta.get("npcs"), "guards": meta.get("guards"), "enemies": meta.get("enemies")})
                     return self.send_json({**sp_status(name, "", meta.get("id")), "files": n})
                 if action == "install":
                     missing = sp_missing()
