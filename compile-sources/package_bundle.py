@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Empacotador do bundle sa-map-studio.zip para distribuição de executável único."""
+"""Packer of the sa-map-studio.zip bundle for the single-executable distribution."""
 
 import os
 import re
@@ -16,7 +16,7 @@ MANIFEST = "system/bundle.json"
 
 
 def app_version():
-    """Versão do editor (VERSION do serve.py)."""
+    """Editor version (VERSION of serve.py)."""
     try:
         here = os.path.dirname(os.path.abspath(__file__))
         with open(os.path.join(here, "..", "serve.py"), "r", encoding="utf-8") as f:
@@ -26,7 +26,7 @@ def app_version():
         return "0"
 
 def package_bundle(staging_dir, output_zip):
-    print(f"Empacotando pasta '{staging_dir}' em '{output_zip}'...")
+    print(f"Packing folder '{staging_dir}' into '{output_zip}'...")
     t0 = time.time()
     staging_dir = os.path.abspath(staging_dir)
     os.makedirs(os.path.dirname(os.path.abspath(output_zip)), exist_ok=True)
@@ -35,7 +35,7 @@ def package_bundle(staging_dir, output_zip):
     total_uncompressed = 0
     
     # Files or folders to ignore
-    ignore_names = {"__pycache__", ".git", ".gitkeep", "LEIA-ME.txt", "leia-me.txt"}
+    ignore_names = {"__pycache__", ".git", ".gitkeep"}
     ignore_exts = {".pyc", ".pyo", ".pdb", ".dmp", ".ilk", ".exp"}
     
     digest = hashlib.sha256()
@@ -66,23 +66,23 @@ def package_bundle(staging_dir, output_zip):
                 total_uncompressed += os.path.getsize(full_path)
                 
                 if total_files % 250 == 0:
-                    print(f"  Adicionados {total_files} arquivos...", end="\r")
+                    print(f"  Added {total_files} files...", end="\r")
                     
         manifest = {"app": "SA Map Studio", "version": app_version(), "build": digest.hexdigest(),
                     "size": total_uncompressed, "files": files}
         z.writestr(root_name + "/" + MANIFEST, json.dumps(manifest, ensure_ascii=False, indent=1))
-        print(f"\n  Versao {manifest['version']}, build {manifest['build'][:12]}")
+        print(f"\n  Version {manifest['version']}, build {manifest['build'][:12]}")
 
     compressed_size = os.path.getsize(output_zip)
     dur = time.time() - t0
-    print(f"\nEmpacotamento concluido com sucesso!")
-    print(f"  Arquivos incluidos: {total_files}")
-    print(f"  Tamanho descompactado: {total_uncompressed / (1024 * 1024):.2f} MB")
-    print(f"  Tamanho compactado (ZIP): {compressed_size / (1024 * 1024):.2f} MB")
-    print(f"  Tempo: {dur:.2f}s")
+    print("\nPacking finished successfully!")
+    print(f"  Files included: {total_files}")
+    print(f"  Uncompressed size: {total_uncompressed / (1024 * 1024):.2f} MB")
+    print(f"  Compressed size (ZIP): {compressed_size / (1024 * 1024):.2f} MB")
+    print(f"  Time: {dur:.2f}s")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Uso: python package_bundle.py <staging_dir> <output_zip>")
+        print("Usage: python package_bundle.py <staging_dir> <output_zip>")
         sys.exit(1)
     package_bundle(sys.argv[1], sys.argv[2])

@@ -1,4 +1,4 @@
-// Catálogo completo de Sound IDs (PlayerPlaySound): só para a prévia e a cópia do código no catálogo de sons.
+// Full catalog of Sound IDs (PlayerPlaySound): only for the preview and the code copy in the sound catalog.
 
 export const SOUND_CATEGORIES = [
   'Todos',

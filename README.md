@@ -300,8 +300,9 @@ The program does not need Python, Visual C++ or any other installation: everythi
 ### Verifying the download and the Windows warning
 
 Every [release](https://github.com/Walter-Correa/SA-Map-Studio/releases) is built by GitHub Actions straight from
-this source code. Its notes show the SHA-256 hash of `SA.Map.Studio.exe` and a link to its VirusTotal report, so you
-can check that the file you downloaded is the published one.
+this source code. The program is published as `SA Map Studio.zip` with `SA Map Studio.exe` inside. The release notes show the SHA-256
+hash of the zip and of the executable, and a link to the VirusTotal report of the executable, so you can check that the
+file you downloaded is the published one.
 
 The executable is not code-signed yet, so on the first run Windows SmartScreen may show *Windows protected your PC*.
 This warning is about the publisher being unknown, not about a virus. To open the editor, click **More info** and then

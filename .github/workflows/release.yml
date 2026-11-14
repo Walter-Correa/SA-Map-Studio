@@ -1,7 +1,7 @@
 name: Release
 
 # Builds the clean single-file editor exactly like build-clean.bat does in the repository folder
-# and publishes SA Map Studio.exe as a GitHub release.
+# and publishes it as a GitHub release inside SA Map Studio.zip (the executable is analyzed by VirusTotal).
 # Releases are always started by hand: Actions > Release > Run workflow (the tag v<VERSION> is created by it).
 on:
   workflow_dispatch:
@@ -43,6 +43,13 @@ jobs:
           if (-not (Test-Path $exe)) { throw "Executable was not generated" }
           "{0:N1} MB" -f ((Get-Item $exe).Length / 1MB)
 
+      - name: Pack the executable in a zip
+        shell: pwsh
+        run: |
+          # The executable keeps its name with spaces inside the zip
+          Compress-Archive -Path "compiled\SA Map Studio\SA Map Studio.exe" -DestinationPath "compiled\SA Map Studio.zip" -Force
+          "{0:N1} MB" -f ((Get-Item "compiled\SA Map Studio.zip").Length / 1MB)
+
       - name: Write the release notes
         shell: pwsh
         run: |
@@ -66,11 +73,13 @@ jobs:
           } else {
             $notes = $body
           }
-          # Hash of the executable and its VirusTotal report, so anyone can check the download
+          # Hashes of the zip and of the executable inside it, plus the VirusTotal report of the executable
           $hash = (Get-FileHash "compiled\SA Map Studio\SA Map Studio.exe" -Algorithm SHA256).Hash.ToLower()
+          $zipHash = (Get-FileHash "compiled\SA Map Studio.zip" -Algorithm SHA256).Hash.ToLower()
           $notes += "`n`n---`n`n**Verify the download**`n`n"
-          $notes += "SHA-256 of ``SA.Map.Studio.exe``: ``$hash```n`n"
-          $notes += "VirusTotal report: https://www.virustotal.com/gui/file/$hash"
+          $notes += "SHA-256 of ``SA Map Studio.zip``: ``$zipHash```n`n"
+          $notes += "SHA-256 of ``SA Map Studio.exe`` (inside the zip): ``$hash```n`n"
+          $notes += "VirusTotal report of the executable: https://www.virustotal.com/gui/file/$hash"
           [System.IO.File]::WriteAllText((Join-Path $PWD "release-notes.md"), $notes, (New-Object System.Text.UTF8Encoding($false)))
 
       - name: Publish the release
@@ -79,15 +88,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "v${{ steps.ver.outputs.version }}"
-          $exe = "compiled\SA Map Studio\SA Map Studio.exe"
+          # GitHub turns spaces in asset file names into dots; the label after # is the name shown on the release page
+          $zip = "compiled\SA Map Studio.zip#SA Map Studio.zip"
           if (gh release view $tag 2>$null) {
-            gh release upload $tag $exe --clobber
+            gh release upload $tag $zip --clobber
             gh release edit $tag --notes-file release-notes.md
           } else {
-            gh release create $tag $exe --target $env:GITHUB_SHA --title "SA Map Studio $tag" --notes-file release-notes.md
+            gh release create $tag $zip --target $env:GITHUB_SHA --title "SA Map Studio $tag" --notes-file release-notes.md
           }
 
-      # Sends the executable to VirusTotal so the link in the release notes already opens with the report.
+      # Sends the executable (not the zip, so its hash matches the link) to VirusTotal so the link in the release notes already opens with the report.
       # Needs the repository secret VT_API_KEY (free VirusTotal account); without it this step is skipped.
       - name: Send the executable to VirusTotal
         if: ${{ env.VT_API_KEY != '' }}

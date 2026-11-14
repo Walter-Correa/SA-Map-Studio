@@ -11,6 +11,6 @@ if defined PYCMD (
     %PYCMD% -B serve.py %*
 ) else (
     echo.
-    echo Nao foi possivel iniciar. Certifique-se de que o Python 3 esta instalado.
+    echo Could not start. Make sure Python 3 is installed.
     pause
 )

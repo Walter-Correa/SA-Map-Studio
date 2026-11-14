@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""SA Map Studio - Launcher (executável único de distribuição).
+"""SA Map Studio - Launcher (single distribution executable).
 
-Primeira execução: descompacta o pacote interno na pasta 'sa-map-studio' ao lado do .exe.
-Execuções seguintes: compara o manifesto do pacote (system/bundle.json) com o da pasta instalada.
-Se for outro build, a pasta é atualizada para ficar exatamente igual ao pacote novo, sem perder os
-dados do usuário, e o editor abre. Só um editor fica aberto por vez.
+First run: unpacks the internal package into the 'sa-map-studio' folder next to the .exe.
+Next runs: compares the package manifest (system/bundle.json) with the one of the installed folder.
+If it is another build, the folder is updated to be exactly like the new package, without losing the
+user's data, and the editor opens. Only one editor stays open at a time.
 
-Como a atualização funciona:
-- system e test-server são só do programa: são trocados inteiros, então o que não existe mais na
-  versão nova some e o que é novo aparece;
-- no resto da pasta (data, projects, exported) só os arquivos do pacote são mexidos: os do pacote novo
-  são gravados e os que vieram no pacote anterior e não vêm neste são apagados. O que o usuário criou
-  (projetos, exportados, config.json, logs, perfil da janela, miniaturas geradas) fica como está;
-- o pacote novo é descompactado primeiro numa pasta à parte e conferido. A troca é feita com um
-  diário (.sa-map-studio-update.json) e uma cópia de segurança do que sai: se der erro, faltar
-  energia ou o Windows travar no meio, a próxima abertura desfaz o que ficou pela metade e a pasta
-  volta a ser exatamente a anterior;
-- antes de mexer em qualquer coisa, o editor e o servidor de testes precisam estar fechados.
+How the update works:
+- system and test-server belong only to the program: they are replaced whole, so what no longer exists in the
+  new version goes away and what is new shows up;
+- in the rest of the folder (data, projects, exported) only the package files are touched: the ones of the new
+  package are written and the ones that came in the previous package and are not in this one are deleted. What the
+  user created (projects, exports, config.json, logs, window profile, generated thumbnails) stays as it is;
+- the new package is unpacked first in a separate folder and checked. The swap is made with a
+  journal (.sa-map-studio-update.json) and a backup copy of what leaves: if it fails, the power goes
+  out or Windows hangs midway, the next start undoes what was left half done and the folder
+  goes back to exactly the previous one;
+- before touching anything, the editor and the test server must be closed.
 """
 
 import os
@@ -34,7 +34,7 @@ IS_WINDOWS = os.name == "nt"
 ROOT_NAME = "sa-map-studio"
 MANIFEST_REL = "system/bundle.json"
 PROGRAM_DIRS = ("system", "test-server")      # replaced whole on update
-USER_DIRS = ("projects", "exported", "data")  # nunca apagadas
+USER_DIRS = ("projects", "exported", "data")  # never deleted
 STAGING_NAME = ".sa-map-studio-update"
 BACKUP_NAME = ".sa-map-studio-backup"
 JOURNAL_NAME = ".sa-map-studio-update.json"
@@ -45,7 +45,7 @@ ENGINE_EXE = "sa-map-studio.exe"
 
 
 def dir_writable(path):
-    """Testa se dá para gravar na pasta (em Arquivos de Programas, sem administrador, não dá)."""
+    """Tests whether the folder can be written to (in Program Files, without administrator, it cannot)."""
     try:
         os.makedirs(path, exist_ok=True)
         probe = os.path.join(path, ".write-test-%d" % os.getpid())
@@ -58,7 +58,7 @@ def dir_writable(path):
 
 
 def relaunch_as_admin():
-    """Abre o próprio executável de novo pedindo administrador (UAC). True se o Windows aceitou."""
+    """Opens the executable itself again asking for administrator (UAC). True if Windows accepted."""
     if not IS_WINDOWS:
         return False
     try:
@@ -442,7 +442,7 @@ _lang_cache = []
 
 
 def ui_lang():
-    """Idioma escolhido no editor (data/config.json); sem escolha, o do Windows; senão inglês."""
+    """Language chosen in the editor (data/config.json); without a choice, the Windows one; otherwise English."""
     if not _lang_cache:
         code = ""
         try:
@@ -470,7 +470,7 @@ _held_mutexes = []
 
 
 def acquire_mutex(name):
-    """Cria o mutex com nome e o mantém até o processo acabar. False se outro processo já tem."""
+    """Creates the named mutex and keeps it until the process ends. False if another process already has it."""
     if not IS_WINDOWS:
         return True
     try:
@@ -505,7 +505,7 @@ def mutex_exists(name):
 
 
 def processes_in(folder):
-    """Processos cujo executável está dentro da pasta (editor antigo, servidor de testes)."""
+    """Processes whose executable is inside the folder (old editor, test server)."""
     if not IS_WINDOWS or not os.path.isdir(folder):
         return []
     out = []
@@ -541,12 +541,12 @@ def processes_in(folder):
 
 
 def editor_running(target_dir):
-    """Editor aberto: o da versão atual tem o mutex; o de versões antigas é achado pelo processo."""
+    """Open editor: the current version one has the mutex; the old versions one is found by its process."""
     return mutex_exists(EDITOR_MUTEX) or any(p.lower() == ENGINE_EXE for p in processes_in(target_dir))
 
 
 def focus_editor():
-    """Traz a janela do editor aberto para a frente. True se achou."""
+    """Brings the open editor window to the front. True if it was found."""
     if not IS_WINDOWS:
         return False
     try:
@@ -563,7 +563,7 @@ def focus_editor():
         return False
 
 
-# ---------------------------------------------------------------------------- mensagens
+# ---------------------------------------------------------------------------- messages
 
 def _dialog(kind, title, text):
     try:
@@ -614,7 +614,7 @@ def version_tuple(v):
     return tuple(out)
 
 
-# ---------------------------------------------------------------------------- arquivos
+# ---------------------------------------------------------------------------- files
 
 def _native(base, rel):
     return os.path.join(base, *rel.split("/"))
@@ -731,7 +731,7 @@ def _cleanup(exe_dir, ops=None):
 
 
 def recover(exe_dir):
-    """Termina ou desfaz uma atualização que parou no meio (erro, queda de energia)."""
+    """Finishes or undoes an update that stopped midway (error, power failure)."""
     j = _read_journal(exe_dir)
     if j and j.get("state") == "applying":
         target = os.path.join(exe_dir, ROOT_NAME)
@@ -748,7 +748,7 @@ def recover(exe_dir):
 
 
 def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
-    """Deixa a pasta igual ao pacote, mantendo os dados do usuário. Em erro, volta tudo e repassa o erro."""
+    """Makes the folder equal to the package, keeping the user data. On error, undoes everything and re-raises the error."""
     target = os.path.join(exe_dir, ROOT_NAME)
     staging = os.path.join(exe_dir, STAGING_NAME)
     backup = os.path.join(exe_dir, BACKUP_NAME)
@@ -770,7 +770,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
     if missing:
         raise RuntimeError(tr("incomplete", missing[0]))
 
-    # 2. Plano
+    # 2. Plan
     top = lambda rel: rel.split("/", 1)[0]
     ops = []
     for d in PROGRAM_DIRS:
@@ -808,7 +808,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
 # ---------------------------------------------------------------------------- progress window
 
 def run_with_progress(subtitle, exe_dir, work):
-    """Mostra a janela de progresso enquanto work(progress) roda. Repassa o erro de work."""
+    """Shows the progress window while work(progress) runs. Re-raises the error of work."""
     result = {"error": None}
     try:
         import tkinter as tk
@@ -915,7 +915,7 @@ def launch(target_exe, exe_dir):
 
 
 def wait_until_closed(target_dir, version):
-    """Pede para fechar o editor e o servidor de testes. False se o usuário cancelar."""
+    """Asks to close the editor and the test server. False if the user cancels."""
     while True:
         open_now = sorted(set(processes_in(target_dir)))
         if mutex_exists(EDITOR_MUTEX) and ENGINE_EXE not in [p.lower() for p in open_now]:
@@ -944,7 +944,7 @@ def main():
         if relaunch_as_admin():
             sys.exit(0)
 
-    # Pacote embutido
+    # Embedded package
     bundle_zip = None
     for cand in (
         os.path.join(res_dir, ROOT_NAME + ".zip"),

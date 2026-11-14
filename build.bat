@@ -3,24 +3,24 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 set "SRC=%~dp0"
 
-rem Mode: no parameter = keeps the data | "clean"/"limpo" = clean single-file version
-set "MODO=%~1"
-title Compilando o SA Map Studio
+rem Mode: no parameter = keeps the data | "clean" (or the old name "limpo") = clean single-file version
+set "MODE=%~1"
+title Building SA Map Studio
 set "OUT=%~dp0compiled\SA Map Studio"
 set "BASE=%OUT%\sa-map-studio"
 set "STAGE=%SRC%build\staging\sa-map-studio"
 
-if /i "%MODO%"=="clean" set "MODO=clean"
-if /i "%MODO%"=="limpo" set "MODO=clean"
+if /i "%MODE%"=="clean" set "MODE=clean"
+if /i "%MODE%"=="limpo" set "MODE=clean"
 
 echo ============================================================
-if /i "%MODO%"=="clean" (
-echo  Compilando o SA Map Studio - VERSAO LIMPA (ARQUIVO UNICO)
-echo  Resultado: compiled\SA Map Studio\SA Map Studio.exe
-echo  (A pasta sa-map-studio fica compactada dentro do executavel)
+if /i "%MODE%"=="clean" (
+echo  Building SA Map Studio - CLEAN VERSION (SINGLE FILE)
+echo  Result: compiled\SA Map Studio\SA Map Studio.exe
+echo  (The sa-map-studio folder is packed inside the executable)
 ) else (
-echo  Compilando o SA Map Studio - VERSAO NORMAL
-echo  Resultado: compiled\SA Map Studio\SA Map Studio.exe
+echo  Building SA Map Studio - NORMAL VERSION
+echo  Result: compiled\SA Map Studio\SA Map Studio.exe
 )
 echo ============================================================
 
@@ -40,40 +40,40 @@ rem If the venv exists but is corrupted or points to a Python missing from anoth
 if exist "%VPY%" (
     "%VPY%" -c "import sys" >nul 2>nul
     if errorlevel 1 (
-        echo Ambiente de compilacao existente esta corrompido. Recriando...
+        echo The existing build environment is corrupted. Recreating it...
         rmdir /s /q "%VENV_DIR%" 2>nul
     )
 )
 
 rem Separate environment just for compiling (does not touch your Python)
-if exist "%VPY%" goto venv_pronto
-echo Procurando instalacao funcional do Python...
-call :procura_python
+if exist "%VPY%" goto venv_ready
+echo Looking for a working Python installation...
+call :find_python
 if not defined PY (
-    echo ERRO: Nenhuma instalacao funcional do Python foi encontrada!
-    echo Instale o Python 3.10 ou mais novo em https://www.python.org/downloads/ e rode de novo.
-    goto erro
+    echo ERROR: No working Python installation was found!
+    echo Install Python 3.10 or newer from https://www.python.org/downloads/ and run again.
+    goto fail
 )
-echo Criando ambiente de compilacao com: %PY%
+echo Creating the build environment with: %PY%
 %PY% -m venv "%VENV_DIR%"
-if errorlevel 1 goto erro
-:venv_pronto
+if errorlevel 1 goto fail
+:venv_ready
 
-echo Atualizando pip, PyInstaller e pywebview para as versoes mais recentes...
+echo Updating pip, PyInstaller and pywebview to the latest versions...
 "%VPY%" -m pip install --upgrade --quiet pip
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 "%VPY%" -m pip install --upgrade --quiet pyinstaller
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 "%VPY%" -m pip install --upgrade --quiet pywebview
-if errorlevel 1 echo Aviso: o pywebview nao instalou. O programa vai abrir no navegador.
+if errorlevel 1 echo Warning: pywebview did not install. The program will open in the browser.
 
-echo Fechando o SA Map Studio, se estiver aberto...
+echo Closing SA Map Studio, if it is open...
 rem Only closes what runs from this repository (the program and its test server): a game server or another copy
 rem of the editor running from somewhere else is left alone
 powershell -NoProfile -Command "Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith('%SRC%', [StringComparison]::OrdinalIgnoreCase) -and ($_.Name -in 'SA Map Studio','sa-map-studio','omp-server','samp-server') } | Stop-Process -Force -ErrorAction SilentlyContinue" >nul 2>nul
 ping 127.0.0.1 -n 3 >nul
 
-rem Date and time of this build (shown in "Novidades" inside the program)
+rem Date and time of this build (shown in "What's new" inside the program)
 for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'dd/MM/yyyy HH:mm:ss'"`) do set "BUILDTIME=%%T"
 > "build-info.json" echo {"builtAt": "%BUILDTIME%"}
 
@@ -89,13 +89,13 @@ set "ICONFILE=%SRC%icon.ico"
 set "VERFILE=%SRC%compile-sources\version_info.txt"
 rem The version stored in the .exe always follows VERSION in serve.py
 "%VPY%" "%SRC%compile-sources\sync_version.py"
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 rem Checks that every interface text has a translation in every language; a failure stops the build
 "%VPY%" -X utf8 "%SRC%compile-sources\i18n_check.py"
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 
 rem ---------------- 1. Compiles the System Engine (sa-map-studio.exe)
-echo Compilando o motor do sistema...
+echo Building the system engine...
 set "ARGS=--noconfirm --clean --onedir --windowed --noupx"
 set "ARGS=%ARGS% --name "sa-map-studio" --icon "%ICONFILE%""
 if exist "%VERFILE%" set "ARGS=%ARGS% --version-file "%VERFILE%""
@@ -111,11 +111,11 @@ if exist "%SRC%compile-sources\models\*.*" set "ARGS=%ARGS% --add-data "%SRC%com
 set "ARGS=%ARGS% --add-data "%SRC%build-info.json;.""
 
 "%VPY%" -m PyInstaller %ARGS% "%SRC%serve.py"
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 
-echo Copiando motor para o staging...
+echo Copying the engine to staging...
 robocopy "%SRC%build\engine\sa-map-studio" "%STAGE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
-if errorlevel 8 goto erro
+if errorlevel 8 goto fail
 if exist "%STAGE%\system\webview\lib\pywebview-android.jar" del /q "%STAGE%\system\webview\lib\pywebview-android.jar" 2>nul
 if exist "%STAGE%\system\pythonnet\runtime\Python.Runtime.xml" del /q "%STAGE%\system\pythonnet\runtime\Python.Runtime.xml" 2>nul
 
@@ -125,21 +125,20 @@ if not exist "%ST%\gamemodes" mkdir "%ST%\gamemodes"
 if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 
 if exist "omp-server-source\pawno\pawncc.exe" (
-    echo Compilando gamemode samapstudio.pwn...
+    echo Compiling gamemode samapstudio.pwn...
     rem Relative paths: the .amx comes out the same in any folder/PC
     "omp-server-source\pawno\pawncc.exe" "compile-sources\samapstudio.pwn" -o"compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
 )
 
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
 if exist "%SRC%compile-sources\samapstudio.pwn" copy /y "%SRC%compile-sources\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
-del /q "%ST%\LEIA-ME.txt" 2>nul
 
 set "SRVSRC="
 if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
 if not defined SRVSRC if exist "%BASE%\test-server\omp-server.exe" set "SRVSRC=%BASE%\test-server"
 if not defined SRVSRC if exist "%BASE%\test-server\samp-server.exe" set "SRVSRC=%BASE%\test-server"
 if defined SRVSRC (
-    echo Copiando o servidor de teste de: "%SRVSRC%"
+    echo Copying the test server from: "%SRVSRC%"
     robocopy "%SRVSRC%" "%ST%" omp-server.exe samp-server.exe *.dll /NFL /NDL /NJH /NJS /NP >nul
     if exist "%SRVSRC%\components" robocopy "%SRVSRC%\components" "%ST%\components" /E /NFL /NDL /NJH /NJS /NP >nul
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
@@ -153,31 +152,6 @@ del /q /s "%ST%\*.pdb" 2>nul
 del /q /s "%ST%\*.dmp" 2>nul
 
 if exist "omp-server-source\config.json" copy /y "omp-server-source\config.json" "%ST%\config.json" >nul
-if not exist "%ST%\server.cfg" (
-    > "%ST%\server.cfg" (
-        echo echo Executing Server Config...
-        echo lanmode 1
-        echo rcon_password changeme1
-        echo maxplayers 10
-        echo port 7777
-        echo hostname SA Map Studio - teste
-        echo gamemode0 samapstudio 1
-        echo filterscripts
-        echo plugins streamer.dll
-        echo announce 0
-        echo query 1
-        echo chatlogging 0
-        echo weburl localhost
-        echo onfoot_rate 40
-        echo incar_rate 40
-        echo weapon_rate 40
-        echo stream_distance 300.0
-        echo stream_rate 1000
-        echo maxnpc 0
-        echo logtimeformat [%%H:%%M:%%S]
-        echo language Portugues
-    )
-)
 if not exist "%ST%\scriptfiles\samapstudio\mapa.txt" (
     echo S^|0.0^|0.0^|3.0^|0.0^|0^|0^|1> "%ST%\scriptfiles\samapstudio\mapa.txt"
 )
@@ -197,15 +171,14 @@ if defined SOUNDSRC (
 rem Removes any unwanted stray file in staging
 del /q /s "%STAGE%\*.pdb" 2>nul
 del /q /s "%STAGE%\*.dmp" 2>nul
-del /q /s "%STAGE%\*LEIA-ME*" 2>nul
 
-rem ---------------- 4. Compacta o Pacote sa-map-studio.zip
-echo Compactando pacote sa-map-studio.zip...
+rem ---------------- 4. Packs the sa-map-studio.zip bundle
+echo Packing the sa-map-studio.zip bundle...
 "%VPY%" "%SRC%compile-sources\package_bundle.py" "%STAGE%" "%SRC%build\sa-map-studio.zip"
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 
-rem ---------------- 5. Compila o Launcher Auto-Extrator (SA Map Studio.exe)
-echo Gerando o executavel unico SA Map Studio.exe...
+rem ---------------- 5. Builds the self-extracting launcher (SA Map Studio.exe)
+echo Generating the single executable SA Map Studio.exe...
 set "LAUNCHER_ARGS=--noconfirm --clean --onefile --windowed --noupx"
 set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --name "SA Map Studio" --icon "%ICONFILE%""
 if exist "%VERFILE%" set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --version-file "%VERFILE%""
@@ -214,22 +187,20 @@ set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --add-data "%SRC%build\sa-map-studio.zip;.""
 set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --add-data "%ICONFILE%;.""
 if exist "%SRC%compile-sources\launcher_frames" set "LAUNCHER_ARGS=%LAUNCHER_ARGS% --add-data "%SRC%compile-sources\launcher_frames;launcher_frames""
 "%VPY%" -m PyInstaller %LAUNCHER_ARGS% "%SRC%compile-sources\launcher.py"
-if errorlevel 1 goto erro
+if errorlevel 1 goto fail
 
 rem ---------------- 6. Clean vs Normal Mode Handling
-if /i "%MODO%"=="clean" (
+if /i "%MODE%"=="clean" (
     rem In the clean version, keeps strictly ONLY the single executable
     if exist "%BASE%" rmdir /s /q "%BASE%" 2>nul
-    echo Versao limpa configurada: a pasta sa-map-studio sera criada na primeira execucao.
+    echo Clean version ready: the sa-map-studio folder is created on the first run.
 ) else (
     rem In normal mode, if the development folder already exists, updates the engine
     if exist "%BASE%\system" robocopy "%STAGE%\system" "%BASE%\system" /MIR /NFL /NDL /NJH /NJS /NP >nul
     if exist "%BASE%\test-server\gamemodes" copy /y "%STAGE%\test-server\gamemodes\*.*" "%BASE%\test-server\gamemodes\" >nul
 )
 
-del /q "%OUT%\LEIA-ME.txt" 2>nul
 del /q "%OUT%\*.txt" 2>nul
-if exist "%BASE%\LEIA-ME.txt" del /q "%BASE%\LEIA-ME.txt" 2>nul
 
 rem Cleans temporary build folders
 rmdir /s /q "%SRC%build" 2>nul
@@ -241,29 +212,29 @@ if exist "%SRC%__pycache__" rmdir /s /q "%SRC%__pycache__" 2>nul
 
 echo.
 echo ============================================================
-echo  Pronto! Executavel unico gerado com sucesso:
+echo  Done! Single executable generated successfully:
 echo    %OUT%\SA Map Studio.exe
 echo.
-if /i "%MODO%"=="clean" (
-echo  Versao limpa de arquivo unico: para compartilhar ou mover o programa,
-echo  basta copiar somente o 'SA Map Studio.exe'.
-echo  Ao abrir pela primeira vez, ele criara a pasta sa-map-studio com tudo dentro.
+if /i "%MODE%"=="clean" (
+echo  Clean single-file version: to share or move the program,
+echo  just copy only 'SA Map Studio.exe'.
+echo  On the first run it creates the sa-map-studio folder with everything inside.
 ) else (
-echo    projects\, exported\, data\ - seus mapas e configuracoes locais ^(mantidos^)
+echo    projects\, exported\, data\ - your maps and local settings ^(kept^)
 )
 if not defined NO_PAUSE pause
 exit /b 0
 
-:erro
+:fail
 echo.
-echo A compilacao falhou. Veja a mensagem acima.
+echo The build failed. See the message above.
 rmdir /s /q "%SRC%build" 2>nul
 del /q "%SRC%build-info.json" 2>nul
 if not defined NO_PAUSE pause
 exit /b 1
 
 rem Looks for a Python that really works (the Microsoft Store shortcut does not count)
-:procura_python
+:find_python
 set "PY="
 py -3 -c "import sys, venv" >nul 2>nul && set "PY=py -3"
 if defined PY exit /b 0

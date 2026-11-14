@@ -1,6 +1,6 @@
 # UTF-8
 #
-# SA Map Studio - Metadados de Versao para Windows PE (VS_VERSION_INFO)
+# SA Map Studio - Version metadata for Windows PE (VS_VERSION_INFO)
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
