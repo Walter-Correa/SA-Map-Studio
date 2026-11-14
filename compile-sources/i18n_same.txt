@@ -1,5 +1,5 @@
-# Textos que ficam iguais em todos os idiomas (nomes próprios, nomes de teclas, termos do SA-MP/Pawn,
-# fontes, seletores e códigos). O i18n_check.py não cobra tradução deles. Uma chave por linha.
+# Texts that stay the same in every language (proper names, key names, SA-MP/Pawn terms,
+# fonts, selectors and codes). i18n_check.py does not ask for their translation. One key per line.
 C:\Program Files (x86)\Rockstar Games\GTA San Andreas
 SA Map Studio
 San Andreas

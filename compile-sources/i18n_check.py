@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Idiomas do editor: acha os textos da interface no código (index.html e js/) e confere os arquivos
-de idioma em js/lang/.
+"""Editor languages: finds the interface texts in the code (index.html and js/) and checks the
+language files in js/lang/.
 
-Os textos são escritos em português no código; cada texto (sem os espaços das pontas) é a chave usada
-nos arquivos de idioma. Partes variáveis viram {0}, {1}, ... na ordem em que aparecem.
+The texts are written in Portuguese in the code; each text (without the spaces at the ends) is the key used
+in the language files. Variable parts become {0}, {1}, ... in the order they appear.
 
-Uma tradução pode ser texto ou um objeto de formas de plural {"one": ..., "few": ..., "many": ...,
-"other": ..., "count": N} (categorias de Intl.PluralRules do idioma; "count" diz qual parte variável é
-o número, padrão {0}). Cada forma precisa das mesmas partes variáveis da chave.
+A translation can be text or an object of plural forms {"one": ..., "few": ..., "many": ...,
+"other": ..., "count": N} (Intl.PluralRules categories of the language; "count" says which variable part is
+the number, default {0}). Each form needs the same variable parts as the key.
 
-Uso:
-  python i18n_check.py              confere os idiomas e o launcher (o build chama assim e para se achar problema; os avisos de qualidade não bloqueiam)
-  python i18n_check.py --dump F     grava em F a lista de chaves achadas no código (JSON)
-  python i18n_check.py --missing L  mostra as chaves que faltam no idioma L (ex.: en)
-  python i18n_check.py --orphans    mostra as chaves dos arquivos de idioma que o código não usa mais
-  python i18n_check.py --prune      apaga essas chaves órfãs de todos os arquivos de idioma
+Usage:
+  python i18n_check.py              checks the languages and the launcher (the build calls it like this and stops if it finds a problem; quality warnings do not block)
+  python i18n_check.py --dump F     writes to F the list of keys found in the code (JSON)
+  python i18n_check.py --missing L  shows the keys missing in language L (e.g. en)
+  python i18n_check.py --orphans    shows the keys of the language files that the code no longer uses
+  python i18n_check.py --prune      deletes those orphan keys from all language files
 
-Para traduzir em lote, renomear chaves e importar formas de plural, use i18n_tool.py.
+To translate in batches, rename keys and import plural forms, use i18n_tool.py.
 """
 
 import os
@@ -36,7 +36,7 @@ EXTRA_FILE = os.path.join(HERE, "i18n_extra.txt")
 
 
 def same_keys():
-    """Textos iguais em todos os idiomas (i18n_same.txt): não precisam de tradução."""
+    """Texts that are the same in every language (i18n_same.txt): they need no translation."""
     try:
         with open(SAME_FILE, "r", encoding="utf-8") as f:
             return {line.rstrip("\n") for line in f if line.strip() and not line.startswith("#")}
@@ -67,7 +67,7 @@ buzina curta longa disparo morte voz escola pequena urbana autoescolas academias
 
 
 def is_portuguese(key):
-    """Nos catálogos: o texto está em português (não é fala ou nome original em inglês)?"""
+    """In the catalogs: is the text in Portuguese (not an original line or name in English)?"""
     head = re.sub(r"(['\"]).*", " ", key)  # outside the original lines in quotes
     if re.search(r"[ãõçâêôáéíóúà]", head, re.I) or set(re.findall(r"[a-zà-ÿ]+", head.lower())) & PT_WORDS:
         return True
@@ -80,7 +80,7 @@ def is_portuguese(key):
 # ---------------------------------------------------------------------------- JS reading
 
 def js_literals(src):
-    """Strings do código JS: cada uma vem como lista de partes (texto ou None para ${...})."""
+    """Strings of the JS code: each one comes as a list of parts (text or None for ${...})."""
     out = []
     i, n = 0, len(src)
 
@@ -167,13 +167,13 @@ def _unescape(esc):
     return {"\\n": "\n", "\\t": "\t", "\\r": "", "\\'": "'", '\\"': '"', "\\`": "`", "\\\\": "\\", "\\$": "$"}.get(esc, esc[1:])
 
 
-# ---------------------------------------------------------------------------- textos
+# ---------------------------------------------------------------------------- texts
 
 PH = "\u0000"  # variable part marker
 
 
 class Expr(str):
-    """Texto de uma expressão ${...} de um template."""
+    """Text of a ${...} expression of a template."""
 
 
 PLURAL = re.compile(r"""^\s*plural\(\s*[^,]+?,\s*(['"])(.*?)\1\s*,\s*(['"])(.*?)\3\s*\)\s*$""", re.S)
@@ -184,7 +184,7 @@ def parts_to_text(parts):
 
 
 def parts_variants(parts):
-    """Textos possíveis do template: plural(n, 'objeto', 'objetos') vira "{n} objeto" e "{n} objetos"."""
+    """Possible texts of the template: plural(n, 'objeto', 'objetos') becomes "{n} objeto" and "{n} objetos"."""
     out = [""]
     for p in parts:
         m = PLURAL.match(p) if isinstance(p, Expr) else None
@@ -198,7 +198,7 @@ def parts_variants(parts):
 
 
 def segments(text):
-    """Divide um texto com HTML nos pedaços que viram nós de texto e nos atributos de texto."""
+    """Splits a text with HTML into the pieces that become text nodes and the text attributes."""
     if not re.search(r"<[a-zA-Z/!]", text):
         return [text]
     segs = []
@@ -213,7 +213,7 @@ def segments(text):
 
 
 def normalize(seg):
-    """Chave: espaços juntados, pontas limpas, partes variáveis numeradas {0}, {1}."""
+    """Key: spaces joined, ends trimmed, variable parts numbered {0}, {1}."""
     s = html.unescape(seg.replace(PH, "\u0001"))
     s = re.sub(r"\s+", " ", s).strip()
     k = [0]
@@ -268,7 +268,7 @@ def is_ui_text(key):
 
 
 def generalize(key):
-    """Catálogos: nomes entre aspas e números viram partes variáveis (uma tradução serve para todos)."""
+    """Catalogs: quoted names and numbers become variable parts (one translation serves all)."""
     k = re.sub(r'"[^"]+"', '"\u0001"', key)
     # Original line in single quotes after "Label: " (e.g. Cassino: 'You win!')
     k = re.sub(r"^([^:']+: )'.+'$", "\\1'\u0001'", k)
@@ -282,8 +282,8 @@ def generalize(key):
 
 
 def py_literals(src):
-    """Strings de um arquivo Python (as f-strings viram partes variáveis). Docstrings e linhas de
-    print/log (console) ficam de fora."""
+    """Strings of a Python file (f-strings become variable parts). Docstrings and
+    print/log lines (console) are left out."""
     out = []
     src = re.sub(r'(?s)("""|\'\'\').*?\1', " ", src)
     src = "\n".join(line for line in src.split("\n") if not re.search(r"\b(print|log|_log|logger\.\w+|log_line)\(", line))
@@ -368,7 +368,7 @@ def lang_patterns(data):
     return pats
 
 
-# ---------------------------------------------------------------------------- idiomas
+# ---------------------------------------------------------------------------- languages
 
 def languages():
     with open(os.path.join(LANG_DIR, "languages.json"), "r", encoding="utf-8") as f:
@@ -392,32 +392,32 @@ def is_forms(value):
 
 
 def forms_problem(key, value):
-    """Texto do problema da tradução de key (partes variáveis, espaços, formas de plural) ou None."""
+    """Text of the translation problem of key (variable parts, spaces, plural forms) or None."""
     if is_forms(value):
         extra = set(value) - set(PLURAL_FORMS) - {"count"}
         if extra:
             return "forma de plural desconhecida: " + ", ".join(sorted(extra))
         count = value.get("count", 0)
         if not isinstance(count, int) or "{%d}" % count not in key:
-            return "count %r não é parte variável da chave" % (count,)
+            return "count %r is not a variable part of the key" % (count,)
         texts = [value[f] for f in PLURAL_FORMS if f in value]
     elif isinstance(value, str):
         texts = [value]
     else:
-        return "valor não é texto nem formas de plural"
+        return "value is neither text nor plural forms"
     want = sorted(VARS.findall(key))
     for text in texts:
         if not isinstance(text, str):
-            return "forma de plural não é texto"
+            return "plural form is not text"
         if sorted(VARS.findall(text)) != want:
-            return "partes variáveis diferentes: " + text
+            return "different variable parts: " + text
         if text != text.strip():
-            return "espaço nas pontas: %r" % text
+            return "space at the ends: %r" % text
     return None
 
 
 def orphans(data, source_keys):
-    """Chaves de um idioma que não batem com nenhum texto do código, nem exato nem como modelo."""
+    """Keys of a language that match no text of the code, neither exact nor as a template."""
     out = []
     for k in data:
         if k.startswith("_") or k in source_keys:
@@ -429,7 +429,7 @@ def orphans(data, source_keys):
 
 
 def save_lang(code, data):
-    """Grava no formato dos arquivos: uma chave por linha, formas de plural na mesma linha."""
+    """Writes in the file format: one key per line, plural forms on the same line."""
     lines = ["%s: %s" % (json.dumps(k, ensure_ascii=False), json.dumps(v, ensure_ascii=False))
              for k, v in data.items()]
     with open(os.path.join(LANG_DIR, code + ".json"), "w", encoding="utf-8", newline="\n") as f:
@@ -437,7 +437,7 @@ def save_lang(code, data):
 
 
 def launcher_problems(langs):
-    """O launcher.py tem os próprios textos e a tabela de idiomas do Windows: confere com languages.json."""
+    """launcher.py has its own texts and the table of Windows languages: checks it against languages.json."""
     import ast
     with open(os.path.join(HERE, "launcher.py"), "r", encoding="utf-8") as f:
         tree = ast.parse(f.read())
@@ -449,11 +449,11 @@ def launcher_problems(langs):
     texts, wins = found.get("TEXTS", {}), found.get("WINDOWS_LANGS", {})
     codes = [lang["code"] for lang in langs]
     out = ['TEXTS sem o bloco "%s"' % c for c in codes if c not in texts]
-    out += ['TEXTS tem "%s", que não está no languages.json' % c for c in texts if c not in codes]
+    out += ['TEXTS has "%s", which is not in languages.json' % c for c in texts if c not in codes]
     base = set(texts.get("en", {}))
     for code, block in texts.items():
         if set(block) != base:
-            out.append('TEXTS["%s"] com chaves diferentes do inglês: %s' % (code, ", ".join(sorted(set(block) ^ base))))
+            out.append('TEXTS["%s"] with keys different from English: %s' % (code, ", ".join(sorted(set(block) ^ base))))
     want = {int(lang["windows"], 16): lang["code"] for lang in langs if lang.get("windows")}
     if wins != want:
         diff = sorted(set(wins.items()) ^ set(want.items()))
@@ -462,7 +462,7 @@ def launcher_problems(langs):
 
 
 def test_message_problems():
-    """Mensagens do servidor de teste: TEST_MESSAGES (dialogs.js) e gMsg (samapstudio.pwn) têm de ter os mesmos textos na mesma ordem."""
+    """Test server messages: TEST_MESSAGES (dialogs.js) and gMsg (samapstudio.pwn) must have the same texts in the same order."""
     with open(os.path.join(HERE, "js", "ui", "dialogs.js"), "r", encoding="utf-8") as f:
         js = f.read()
     with open(os.path.join(HERE, "samapstudio.pwn"), "r", encoding="cp1252") as f:
@@ -470,7 +470,7 @@ def test_message_problems():
     block = re.search(r"const TEST_MESSAGES = \[(.*?)\r?\n\];", js, re.S)
     table = re.search(r"new gMsg\[SAMSP_MAX_MSGS\]\[\d+\]\s*=\s*\{(.*?)\r?\n\};", pwn, re.S)
     if not block or not table:
-        return ["não achei TEST_MESSAGES no dialogs.js ou gMsg no samapstudio.pwn"]
+        return ["could not find TEST_MESSAGES in dialogs.js or gMsg in samapstudio.pwn"]
     js_texts = [m.replace("\\'", "'").replace("\\\\", "\\")
                 for m in re.findall(r"'((?:[^'\\\n]|\\.)*)'", block.group(1))]
     pwn_texts = [m.replace('\\"', '"').replace("\\\\", "\\")
@@ -478,7 +478,7 @@ def test_message_problems():
     out = []
     size = re.search(r"#define\s+SAMSP_MAX_MSGS\s+(\d+)", pwn)
     if size and int(size.group(1)) != len(pwn_texts):
-        out.append("SAMSP_MAX_MSGS é %s, mas gMsg tem %d textos" % (size.group(1), len(pwn_texts)))
+        out.append("SAMSP_MAX_MSGS is %s, but gMsg has %d texts" % (size.group(1), len(pwn_texts)))
     if len(js_texts) != len(pwn_texts):
         out.append("TEST_MESSAGES tem %d textos e gMsg tem %d" % (len(js_texts), len(pwn_texts)))
     for i, (a, b) in enumerate(zip(js_texts, pwn_texts)):
@@ -488,7 +488,7 @@ def test_message_problems():
 
 
 def quality_warnings(lang, data):
-    """Avisos de qualidade de um idioma (não bloqueiam o build): {tipo: [chaves]}."""
+    """Quality warnings of a language (they do not block the build): {kind: [keys]}."""
     same = same_keys()
     cyr = re.compile("[Ѐ-ӿ]")
     letters = re.compile(r"[A-Za-zÀ-ÿЀ-ӿ]")
@@ -502,25 +502,25 @@ def quality_warnings(lang, data):
         if not all(isinstance(t, str) for t in texts):
             continue
         if any(not t.strip() for t in texts):
-            out.setdefault("tradução vazia", []).append(key)
+            out.setdefault("empty translation", []).append(key)
             continue
         text = texts[-1]
         if key not in same and is_portuguese(key) and key in texts and len(key) > 3:
-            out.setdefault("igual ao português", []).append(key)
+            out.setdefault("same as Portuguese", []).append(key)
         has_cyr = any(cyr.search(t) for t in texts)
         if lang.get("script") == "cyrillic" and not has_cyr and is_portuguese(key) and key not in same:
-            out.setdefault("sem letras cirílicas", []).append(key)
+            out.setdefault("no Cyrillic letters", []).append(key)
         if lang.get("script") != "cyrillic" and has_cyr:
-            out.setdefault("letras cirílicas fora do idioma", []).append(key)
+            out.setdefault("Cyrillic letters outside the language", []).append(key)
         if latin_only and any(re.search("[ãõç]", t) for t in texts):
-            out.setdefault("acento do português na tradução", []).append(key)
+            out.setdefault("Portuguese accent in the translation", []).append(key)
         if bool(ender.search(key.rstrip())) != bool(ender.search(text.rstrip())) and key[-1:] in ":?!.;…" and lang["code"] != "ru":
-            out.setdefault("pontuação final diferente", []).append(key)
+            out.setdefault("different final punctuation", []).append(key)
     return out
 
 
 def rename_hints(data, source_keys):
-    """Para cada chave órfã, a chave nova do código mais parecida (sugere o comando rename)."""
+    """For each orphan key, the most similar new key of the code (suggests the rename command)."""
     import difflib
     gone = orphans(data, source_keys)
     pool = [k for k in source_keys if k not in data]
@@ -537,39 +537,39 @@ def check():
     keys = {k: v for k, v in keys_from_source().items() if k not in same}
     langs = languages()
     source = set(keys_from_source())
-    print("Idiomas: %d textos de interface no código" % len(keys))
+    print("Languages: %d interface texts in the code" % len(keys))
     problems = 0
     hints_done = False
     for lang in langs:
         code = lang["code"]
         data = load_lang(code)
         if data is None:
-            print("  %-3s %-10s ARQUIVO FALTANDO (js/lang/%s.json)" % (code, lang["name"], code))
+            print("  %-3s %-10s FILE MISSING (js/lang/%s.json)" % (code, lang["name"], code))
             problems += 1
             continue
         if code == SOURCE_LANG:
-            print("  %-3s %-10s idioma do código" % (code, lang["name"]))
+            print("  %-3s %-10s language of the code" % (code, lang["name"]))
             continue
         pats = lang_patterns(data)
         missing = [k for k in keys if not covered(k, data, pats)]
         bad = [k for k, v in data.items() if not k.startswith("_") and forms_problem(k, v)]
         orphan = orphans(data, source)
-        print("  %-3s %-10s %d faltando, %d com partes variáveis diferentes, %d órfãs"
+        print("  %-3s %-10s %d missing, %d with different variable parts, %d orphans"
               % (code, lang["name"], len(missing), len(bad), len(orphan)))
         for k in bad[:5]:
             print("      %s: %s" % (k, forms_problem(k, data[k])))
         for kind, ks in quality_warnings(lang, data).items():
-            print("      aviso: %d %s (ex.: %s)" % (len(ks), kind, "; ".join(repr(k[:30]) for k in ks[:3])))
+            print("      warning: %d %s (e.g. %s)" % (len(ks), kind, "; ".join(repr(k[:30]) for k in ks[:3])))
         if not hints_done and orphan:
             hints_done = True
             for old, new in rename_hints(data, source):
-                print('      texto mudou? python i18n_tool.py rename %s %s' % (json.dumps(old, ensure_ascii=False), json.dumps(new, ensure_ascii=False)))
+                print('      text changed? python i18n_tool.py rename %s %s' % (json.dumps(old, ensure_ascii=False), json.dumps(new, ensure_ascii=False)))
         problems += bool(missing or bad or orphan)
     for msg in launcher_problems(langs):
         print("  launcher.py: " + msg)
         problems += 1
     for msg in test_message_problems():
-        print("  servidor de teste: " + msg)
+        print("  test server: " + msg)
         problems += 1
     return problems
 
@@ -580,7 +580,7 @@ def main():
         keys = keys_from_source()
         with open(out, "w", encoding="utf-8") as f:
             json.dump(keys, f, ensure_ascii=False, indent=1)
-        print("%d chaves gravadas em %s" % (len(keys), out))
+        print("%d keys written to %s" % (len(keys), out))
         return
     if "--missing" in sys.argv:
         code = sys.argv[sys.argv.index("--missing") + 1]
@@ -604,7 +604,7 @@ def main():
                 print("%s\t%s" % (lang["code"], k))
             if gone and "--prune" in sys.argv:
                 save_lang(lang["code"], {k: v for k, v in data.items() if k not in gone})
-        print("%d chaves órfãs%s" % (total, " apagadas" if "--prune" in sys.argv else ""))
+        print("%d orphan keys%s" % (total, " deleted" if "--prune" in sys.argv else ""))
         return
     sys.exit(1 if check() else 0)
 

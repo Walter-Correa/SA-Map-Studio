@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Manutenção dos arquivos de idioma (js/lang/*.json): tradução em lote, formas de plural e renomear chaves.
+"""Maintenance of the language files (js/lang/*.json): batch translation, plural forms and key renaming.
 
-A chave é o texto em português do código (veja i18n_check.py). Esta ferramenta não mexe no código: ao
-mudar um texto no código, use "rename" para levar a chave antiga para a nova em todos os idiomas.
+The key is the Portuguese text of the code (see i18n_check.py). This tool does not touch the code: when
+a text in the code changes, use "rename" to carry the old key to the new one in all languages.
 
-Uso:
-  python i18n_tool.py export [PASTA] [--lang L ...] [--size N]
-      Grava em PASTA (padrão testing/i18n/, fora do git) o que falta traduzir em cada idioma: keys.json (id -> chave em
-      português) e lotes L-01.txt, L-02.txt... com uma linha "id<TAB>texto em inglês" por chave (N linhas
-      por lote, padrão 200). Troque o texto em inglês pela tradução e importe.
+Usage:
+  python i18n_tool.py export [FOLDER] [--lang L ...] [--size N]
+      Writes to FOLDER (default testing/i18n/, outside git) what is left to translate in each language: keys.json (id -> Portuguese
+      key) and batches L-01.txt, L-02.txt... with one line "id<TAB>English text" per key (N lines
+      per batch, default 200). Replace the English text with the translation and import.
 
-  python i18n_tool.py import ARQUIVO... [--lang L] [--keys keys.json]
-      Mescla as linhas "id<TAB>tradução" no idioma L (padrão: o começo do nome do arquivo, "ru-01.txt" -> ru).
-      O id pode ser o número do keys.json (padrão: o keys.json da pasta do arquivo) ou a própria chave em
-      português. A tradução substitui a que já existe. Formas de plural numa linha só:
+  python i18n_tool.py import FILE... [--lang L] [--keys keys.json]
+      Merges the lines "id<TAB>translation" into language L (default: the start of the file name, "ru-01.txt" -> ru).
+      The id can be the number from keys.json (default: the keys.json in the file's folder) or the Portuguese
+      key itself. The translation replaces the existing one. Plural forms on a single line:
         {0} objetos<TAB>one: {0} объект | few: {0} объекта | many: {0} объектов | other: {0} объекта
-      Formas: zero, one, two, few, many, other (as do Intl.PluralRules do idioma; "other" é obrigatória)
-      e "count: N" quando o número não é o {0}. "\\n" vira quebra de linha.
-      Linhas com {0}/%d diferentes da chave ou com espaço nas pontas são recusadas e listadas.
+      Forms: zero, one, two, few, many, other (the ones of the language's Intl.PluralRules; "other" is required)
+      and "count: N" when the number is not {0}. "\\n" becomes a line break.
+      Lines with {0}/%d different from the key or with spaces at the ends are refused and listed.
 
-  python i18n_tool.py rename "texto antigo" "texto novo"
-      Troca a chave em todos os arquivos de idioma (e no i18n_same.txt), mantendo a posição e a tradução.
+  python i18n_tool.py rename "old text" "new text"
+      Changes the key in all language files (and in i18n_same.txt), keeping the position and the translation.
 """
 
 import os
@@ -50,7 +50,7 @@ def arg_value(args, name, default=None, many=False):
 
 
 def to_line(value):
-    """Valor de um arquivo de idioma como texto de uma linha (formas de plural com " | ")."""
+    """Value of a language file as one line of text (plural forms with " | ")."""
     if chk.is_forms(value):
         parts = ["%s: %s" % (f, value[f]) for f in chk.PLURAL_FORMS if f in value]
         if "count" in value:
@@ -60,7 +60,7 @@ def to_line(value):
 
 
 def from_line(text):
-    """Contrário de to_line: texto ou formas de plural."""
+    """Opposite of to_line: text or plural forms."""
     text = text.replace("\\n", "\n")
     pieces = text.split(" | ")
     parsed = [PLURAL_PART.match(p) for p in pieces]
@@ -99,8 +99,8 @@ def export(args):
             with open(name, "w", encoding="utf-8", newline="\n") as f:
                 for k in missing[n:n + size]:
                     f.write("%d\t%s\n" % (ids[k], to_line(english.get(k, k))))
-        print("  %-3s %d faltando" % (code, len(missing)))
-    print("%d chaves em %s" % (len(ids), os.path.join(out, "keys.json")))
+        print("  %-3s %d missing" % (code, len(missing)))
+    print("%d keys in %s" % (len(ids), os.path.join(out, "keys.json")))
 
 
 # ---------------------------------------------------------------------------- import
@@ -113,7 +113,7 @@ def import_files(args):
     for path in args:
         code = lang or re.split(r"[-_.]", os.path.basename(path))[0]
         if code not in codes or code == chk.SOURCE_LANG:
-            print("%s: idioma \"%s\" inválido (use --lang)" % (path, code))
+            print("%s: invalid language \"%s\" (use --lang)" % (path, code))
             errors += 1
             continue
         kp = keys_path or os.path.join(os.path.dirname(os.path.abspath(path)), "keys.json")
@@ -130,13 +130,13 @@ def import_files(args):
             if not line.strip() or line.startswith("#"):
                 continue
             if "\t" not in line:
-                print("%s:%d: falta o TAB entre id e tradução" % (path, no))
+                print("%s:%d: missing TAB between id and translation" % (path, no))
                 errors += 1
                 continue
             ident, text = line.split("\t", 1)
             key = ids.get(ident.strip()) if ident.strip().isdigit() else ident.replace("\\n", "\n")
             if key is None:
-                print("%s:%d: id %s não está no %s" % (path, no, ident, kp))
+                print("%s:%d: id %s is not in %s" % (path, no, ident, kp))
                 errors += 1
                 continue
             value = from_line(text)
@@ -151,7 +151,7 @@ def import_files(args):
                 changed += 1
             data[key] = value
         chk.save_lang(code, data)
-        print("%s -> %s.json: %d novas, %d alteradas" % (path, code, added, changed))
+        print("%s -> %s.json: %d new, %d changed" % (path, code, added, changed))
     return errors
 
 
@@ -159,18 +159,18 @@ def import_files(args):
 
 def rename(args):
     if len(args) != 2:
-        print('uso: python i18n_tool.py rename "texto antigo" "texto novo"')
+        print('usage: python i18n_tool.py rename "old text" "new text"')
         return 1
     old, new = args
     if sorted(chk.VARS.findall(old)) != sorted(chk.VARS.findall(new)):
-        print("Aviso: as partes variáveis mudaram; confira as traduções de \"%s\"." % new)
+        print("Warning: the variable parts changed; check the translations of \"%s\"." % new)
     total = 0
     for lang in chk.languages():
         data = chk.load_lang(lang["code"])
         if not data or old not in data:
             continue
         if new in data:
-            print("  %-3s já tem \"%s\": mantida, a antiga foi apagada" % (lang["code"], new))
+            print("  %-3s already has \"%s\": kept, the old one was deleted" % (lang["code"], new))
             data.pop(old)
         else:
             data = {(new if k == old else k): v for k, v in data.items()}
@@ -183,8 +183,8 @@ def rename(args):
     if old in lines:
         with open(chk.SAME_FILE, "w", encoding="utf-8", newline="") as f:
             f.write(eol.join(new if l == old else l for l in lines))
-        print("  i18n_same.txt atualizado")
-    print("\"%s\" -> \"%s\" em %d arquivos de idioma" % (old, new, total))
+        print("  i18n_same.txt updated")
+    print("\"%s\" -> \"%s\" in %d language files" % (old, new, total))
     return 0
 
 
