@@ -35,7 +35,7 @@ def package_bundle(staging_dir, output_zip):
     total_uncompressed = 0
     
     # Files or folders to ignore
-    ignore_names = {"__pycache__", ".git", ".gitkeep", "LEIA-ME.txt", "leia-me.txt"}
+    ignore_names = {"__pycache__", ".git", ".gitkeep"}
     ignore_exts = {".pyc", ".pyo", ".pdb", ".dmp", ".ilk", ".exp"}
     
     digest = hashlib.sha256()

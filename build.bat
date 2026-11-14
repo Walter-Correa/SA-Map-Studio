@@ -16,11 +16,11 @@ if /i "%MODE%"=="limpo" set "MODE=clean"
 echo ============================================================
 if /i "%MODE%"=="clean" (
 echo  Building SA Map Studio - CLEAN VERSION (SINGLE FILE)
-echo  Resultado: compiled\SA Map Studio\SA Map Studio.exe
+echo  Result: compiled\SA Map Studio\SA Map Studio.exe
 echo  (The sa-map-studio folder is packed inside the executable)
 ) else (
 echo  Building SA Map Studio - NORMAL VERSION
-echo  Resultado: compiled\SA Map Studio\SA Map Studio.exe
+echo  Result: compiled\SA Map Studio\SA Map Studio.exe
 )
 echo ============================================================
 
@@ -132,7 +132,6 @@ if exist "omp-server-source\pawno\pawncc.exe" (
 
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
 if exist "%SRC%compile-sources\samapstudio.pwn" copy /y "%SRC%compile-sources\samapstudio.pwn" "%ST%\gamemodes\samapstudio.pwn" >nul
-del /q "%ST%\LEIA-ME.txt" 2>nul
 
 set "SRVSRC="
 if exist "omp-server-source\omp-server.exe" set "SRVSRC=omp-server-source"
@@ -153,31 +152,6 @@ del /q /s "%ST%\*.pdb" 2>nul
 del /q /s "%ST%\*.dmp" 2>nul
 
 if exist "omp-server-source\config.json" copy /y "omp-server-source\config.json" "%ST%\config.json" >nul
-if not exist "%ST%\server.cfg" (
-    > "%ST%\server.cfg" (
-        echo echo Executing Server Config...
-        echo lanmode 1
-        echo rcon_password changeme1
-        echo maxplayers 10
-        echo port 7777
-        echo hostname SA Map Studio - test
-        echo gamemode0 samapstudio 1
-        echo filterscripts
-        echo plugins streamer.dll
-        echo announce 0
-        echo query 1
-        echo chatlogging 0
-        echo weburl localhost
-        echo onfoot_rate 40
-        echo incar_rate 40
-        echo weapon_rate 40
-        echo stream_distance 300.0
-        echo stream_rate 1000
-        echo maxnpc 0
-        echo logtimeformat [%%H:%%M:%%S]
-        echo language Portugues
-    )
-)
 if not exist "%ST%\scriptfiles\samapstudio\mapa.txt" (
     echo S^|0.0^|0.0^|3.0^|0.0^|0^|0^|1> "%ST%\scriptfiles\samapstudio\mapa.txt"
 )
@@ -197,7 +171,6 @@ if defined SOUNDSRC (
 rem Removes any unwanted stray file in staging
 del /q /s "%STAGE%\*.pdb" 2>nul
 del /q /s "%STAGE%\*.dmp" 2>nul
-del /q /s "%STAGE%\*LEIA-ME*" 2>nul
 
 rem ---------------- 4. Packs the sa-map-studio.zip bundle
 echo Packing the sa-map-studio.zip bundle...
@@ -227,9 +200,7 @@ if /i "%MODE%"=="clean" (
     if exist "%BASE%\test-server\gamemodes" copy /y "%STAGE%\test-server\gamemodes\*.*" "%BASE%\test-server\gamemodes\" >nul
 )
 
-del /q "%OUT%\LEIA-ME.txt" 2>nul
 del /q "%OUT%\*.txt" 2>nul
-if exist "%BASE%\LEIA-ME.txt" del /q "%BASE%\LEIA-ME.txt" 2>nul
 
 rem Cleans temporary build folders
 rmdir /s /q "%SRC%build" 2>nul

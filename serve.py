@@ -1771,13 +1771,15 @@ def start_test(body):
                 if os.path.normcase(os.path.abspath(streamer_src)) != os.path.normcase(os.path.abspath(dst_streamer)):
                     copy_if_newer(streamer_src, dst_streamer)
             load_streamer = bool(streamer_src or use_streamer)
-            plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
-            with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
-                f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 10\nport %d\n"
-                        "hostname SA Map Studio - Testing server\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
-                        "%s"
-                        "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
-                        "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage Portugues\n" % (rcon, TEST_PORT, plugins_line))
+            # open.mp reads config.json; server.cfg is only written for a classic SA-MP server
+            if not is_omp:
+                plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
+                with open(os.path.join(td, "server.cfg"), "w", encoding="utf-8", newline="\r\n") as f:
+                    f.write("echo Executing Server Config...\nlanmode 1\nrcon_password %s\nmaxplayers 10\nport %d\n"
+                            "hostname SA Map Studio - Testing server\ngamemode0 samapstudio 1\nfilterscripts\nannounce 0\n"
+                            "%s"
+                            "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
+                            "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage English\n" % (rcon, TEST_PORT, plugins_line))
             cfg = {
                 "name": "SA Map Studio - Testing server", "max_players": 10, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT},
