@@ -1870,7 +1870,7 @@ function textureEditor(cur, label, idx, info) {
   const t = cur && !isText(cur) && !keepsTexture(cur) ? cur : null;
   const orig = info[idx[0]];
   return `<div class="mat-body">
-    <div class="insp-note">${app.project?.mode === 'sp' ? 'Textura do' : 'SetObjectMaterial no'} ${esc(label)}. Clique numa textura na aba <a href="#" data-goto-tex>Texturas</a> ou digite abaixo.</div>
+    <div class="insp-note">${app.project?.mode === 'sp' ? `Textura do ${esc(label)}. Clique numa textura na aba` : `SetObjectMaterial no ${esc(label)}. Clique numa textura na aba`} <a href="#" data-goto-tex>Texturas</a> ou digite abaixo.</div>
     <div class="tex-fields">
       <label>modelid<input type="number" step="1" id="mtModel" value="${t ? t.model : -1}"></label>
       <label>txdname<input id="mtTxd" value="${esc(t ? t.txd : 'none')}" spellcheck="false"></label>
@@ -2973,7 +2973,7 @@ function checkpointInspector(cp) {
       <div style="width:48px; height:48px; background:rgba(239,68,68,0.2); border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:16px; font-weight:bold;">${isRace ? 'RCP' : 'CP'}</div>
       <div>
         <div class="insp-name">${isRace ? 'Race Checkpoint' : 'Checkpoint'}</div>
-        <div class="insp-sub">${isRace ? `<span class="tag">Tipo ${cp.type ?? 0}</span> · ` : app.project?.mode === 'sp' ? '' : '<span class="tag">SetPlayerCheckpoint</span> · '}Raio ${fmt(cp.size, 1)}</div>
+        ${!isRace && app.project?.mode === 'sp' ? `<div class="insp-sub">Raio ${fmt(cp.size, 1)}</div>` : `<div class="insp-sub"><span class="tag">${isRace ? `Tipo ${cp.type ?? 0}` : 'SetPlayerCheckpoint'}</span> · Raio ${fmt(cp.size, 1)}</div>`}
       </div>
     </div>
     <div style="display:flex; gap:6px; margin: 8px 0 10px;">
