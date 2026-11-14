@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Nyawa tak terbatas (sekali lagi: menonaktifkan)",
  "Aumentar": "Tambah",
  "Diminuir": "Kurangi",
- "Movimento": "Gerakan"
+ "Movimento": "Gerakan",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Pilih: ~k~~PED_SPRINT~ Keluar: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Pilih",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "Game hanya menampilkan huruf tanpa aksen, angka, spasi, dan . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Menu dalam game",
+ "Abrir um menu ao entrar ou pegar": "Buka menu saat masuk atau mengambil",
+ "Título do menu": "Judul menu",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "Dalam game: panah untuk memilih, lari untuk konfirmasi, masuk kendaraan untuk keluar. Hingga {0} opsi.",
+ "Opção {0}": "Opsi {0}",
+ "Nome no menu": "Nama di menu",
+ "Alterar menu": "Ubah menu"
 }

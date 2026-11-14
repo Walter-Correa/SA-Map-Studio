@@ -553,7 +553,7 @@ function vehicleInspector(v) {
     </div>`;
 }
 
-import { npcSection, bindNpc, actionSection, bindAction } from './spInspector.js';
+import { npcSection, bindNpc, actionSection, bindAction, menuSection, bindMenu } from './spInspector.js';
 
 function spawnInspector(s) {
   return `<div class="insp-title">
@@ -2612,6 +2612,7 @@ function pickupInspector(p) {
       </div>
     </div>
     ${actionSection(p)}
+    ${menuSection(p)}
 
     <div class="insp-section" data-mp><div class="insp-label">Comentário / Anotação (Pawn)</div>
       <input type="text" data-field-str="comment" placeholder="// Ex: Colete do spawn" value="${esc(p.comment || '')}" style="width:100%;">
@@ -2632,6 +2633,7 @@ function bindPickup(p) {
   bindStringFields(p.uid);
   const uid = p.uid, project = app.editor.findProjectOf(uid) || app.project;
   bindAction(p, project, renderInspector);
+  bindMenu(p, project, renderInspector);
   bindVecArrows(uid, project);
 
   const sel = $('#pkModelSelect');
@@ -3009,6 +3011,7 @@ function checkpointInspector(cp) {
     ${actionGrid()}
 
     ${actionSection(cp)}
+    ${menuSection(cp)}
     ${app.project?.mode === 'sp' ? `<div class="insp-section"><label class="check" title="Mostra no radar o ícone amarelo de objetivo, como o das missões. Desativado por padrão."><input type="checkbox" id="cpRadarIcon" ${cp.radarIcon ? 'checked' : ''}> Ícone amarelo no radar</label></div>` : ''}
     <div class="insp-section">
       <div class="insp-label">Categoria e Tamanho</div>
@@ -3061,6 +3064,7 @@ function bindCheckpoint(cp) {
   bindStringFields(cp.uid);
   const uid = cp.uid, project = app.editor.findProjectOf(uid) || app.project;
   bindAction(cp, project, renderInspector);
+  bindMenu(cp, project, renderInspector);
   bindVecArrows(uid, project);
   const radarIcon = $('#cpRadarIcon');
   if (radarIcon) radarIcon.onchange = () => project.updateItems('Alterar ícone no radar', [uid], (o) => { o.radarIcon = radarIcon.checked; });

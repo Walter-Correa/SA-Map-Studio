@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Sonsuz can (tekrar: kapatır)",
  "Aumentar": "Artır",
  "Diminuir": "Azalt",
- "Movimento": "Hareket"
+ "Movimento": "Hareket",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Seç: ~k~~PED_SPRINT~ Çık: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Seç",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "Oyun yalnızca aksansız harfleri, rakamları, boşluğu ve şunları gösterir: . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Oyun içi menü",
+ "Abrir um menu ao entrar ou pegar": "Girince veya alınca bir menü aç",
+ "Título do menu": "Menü başlığı",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "Oyunda: seçmek için oklar, onaylamak için koşma, çıkmak için araca binme. En fazla {0} seçenek.",
+ "Opção {0}": "Seçenek {0}",
+ "Nome no menu": "Menüdeki ad",
+ "Alterar menu": "Menüyü değiştir"
 }

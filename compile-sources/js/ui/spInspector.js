@@ -1,6 +1,7 @@
 // Singleplayer inspector parts: what a NPC carries and does, and what happens when a checkpoint or a pickup is used.
 import { app, $, esc, toast } from './common.js';
-import { makeAction, STAT_RANGE } from '../editor/project.js';
+import { t } from './i18n.js';
+import { makeAction, makeMenu, menuText, MENU_BAD_CHARS, MENU_MAX, MENU_TEXT_MAX, STAT_RANGE } from '../editor/project.js';
 import { NPC_WEAPONS, WEAPONS, optionsHtml } from '../world/spWeapons.js';
 
 const isSp = () => app.project?.mode === 'sp';
@@ -81,33 +82,65 @@ function previewHtml(text) {
 
 const field = (id, label, value, attrs = {}) => `<label class="field">${label}<input type="number" id="${id}" value="${value}" ${Object.entries(attrs).map(([k, v]) => k + '=' + v).join(' ')}></label>`;
 
+export const actionName = (type) => (TYPES.find(([v]) => v === type) || TYPES[0])[1];
+
+// A text for the game (menus): its font only draws plain letters. Cyrillic is written in Latin letters, accents go away;
+// `codes` keeps the game's ~k~ codes (for the help text)
+const LATIN = { ł: 'l', Ł: 'L', ı: 'i', İ: 'I', đ: 'd', Đ: 'D', ß: 'ss', ø: 'o', Ø: 'O', æ: 'ae', Æ: 'AE', œ: 'oe', Œ: 'OE' };
+const CYR_MAP = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: '', ю: 'yu', я: 'ya', і: 'i', ї: 'yi', є: 'ye', ґ: 'g', ы: 'y', э: 'e' };
+function plainLetters(text) {
+  let out = '';
+  for (const ch of String(text || '')) {
+    const low = ch.toLowerCase();
+    if (CYR_MAP[low] !== undefined) {
+      const l = CYR_MAP[low];
+      out += ch !== low && l ? l[0].toUpperCase() + l.slice(1) : l;
+    } else out += LATIN[ch] ?? ch;
+  }
+  return out.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+export function gameText(text, codes = false) {
+  const out = plainLetters(text);
+  return codes ? out.replace(/[^\x20-\x7e]/g, '').trim() : out.replace(MENU_BAD_CHARS, '').replace(/\s+/g, ' ').trim();
+}
+
+function paramsHtml(act, P) {
+  const t = act.type;
+  let params = '';
+  if (t === 'health' || t === 'armour') params = field(P + '-amount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
+  else if (STAT_RANGE[t] || t.startsWith('stat')) params = field(P + '-stat', STAT_RANGE[t] ? 'Valor (569 a 1000)' : 'Valor (0 a 1000)', act.statValue, { min: (STAT_RANGE[t] || [0])[0], max: 1000, step: 1 });
+  else if (t === 'money') params = field(P + '-amount', 'Valor (US$)', act.amount, { min: 1, step: 100 });
+  else if (t === 'weapon') params = `<label class="field">Arma<select id="${P}-weapon">${WEAPONS.map(w => `<option value="${w.id}" ${w.id === act.weapon ? 'selected' : ''}>${w.name}</option>`).join('')}</select></label>`
+    + field(P + '-ammo', 'Munição', act.ammo, { min: 1, max: 99999, step: 10 });
+  else if (t === 'wanted') params = field(P + '-stars', 'Estrelas (0 limpa)', act.stars, { min: 0, max: 6, step: 1 });
+  else if (t === 'teleport') params = `<div class="door-row">${field(P + '-x', 'X', act.x, { step: 0.1 })}${field(P + '-y', 'Y', act.y, { step: 0.1 })}${field(P + '-z', 'Z', act.z, { step: 0.1 })}${field(P + '-rot', 'Direção (°)', act.rot, { step: 1 })}</div>
+    <button type="button" class="btn small" id="${P}-here">Usar a câmera</button>`;
+  else if (t === 'vehicle') params = field(P + '-model', 'Modelo do veículo (400 a 611)', act.model, { min: 400, max: 611, step: 1 });
+  else if (t === 'skin') params = field(P + '-model', 'Skin (0 a 311)', act.model, { min: 0, max: 311, step: 1 });
+  else if (t === 'weather') params = field(P + '-weather', 'Clima (0 a 45)', act.weather, { min: 0, max: 45, step: 1 });
+  else if (t === 'time') params = `<div class="door-row">${field(P + '-hour', 'Hora', act.hour, { min: 0, max: 23, step: 1 })}${field(P + '-minute', 'Minuto', act.minute, { min: 0, max: 59, step: 1 })}</div>`;
+  else if (t === 'explosion') params = `<label class="field">Tipo<select id="${P}-explosion">${[[0, 'Granada'], [1, 'Molotov'], [2, 'Foguete'], [4, 'Carro']].map(([v, n]) => `<option value="${v}" ${v === act.explosion ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
+  return params;
+}
+
+function extrasHtml(act, P, once = true) {
+  return `
+    <div class="door-row">
+      ${field(P + '-price', 'Preço (US$, 0 = de graça)', act.price, { min: 0, step: 10 })}
+      ${once ? `<label class="check"><input type="checkbox" id="${P}-once" ${act.once ? 'checked' : ''}> Só uma vez</label>` : ''}
+    </div>
+    <label class="field">Mensagem (opcional)<input type="text" id="${P}-text" maxlength="200" value="${esc(act.text)}" spellcheck="false"></label>
+    <div class="color-codes" id="${P}-colors">${COLORS.map(([c, name, css]) => `<button type="button" class="btn small" data-code="${c}" title="${name}" style="color:${css}">~${c}~</button>`).join('')}</div>
+    <label class="field">Estilo da mensagem<select id="${P}-style"><option value="text" ${act.msgStyle !== 'box' ? 'selected' : ''}>Texto na tela</option><option value="box" ${act.msgStyle === 'box' ? 'selected' : ''}>Caixa de ajuda (fundo preto)</option></select></label>
+    <div class="msg-preview ${act.msgStyle === 'box' ? 'box' : ''}" id="${P}-preview" ${act.text ? '' : 'hidden'}>${previewHtml(act.text)}</div>`;
+}
+
 export function actionSection(item) {
   if (!isSp()) return '';
   const act = item.action || makeAction(null);
   const t = act.type;
-  let params = '';
-  if (t === 'health' || t === 'armour') params = field('actAmount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
-  else if (STAT_RANGE[t] || t.startsWith('stat')) params = field('actStat', STAT_RANGE[t] ? 'Valor (569 a 1000)' : 'Valor (0 a 1000)', act.statValue, { min: (STAT_RANGE[t] || [0])[0], max: 1000, step: 1 });
-  else if (t === 'money') params = field('actAmount', 'Valor (US$)', act.amount, { min: 1, step: 100 });
-  else if (t === 'weapon') params = `<label class="field">Arma<select id="actWeapon">${WEAPONS.map(w => `<option value="${w.id}" ${w.id === act.weapon ? 'selected' : ''}>${w.name}</option>`).join('')}</select></label>`
-    + field('actAmmo', 'Munição', act.ammo, { min: 1, max: 99999, step: 10 });
-  else if (t === 'wanted') params = field('actStars', 'Estrelas (0 limpa)', act.stars, { min: 0, max: 6, step: 1 });
-  else if (t === 'teleport') params = `<div class="door-row">${field('actX', 'X', act.x, { step: 0.1 })}${field('actY', 'Y', act.y, { step: 0.1 })}${field('actZ', 'Z', act.z, { step: 0.1 })}${field('actRot', 'Direção (°)', act.rot, { step: 1 })}</div>
-    <button type="button" class="btn small" id="actHere">Usar a câmera</button>`;
-  else if (t === 'vehicle') params = field('actModel', 'Modelo do veículo (400 a 611)', act.model, { min: 400, max: 611, step: 1 });
-  else if (t === 'skin') params = field('actModel', 'Skin (0 a 311)', act.model, { min: 0, max: 311, step: 1 });
-  else if (t === 'weather') params = field('actWeather', 'Clima (0 a 45)', act.weather, { min: 0, max: 45, step: 1 });
-  else if (t === 'time') params = `<div class="door-row">${field('actHour', 'Hora', act.hour, { min: 0, max: 23, step: 1 })}${field('actMinute', 'Minuto', act.minute, { min: 0, max: 59, step: 1 })}</div>`;
-  else if (t === 'explosion') params = `<label class="field">Tipo<select id="actExplosion">${[[0, 'Granada'], [1, 'Molotov'], [2, 'Foguete'], [4, 'Carro']].map(([v, n]) => `<option value="${v}" ${v === act.explosion ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
-  const more = t === 'none' ? '' : `${params}
-    <div class="door-row">
-      ${field('actPrice', 'Preço (US$, 0 = de graça)', act.price, { min: 0, step: 10 })}
-      <label class="check"><input type="checkbox" id="actOnce" ${act.once ? 'checked' : ''}> Só uma vez</label>
-    </div>
-    <label class="field">Mensagem (opcional)<input type="text" id="actText" maxlength="200" value="${esc(act.text)}" spellcheck="false"></label>
-    <div class="color-codes" id="actColors">${COLORS.map(([c, name, css]) => `<button type="button" class="btn small" data-code="${c}" title="${name}" style="color:${css}">~${c}~</button>`).join('')}</div>
-    <label class="field">Estilo da mensagem<select id="actStyle"><option value="text" ${act.msgStyle !== 'box' ? 'selected' : ''}>Texto na tela</option><option value="box" ${act.msgStyle === 'box' ? 'selected' : ''}>Caixa de ajuda (fundo preto)</option></select></label>
-    <div class="msg-preview ${act.msgStyle === 'box' ? 'box' : ''}" id="actPreview" ${act.text ? '' : 'hidden'}>${previewHtml(act.text)}</div>`;
+  const params = paramsHtml(act, 'act');
+  const more = t === 'none' ? '' : params + extrasHtml(act, 'act');
   return `<div class="insp-section"><div class="insp-label">Ao entrar ou pegar</div>
     <label class="field">O que acontece<select id="actType">${TYPES.map(([v, n]) => `<option value="${v}" ${v === t ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
     ${more}
@@ -120,32 +153,37 @@ export function bindAction(item, project, rerender) {
     project.updateItems('Alterar ação', [uid], (o) => { o.action = makeAction({ ...(o.action || {}), ...fn(o.action || makeAction(null)) }); });
     if (redraw) rerender();
   };
-  const num = (id) => { const el = $('#' + id); return el ? parseFloat(el.value) : NaN; };
   const type = $('#actType');
   if (type) type.onchange = () => {
     const v = type.value;
     save(() => ({ type: v, statValue: 1000 }), true);                                          // a stat starts at the most
   };
+  bindFields('act', save);
+}
+
+// The fields of an action under the id prefix P; save(fn, redraw) stores what fn returns
+function bindFields(P, save) {
+  const num = (id) => { const el = $('#' + P + id); return el ? parseFloat(el.value) : NaN; };
   const bindNum = (id, key, int = true) => {
-    const el = $('#' + id);
+    const el = $('#' + P + id);
     if (el) el.onchange = () => { const v = num(id); if (Number.isFinite(v)) save(() => ({ [key]: int ? Math.round(v) : v })); };
   };
-  bindNum('actAmount', 'amount'); bindNum('actStat', 'statValue'); bindNum('actAmmo', 'ammo'); bindNum('actStars', 'stars'); bindNum('actModel', 'model');
-  bindNum('actWeather', 'weather'); bindNum('actHour', 'hour'); bindNum('actMinute', 'minute'); bindNum('actPrice', 'price');
-  bindNum('actX', 'x', false); bindNum('actY', 'y', false); bindNum('actZ', 'z', false); bindNum('actRot', 'rot', false);
-  for (const [id, key] of [['actWeapon', 'weapon'], ['actExplosion', 'explosion']]) {
-    const el = $('#' + id);
+  bindNum('-amount', 'amount'); bindNum('-stat', 'statValue'); bindNum('-ammo', 'ammo'); bindNum('-stars', 'stars'); bindNum('-model', 'model');
+  bindNum('-weather', 'weather'); bindNum('-hour', 'hour'); bindNum('-minute', 'minute'); bindNum('-price', 'price');
+  bindNum('-x', 'x', false); bindNum('-y', 'y', false); bindNum('-z', 'z', false); bindNum('-rot', 'rot', false);
+  for (const [id, key] of [['-weapon', 'weapon'], ['-explosion', 'explosion']]) {
+    const el = $('#' + P + id);
     if (el) el.onchange = () => save(() => ({ [key]: parseInt(el.value, 10) || 0 }));
   }
-  const once = $('#actOnce');
+  const once = $('#' + P + '-once');
   if (once) once.onchange = () => save(() => ({ once: once.checked }));
-  const text = $('#actText');
-  const preview = () => { const p = $('#actPreview'); if (p && text) { p.hidden = !text.value; p.innerHTML = previewHtml(text.value); } };
+  const text = $('#' + P + '-text');
+  const preview = () => { const p = $('#' + P + '-preview'); if (p && text) { p.hidden = !text.value; p.innerHTML = previewHtml(text.value); } };
   if (text) {
     text.onchange = () => save(() => ({ text: text.value }));
     text.addEventListener('input', preview);
   }
-  const colors = $('#actColors');
+  const colors = $('#' + P + '-colors');
   if (colors) colors.onclick = (e) => {
     const b = e.target.closest('[data-code]');
     if (!b || !text) return;
@@ -156,9 +194,9 @@ export function bindAction(item, project, rerender) {
     preview();
     save(() => ({ text: text.value }));
   };
-  const style = $('#actStyle');
+  const style = $('#' + P + '-style');
   if (style) style.onchange = () => save(() => ({ msgStyle: style.value }), true);
-  const here = $('#actHere');
+  const here = $('#' + P + '-here');
   if (here) here.onclick = () => {
     const cam = app.vp.camera;
     const dir = cam.getWorldDirection(new cam.position.constructor());
@@ -167,4 +205,87 @@ export function bindAction(item, project, rerender) {
     save(() => ({ x: r1(cam.position.x), y: r1(cam.position.y), z: r1(cam.position.z), rot: Math.round(rot) }), true);
     toast('Destino colocado onde está a câmera');
   };
+}
+
+// ---------------------------------------------------------------------------  the menu of checkpoints and pickups
+// The options are actions too; the one being edited is remembered per item
+const menuSel = new Map();
+const BAD_NOTE = "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $";
+const defaultLabel = (type) => gameText(t(actionName(type)));
+
+export function menuSection(item) {
+  if (!isSp()) return '';
+  const m = item.menu || makeMenu({});
+  let html = `<div class="insp-section"><div class="insp-label">Menu no jogo</div>
+    <label class="check"><input type="checkbox" id="mnuOn" ${m.on ? 'checked' : ''}> Abrir um menu ao entrar ou pegar</label>`;
+  if (m.on) {
+    const k = Math.min(menuSel.get(item.uid) ?? 0, m.options.length - 1);
+    html += `<label class="field">Título do menu<input type="text" id="mnuTitle" maxlength="${MENU_TEXT_MAX}" value="${esc(m.title)}" placeholder="${esc(gameText(t('Escolha')))}" spellcheck="false"></label>
+    <p class="insp-note warn" id="mnuBad" hidden>${BAD_NOTE}</p>
+    <ul class="menu-opts" id="mnuList">${m.options.map((o, i) => `<li class="menu-opt ${i === k ? 'sel' : ''}" data-k="${i}"><span>${esc(o.label || defaultLabel(o.type))}</span><button type="button" class="btn small icon" data-del="${i}" title="Remover opção"><svg><use href="#i-trash"/></svg></button></li>`).join('')}</ul>
+    <button type="button" class="btn small" id="mnuAdd" ${m.options.length >= MENU_MAX ? 'disabled' : ''}><svg><use href="#i-plus"/></svg>Adicionar opção</button>
+    <p class="insp-note">No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até ${MENU_MAX} opções.</p>`;
+    const o = m.options[k];
+    if (o) {
+      html += `<div class="menu-edit">
+        <label class="field">Opção ${k + 1}<select id="moType">${TYPES.filter(([v]) => v !== 'none').map(([v, n]) => `<option value="${v}" ${v === o.type ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="field">Nome no menu<input type="text" id="moLabel" maxlength="${MENU_TEXT_MAX}" value="${esc(o.label)}" placeholder="${esc(defaultLabel(o.type))}" spellcheck="false"></label>
+        <p class="insp-note warn" id="moBad" hidden>${BAD_NOTE}</p>
+        ${paramsHtml(o, 'mo')}${extrasHtml(o, 'mo', false)}
+      </div>`;
+    }
+  }
+  return html + '</div>';
+}
+
+export function bindMenu(item, project, rerender) {
+  const uid = item.uid;
+  const saveMenu = (fn, redraw = true) => {
+    project.updateItems('Alterar menu', [uid], (o) => { const m = makeMenu(o.menu || {}); fn(m); o.menu = makeMenu(m); });
+    if (redraw) rerender();
+  };
+  const on = $('#mnuOn');
+  if (on) on.onchange = () => saveMenu((m) => {
+    m.on = on.checked;
+    if (m.on && !m.options.length) m.options.push(makeAction({ type: 'health' }));
+  });
+  // the game cannot draw some letters: they are taken out as they are typed
+  const clean = (el, warn) => {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const fixed = plainLetters(el.value).replace(MENU_BAD_CHARS, '').slice(0, MENU_TEXT_MAX); // accents become plain letters, the rest goes
+      if (warn && fixed !== el.value) warn.hidden = false;
+      if (fixed !== el.value) { const at = el.selectionStart; const p = Math.max(0, at - (el.value.length - fixed.length)); el.value = fixed; el.setSelectionRange(p, p); }
+    });
+  };
+  const title = $('#mnuTitle');
+  clean(title, $('#mnuBad'));
+  if (title) title.onchange = () => saveMenu((m) => { m.title = menuText(title.value).trim(); }, false);
+  const list = $('#mnuList');
+  if (list) list.onclick = (e) => {
+    const del = e.target.closest('[data-del]');
+    if (del) {
+      const k = +del.dataset.del;
+      saveMenu((m) => { m.options.splice(k, 1); if (!m.options.length) m.on = false; });
+      menuSel.set(uid, Math.max(0, k - 1));
+      return;
+    }
+    const li = e.target.closest('[data-k]');
+    if (li) { menuSel.set(uid, +li.dataset.k); rerender(); }
+  };
+  const add = $('#mnuAdd');
+  if (add) add.onclick = () => {
+    let n = 0;
+    saveMenu((m) => { if (m.options.length < MENU_MAX) m.options.push(makeAction({ type: 'health' })); n = m.options.length; }, false);
+    menuSel.set(uid, n - 1);
+    rerender();
+  };
+  const k = menuSel.get(uid) ?? 0;
+  const saveOpt = (fn, redraw = false) => saveMenu((m) => { const o = m.options[Math.min(k, m.options.length - 1)]; if (o) Object.assign(o, fn(o)); }, redraw);
+  const type = $('#moType');
+  if (type) type.onchange = () => saveOpt(() => ({ type: type.value, statValue: 1000 }), true);
+  const label = $('#moLabel');
+  clean(label, $('#moBad'));
+  if (label) label.onchange = () => saveOpt(() => ({ label: menuText(label.value).trim() }), true);
+  bindFields('mo', saveOpt);
 }

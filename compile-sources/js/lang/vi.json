@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Máu vô hạn (gõ lại: tắt)",
  "Aumentar": "Tăng",
  "Diminuir": "Giảm",
- "Movimento": "Di chuyển"
+ "Movimento": "Di chuyển",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Chọn: ~k~~PED_SPRINT~ Thoát: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Chọn",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "Trò chơi chỉ hiển thị chữ không dấu, số, khoảng trắng và . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Menu trong game",
+ "Abrir um menu ao entrar ou pegar": "Mở menu khi đi vào hoặc nhặt",
+ "Título do menu": "Tiêu đề menu",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "Trong game: phím mũi tên để chọn, chạy nhanh để xác nhận, lên xe để thoát. Tối đa {0} lựa chọn.",
+ "Opção {0}": "Lựa chọn {0}",
+ "Nome no menu": "Tên trong menu",
+ "Alterar menu": "Đổi menu"
 }

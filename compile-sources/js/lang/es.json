@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Vida infinita (otra vez: la desactiva)",
  "Aumentar": "Aumentar",
  "Diminuir": "Disminuir",
- "Movimento": "Movimiento"
+ "Movimento": "Movimiento",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Elegir: ~k~~PED_SPRINT~ Salir: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Elige",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "El juego solo muestra letras sin tilde, números, espacios y . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Menú en el juego",
+ "Abrir um menu ao entrar ou pegar": "Abrir un menú al entrar o recoger",
+ "Título do menu": "Título del menú",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "En el juego: flechas para elegir, correr para confirmar, entrar al vehículo para salir. Hasta {0} opciones.",
+ "Opção {0}": "Opción {0}",
+ "Nome no menu": "Nombre en el menú",
+ "Alterar menu": "Cambiar menú"
 }

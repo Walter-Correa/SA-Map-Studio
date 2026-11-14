@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Безкраен живот (отново: изключва)",
  "Aumentar": "Увеличаване",
  "Diminuir": "Намаляване",
- "Movimento": "Движение"
+ "Movimento": "Движение",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Избор: ~k~~PED_SPRINT~ Изход: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Избери",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "Играта показва само латински букви без ударения, цифри, интервал и . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Меню в играта",
+ "Abrir um menu ao entrar ou pegar": "Отваряне на меню при влизане или вземане",
+ "Título do menu": "Заглавие на менюто",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "В играта: стрелки за избор, спринт за потвърждение, качване в превозно средство за изход. До {0} опции.",
+ "Opção {0}": "Опция {0}",
+ "Nome no menu": "Име в менюто",
+ "Alterar menu": "Промяна на менюто"
 }

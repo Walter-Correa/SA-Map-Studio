@@ -2628,5 +2628,15 @@
  "/god - Vida infinita (de novo: desativa)": "/god - Unendliche Gesundheit (nochmal: aus)",
  "Aumentar": "Erhöhen",
  "Diminuir": "Verringern",
- "Movimento": "Bewegung"
+ "Movimento": "Bewegung",
+ "Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~": "Wählen: ~k~~PED_SPRINT~ Verlassen: ~k~~VEHICLE_ENTER_EXIT~",
+ "Escolha": "Wähle",
+ "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $": "Das Spiel zeigt nur Buchstaben ohne Akzente, Ziffern, Leerzeichen und . , ! ? ' ( ) - + / : $",
+ "Menu no jogo": "Menü im Spiel",
+ "Abrir um menu ao entrar ou pegar": "Beim Betreten oder Aufheben ein Menü öffnen",
+ "Título do menu": "Menütitel",
+ "No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até {0} opções.": "Im Spiel: Pfeiltasten zum Wählen, Sprinten zum Bestätigen, Fahrzeug betreten zum Verlassen. Bis zu {0} Optionen.",
+ "Opção {0}": "Option {0}",
+ "Nome no menu": "Name im Menü",
+ "Alterar menu": "Menü ändern"
 }
