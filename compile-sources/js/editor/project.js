@@ -759,7 +759,7 @@ export function makeCheckpoint(data) {
     nextx: data.nextx !== undefined ? +data.nextx : (x + 15.0),
     nexty: data.nexty !== undefined ? +data.nexty : y,
     nextz: data.nextz !== undefined ? +data.nextz : z,
-    size: Math.max(0.5, +data.size || (isRace ? 6.0 : 4.0)),
+    size: Math.max(1, +data.size || (isRace ? 6.0 : 4.0)), // the game has no checkpoint smaller than 1.0
     action: data.action ? makeAction(data.action) : null,
     menu: data.menu ? makeMenu(data.menu) : null,
     radarIcon: Boolean(data.radarIcon),

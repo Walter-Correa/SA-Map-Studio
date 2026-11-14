@@ -2898,7 +2898,7 @@ function checkpointCreateInspector(d) {
     <div class="insp-section">
       <div class="insp-label">Tamanho (Raio / Diâmetro)</div>
       <div class="pair">
-        <label>Tamanho (size)<input type="number" step="0.5" min="0.5" max="100" id="cpDraftSize" value="${fmt(d.size ?? 4.0, 2)}"></label>
+        <label>Tamanho (size)<input type="number" step="0.5" min="1" max="100" id="cpDraftSize" value="${fmt(d.size ?? 4.0, 2)}"></label>
         <label>Comentário<input type="text" id="cpDraftComment" placeholder="// Ex: Largada" value="${esc(d.comment || '')}"></label>
       </div>
     </div>
@@ -2921,7 +2921,7 @@ function bindCheckpointCreate(d) {
   const selType = $('#cpDraftType');
   if (selType) selType.onchange = () => { d.type = parseInt(selType.value, 10) || 0; };
   const inpSize = $('#cpDraftSize');
-  if (inpSize) inpSize.onchange = () => { d.size = Math.max(0.5, parseFloat(inpSize.value) || 4.0); };
+  if (inpSize) inpSize.onchange = () => { d.size = Math.min(100, Math.max(1, parseFloat(inpSize.value) || 4.0)); inpSize.value = fmt(d.size, 2); };
   const inpComm = $('#cpDraftComment');
   if (inpComm) inpComm.onchange = () => { d.comment = inpComm.value.trim(); };
 
@@ -3025,7 +3025,7 @@ function checkpointInspector(cp) {
         <button type="button" class="btn small ${isRace ? 'active' : ''}" data-cp-kind="race">Race (0-4)</button>
       </div>
       <div class="pair">
-        <label>Tamanho (size)<input type="number" step="0.5" min="0.5" max="100" data-field="size" value="${fmt(cp.size ?? 4.0, 2)}"></label>
+        <label>Tamanho (size)<input type="number" step="0.5" min="1" max="100" data-field="size" value="${fmt(cp.size ?? 4.0, 2)}"></label>
         <label data-mp>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${cp.world ?? -1}"></label>
       </div>
     </div>
@@ -3107,6 +3107,7 @@ function bindCheckpoint(cp) {
       let val = parseFloat(inp.value);
       if (!Number.isFinite(val)) { inp.value = fmt(project.find(uid)?.[field]); return; }
       if (['world', 'interior'].includes(field)) val = Math.trunc(val);
+      if (field === 'size') { val = Math.min(100, Math.max(1, val)); inp.value = fmt(val, 2); } // the game has no checkpoint smaller than 1.0
       project.updateItems(`Editar ${field}`, [uid], (o) => { o[field] = val; });
       app.editor.syncAll();
       updateCheckpointCode(project.find(uid));
