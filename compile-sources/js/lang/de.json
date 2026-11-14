@@ -2605,5 +2605,9 @@
  "A include liga a caixa. Alinhado à esquerda ou à direita, o valor é o X onde a caixa termina; centralizado, é a largura da caixa.": "Die Include schaltet die Box ein. Links oder rechts ausgerichtet ist der Wert das X, an dem die Box endet; zentriert ist es die Breite der Box.",
  "As faixas são caixas pretas da largura da tela; o efeito só as move. A altura delas vem do tamanho da letra Y.": "Die Balken sind schwarze Boxen in Bildschirmbreite; der Effekt bewegt sie nur. Ihre Höhe kommt von der Buchstabengröße Y.",
  "Escolhido num texto, o texto continua e aparece aos poucos junto com as faixas, como no demo.": "Auf einem Text gewählt, bleibt der Text erhalten und blendet zusammen mit den Balken ein, wie in der Demo.",
- "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Auf einem Text gewählt, erstellt der Editor einen eigenen Balken darunter und der Text zählt von 0 bis 100%, wie in der Demo."
+ "Escolhido num texto, o editor cria uma barra própria embaixo dele e o texto conta de 0 a 100%, como no demo.": "Auf einem Text gewählt, erstellt der Editor einen eigenen Balken darunter und der Text zählt von 0 bis 100%, wie in der Demo.",
+ "Seleção múltipla: só é possível mover (arrastar ou setas) ou excluir todos.": "Mehrfachauswahl: Du kannst alle nur verschieben (ziehen oder Pfeiltasten) oder löschen.",
+ "{0} GangZones excluídas": "{0} GangZones gelöscht",
+ "{0} MapIcons removidos": "{0} MapIcons entfernt",
+ "Indisponível com vários itens selecionados": "Nicht verfügbar bei Mehrfachauswahl"
 }
