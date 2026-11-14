@@ -25,7 +25,6 @@ Folders (inside sa-map-studio):
     system/       internal files, runtime, libraries and 3D models
 """
 import argparse
-import atexit
 import base64
 import json
 import re
@@ -167,132 +166,6 @@ if FROZEN:
 else:
     MODELS_DIR = os.path.join(COMPILE_SOURCES_DIR, "models")
 IS_WINDOWS = os.name == "nt"
-
-
-def migrate_old_layout():
-    """Moves folders and files from the root into sa-map-studio and removes legacy folders and __pycache__."""
-    # The .exe can be in any folder (GTA's, Downloads, Desktop...).
-    # Only touches the root when it clearly belongs to the program: never inside GTA and, in the .exe,
-    # only in the old layout (which had the system folder next to the executable).
-    if editor_gta_folder() or looks_like_gta_dir(ROOT_DIR):
-        return
-    if FROZEN and not os.path.isdir(os.path.join(ROOT_DIR, "system")):
-        return
-
-    # Removes the __pycache__ folders from the source code (development mode only)
-    if not FROZEN:
-        for root, dirs, _ in os.walk(ROOT_DIR):
-            if "__pycache__" in dirs:
-                try:
-                    shutil.rmtree(os.path.join(root, "__pycache__"), ignore_errors=True)
-                except OSError:
-                    pass
-
-    def merge_and_remove(src_dir, dst_dir):
-        if not os.path.isdir(src_dir) or os.path.abspath(src_dir) == os.path.abspath(dst_dir):
-            return
-        os.makedirs(dst_dir, exist_ok=True)
-        for item in os.listdir(src_dir):
-            s = os.path.join(src_dir, item)
-            d = os.path.join(dst_dir, item)
-            if os.path.isdir(s):
-                merge_and_remove(s, d)
-            else:
-                if not os.path.exists(d):
-                    try:
-                        shutil.move(s, d)
-                    except OSError:
-                        pass
-                else:
-                    try:
-                        os.remove(s)
-                    except OSError:
-                        pass
-        try:
-            shutil.rmtree(src_dir, ignore_errors=True)
-        except OSError:
-            pass
-
-    # Migrates folders that may be loose in the root into BASE_DIR
-    for old_name, target_dir in (
-        ("sa-map-studio", BASE_DIR),
-        ("projects", PROJECTS_DIR),
-        ("projetos", PROJECTS_DIR),
-        ("Projetos", PROJECTS_DIR),
-        ("exported", EXPORTS_DIR),
-        ("exportados", EXPORTS_DIR),
-        ("Exportados", EXPORTS_DIR),
-        ("data", DATA_DIR),
-        ("dados", DATA_DIR),
-        ("Dados", DATA_DIR),
-        ("test-server", TEST_DIR),
-        ("servidor-teste", TEST_DIR),
-        ("Servidor de Teste", TEST_DIR),
-        ("teste", TEST_DIR),
-    ):
-        src = os.path.join(ROOT_DIR, old_name)
-        if old_name in ("data", "dados", "Dados"):
-            # Only moves the program's own data folder (never a GTA's data)
-            if resolve_ci(src, "gta.dat") or not any(
-                os.path.exists(os.path.join(src, marker)) for marker in ("config.json", "cache", "logs", "registros")
-            ):
-                continue
-        merge_and_remove(src, target_dir)
-
-    # Removes leftover/duplicate folders that must not exist inside sa-map-studio
-    for obsolete_dir in (
-        os.path.join(BASE_DIR, "models"),
-        os.path.join(BASE_DIR, "compile-sources"),
-        os.path.join(BASE_DIR, "system", "compile-sources"),
-    ):
-        if os.path.isdir(obsolete_dir):
-            try:
-                shutil.rmtree(obsolete_dir, ignore_errors=True)
-            except OSError:
-                pass
-
-    # Migrates loose files if they still exist loose
-    moves = [
-        ("config.json", CONFIG_FILE),
-        ("cache", CACHE_DIR),
-        ("dados-da-janela", WEBVIEW_DIR),
-        ("navegador", WEBVIEW_DIR),
-        ("registros", LOGS_DIR),
-        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
-        ("sa-map-studio.log", os.path.join(LOGS_DIR, "sa-map-studio.log")),
-    ]
-    for old_file, new_path in moves:
-        src = os.path.join(ROOT_DIR, old_file)
-        if os.path.exists(src) and not os.path.exists(new_path):
-            try:
-                os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                shutil.move(src, new_path)
-            except OSError:
-                pass
-        sub_src = os.path.join(DATA_DIR, old_file)
-        if os.path.exists(sub_src) and not os.path.exists(new_path):
-            try:
-                os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                shutil.move(sub_src, new_path)
-            except OSError:
-                pass
-
-    old_log = os.path.join(LOGS_DIR, "sa-map-studio.log")
-    new_log = os.path.join(LOGS_DIR, "sa-map-studio.log")
-    if os.path.exists(old_log):
-        if not os.path.exists(new_log):
-            try:
-                shutil.move(old_log, new_log)
-            except OSError:
-                pass
-        else:
-            try:
-                os.remove(old_log)
-            except OSError:
-                pass
-
-
-atexit.register(migrate_old_layout)
 
 
 LOG_FILE_PATH = os.path.join(LOGS_DIR, "sa-map-studio.log")
@@ -3654,7 +3527,6 @@ def main():
     if "--no-browser" not in sys.argv and not single_instance():
         return
     setup_logging()
-    migrate_old_layout()
     os.makedirs(DATA_DIR, exist_ok=True)
     if not version_compatible():
         return
