@@ -1713,7 +1713,7 @@ def start_test(body):
     os.makedirs(TEST_DIR, exist_ok=True)
     same = os.path.normcase(os.path.abspath(src)) == os.path.normcase(os.path.abspath(TEST_DIR))
     if not same:
-        # Copies the server to "Servidor de Teste" (the user's server and gamemode are not touched; the folder name is kept as it is on disk)
+        # Copies the server to the test-server folder (the user's server and gamemode are not touched)
         copy_if_newer(exe, os.path.join(TEST_DIR, os.path.basename(exe)))
         for n in os.listdir(src):
             full = os.path.join(src, n)
