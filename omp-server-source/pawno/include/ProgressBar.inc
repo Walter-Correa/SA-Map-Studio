@@ -115,6 +115,72 @@
 	#define PB_MIN_INNER PBP_MIN_INNER
 #endif
 
+#if !defined PBP_BAR_MIN_WIDTH
+	#if defined PB_BAR_MIN_WIDTH
+		#define PBP_BAR_MIN_WIDTH (PB_BAR_MIN_WIDTH)
+	#else
+		#define PBP_BAR_MIN_WIDTH (3.0)
+	#endif
+#endif
+#if !defined PB_BAR_MIN_WIDTH
+	#define PB_BAR_MIN_WIDTH PBP_BAR_MIN_WIDTH
+#endif
+
+#if !defined PBP_BAR_MIN_HEIGHT
+	#if defined PB_BAR_MIN_HEIGHT
+		#define PBP_BAR_MIN_HEIGHT (PB_BAR_MIN_HEIGHT)
+	#else
+		#define PBP_BAR_MIN_HEIGHT (3.0)
+	#endif
+#endif
+#if !defined PB_BAR_MIN_HEIGHT
+	#define PB_BAR_MIN_HEIGHT PBP_BAR_MIN_HEIGHT
+#endif
+
+#if !defined PBP_CIRCLE_MIN_WIDTH
+	#if defined PB_CIRCLE_MIN_WIDTH
+		#define PBP_CIRCLE_MIN_WIDTH (PB_CIRCLE_MIN_WIDTH)
+	#else
+		#define PBP_CIRCLE_MIN_WIDTH (8.0)
+	#endif
+#endif
+#if !defined PB_CIRCLE_MIN_WIDTH
+	#define PB_CIRCLE_MIN_WIDTH PBP_CIRCLE_MIN_WIDTH
+#endif
+
+#if !defined PBP_CIRCLE_MIN_HEIGHT
+	#if defined PB_CIRCLE_MIN_HEIGHT
+		#define PBP_CIRCLE_MIN_HEIGHT (PB_CIRCLE_MIN_HEIGHT)
+	#else
+		#define PBP_CIRCLE_MIN_HEIGHT (8.0)
+	#endif
+#endif
+#if !defined PB_CIRCLE_MIN_HEIGHT
+	#define PB_CIRCLE_MIN_HEIGHT PBP_CIRCLE_MIN_HEIGHT
+#endif
+
+#if !defined PBP_RING_MIN_WIDTH
+	#if defined PB_RING_MIN_WIDTH
+		#define PBP_RING_MIN_WIDTH (PB_RING_MIN_WIDTH)
+	#else
+		#define PBP_RING_MIN_WIDTH (16.0)
+	#endif
+#endif
+#if !defined PB_RING_MIN_WIDTH
+	#define PB_RING_MIN_WIDTH PBP_RING_MIN_WIDTH
+#endif
+
+#if !defined PBP_RING_MIN_HEIGHT
+	#if defined PB_RING_MIN_HEIGHT
+		#define PBP_RING_MIN_HEIGHT (PB_RING_MIN_HEIGHT)
+	#else
+		#define PBP_RING_MIN_HEIGHT (16.0)
+	#endif
+#endif
+#if !defined PB_RING_MIN_HEIGHT
+	#define PB_RING_MIN_HEIGHT PBP_RING_MIN_HEIGHT
+#endif
+
 #if !defined PBP_BLINK_DEFAULT
 	#if defined PB_BLINK_DEFAULT
 		#define PBP_BLINK_DEFAULT (PB_BLINK_DEFAULT)
@@ -505,16 +571,46 @@ static stock Float:PB_ClampBorder(Float:border)
 	return border;
 }
 
-static stock Float:PB_CheckLegacyHeight(Float:height, style, direction)
+static stock Float:PB_CheckLegacyHeight(Float:height, style, direction, bool:convert_legacy)
 {
 #if !defined PB_NO_LEGACY_HEIGHT_CONVERT
-	if (height <= 4.5 && style == PB_STYLE_BAR && (direction == PB_DIR_RIGHT || direction == PB_DIR_LEFT))
+	if (convert_legacy && height <= 4.5 && style == PB_STYLE_BAR && (direction == PB_DIR_RIGHT || direction == PB_DIR_LEFT))
 	{
 		height = height * 2.5;
 		if (height < 6.0) height = 6.0;
 	}
 #endif
 	return height;
+}
+
+stock PB_GetMinDimensions(style, &Float:minW, &Float:minH)
+{
+	switch (style)
+	{
+		case PB_STYLE_CIRCLE:
+		{
+			minW = PB_CIRCLE_MIN_WIDTH;
+			minH = PB_CIRCLE_MIN_HEIGHT;
+		}
+		case PB_STYLE_RING:
+		{
+			minW = PB_RING_MIN_WIDTH;
+			minH = PB_RING_MIN_HEIGHT;
+		}
+		default: // PB_STYLE_BAR
+		{
+			minW = PB_BAR_MIN_WIDTH;
+			minH = PB_BAR_MIN_HEIGHT;
+		}
+	}
+}
+
+stock PB_ClampSize(style, &Float:width, &Float:height)
+{
+	new Float:minW, Float:minH;
+	PB_GetMinDimensions(style, minW, minH);
+	if (width < minW) width = minW;
+	if (height < minH) height = minH;
 }
 
 static stock Float:PB_FitBorder(Float:border, Float:width, Float:height)
@@ -1583,15 +1679,18 @@ stock bool:IsValidPlayerProgressBar(playerid, barid)
 	return (0 <= playerid < MAX_PLAYERS) && (0 <= barid < MAX_PLAYER_BARS) && ProgressBar[playerid][barid][PB_Valid];
 }
 
-stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 60.0, Float:height = 8.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = PB_DIR_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS, Float:segmentscale = PB_RING_SEGMENT_SCALE)
+stock CreatePlayerProgressBar(playerid, Float:x, Float:y, Float:width = 60.0, Float:height = 8.0, colour = PB_DEFAULT_COLOUR, Float:max = 100.0, direction = PB_DIR_RIGHT, Float:border = PB_BORDER_DEFAULT, bordercolour = 0, style = PB_STYLE_BAR, segments = PB_RING_SEGMENTS, Float:segmentscale = PB_RING_SEGMENT_SCALE, bool:convert_legacy = false)
 {
 	if (!(0 <= playerid < MAX_PLAYERS) || !IsPlayerConnected(playerid)) return INVALID_PLAYER_BAR_ID;
 
-	height = PB_CheckLegacyHeight(height, style, direction);
+	height = PB_CheckLegacyHeight(height, style, direction, convert_legacy);
 	if (segmentscale < PB_RING_SCALE_MIN) segmentscale = PB_RING_SCALE_MIN;
 	else if (segmentscale > PB_RING_SCALE_MAX) segmentscale = PB_RING_SCALE_MAX;
 
-	new needed = PB_GetBarRequiredTextDraws(style, segments, false);
+	new targetStyle = (PB_STYLE_BAR <= style <= PB_STYLE_CIRCLE) ? style : PB_STYLE_BAR;
+	PB_ClampSize(targetStyle, width, height);
+
+	new needed = PB_GetBarRequiredTextDraws(targetStyle, segments, false);
 	if (!PB_CanAllocatePlayerTextDraws(playerid, needed + PB_TD_SAFETY_HEADROOM))
 	{
 		return INVALID_PLAYER_BAR_ID;
@@ -1876,7 +1975,7 @@ stock GetPlayerProgressBarPos(playerid, barid, &Float:x, &Float:y)
 stock SetPlayerProgressBarSize(playerid, barid, Float:width, Float:height)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	height = PB_CheckLegacyHeight(height, ProgressBar[playerid][barid][PB_Style], ProgressBar[playerid][barid][PB_Direction]);
+	PB_ClampSize(ProgressBar[playerid][barid][PB_Style], width, height);
 	if (ProgressBar[playerid][barid][PB_Rendered] && width == ProgressBar[playerid][barid][PB_Width] && height == ProgressBar[playerid][barid][PB_Height]) return 1;
 	ProgressBar[playerid][barid][PB_Width] = width;
 	ProgressBar[playerid][barid][PB_Height] = height;
@@ -1894,6 +1993,9 @@ stock GetPlayerProgressBarSize(playerid, barid, &Float:width, &Float:height)
 stock SetPlayerProgressBarWidth(playerid, barid, Float:width)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
+	new Float:minW, Float:minH;
+	PB_GetMinDimensions(ProgressBar[playerid][barid][PB_Style], minW, minH);
+	if (width < minW) width = minW;
 	if (ProgressBar[playerid][barid][PB_Rendered] && width == ProgressBar[playerid][barid][PB_Width]) return 1;
 	ProgressBar[playerid][barid][PB_Width] = width;
 	return _:PB_Render(playerid, barid);
@@ -1908,7 +2010,9 @@ stock Float:GetPlayerProgressBarWidth(playerid, barid)
 stock SetPlayerProgressBarHeight(playerid, barid, Float:height)
 {
 	if (!IsValidPlayerProgressBar(playerid, barid)) return 0;
-	height = PB_CheckLegacyHeight(height, ProgressBar[playerid][barid][PB_Style], ProgressBar[playerid][barid][PB_Direction]);
+	new Float:minW, Float:minH;
+	PB_GetMinDimensions(ProgressBar[playerid][barid][PB_Style], minW, minH);
+	if (height < minH) height = minH;
 	if (ProgressBar[playerid][barid][PB_Rendered] && height == ProgressBar[playerid][barid][PB_Height]) return 1;
 	ProgressBar[playerid][barid][PB_Height] = height;
 	return _:PB_Render(playerid, barid);
@@ -1926,7 +2030,6 @@ stock SetPlayerProgressBarDirection(playerid, barid, direction = PB_DIR_RIGHT)
 	if (direction < PB_DIR_RIGHT || direction > PB_DIR_DOWN) direction = PB_DIR_RIGHT;
 	if (ProgressBar[playerid][barid][PB_Rendered] && direction == ProgressBar[playerid][barid][PB_Direction]) return 1;
 	ProgressBar[playerid][barid][PB_Direction] = direction;
-	ProgressBar[playerid][barid][PB_Height] = PB_CheckLegacyHeight(ProgressBar[playerid][barid][PB_Height], ProgressBar[playerid][barid][PB_Style], direction);
 	PB_Kill(playerid, ProgressBar[playerid][barid][PB_Progress]);
 	return _:PB_Render(playerid, barid);
 }
@@ -1950,6 +2053,11 @@ stock SetPlayerProgressBarStyle(playerid, barid, style = PB_STYLE_BAR, segments 
 	new targetSegs = PB_ClampSegments(segments);
 	if (segmentscale < PB_RING_SCALE_MIN) segmentscale = PB_RING_SCALE_MIN;
 	else if (segmentscale > PB_RING_SCALE_MAX) segmentscale = PB_RING_SCALE_MAX;
+	new Float:w = ProgressBar[playerid][barid][PB_Width];
+	new Float:h = ProgressBar[playerid][barid][PB_Height];
+	PB_ClampSize(targetStyle, w, h);
+	ProgressBar[playerid][barid][PB_Width] = w;
+	ProgressBar[playerid][barid][PB_Height] = h;
 	if (ProgressBar[playerid][barid][PB_Rendered] && targetStyle == ProgressBar[playerid][barid][PB_Style] && targetSegs == ProgressBar[playerid][barid][PB_Segments] && segmentscale == ProgressBar[playerid][barid][PB_SegmentScale]) return 1;
 	new currentNeeded = PB_GetBarRequiredTextDraws(ProgressBar[playerid][barid][PB_Style], ProgressBar[playerid][barid][PB_Segments], false);
 	new targetNeeded = PB_GetBarRequiredTextDraws(targetStyle, targetSegs, false);
@@ -1961,7 +2069,6 @@ stock SetPlayerProgressBarStyle(playerid, barid, style = PB_STYLE_BAR, segments 
 	ProgressBar[playerid][barid][PB_Style] = targetStyle;
 	ProgressBar[playerid][barid][PB_Segments] = targetSegs;
 	ProgressBar[playerid][barid][PB_SegmentScale] = segmentscale;
-	ProgressBar[playerid][barid][PB_Height] = PB_CheckLegacyHeight(ProgressBar[playerid][barid][PB_Height], targetStyle, ProgressBar[playerid][barid][PB_Direction]);
 	new ret = _:PB_Render(playerid, barid);
 	PB_InvalidateFreeTDCache(playerid);
 	return ret;

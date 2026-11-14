@@ -1,7 +1,7 @@
 // Visual, interactive TextDraw editor (TextDrawCreate / CreatePlayerTextDraw)
 // SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
-import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, PB_MIN_WIDTH, PB_MIN_HEIGHT, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE, pbRealHeight } from '../editor/project.js';
+import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, pbMinSize, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE } from '../editor/project.js';
 import { TDFX_EFFECTS, TDFX_BY_ID, TDFX_INCLUDE, tdfxActive, tdfxAllowed, tdfxParams, tdfxFrame, tdfxLength, makeFx, newFx, letterboxBar, letterboxTopSize, letterboxBottomSize } from '../editor/tdfx.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
 import { toast, arrowStep, themeVar } from './common.js';
@@ -24,8 +24,71 @@ let showGrid = true;
 let showGameBg = true;
 let gameBgImg = null;
 
+// Multiple selection (Shift/Ctrl + click): the selected TextDraws, always including the primary one (selectedIdx).
+// With more than one, only moving and deleting them together is allowed.
+let multiSel = new Set();
+function selectedTds() {
+  const tds = appRef?.project?.textDraws || [];
+  const primary = tds[selectedIdx];
+  if (!primary) return [];
+  if (!multiSel.has(primary)) { multiSel.clear(); return [primary]; }
+  return tds.filter(td => multiSel.has(td));
+}
+const isMulti = () => selectedTds().length > 1;
+function toggleSelect(i) {
+  const tds = appRef.project?.textDraws || [];
+  const td = tds[i];
+  if (!td) return;
+  multiSel = new Set(selectedTds());
+  if (multiSel.has(td)) {
+    if (multiSel.size > 1) {
+      multiSel.delete(td);
+      if (tds[selectedIdx] === td) selectedIdx = tds.indexOf([...multiSel].pop());
+    }
+  } else {
+    multiSel.add(td);
+    selectedIdx = i;
+  }
+  if (multiSel.size <= 1) multiSel.clear();
+}
+
+// Canvas zoom (mouse wheel) and pan: z is the magnification and ox/oy the top left corner shown, in 640x448 units.
+// Everything is drawn through this view, so the TextDraws keep their real sizes.
+const view = { z: 1, ox: 0, oy: 0 };
+const ZOOM_MAX = 8;
+function clampView() {
+  view.z = Math.max(1, Math.min(ZOOM_MAX, view.z));
+  view.ox = Math.max(0, Math.min(TD_WIDTH - TD_WIDTH / view.z, view.ox));
+  view.oy = Math.max(0, Math.min(TD_HEIGHT - TD_HEIGHT / view.z, view.oy));
+  const label = dialogEl?.querySelector('#tdZoomLabel');
+  if (label) label.textContent = `${Math.round(view.z * 100)}%`;
+}
+let rawSetTransform = null;
+// Every setTransform of the drawing code is placed inside the zoom view
+function installViewTransform() {
+  rawSetTransform = ctx.setTransform.bind(ctx);
+  ctx.setTransform = (a, b, c, d, e, f) => {
+    if (typeof a !== 'number') return rawSetTransform(a);
+    const z = view.z;
+    rawSetTransform(a * z, b * z, c * z, d * z, e * z - z * view.ox * TD_SCREEN.w / TD_WIDTH, f * z - z * view.oy * TD_SCREEN.h / TD_HEIGHT);
+  };
+}
+// Part of the element where the image is drawn (object-fit: contain leaves empty bands around it)
+function canvasDisplayRect() {
+  const rect = canvasEl.getBoundingClientRect();
+  const scale = Math.min(rect.width / canvasEl.width, rect.height / canvasEl.height) || 1;
+  const w = canvasEl.width * scale, h = canvasEl.height * scale;
+  return { left: rect.left + (rect.width - w) / 2, top: rect.top + (rect.height - h) / 2, w, h };
+}
+// Size of one screen pixel in 640x448 units (for selection marks that keep the same size at any zoom)
+function unitPx() {
+  const r = canvasDisplayRect();
+  return { x: TD_WIDTH / (r.w * view.z), y: TD_HEIGHT / (r.h * view.z) };
+}
+
 let tdUndoStack = [];
 let tdRedoStack = [];
+let tdUndoProject = null; // the history belongs to this project and survives closing the window
 
 function tdPushUndo() {
   const current = JSON.stringify({
@@ -180,6 +243,7 @@ export function initTextDrawEditor(app) {
     canvasEl.width = TD_SCREEN.w;
     canvasEl.height = TD_SCREEN.h;
     ctx = canvasEl.getContext('2d');
+    installViewTransform();
     setupCanvasEvents();
   }
 
@@ -187,16 +251,12 @@ export function initTextDrawEditor(app) {
   setupDialogEvents();
 }
 
-// Mouse coordinates in 640x448 units
-// The canvas uses object-fit: contain, so the image may have empty bands around it inside the element
+// Mouse coordinates in 640x448 units, through the zoom view
 function canvasPoint(e) {
-  const rect = canvasEl.getBoundingClientRect();
-  const scale = Math.min(rect.width / canvasEl.width, rect.height / canvasEl.height);
-  const w = canvasEl.width * scale, h = canvasEl.height * scale;
-  const left = rect.left + (rect.width - w) / 2, top = rect.top + (rect.height - h) / 2;
+  const r = canvasDisplayRect();
   return {
-    sx: (e.clientX - left) * TD_WIDTH / w,
-    sy: (e.clientY - top) * TD_HEIGHT / h,
+    sx: view.ox + (e.clientX - r.left) / r.w * TD_WIDTH / view.z,
+    sy: view.oy + (e.clientY - r.top) / r.h * TD_HEIGHT / view.z,
   };
 }
 
@@ -208,6 +268,23 @@ function useLogicalUnits() {
 function setupDialogEvents() {
   const closeBtn = dialogEl.querySelector('.modal-close');
   if (closeBtn) closeBtn.onclick = () => closeTextDrawEditor();
+
+  // Expands the window to the whole editor area and back to its default size
+  const expandBtn = dialogEl.querySelector('#tdBtnExpand');
+  if (expandBtn) expandBtn.onclick = () => {
+    const on = dialogEl.classList.toggle('td-expanded');
+    expandBtn.classList.toggle('active', on);
+    expandBtn.querySelector('use')?.setAttribute('href', on ? '#i-collapse' : '#i-expand');
+    expandBtn.title = on ? t('Voltar ao tamanho padrão') : t('Expandir');
+    requestAnimationFrame(() => redrawCanvas());
+  };
+
+  const zoomBtn = dialogEl.querySelector('#tdZoomReset');
+  if (zoomBtn) zoomBtn.onclick = () => {
+    view.z = 1; view.ox = 0; view.oy = 0;
+    clampView();
+    redrawCanvas();
+  };
 
   const doneBtn = dialogEl.querySelector('#tdBtnDone');
   if (doneBtn) doneBtn.onclick = () => closeTextDrawEditor();
@@ -289,14 +366,17 @@ function setupDialogEvents() {
   dialogEl.addEventListener('keydown', (e) => {
     const arrow = !e.ctrlKey && !e.metaKey && arrowStep(e);
     if (arrow) {
-      const td = getSelectedTd();
-      if (!td || (!arrow.dx && !arrow.dy)) return;
+      const list = selectedTds();
+      if (!list.length || (!arrow.dx && !arrow.dy)) return;
       if (arrow.first) tdPushUndo();
       const round = (v) => Math.round(v * 10) / 10;
-      td.x = round(td.x + arrow.dx);
-      td.y = round(td.y + arrow.dy);
-      // Left box: TextSize X is the absolute right edge and follows the text
-      if (td.useBox && td.font !== 4 && td.font !== 5 && getTdAlign(td) === 1) td.textSizeX = round(td.textSizeX + arrow.dx);
+      const { dx, dy } = clampMove(list.map(getTextDrawBounds), arrow.dx, arrow.dy);
+      for (const td of list) {
+        td.x = round(td.x + dx);
+        td.y = round(td.y + dy);
+        // Left box: TextSize X is the absolute right edge and follows the text
+        if (td.useBox && td.font !== 4 && td.font !== 5 && getTdAlign(td) === 1) td.textSizeX = round(td.textSizeX + dx);
+      }
       appRef.project.modified = true;
       updateSidebarFields();
       updateSidebarList();
@@ -318,6 +398,7 @@ function setupDialogEvents() {
     if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'd' || e.key === 'D')) {
       const activeTag = document.activeElement?.tagName?.toLowerCase();
       if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+      if (isMulti()) return;
       e.preventDefault();
       e.stopPropagation();
       duplicateSelectedTextDraw();
@@ -396,7 +477,7 @@ function bindFieldInputs() {
       if (!td || td.type !== 'progress') return;
       let v = Number(el.value);
       if (!Number.isFinite(v)) return;
-      const min = prop === 'pbWidth' ? PB_MIN_WIDTH : prop === 'pbHeight' ? PB_MIN_HEIGHT : null;
+      const min = prop === 'pbWidth' ? pbMinSize(td.pbStyle).w : prop === 'pbHeight' ? pbMinSize(td.pbStyle).h : null;
       if (min !== null && v < min) {
         if (ev?.type !== 'change') return; // typing: waits until finished before applying the minimum
         v = min;
@@ -404,12 +485,6 @@ function bindFieldInputs() {
       }
       const oldMax = Number(td.pbMax) || 0;
       td[prop] = isInt ? (v | 0) : v;
-      // A low horizontal bar gets the height the include gives it (when the typing is over)
-      if ((prop === 'pbHeight' && ev?.type === 'change') || prop === 'pbDir') {
-        td.pbHeight = pbRealHeight(td.pbHeight, td.pbStyle, td.pbDir);
-        const hEl = dialogEl.querySelector('#tdPbHeight');
-        if (hEl && Number(hEl.value) !== td.pbHeight) hEl.value = td.pbHeight;
-      }
       if (prop === 'pbWidth' || prop === 'pbHeight' || prop === 'pbDir') syncPbBorderLimit(td);
       if (prop === 'pbMax') {
         const cur = Number(td.pbAutoFillMax ?? oldMax);
@@ -557,7 +632,10 @@ function bindFieldInputs() {
     if (before === 0 && td.pbStyle !== 0 && td.pbHeight < td.pbWidth * 0.6) { td.pbWidth = 40; td.pbHeight = 50; }
     if (td.pbStyle === 0 && before !== 0 && td.pbHeight > td.pbWidth * 0.6) { td.pbWidth = 120; td.pbHeight = 12; }
     if (!td.pbSegments) td.pbSegments = 24;
-    td.pbHeight = pbRealHeight(td.pbHeight, td.pbStyle, td.pbDir);
+    // Each style has its own minimum size in the include
+    const pbMin = pbMinSize(td.pbStyle);
+    td.pbWidth = Math.max(pbMin.w, Number(td.pbWidth) || 0);
+    td.pbHeight = Math.max(pbMin.h, Number(td.pbHeight) || 0);
     appRef.project.modified = true;
     updateSidebarFields();
     updateSidebarList();
@@ -844,10 +922,79 @@ function getOrLoadModelThumbnail(modelId) {
   return entry;
 }
 
-function setupCanvasEvents() {
-  canvasEl.addEventListener('mousedown', (e) => {
-    const { sx, sy } = canvasPoint(e);
+// ---------- Selection marks ----------
+// Dashed rectangle around a selected TextDraw and the resize handle outside its bottom right corner,
+// both measured in screen pixels so they keep their size at any zoom
+function selectionRect(td) {
+  const b = getTextDrawBounds(td), u = unitPx();
+  return { x: b.x - 5 * u.x, y: b.y - 5 * u.y, w: b.w + 10 * u.x, h: b.h + 10 * u.y };
+}
+const HANDLE_R = 11, HANDLE_HIT = 14, HANDLE_GAP = 12;
+function resizeHandlePos(td) {
+  const r = selectionRect(td), u = unitPx();
+  let hx = r.x + r.w + HANDLE_GAP * u.x, hy = r.y + r.h + HANDLE_GAP * u.y;
+  // Near the edge of the view the handle goes inside the corner, so it can always be reached
+  if (hx > view.ox + TD_WIDTH / view.z - (HANDLE_R + 2) * u.x) hx = r.x + r.w - HANDLE_GAP * u.x;
+  if (hy > view.oy + TD_HEIGHT / view.z - (HANDLE_R + 2) * u.y) hy = r.y + r.h - HANDLE_GAP * u.y;
+  return { hx, hy };
+}
+function overResizeHandle(sx, sy) {
+  if (isMulti()) return false;
+  const td = getSelectedTd();
+  if (!td) return false;
+  const { hx, hy } = resizeHandlePos(td), u = unitPx();
+  return Math.hypot((sx - hx) / u.x, (sy - hy) / u.y) <= HANDLE_HIT;
+}
+// Topmost TextDraw under the point (display order: the last one is on top)
+function tdIndexAt(sx, sy) {
+  const tds = appRef.project?.textDraws || [];
+  for (let i = tds.length - 1; i >= 0; i--) {
+    const b = getTextDrawBounds(tds[i]);
+    if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) return i;
+  }
+  return -1;
+}
+// Inside the selection rectangle of a selected TextDraw or on its border
+function inSelectionArea(sx, sy) {
+  const u = unitPx();
+  return selectedTds().some(td => {
+    const r = selectionRect(td);
+    return sx >= r.x - 4 * u.x && sx <= r.x + r.w + 4 * u.x && sy >= r.y - 4 * u.y && sy <= r.y + r.h + 4 * u.y;
+  });
+}
 
+// A moved TextDraw may cross every edge of the screen, but a part of it always stays on screen to be clicked and dragged
+const KEEP_VISIBLE = 8;
+function clampMove(boundsList, dx, dy) {
+  let dxMin = -Infinity, dxMax = Infinity, dyMin = -Infinity, dyMax = Infinity;
+  for (const b of boundsList) {
+    const kx = Math.min(KEEP_VISIBLE, b.w), ky = Math.min(KEEP_VISIBLE, b.h);
+    dxMin = Math.max(dxMin, kx - b.x - b.w); dxMax = Math.min(dxMax, TD_WIDTH - kx - b.x);
+    dyMin = Math.max(dyMin, ky - b.y - b.h); dyMax = Math.min(dyMax, TD_HEIGHT - ky - b.y);
+  }
+  return { dx: Math.min(dxMax, Math.max(dxMin, dx)), dy: Math.min(dyMax, Math.max(dyMin, dy)) };
+}
+
+function startMove(list, sx, sy) {
+  if (!list.length) return;
+  isDraggingTd = {
+    idx: selectedIdx,
+    isResize: false,
+    startX: sx,
+    startY: sy,
+    items: list.map(td => ({ td, x: td.x, y: td.y, sizeX: td.textSizeX, b: getTextDrawBounds(td) })),
+  };
+}
+
+let panning = null;   // { button, cx, cy, ox, oy, moved }
+let hoverHandle = false;
+
+function setupCanvasEvents() {
+  canvasEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  canvasEl.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 && e.button !== 2) return;
+    const { sx, sy } = canvasPoint(e);
     const tds = appRef.project?.textDraws || [];
 
     dragStartTdSnapshot = JSON.stringify({
@@ -855,88 +1002,108 @@ function setupCanvasEvents() {
       selectedIdx
     });
 
-    // 1. Checks whether the selected TextDraw's resize handle was clicked
-    const curTd = getSelectedTd();
-    if (curTd) {
-      const curBounds = getTextDrawBounds(curTd);
-      const handleX = curBounds.x + curBounds.w;
-      const handleY = curBounds.y + curBounds.h;
-      if (Math.hypot(sx - handleX, sy - handleY) <= 12) {
-        isDraggingTd = {
-          idx: selectedIdx,
-          isResize: true,
-          startX: sx,
-          startY: sy,
-          origX: curTd.x,
-          origY: curTd.y,
-          origW: curBounds.w,
-          origH: curBounds.h,
-          origSizeX: curTd.textSizeX,
-          origSizeY: curTd.textSizeY,
-          origLetterX: curTd.letterSizeX,
-          origLetterY: curTd.letterSizeY,
-          origPbW: curTd.pbWidth,
-          origPbH: curTd.pbHeight,
-        };
-        return;
-      }
+    const hit = tdIndexAt(sx, sy);
+    const onSelection = inSelectionArea(sx, sy);
+    const onHandle = overResizeHandle(sx, sy);
+    if (e.button === 2) {
+      // The right button only pans the view, and not over a TextDraw or bar
+      if (hit < 0 && !onSelection && !onHandle) panning = { button: 2, cx: e.clientX, cy: e.clientY, ox: view.ox, oy: view.oy, moved: false };
+      return;
     }
 
-    // 2. Looks up the clicked TextDraw from back to front (display order)
-    for (let i = tds.length - 1; i >= 0; i--) {
-      const td = tds[i];
-      const bounds = getTextDrawBounds(td);
-      if (sx >= bounds.x && sx <= bounds.x + bounds.w && sy >= bounds.y && sy <= bounds.y + bounds.h) {
-        selectedIdx = i;
-        isDraggingTd = {
-          idx: i,
-          isResize: false,
-          startX: sx,
-          startY: sy,
-          origX: td.x,
-          origY: td.y,
-          origSizeX: td.textSizeX,
-        };
-        updateSidebarFields();
-        updateSidebarList();
-        redrawCanvas();
-        return;
-      }
+    // 1. Resize handle of the selected TextDraw (single selection only)
+    const curTd = getSelectedTd();
+    if (curTd && onHandle) {
+      const curBounds = getTextDrawBounds(curTd);
+      isDraggingTd = {
+        idx: selectedIdx,
+        isResize: true,
+        startX: sx,
+        startY: sy,
+        origX: curTd.x,
+        origY: curTd.y,
+        origW: curBounds.w,
+        origH: curBounds.h,
+        origSizeX: curTd.textSizeX,
+        origSizeY: curTd.textSizeY,
+        origLetterX: curTd.letterSizeX,
+        origLetterY: curTd.letterSizeY,
+        origPbW: curTd.pbWidth,
+        origPbH: curTd.pbHeight,
+      };
+      return;
     }
+
+    // 2. A TextDraw under the mouse: Shift/Ctrl adds or removes it from the selection, otherwise it is dragged
+    if (hit >= 0) {
+      if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        toggleSelect(hit);
+      } else {
+        if (!selectedTds().includes(tds[hit])) { multiSel.clear(); selectedIdx = hit; }
+        startMove(selectedTds(), sx, sy);
+      }
+      updateSidebarFields();
+      updateSidebarList();
+      redrawCanvas();
+      return;
+    }
+
+    // 3. Inside the selection rectangle or on its border: drags the selection
+    if (onSelection) {
+      startMove(selectedTds(), sx, sy);
+      return;
+    }
+
+    // 4. Empty area: pans the view (when zoomed); a click without dragging keeps only the primary selection
+    panning = { button: 0, cx: e.clientX, cy: e.clientY, ox: view.ox, oy: view.oy, moved: false };
   });
+
+  canvasEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const r = canvasDisplayRect();
+    const fx = (e.clientX - r.left) / r.w, fy = (e.clientY - r.top) / r.h;
+    const { sx, sy } = canvasPoint(e);
+    view.z = Math.max(1, Math.min(ZOOM_MAX, view.z * Math.exp(-e.deltaY * 0.0015)));
+    // Keeps the point under the mouse in place
+    view.ox = sx - fx * TD_WIDTH / view.z;
+    view.oy = sy - fy * TD_HEIGHT / view.z;
+    clampView();
+    redrawCanvas();
+  }, { passive: false });
 
   window.addEventListener('mousemove', (e) => {
     if (!dialogEl || !dialogEl.classList.contains('open')) return;
+
+    if (panning) {
+      const r = canvasDisplayRect();
+      const dxPx = e.clientX - panning.cx, dyPx = e.clientY - panning.cy;
+      if (Math.abs(dxPx) + Math.abs(dyPx) > 3) panning.moved = true;
+      if (view.z > 1) {
+        view.ox = panning.ox - dxPx * TD_WIDTH / (r.w * view.z);
+        view.oy = panning.oy - dyPx * TD_HEIGHT / (r.h * view.z);
+        clampView();
+        canvasEl.style.cursor = 'grabbing';
+        redrawCanvas();
+      }
+      return;
+    }
+
     const { sx, sy } = canvasPoint(e);
 
     if (!isDraggingTd) {
       // Updates the mouse cursor style on hover
-      const curTd = getSelectedTd();
-      if (curTd) {
-        const curBounds = getTextDrawBounds(curTd);
-        const handleX = curBounds.x + curBounds.w;
-        const handleY = curBounds.y + curBounds.h;
-        if (Math.hypot(sx - handleX, sy - handleY) <= 12) {
-          canvasEl.style.cursor = 'nwse-resize';
-          return;
-        }
-      }
-      const tds = appRef.project?.textDraws || [];
-      for (let i = tds.length - 1; i >= 0; i--) {
-        const b = getTextDrawBounds(tds[i]);
-        if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) {
-          canvasEl.style.cursor = 'move';
-          return;
-        }
-      }
-      canvasEl.style.cursor = 'default';
+      const onHandle = e.target === canvasEl && overResizeHandle(sx, sy);
+      if (onHandle !== hoverHandle) { hoverHandle = onHandle; redrawCanvas(); }
+      if (e.target !== canvasEl) return;
+      if (onHandle) canvasEl.style.cursor = 'nwse-resize';
+      else if (tdIndexAt(sx, sy) >= 0 || inSelectionArea(sx, sy)) canvasEl.style.cursor = 'move';
+      else canvasEl.style.cursor = view.z > 1 ? 'grab' : 'default';
       return;
     }
 
-    const td = appRef.project?.textDraws?.[isDraggingTd.idx];
-    if (!td) return;
-
     if (isDraggingTd.isResize) {
+      const td = appRef.project?.textDraws?.[isDraggingTd.idx];
+      if (!td) return;
       const dx = sx - isDraggingTd.startX;
       const dy = sy - isDraggingTd.startY;
       const newW = Math.max(10, Math.round(isDraggingTd.origW + dx));
@@ -945,15 +1112,16 @@ function setupCanvasEvents() {
       if (td.type === 'progress') {
         // Bar: dragging changes width and height in the same proportion as the rectangle
         const rx = newW / Math.max(4, isDraggingTd.origW), ry = newH / Math.max(4, isDraggingTd.origH);
-        td.pbWidth = Number(Math.max(PB_MIN_WIDTH, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
-        td.pbHeight = pbRealHeight(Number(Math.max(PB_MIN_HEIGHT, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(2)), td.pbStyle, td.pbDir);
+        const pbMin = pbMinSize(td.pbStyle);
+        td.pbWidth = Number(Math.max(pbMin.w, (isDraggingTd.origPbW || td.pbWidth) * rx).toFixed(1));
+        td.pbHeight = Number(Math.max(pbMin.h, (isDraggingTd.origPbH || td.pbHeight) * ry).toFixed(2));
         syncPbBorderLimit(td);
       } else if (td.font === 4 || td.font === 5) {
         // Sprite (Font 4) and 3D model preview (Font 5): textSizeX and textSizeY are width and height
         td.textSizeX = newW;
         td.textSizeY = newH;
       } else if (td.useBox && getTdAlign(td) !== 3) {
-        // Caixa: TextSize segue o alinhamento (esquerda = borda direita, centro = largura)
+        // Box: TextSize follows the alignment (left = right edge, center = width)
         const align = getTdAlign(td);
         const boxW = Math.max(4, newW - BOX_PAD_X * 2);
         if (align === 2) td.textSizeY = Math.round(boxW);
@@ -970,24 +1138,38 @@ function setupCanvasEvents() {
         td.letterSizeY = Number(Math.max(0.1, (isDraggingTd.origLetterY || 1.4) * ratioY).toFixed(3));
       }
     } else {
-      const dx = sx - isDraggingTd.startX;
-      const dy = sy - isDraggingTd.startY;
-      const newX = Math.round(Math.max(0, Math.min(640, isDraggingTd.origX + dx)));
-      const newY = Math.round(Math.max(0, Math.min(TD_HEIGHT, isDraggingTd.origY + dy)));
-
-      // The box follows the text (TextSize X is an absolute coordinate on the left and right)
-      if (td.useBox && td.font !== 4 && td.font !== 5 && getTdAlign(td) !== 2) {
-        td.textSizeX = Math.round(isDraggingTd.origSizeX + (newX - isDraggingTd.origX));
+      const items = isDraggingTd.items;
+      const { dx, dy } = clampMove(items.map(it => it.b), sx - isDraggingTd.startX, sy - isDraggingTd.startY);
+      for (const it of items) {
+        const newX = Math.round(it.x + dx);
+        const newY = Math.round(it.y + dy);
+        // The box follows the text (TextSize X is an absolute coordinate on the left and right)
+        if (it.td.useBox && it.td.font !== 4 && it.td.font !== 5 && getTdAlign(it.td) !== 2) {
+          it.td.textSizeX = Math.round(it.sizeX + (newX - it.x));
+        }
+        it.td.x = newX;
+        it.td.y = newY;
       }
-      td.x = newX;
-      td.y = newY;
     }
 
     updateSidebarFields();
     redrawCanvas();
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', (e) => {
+    if (panning) {
+      const p = panning;
+      panning = null;
+      if (canvasEl) canvasEl.style.cursor = view.z > 1 ? 'grab' : 'default';
+      // A plain left click on an empty area ends the multiple selection
+      if (!p.moved && p.button === 0 && !e.shiftKey && !e.ctrlKey && !e.metaKey && isMulti()) {
+        multiSel.clear();
+        updateSidebarFields();
+        updateSidebarList();
+        redrawCanvas();
+      }
+      return;
+    }
     if (isDraggingTd) {
       isDraggingTd = null;
       canvasEl.style.cursor = 'default';
@@ -999,6 +1181,7 @@ function setupCanvasEvents() {
         tdPushUndoSnapshot(dragStartTdSnapshot);
         appRef.project.modified = true;
       }
+      updateSidebarList();
       redrawCanvas();
     }
   });
@@ -1071,7 +1254,7 @@ function moveTdTo(from, to) {
 function moveSelectedTd(where) {
   const tds = appRef?.project?.textDraws;
   const td = tds?.[selectedIdx];
-  if (!td) return;
+  if (!td || isMulti()) return;
   const groupIdx = tds.map((t, i) => (isPlayerLayer(t) === isPlayerLayer(td) ? i : -1)).filter(i => i >= 0);
   const first = groupIdx[0], last = groupIdx[groupIdx.length - 1];
   if (where === 'back') moveTdTo(selectedIdx, first);
@@ -1175,6 +1358,12 @@ function syncPbPlusFields(td) {
     if (!el || document.activeElement === el) continue;
     if (kind === 'check') el.checked = Boolean(td[prop]);
     else if (kind === 'color') { if (td[prop]) el.value = colorHexOf(td[prop]); }
+    else if (kind === 'text' && el.tagName === 'SELECT') {
+      // A template typed in older versions stays in the list as one more choice
+      const v = String(td[prop] || '{PERCENT}%');
+      if (![...el.options].some(o => o.value === v)) el.add(new Option(v, v));
+      el.value = v;
+    }
     else el.value = td[prop] ?? '';
   }
   const show = (id, on) => { const el = dialogEl.querySelector(id); if (el) el.style.display = on ? 'flex' : 'none'; };
@@ -1442,8 +1631,15 @@ export function openTextDrawEditor() {
   if (!dialogEl.open) dialogEl.showModal();
   dialogEl.classList.add('open');
 
-  tdUndoStack = [];
-  tdRedoStack = [];
+  // The undo history survives closing the window; it only starts over for another project
+  if (tdUndoProject !== appRef.project) {
+    tdUndoProject = appRef.project;
+    tdUndoStack = [];
+    tdRedoStack = [];
+    multiSel.clear();
+    view.z = 1; view.ox = 0; view.oy = 0;
+  }
+  clampView();
   updateTdUndoButtons();
 
   if (!appRef.project.textDraws) appRef.project.textDraws = [];
@@ -1467,7 +1663,7 @@ export function closeTextDrawEditor() {
 
 function redrawCanvas() {
   if (!ctx || !canvasEl) return;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  rawSetTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
   useLogicalUnits();
 
@@ -1483,14 +1679,65 @@ function redrawCanvas() {
 
   const tds = appRef.project?.textDraws || [];
   computeFxFrames();
+  const sel = new Set(selectedTds());
   for (let i = 0; i < tds.length; i++) {
-    renderTextDraw(tds[i], i === selectedIdx);
+    renderTextDraw(tds[i], sel.has(tds[i]));
   }
+  // Selection marks on top of everything, the resize handle only with a single selection
+  for (const td of sel) drawSelectionRect(td);
+  if (sel.size === 1) drawResizeHandle([...sel][0]);
+}
+
+function drawSelectionRect(td) {
+  const r = selectionRect(td), u = unitPx();
+  ctx.save();
+  ctx.lineWidth = 1.5 * u.x;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  ctx.strokeStyle = '#00CCFF';
+  ctx.setLineDash([5 * u.x, 4 * u.x]);
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  ctx.restore();
+}
+
+// Resize handle: four arrows joined in an X, on a small translucent disc
+function drawResizeHandle(td) {
+  const { hx, hy } = resizeHandlePos(td), u = unitPx();
+  ctx.save();
+  ctx.translate(hx, hy);
+  ctx.scale(u.x, u.y);   // 1 unit = 1 screen pixel from here on
+  ctx.beginPath();
+  ctx.arc(0, 0, HANDLE_R, 0, Math.PI * 2);
+  ctx.fillStyle = hoverHandle ? 'rgba(0, 204, 255, 0.9)' : 'rgba(10, 13, 20, 0.6)';
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#00CCFF';
+  ctx.stroke();
+  const ink = hoverHandle ? '#0a0d14' : '#FFFFFF';
+  const e = 6.5;
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
+  ctx.beginPath();
+  ctx.moveTo(-e + 2, -e + 2); ctx.lineTo(e - 2, e - 2);
+  ctx.moveTo(e - 2, -e + 2); ctx.lineTo(-e + 2, e - 2);
+  ctx.stroke();
+  for (const [dx, dy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+    // Arrow head pointing out to each corner
+    const tx = dx * e, ty = dy * e;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - dx * 4.2, ty);
+    ctx.lineTo(tx, ty - dy * 4.2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawGrid() {
   ctx.save();
-  const px = TD_WIDTH / TD_SCREEN.w;
+  const px = TD_WIDTH / TD_SCREEN.w / view.z;
   ctx.lineWidth = px;
 
   for (let x = 0; x <= TD_WIDTH; x += 40) {
@@ -1523,12 +1770,12 @@ function drawGrid() {
   // Label drawn in pixels so it does not distort with the vertical scale
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const label = `SAFE ZONE (${sz.w} × ${sz.h})`;
-  const lx = sz.x * TD_SCREEN.w / TD_WIDTH, ly = sz.y * TD_SCREEN.h / TD_HEIGHT - 6;
-  ctx.font = 'bold 26px "Segoe UI", sans-serif';
+  const lx = sz.x * TD_SCREEN.w / TD_WIDTH, ly = sz.y * TD_SCREEN.h / TD_HEIGHT - 6 / view.z;
+  ctx.font = `bold ${26 / view.z}px "Segoe UI", sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-  ctx.lineWidth = 6;
+  ctx.lineWidth = 6 / view.z;
   ctx.strokeText(label, lx, ly);
   ctx.fillStyle = '#FF1493';
   ctx.fillText(label, lx, ly);
@@ -1583,25 +1830,6 @@ function renderTextDraw(real, isSelected) {
     for (const ex of fr.extras) drawTextDraw(ctx, ex);
     ctx.restore();
     useLogicalUnits();
-  }
-
-  // Selection border and resize handle
-  if (isSelected) {
-    const px = TD_WIDTH / TD_SCREEN.w, py = TD_HEIGHT / TD_SCREEN.h;
-    ctx.strokeStyle = '#00CCFF';
-    ctx.lineWidth = 3 * px;
-    ctx.setLineDash([9 * px, 9 * px]);
-    ctx.strokeRect(bounds.x - 6 * px, bounds.y - 6 * py, bounds.w + 12 * px, bounds.h + 12 * py);
-    ctx.setLineDash([]);
-
-    const hx = bounds.x + bounds.w;
-    const hy = bounds.y + bounds.h;
-    const hw = 15 * px, hh = 15 * py;
-    ctx.fillStyle = '#00CCFF';
-    ctx.fillRect(hx - hw, hy - hh, hw * 2, hh * 2);
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 3 * px;
-    ctx.strokeRect(hx - hw, hy - hh, hw * 2, hh * 2);
   }
 }
 
@@ -1730,6 +1958,8 @@ function updateSidebarList() {
   }
 
   normalizeTdOrder();
+  const sel = new Set(selectedTds());
+  const multi = sel.size > 1;
   let lastGroup = null;
   tds.forEach((td, idx) => {
     const group = isPlayerLayer(td);
@@ -1741,9 +1971,9 @@ function updateSidebarList() {
       lastGroup = group;
     }
     const item = document.createElement('div');
-    item.className = 'td-list-item' + (idx === selectedIdx ? ' selected' : '');
-    item.draggable = true;
-    item.ondragstart = (e) => { dragTdIdx = idx; e.dataTransfer.effectAllowed = 'move'; };
+    item.className = 'td-list-item' + (sel.has(td) ? ' selected' : '');
+    item.draggable = !multi;
+    item.ondragstart = (e) => { if (multi) { e.preventDefault(); return; } dragTdIdx = idx; e.dataTransfer.effectAllowed = 'move'; };
     item.ondragend = () => { dragTdIdx = -1; listEl.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after')); };
     item.ondragover = (e) => {
       if (dragTdIdx < 0 || isPlayerLayer(tds[dragTdIdx]) !== group) return;
@@ -1772,8 +2002,9 @@ function updateSidebarList() {
       </div>
     `;
 
-    item.onclick = () => {
-      selectedIdx = idx;
+    item.onclick = (e) => {
+      if (e.shiftKey || e.ctrlKey || e.metaKey) toggleSelect(idx);
+      else { multiSel.clear(); selectedIdx = idx; }
       updateSidebarFields();
       updateSidebarList();
       redrawCanvas();
@@ -1783,14 +2014,47 @@ function updateSidebarList() {
   });
 }
 
+// With more than one TextDraw selected only moving and deleting are allowed: the rest of the panel is locked
+function applyMultiLock() {
+  const multi = isMulti();
+  const panel = dialogEl.querySelector('#tdDetailsPanel');
+  if (panel) {
+    for (const child of panel.children) {
+      if (child.id === 'tdActionsRow' || child.id === 'tdMultiNote') continue;
+      child.inert = multi;
+      child.classList.toggle('td-locked', multi);
+    }
+  }
+  const note = dialogEl.querySelector('#tdMultiNote');
+  if (note) note.hidden = !multi;
+  // Creating, duplicating, copying and reordering are off too; the tooltip tells why and the original one comes back afterwards
+  const why = t('Indisponível com vários elementos selecionados: só é possível mover ou excluir todos juntos.');
+  for (const id of ['#tdBtnAdd', '#tdBtnAddBox', '#tdBtnAddModel', '#tdBtnAddSprite', '#tdBtnAddProgress',
+    '#tdBtnDuplicate', '#tdBtnCopyPwn', '#tdOrderBack', '#tdOrderDown', '#tdOrderUp', '#tdOrderFront']) {
+    const b = dialogEl.querySelector(id);
+    if (!b) continue;
+    if (multi) { if (!('tdTitle' in b.dataset)) b.dataset.tdTitle = b.title; b.title = why; }
+    else if ('tdTitle' in b.dataset) { b.title = b.dataset.tdTitle; delete b.dataset.tdTitle; }
+    b.disabled = multi;
+  }
+}
+
 function updateSidebarFields() {
   const panel = dialogEl.querySelector('#tdDetailsPanel');
   const td = getSelectedTd();
+  applyMultiLock();
   if (!td) {
     if (panel) panel.style.display = 'none';
     return;
   }
   if (panel) panel.style.display = 'block';
+  // Each bar style has its own minimum size in the include
+  if (td.type === 'progress') {
+    const pbMin = pbMinSize(td.pbStyle);
+    const wEl = dialogEl.querySelector('#tdPbWidth'), hEl = dialogEl.querySelector('#tdPbHeight');
+    if (wEl) wEl.min = pbMin.w;
+    if (hEl) hEl.min = pbMin.h;
+  }
 
   const setVal = (id, val) => {
     const el = dialogEl.querySelector(id);
@@ -2132,9 +2396,13 @@ function deleteSelectedTextDraw() {
   const tds = appRef.project?.textDraws || [];
   if (!tds[selectedIdx]) return;
   tdPushUndo();
-  tds.splice(selectedIdx, 1);
+  // Deletes every selected TextDraw at once
+  const gone = new Set(selectedTds());
+  const first = tds.findIndex(td => gone.has(td));
+  for (let i = tds.length - 1; i >= 0; i--) if (gone.has(tds[i])) tds.splice(i, 1);
+  multiSel.clear();
   appRef.project.modified = true;
-  selectedIdx = Math.max(0, selectedIdx - 1);
+  selectedIdx = Math.max(0, first - 1);
   updateSidebarFields();
   updateSidebarList();
   redrawCanvas();
@@ -2142,7 +2410,7 @@ function deleteSelectedTextDraw() {
 
 function duplicateSelectedTextDraw() {
   const td = getSelectedTd();
-  if (!td) return;
+  if (!td || isMulti()) return;
   tdPushUndo();
   // The copy sits outside the original, against the bottom edge (or the top, if it does not fit on screen)
   // and in the same column (same X), as in the game the TextDraw occupies the textDrawRect rectangle

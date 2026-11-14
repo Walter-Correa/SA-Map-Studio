@@ -1236,6 +1236,14 @@ legend.sub { margin-top: 8px; }
 .btn.pb-autofill:hover { background: color-mix(in srgb, var(--sodium) 12%, transparent); }
 .btn.pb-autofill.on { background: var(--accent-2, #f0a630); color: var(--sodium-ink); }
 .td-list-item.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+/* TextDraw editor: expand button, expanded window and the locked panel of a multiple selection */
+.td-head-buttons { display: flex; align-items: center; gap: 4px; }
+.td-expand { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--paper-mute); cursor: pointer; }
+.td-expand:hover, .td-expand.active { color: var(--paper); background: var(--asphalt-600, rgba(255, 255, 255, .08)); }
+.td-expand svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#dlgTextDraw.td-expanded { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; max-height: 100vh !important; margin: 0; border-radius: 0; }
+.td-multi-note { padding: 6px 8px; border: 1px solid var(--accent); border-radius: 4px; background: var(--bg-soft); color: var(--paper); font-size: 12px; }
+.td-locked { opacity: .45; }
 .td-list-item.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
 .td-list-group { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-dim); padding: 4px 4px 2px; }
 .gz-badge, .td-badge {
