@@ -717,7 +717,6 @@
  "Alvo Z": "Z Target",
  "Rotacionar durante o movimento": "Putar selama gerakan",
  "Resetar": "Atur ulang",
- "Posição atual": "Posisi saat ini",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Memindahkan objek dengan mulus ke koordinat lain dengan MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Objek ini adalah induk dari objek lain yang ditautkan padanya dan tidak bisa ditautkan ke item lain.",
  "Veículo Alvo": "Kendaraan Target",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Tukar posisi gerbang",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Hanya naik ke kendaraan pemain setelah ia membunyikan klakson di dalamnya. Klakson lagi, atau pemain turun, membuat para pelindung turun.",
  "Enche a vida até o máximo que o jogador tem agora.": "Mengisi nyawa hingga maksimum pemain saat ini.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Skin ini tidak ada di singleplayer (karakter cerita dan skin khusus SA-MP): game tidak menggantinya."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Skin ini tidak ada di singleplayer (karakter cerita dan skin khusus SA-MP): game tidak menggantinya.",
+ "Usar posição atual como aberto": "Gunakan posisi saat ini sebagai terbuka",
+ "Usar posição atual como alvo": "Gunakan posisi saat ini sebagai target",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Menyalin posisi dan rotasi objek saat ini ke posisi terbuka",
+ "Definir posição aberta do portão": "Atur posisi terbuka gerbang",
+ "Coordenadas atuais copiadas para a posição aberta": "Koordinat saat ini disalin ke posisi terbuka"
 }

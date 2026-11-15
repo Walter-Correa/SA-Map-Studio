@@ -717,7 +717,6 @@
  "Alvo Z": "Ziel Z",
  "Rotacionar durante o movimento": "Während der Bewegung drehen",
  "Resetar": "Zurücksetzen",
- "Posição atual": "Aktuelle Position",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Bewegt das Objekt sanft mit MoveObject / MoveDynamicObject zu einer anderen Koordinate.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Dieses Objekt ist das Elternteil anderer, daran verbundener Objekte und kann mit keinem anderen Element verbunden werden.",
  "Veículo Alvo": "Zielfahrzeug",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Torposition tauschen",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Steigt erst in das Fahrzeug des Spielers ein, nachdem er darin hupt. Erneutes Hupen oder das Aussteigen des Spielers lässt die Beschützer aussteigen.",
  "Enche a vida até o máximo que o jogador tem agora.": "Füllt die Gesundheit bis zum aktuellen Maximum des Spielers auf.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Dieser Skin existiert im Einzelspieler nicht (Story-Figuren und reine SA-MP-Skins): Das Spiel wechselt ihn nicht."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Dieser Skin existiert im Einzelspieler nicht (Story-Figuren und reine SA-MP-Skins): Das Spiel wechselt ihn nicht.",
+ "Usar posição atual como aberto": "Aktuelle Position als offen verwenden",
+ "Usar posição atual como alvo": "Aktuelle Position als Ziel verwenden",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Kopiert die aktuelle Position und Drehung des Objekts in die offene Position",
+ "Definir posição aberta do portão": "Offene Position des Tors festlegen",
+ "Coordenadas atuais copiadas para a posição aberta": "Aktuelle Koordinaten in die offene Position kopiert"
 }

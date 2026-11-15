@@ -717,7 +717,6 @@
  "Alvo Z": "Cible Z",
  "Rotacionar durante o movimento": "Pivoter pendant le mouvement",
  "Resetar": "Réinitialiser",
- "Posição atual": "Position actuelle",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Déplace l'objet en douceur vers une autre coordonnée avec MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Cet objet est le parent d'autres objets qui lui sont attachés et ne peut être attaché à aucun autre élément.",
  "Veículo Alvo": "Véhicule cible",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Échanger la position du portail",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "N’entre dans le véhicule du joueur qu’après un coup de klaxon de sa part. Un autre coup de klaxon, ou la sortie du joueur, fait descendre les protecteurs.",
  "Enche a vida até o máximo que o jogador tem agora.": "Remplit la santé jusqu'au maximum actuel du joueur.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ce skin n'existe pas en solo (personnages de l'histoire et skins propres à SA-MP) : le jeu ne le change pas."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ce skin n'existe pas en solo (personnages de l'histoire et skins propres à SA-MP) : le jeu ne le change pas.",
+ "Usar posição atual como aberto": "Utiliser la position actuelle comme ouverte",
+ "Usar posição atual como alvo": "Utiliser la position actuelle comme cible",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Copie la position et la rotation actuelles de l'objet vers la position ouverte",
+ "Definir posição aberta do portão": "Définir la position ouverte du portail",
+ "Coordenadas atuais copiadas para a posição aberta": "Coordonnées actuelles copiées vers la position ouverte"
 }

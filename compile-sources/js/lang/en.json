@@ -717,7 +717,6 @@
  "Alvo Z": "Target Z",
  "Rotacionar durante o movimento": "Rotate during the movement",
  "Resetar": "Reset",
- "Posição atual": "Current position",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Moves the object smoothly to another coordinate with MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "This object is the parent of other objects attached to it and can't be attached to any other item.",
  "Veículo Alvo": "Target Vehicle",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Swap gate position",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Only gets into the player's vehicle after he sounds the horn in it. Another horn, or the player getting out, makes the protectors get out.",
  "Enche a vida até o máximo que o jogador tem agora.": "Fills the health up to the player's current maximum.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "This skin does not exist in singleplayer (story characters and SA-MP-only skins): the game does not change it."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "This skin does not exist in singleplayer (story characters and SA-MP-only skins): the game does not change it.",
+ "Usar posição atual como aberto": "Use current position as open",
+ "Usar posição atual como alvo": "Use current position as target",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Copies the object's current position and rotation to the open position",
+ "Definir posição aberta do portão": "Set gate open position",
+ "Coordenadas atuais copiadas para a posição aberta": "Current coordinates copied to the open position"
 }

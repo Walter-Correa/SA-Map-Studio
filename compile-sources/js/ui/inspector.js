@@ -331,6 +331,7 @@ function objectInspector(o) {
       <div class="insp-label">${app.project?.mode === 'sp' ? 'Movimento' : 'Movimento (MoveObject)'}</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkMoveObj" ${o.move ? 'checked' : ''} ${o.attach ? 'disabled' : ''}> Ativar movimento</label>
       ${o.attach ? '<div class="insp-note" style="color: var(--gold-400);">Objetos acoplados não podem se mover de forma independente. Somente o objeto ou veículo pai pode ter movimento.</div>' : (o.move ? `
+        <button type="button" class="btn small block" data-move-act="settarg" title="Usar coordenadas atuais do objeto como alvo" style="margin-bottom:6px;"><svg><use href="#i-pin"/></svg>Usar posição atual como alvo</button>
         <div class="pair">
           <label>Alvo X<input type="number" step="0.1" data-move="targetX" value="${fmt(o.move.targetX)}"></label>
           <label>Alvo Y<input type="number" step="0.1" data-move="targetY" value="${fmt(o.move.targetY)}"></label>
@@ -348,9 +349,7 @@ function objectInspector(o) {
         <div class="mini-actions" style="margin-top:8px;">
           <button type="button" class="btn primary small" data-move-act="test" title="Testar animação em tempo real no mapa"><svg><use href="#i-play"/></svg>Testar</button>
           <button type="button" class="btn small" data-move-act="stop" title="Parar animação"><svg><use href="#i-stop"/></svg>Parar</button>
-          <button type="button" class="btn small" data-move-act="reset" title="Resetar posição"><svg><use href="#i-restore"/></svg>Resetar</button>
-          <button type="button" class="btn small" data-move-act="settarg" title="Usar coordenadas atuais do objeto como alvo"><svg><use href="#i-pin"/></svg>Posição atual</button>
-        </div>
+          <button type="button" class="btn small" data-move-act="reset" title="Resetar posição"><svg><use href="#i-restore"/></svg>Resetar</button>        </div>
       ` : (app.project?.mode === 'sp' ? '<div class="insp-note">Move o objeto suavemente até outra coordenada.</div>' : '<div class="insp-note">Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.</div>'))}
     </div>
     ${gateSection(o)}

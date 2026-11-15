@@ -717,7 +717,6 @@
  "Alvo Z": "Z đích",
  "Rotacionar durante o movimento": "Xoay trong khi di chuyển",
  "Resetar": "Đặt lại",
- "Posição atual": "Vị trí hiện tại",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Di chuyển mượt đối tượng đến tọa độ khác bằng MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Đối tượng này là cha của các đối tượng khác gắn vào nó và không thể gắn vào mục nào khác.",
  "Veículo Alvo": "Phương tiện đích",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Hoán đổi vị trí cổng",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Chỉ lên xe của người chơi sau khi người chơi bấm còi trong xe. Bấm còi lần nữa, hoặc người chơi xuống xe, sẽ khiến người bảo vệ xuống.",
  "Enche a vida até o máximo que o jogador tem agora.": "Hồi máu đến mức tối đa hiện tại của người chơi.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Skin này không có trong chế độ chơi đơn (nhân vật cốt truyện và skin chỉ có ở SA-MP): trò chơi không đổi nó."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Skin này không có trong chế độ chơi đơn (nhân vật cốt truyện và skin chỉ có ở SA-MP): trò chơi không đổi nó.",
+ "Usar posição atual como aberto": "Dùng vị trí hiện tại làm vị trí mở",
+ "Usar posição atual como alvo": "Dùng vị trí hiện tại làm đích",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Sao chép vị trí và góc xoay hiện tại của đối tượng sang vị trí mở",
+ "Definir posição aberta do portão": "Đặt vị trí mở của cổng",
+ "Coordenadas atuais copiadas para a posição aberta": "Đã sao chép tọa độ hiện tại sang vị trí mở"
 }

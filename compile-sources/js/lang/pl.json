@@ -717,7 +717,6 @@
  "Alvo Z": "Docelowe Z",
  "Rotacionar durante o movimento": "Obracaj podczas ruchu",
  "Resetar": "Resetuj",
- "Posição atual": "Bieżąca pozycja",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Płynnie przesuwa obiekt do innej współrzędnej przez MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Ten obiekt jest rodzicem innych dołączonych do niego obiektów i nie może być dołączony do żadnego innego elementu.",
  "Veículo Alvo": "Pojazd docelowy",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Zamień pozycję bramy",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Wsiada do pojazdu gracza dopiero, gdy ten zatrąbi w środku. Kolejne trąbienie albo wyjście gracza sprawia, że obrońcy wysiadają.",
  "Enche a vida até o máximo que o jogador tem agora.": "Uzupełnia zdrowie do obecnego maksimum gracza.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ten skin nie istnieje w trybie singleplayer (postacie fabularne i skiny tylko z SA-MP): gra go nie zmienia."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ten skin nie istnieje w trybie singleplayer (postacie fabularne i skiny tylko z SA-MP): gra go nie zmienia.",
+ "Usar posição atual como aberto": "Użyj obecnej pozycji jako otwartej",
+ "Usar posição atual como alvo": "Użyj obecnej pozycji jako celu",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Kopiuje obecną pozycję i obrót obiektu do pozycji otwartej",
+ "Definir posição aberta do portão": "Ustaw otwartą pozycję bramy",
+ "Coordenadas atuais copiadas para a posição aberta": "Obecne współrzędne skopiowane do pozycji otwartej"
 }

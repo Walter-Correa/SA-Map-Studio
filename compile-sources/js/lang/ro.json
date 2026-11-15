@@ -717,7 +717,6 @@
  "Alvo Z": "Z țintă",
  "Rotacionar durante o movimento": "Rotește în timpul mișcării",
  "Resetar": "Resetează",
- "Posição atual": "Poziția curentă",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Mută lin obiectul la o altă coordonată cu MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Acest obiect este părintele altor obiecte atașate la el și nu poate fi atașat la niciun alt element.",
  "Veículo Alvo": "Vehicul țintă",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Schimbă poziția porții",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Urcă în vehiculul jucătorului doar după ce acesta claxonează în el. Încă un claxon, sau coborârea jucătorului, îi face pe protectori să coboare.",
  "Enche a vida até o máximo que o jogador tem agora.": "Umple viața până la maximul actual al jucătorului.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Acest skin nu există în singleplayer (personaje din poveste și skinuri doar din SA-MP): jocul nu îl schimbă."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Acest skin nu există în singleplayer (personaje din poveste și skinuri doar din SA-MP): jocul nu îl schimbă.",
+ "Usar posição atual como aberto": "Folosește poziția actuală ca deschis",
+ "Usar posição atual como alvo": "Folosește poziția actuală ca țintă",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Copiază poziția și rotația actuale ale obiectului în poziția deschisă",
+ "Definir posição aberta do portão": "Setează poziția deschisă a porții",
+ "Coordenadas atuais copiadas para a posição aberta": "Coordonatele actuale au fost copiate în poziția deschisă"
 }

@@ -717,7 +717,6 @@
  "Alvo Z": "Destino Z",
  "Rotacionar durante o movimento": "Rotar durante el movimiento",
  "Resetar": "Restablecer",
- "Posição atual": "Posición actual",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Mueve el objeto suavemente hasta otra coordenada con MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Este objeto es padre de otros objetos acoplados a él y no puede acoplarse a ningún otro elemento.",
  "Veículo Alvo": "Vehículo destino",
@@ -2685,5 +2684,10 @@
  "Trocar posição do portão": "Intercambiar posición del portón",
  "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Solo entra en el vehículo del jugador después de que él toque la bocina dentro. Otro bocinazo, o que el jugador se baje, hace que los protectores se bajen.",
  "Enche a vida até o máximo que o jogador tem agora.": "Llena la vida hasta el máximo que el jugador tiene ahora.",
- "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Esta skin no existe en el singleplayer (personajes de la historia y skins solo de SA-MP): el juego no la cambia."
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Esta skin no existe en el singleplayer (personajes de la historia y skins solo de SA-MP): el juego no la cambia.",
+ "Usar posição atual como aberto": "Usar posición actual como abierto",
+ "Usar posição atual como alvo": "Usar posición actual como objetivo",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Copia la posición y la rotación actuales del objeto a la posición abierta",
+ "Definir posição aberta do portão": "Definir posición abierta del portón",
+ "Coordenadas atuais copiadas para a posição aberta": "Coordenadas actuales copiadas a la posición abierta"
 }
