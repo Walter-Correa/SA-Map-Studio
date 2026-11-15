@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Jadikan gerbang atau pintu",
  "Alterar portão": "Ubah gerbang",
  "Testando o portão": "Menguji gerbang",
- "Trocar posição do portão": "Tukar posisi gerbang"
+ "Trocar posição do portão": "Tukar posisi gerbang",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Hanya naik ke kendaraan pemain setelah ia membunyikan klakson di dalamnya. Klakson lagi, atau pemain turun, membuat para pelindung turun."
 }

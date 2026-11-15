@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Kapuvá vagy ajtóvá alakítás",
  "Alterar portão": "Kapu módosítása",
  "Testando o portão": "Kapu tesztelése",
- "Trocar posição do portão": "Kapu helyzetének cseréje"
+ "Trocar posição do portão": "Kapu helyzetének cseréje",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Csak akkor száll be a játékos járművébe, ha az dudál benne. Egy újabb dudálás, vagy ha a játékos kiszáll, a védelmezőket is kiszállítja."
 }

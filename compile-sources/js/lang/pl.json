@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Zamień w bramę lub drzwi",
  "Alterar portão": "Zmień bramę",
  "Testando o portão": "Testowanie bramy",
- "Trocar posição do portão": "Zamień pozycję bramy"
+ "Trocar posição do portão": "Zamień pozycję bramy",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Wsiada do pojazdu gracza dopiero, gdy ten zatrąbi w środku. Kolejne trąbienie albo wyjście gracza sprawia, że obrońcy wysiadają."
 }

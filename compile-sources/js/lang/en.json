@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Turn into a gate or door",
  "Alterar portão": "Change gate",
  "Testando o portão": "Testing the gate",
- "Trocar posição do portão": "Swap gate position"
+ "Trocar posição do portão": "Swap gate position",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Only gets into the player's vehicle after he sounds the horn in it. Another horn, or the player getting out, makes the protectors get out."
 }

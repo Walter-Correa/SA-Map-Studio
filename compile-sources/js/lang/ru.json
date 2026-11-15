@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Превратить в ворота или дверь",
  "Alterar portão": "Изменить ворота",
  "Testando o portão": "Проверка ворот",
- "Trocar posição do portão": "Поменять положение ворот"
+ "Trocar posição do portão": "Поменять положение ворот",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Садится в машину игрока, только когда он посигналит в ней. Ещё один сигнал или выход игрока заставляет защитников выйти."
 }

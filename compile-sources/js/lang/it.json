@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Trasforma in cancello o porta",
  "Alterar portão": "Modifica cancello",
  "Testando o portão": "Test del cancello",
- "Trocar posição do portão": "Scambia posizione del cancello"
+ "Trocar posição do portão": "Scambia posizione del cancello",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Sale sul veicolo del giocatore solo dopo che lui suona il clacson al suo interno. Un altro colpo di clacson, o il giocatore che scende, fa scendere i protettori."
 }

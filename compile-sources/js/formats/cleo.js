@@ -102,6 +102,10 @@ function taskGate(a, tag, skip) {
 //   takes them again for IGN_KEEP
 const RED_PEDS = 0, RED_PEDS_N = 16, RED_CARS = 16, RED_CARS_N = 4, ATK_VARS = 20, ATK_N = 8, ATK_IDX = 28, ATK_TIME = 29, ATK_KEEP = 10000;
 const BLUE_PEDS = 30, BLUE_PEDS_N = 16, IGN_VARS = 46, IGN_TIME = 54, IGN_N = 8, IGN_IDX = 62, IGN_KEEP = 30000;
+// - RIDE_VAR: 1 while the protectors may ride in the player's vehicle. The player sounds the horn in it to turn it on, again to turn it off
+//   (the ones inside get out); it is off whenever he is on foot. Off, no protector gets into his vehicle (it would take the seats of the
+//   characters of a mission or of his gang)
+const RIDE_VAR = 1009;
 // The radar markers of the game (CRadar::ms_RadarTrace): 175 of 0x28 bytes. +0 colour, +4 the handle of what it is on, +0x25 flags (bit 1 in use,
 // bit 3 friendly), +0x26 display (bits 0-1, 0 = hidden) and type (bits 2-5: 1 vehicle, 2 character)
 // An address read from the game is used only above this (0 or a small number is no object; above 0x7FFFFFFF it reads as negative)
@@ -119,7 +123,25 @@ export function taskGuardScript() {
   // CLEO+ runs this piece when a bullet hits anything. Its events for a character hurt and a vehicle hit by a weapon brought the game down
   // in a fight of many NPCs (a crash inside CLEO+, found in the game): the bullets alone tell who shoots at the player or his vehicle
   a.op(0x0EE0, int(1), ref('evb'), lv(13), lv(14), lv(15), lv(16));
-  a.label('loop').op(0x0001, int(250));
+  // The horn is looked at every 50 ms (a short touch must not be missed); the rest four times a second (25 counts the turns, 26 is whether
+  // the horn was down the last time)
+  a.op(0x0AB3, int(RIDE_VAR), int(0)).op(0x0006, lv(25), int(0)).op(0x0006, lv(26), int(0));
+  a.label('loop').op(0x0001, int(50));
+  a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('hz'));
+  a.op(0x00D6, int(0)).op(0x0122, int(0)).op(0x004D, ref('hu'));
+  a.op(0x00D6, int(0)).op(0x0039, lv(26), int(0)).op(0x004D, ref('hk'));                         // held down: once per touch
+  a.op(0x0006, lv(26), int(1));
+  a.op(0x0AB4, int(RIDE_VAR), lv(27));
+  a.op(0x0006, lv(28), int(1)).op(0x0062, lv(28), lv(27));                                         // 28 = 1 - 27
+  a.op(0x0AB3, int(RIDE_VAR), lv(28));
+  a.jump('hk');
+  a.label('hu').op(0x0006, lv(26), int(0));
+  a.jump('hk');
+  a.label('hz').op(0x0AB3, int(RIDE_VAR), int(0)).op(0x0006, lv(26), int(0));                   // on foot: off
+  a.label('hk');
+  a.op(0x000A, lv(25), int(1));
+  a.op(0x00D6, int(0)).op(0x0019, lv(25), int(4)).op(0x004D, ref('loop'));
+  a.op(0x0006, lv(25), int(0));
   a.op(0x0006, lv(0), int(0));                                   // free places
   a.op(0x0006, lv(1), int(TASK_TABLE));                          // address of the place being looked at
   a.op(0x0006, lv(2), int(0));                                   // places looked at
@@ -1429,6 +1451,23 @@ export function actorsScript(items) {
         // of his group) is cancelled
         [0, 1, 8].forEach((pt) => { a.op(0x077B, lv(h), int(4), int(pt)).op(0x077B, lv(h), int(3), int(pt)); a.op(0x0747, int(4), int(NPC_TYPE), int(pt)).op(0x0747, int(3), int(NPC_TYPE), int(pt)); });
         a.op(0x077A, lv(h), int(0), int(0));
+        // Nor do the player's friends attack it: Grove (his gang) loses any hate for its ped type, and each one of his group (the gang he
+        // recruited) loses it too; one of them attacking this protector has that attack cancelled
+        a.op(0x0747, int(4), int(8), int(NPC_TYPE)).op(0x0747, int(3), int(8), int(NPC_TYPE)).op(0x0746, int(0), int(8), int(NPC_TYPE));
+        a.op(0x07AF, int(0), lv(T6)).op(0x0006, lv(T5), int(0));
+        a.label(L('rg'));
+        a.op(0x00D6, int(0)).op(0x001B, int(7), lv(T5)).op(0x004D, ref(L('rgx')));                // the 7 places of a group
+        a.op(0x092B, lv(T6), lv(T5), lv(T0));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('rgn')));
+        a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('rgn')));
+        a.op(0x077B, lv(T0), int(4), int(NPC_TYPE)).op(0x077B, lv(T0), int(3), int(NPC_TYPE));
+        a.op(0x0E44, lv(T0), lv(T7));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T7), lv(h)).op(0x004D, ref(L('rgn')));
+        a.op(0x0687, lv(T0));
+        a.label(L('rgn'));
+        a.op(0x000A, lv(T5), int(1));
+        a.jump(L('rg'));
+        a.label(L('rgx'));
         a.op(0x0E44, lv(h), lv(T0));
         a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(PLAYER)).op(0x004D, ref(L('pz')));
         a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('pg')));
@@ -1726,12 +1765,25 @@ export function actorsScript(items) {
           a.label(L('rcx'));
         }
         if (e.follow) {
-          // close to the player: it comes to him on foot; it gets in his car and out of it with him. Not while it fights
+          // close to the player: it comes to him on foot; it gets in his car (only while he allows it with the horn) and out of it with him. Not while it fights
           a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(done));
           a.op(0x000A, lv(cnt), int(1));
           a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(23)).op(0x004D, ref(done));
           a.op(0x0006, lv(cnt), int(0));
           a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('ff')));
+          // The player is in a vehicle: it rides only while he allows it with the horn (RIDE_VAR). Not allowed: out of any vehicle, and the
+          // order of getting in (on its way to the door) is cancelled
+          a.op(0x0AB4, int(RIDE_VAR), lv(T6));
+          a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(0)).op(0x004D, ref(L('fr')));
+          a.op(0x00D6, int(0)).op(0x00DF, lv(h)).op(0x004D, ref(L('fr1')));
+          a.op(0x0633, lv(h));
+          a.jump(done);
+          a.label(L('fr1'));
+          a.op(0x00A0, lv(PLAYER), lv(T4), lv(T5), lv(T6));                                       // on its way to his door (within 8 m): it stops
+          a.op(0x00D6, int(0)).op(0x00FE, lv(h), lv(T4), lv(T5), lv(T6), flt(8), flt(8), flt(4), int(0)).op(0x004D, ref(done));
+          a.op(0x0687, lv(h));
+          a.jump(done);
+          a.label(L('fr'));
           a.op(0x00D6, int(0)).op(0x80DF, lv(h)).op(0x004D, ref(done));                           // the player drives and it is not in: gets in
           taskGate(a, 'c' + i, done);
           a.op(0x03C0, lv(PLAYER), lv(T6));

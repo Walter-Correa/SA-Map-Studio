@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "In ein Tor oder eine Tür verwandeln",
  "Alterar portão": "Tor ändern",
  "Testando o portão": "Tor wird getestet",
- "Trocar posição do portão": "Torposition tauschen"
+ "Trocar posição do portão": "Torposition tauschen",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Steigt erst in das Fahrzeug des Spielers ein, nachdem er darin hupt. Erneutes Hupen oder das Aussteigen des Spielers lässt die Beschützer aussteigen."
 }

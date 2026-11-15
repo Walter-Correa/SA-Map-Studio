@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Convertir en portón o puerta",
  "Alterar portão": "Cambiar portón",
  "Testando o portão": "Probando el portón",
- "Trocar posição do portão": "Intercambiar posición del portón"
+ "Trocar posição do portão": "Intercambiar posición del portón",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Solo entra en el vehículo del jugador después de que él toque la bocina dentro. Otro bocinazo, o que el jugador se baje, hace que los protectores se bajen."
 }
