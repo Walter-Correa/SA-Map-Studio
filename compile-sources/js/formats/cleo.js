@@ -802,6 +802,9 @@ export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 7 : 5) : e.role 
 // The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
 // brings no stars (the civilians, type 4, do)
 const NPC_TYPE = 16;
+// The enemies of the mod are members of another gang no gang of the game uses (GANG9): members of the same gang take no damage from each
+// other, so with the protectors' ped type they could never be hurt by them (the protectors gave them up and stood still beside them)
+const ENEMY_TYPE = 15;
 // The game keeps a record of every task a script gives to a character (05D3, 05CA, ...) in a table of 128 places, and it does not check that the
 // table has room: when it is full the next task goes to the place before the table, the character is not given the task (it stands there) and the
 // game fails soon after (found in a crash dump: 128 of 128 places taken, 103 of them by 05D3 and 24 by 05CA). The script taskguard counts the free
@@ -846,7 +849,7 @@ export function actorsScript(items) {
       // CJ (skin 0) is the player's own model: it is always in memory (asking for it and letting it go would take it away from the player)
       // (BUILD_PLAYER_MODEL takes the number of the player, 0, not the handle of his character: with the handle it took the game down)
       if (e.skin !== 0) loadModel(a, e.skin, 'a' + i);
-      a.op(0x009A, int(NPC_TYPE), int(e.skin), flt(e.x), flt(e.y), flt(e.z), lv(h));            // a gang member of that skin
+      a.op(0x009A, int(e.role === 'enemy' ? ENEMY_TYPE : NPC_TYPE), int(e.skin), flt(e.x), flt(e.y), flt(e.z), lv(h));   // a gang member of that skin
       if (e.skin !== 0) a.op(0x0249, int(e.skin));                                              // the model is not kept in memory (the NPC holds it while it lives)
       a.op(0x0173, lv(h), flt(e.rz));
       if (e.invulnerable) a.op(0x02AB, lv(h), int(1), int(1), int(1), int(1), int(1));
