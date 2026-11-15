@@ -77,6 +77,7 @@ export function gateSection(o) {
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkGate" ${g ? 'checked' : ''} ${o.attach ? 'disabled' : ''}> Transformar em portão ou porta</label>
       ${blocked || (g ? `
         <div class="insp-note">A posição atual do objeto é a fechada. Para ajustar a aberta com o gizmo, use Trocar, mova o objeto e troque de novo.</div>
+        <button type="button" class="btn small block" data-gate-act="setopen" title="Copia a posição e a rotação atuais do objeto para a posição aberta" style="margin-top:6px;"><svg><use href="#i-pin"/></svg>Usar posição atual como aberto</button>
         <div class="pair" style="margin-top:6px;">
           <label>Aberto X<input type="number" step="0.1" data-gate="ox" value="${fmt(g.ox)}"></label>
           <label>Aberto Y<input type="number" step="0.1" data-gate="oy" value="${fmt(g.oy)}"></label>
@@ -145,6 +146,14 @@ export function bindGate(uid, rerender) {
     } else if (act === 'stop') {
       stopSounds();
       app.editor.resetMoveObject(uid);
+    } else if (act === 'setopen') {
+      project.updateItems('Definir posição aberta do portão', [uid], (o) => {
+        const g = o.gate;
+        if (!g) return;
+        Object.assign(g, { ox: o.x, oy: o.y, oz: o.z, orx: o.rx || 0, ory: o.ry || 0, orz: o.rz || 0 });
+      });
+      toast('Coordenadas atuais copiadas para a posição aberta');
+      rerender();
     } else if (act === 'swap') {
       stopSounds();
       app.editor.stopMoveObject(uid);

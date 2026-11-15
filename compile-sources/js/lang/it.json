@@ -717,7 +717,6 @@
  "Alvo Z": "Obiettivo Z",
  "Rotacionar durante o movimento": "Ruota durante il movimento",
  "Resetar": "Azzera",
- "Posição atual": "Posizione attuale",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Sposta l'oggetto dolcemente fino a un'altra coordinata con MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Questo oggetto è genitore di altri oggetti agganciati e non può essere agganciato a nessun altro elemento.",
  "Veículo Alvo": "Veicolo di destinazione",
@@ -2683,5 +2682,10 @@
  "Alterar portão": "Modifica cancello",
  "Testando o portão": "Test del cancello",
  "Trocar posição do portão": "Scambia posizione del cancello",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Sale sul veicolo del giocatore solo dopo che lui suona il clacson al suo interno. Un altro colpo di clacson, o il giocatore che scende, fa scendere i protettori."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Sale sul veicolo del giocatore solo dopo che lui suona il clacson al suo interno. Un altro colpo di clacson, o il giocatore che scende, fa scendere i protettori.",
+ "Usar posição atual como aberto": "Usa posizione attuale come aperto",
+ "Usar posição atual como alvo": "Usa posizione attuale come destinazione",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Copia la posizione e la rotazione attuali dell'oggetto nella posizione aperta",
+ "Definir posição aberta do portão": "Imposta la posizione aperta del cancello",
+ "Coordenadas atuais copiadas para a posição aberta": "Coordinate attuali copiate nella posizione aperta"
 }

@@ -717,7 +717,6 @@
  "Alvo Z": "Cél Z",
  "Rotacionar durante o movimento": "Forgatás mozgás közben",
  "Resetar": "Alaphelyzet",
- "Posição atual": "Aktuális pozíció",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Simán másik koordinátára mozgatja az objektumot a MoveObject / MoveDynamicObject segítségével.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Ez az objektum más, hozzá csatolt objektumok szülője, és nem csatolható más elemhez.",
  "Veículo Alvo": "Cél jármű",
@@ -2683,5 +2682,10 @@
  "Alterar portão": "Kapu módosítása",
  "Testando o portão": "Kapu tesztelése",
  "Trocar posição do portão": "Kapu helyzetének cseréje",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Csak akkor száll be a játékos járművébe, ha az dudál benne. Egy újabb dudálás, vagy ha a játékos kiszáll, a védelmezőket is kiszállítja."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Csak akkor száll be a játékos járművébe, ha az dudál benne. Egy újabb dudálás, vagy ha a játékos kiszáll, a védelmezőket is kiszállítja.",
+ "Usar posição atual como aberto": "Jelenlegi helyzet használata nyitottként",
+ "Usar posição atual como alvo": "Jelenlegi helyzet használata célként",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Az objektum jelenlegi helyzetét és forgatását a nyitott helyzetbe másolja",
+ "Definir posição aberta do portão": "Kapu nyitott helyzetének beállítása",
+ "Coordenadas atuais copiadas para a posição aberta": "A jelenlegi koordináták a nyitott helyzetbe másolva"
 }

@@ -717,7 +717,6 @@
  "Alvo Z": "Hedef Z",
  "Rotacionar durante o movimento": "Hareket sırasında döndür",
  "Resetar": "Sıfırla",
- "Posição atual": "Geçerli konum",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Nesneyi MoveObject / MoveDynamicObject ile başka bir koordinata yumuşakça taşır.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Bu nesne, kendisine bağlı başka nesnelerin üst nesnesidir ve başka bir öğeye bağlanamaz.",
  "Veículo Alvo": "Hedef Araç",
@@ -2683,5 +2682,10 @@
  "Alterar portão": "Kapıyı değiştir",
  "Testando o portão": "Kapı test ediliyor",
  "Trocar posição do portão": "Kapı konumunu değiştir",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Oyuncunun aracına ancak o araçta korna çaldıktan sonra biner. Bir korna daha ya da oyuncunun inmesi korumaları indirir."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Oyuncunun aracına ancak o araçta korna çaldıktan sonra biner. Bir korna daha ya da oyuncunun inmesi korumaları indirir.",
+ "Usar posição atual como aberto": "Mevcut konumu açık olarak kullan",
+ "Usar posição atual como alvo": "Mevcut konumu hedef olarak kullan",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Nesnenin mevcut konumunu ve dönüşünü açık konuma kopyalar",
+ "Definir posição aberta do portão": "Kapının açık konumunu ayarla",
+ "Coordenadas atuais copiadas para a posição aberta": "Mevcut koordinatlar açık konuma kopyalandı"
 }

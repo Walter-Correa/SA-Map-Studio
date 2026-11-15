@@ -717,7 +717,6 @@
  "Alvo Z": "Цель Z",
  "Rotacionar durante o movimento": "Вращать во время движения",
  "Resetar": "Сбросить",
- "Posição atual": "Текущая позиция",
  "Move o objeto suavemente até outra coordenada com MoveObject / MoveDynamicObject.": "Плавно перемещает объект к другой координате через MoveObject / MoveDynamicObject.",
  "Este objeto é pai de outros objetos acoplados nele e não pode ser acoplado a nenhum outro elemento.": "Этот объект является родителем других прикреплённых к нему объектов и не может быть прикреплён ни к какому другому элементу.",
  "Veículo Alvo": "Целевой транспорт",
@@ -2683,5 +2682,10 @@
  "Alterar portão": "Изменить ворота",
  "Testando o portão": "Проверка ворот",
  "Trocar posição do portão": "Поменять положение ворот",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Садится в машину игрока, только когда он посигналит в ней. Ещё один сигнал или выход игрока заставляет защитников выйти."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Садится в машину игрока, только когда он посигналит в ней. Ещё один сигнал или выход игрока заставляет защитников выйти.",
+ "Usar posição atual como aberto": "Текущее положение как открытое",
+ "Usar posição atual como alvo": "Текущее положение как цель",
+ "Copia a posição e a rotação atuais do objeto para a posição aberta": "Копирует текущее положение и поворот объекта в открытое положение",
+ "Definir posição aberta do portão": "Задать открытое положение ворот",
+ "Coordenadas atuais copiadas para a posição aberta": "Текущие координаты скопированы в открытое положение"
 }
