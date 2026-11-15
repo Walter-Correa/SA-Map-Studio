@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Transformă în poartă sau ușă",
  "Alterar portão": "Modifică poarta",
  "Testando o portão": "Se testează poarta",
- "Trocar posição do portão": "Schimbă poziția porții"
+ "Trocar posição do portão": "Schimbă poziția porții",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Urcă în vehiculul jucătorului doar după ce acesta claxonează în el. Încă un claxon, sau coborârea jucătorului, îi face pe protectori să coboare."
 }

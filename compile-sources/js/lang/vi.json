@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Biến thành cổng hoặc cửa",
  "Alterar portão": "Thay đổi cổng",
  "Testando o portão": "Đang thử cổng",
- "Trocar posição do portão": "Hoán đổi vị trí cổng"
+ "Trocar posição do portão": "Hoán đổi vị trí cổng",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Chỉ lên xe của người chơi sau khi người chơi bấm còi trong xe. Bấm còi lần nữa, hoặc người chơi xuống xe, sẽ khiến người bảo vệ xuống."
 }

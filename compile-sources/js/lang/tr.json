@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Kapıya veya geçide dönüştür",
  "Alterar portão": "Kapıyı değiştir",
  "Testando o portão": "Kapı test ediliyor",
- "Trocar posição do portão": "Kapı konumunu değiştir"
+ "Trocar posição do portão": "Kapı konumunu değiştir",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Oyuncunun aracına ancak o araçta korna çaldıktan sonra biner. Bir korna daha ya da oyuncunun inmesi korumaları indirir."
 }

@@ -33,6 +33,7 @@ export function npcSection(a) {
     <label class="field">Velocidade de movimento (100% a 200%)<input type="number" id="npcSpeed" min="100" max="200" step="5" value="${a.speedPct ?? 100}"></label>`}
     <p class="insp-note">${role === 'guard' ? 'Atira em quem ataca, mira ou atira no jogador ou no veículo dele (mesmo sem causar dano), em quem está atirando perto dele e em quem o jogo marca de vermelho contra ele. Personagens da história só quando marcados de vermelho. Sem a opção de seguir, protege o lugar onde está.'
       : role === 'enemy' ? 'Com arma de fogo atira no jogador; sem arma ou com arma branca, bate nele.' : 'Fica parado onde foi colocado, só com a animação, e não reage a nada.'}</p>
+    ${role === 'guard' && a.follow ? '<p class="insp-note">Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.</p>' : ''}
   </div>`;
 }
 

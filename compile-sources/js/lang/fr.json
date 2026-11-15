@@ -2682,5 +2682,6 @@
  "Transformar em portão ou porta": "Transformer en portail ou porte",
  "Alterar portão": "Modifier le portail",
  "Testando o portão": "Test du portail",
- "Trocar posição do portão": "Échanger la position du portail"
+ "Trocar posição do portão": "Échanger la position du portail",
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "N’entre dans le véhicule du joueur qu’après un coup de klaxon de sa part. Un autre coup de klaxon, ou la sortie du joueur, fait descendre les protecteurs."
 }
