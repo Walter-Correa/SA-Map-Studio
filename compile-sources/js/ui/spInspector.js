@@ -1,7 +1,7 @@
 // Singleplayer inspector parts: what a NPC carries and does, and what happens when a checkpoint or a pickup is used.
 import { app, $, esc, toast } from './common.js';
 import { t } from './i18n.js';
-import { makeAction, makeMenu, menuText, MENU_BAD_CHARS, MENU_MAX, MENU_TEXT_MAX, STAT_RANGE, npcLimit, npcRole } from '../editor/project.js';
+import { makeAction, makeMenu, menuText, MENU_BAD_CHARS, MENU_MAX, MENU_TEXT_MAX, STAT_RANGE, npcLimit, npcRole, spSkinOk } from '../editor/project.js';
 import { NPC_WEAPONS, WEAPONS, optionsHtml } from '../world/spWeapons.js';
 import { npcHealth, NPC_HEALTH_MAX } from '../formats/cleo.js';
 
@@ -119,10 +119,12 @@ export function gameText(text, codes = false) {
   return codes ? out.replace(/[^\x20-\x7e]/g, '').trim() : out.replace(MENU_BAD_CHARS, '').replace(/\s+/g, ' ').trim();
 }
 
+const SKIN_NOTE = 'Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.';
 function paramsHtml(act, P) {
   const t = act.type;
   let params = '';
-  if (t === 'health' || t === 'armour') params = field(P + '-amount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
+  if (t === 'health') params = `<p class="insp-note">Enche a vida até o máximo que o jogador tem agora.</p>`;
+  else if (t === 'armour') params = field(P + '-amount', 'Quantidade', act.amount, { min: 1, max: 250, step: 1 });
   else if (STAT_RANGE[t] || t.startsWith('stat')) params = field(P + '-stat', STAT_RANGE[t] ? 'Valor (569 a 1000)' : 'Valor (0 a 1000)', act.statValue, { min: (STAT_RANGE[t] || [0])[0], max: 1000, step: 1 });
   else if (t === 'money') params = field(P + '-amount', 'Valor (US$)', act.amount, { min: 1, step: 100 });
   else if (t === 'weapon') params = `<label class="field">Arma<select id="${P}-weapon">${WEAPONS.map(w => `<option value="${w.id}" ${w.id === act.weapon ? 'selected' : ''}>${w.name}</option>`).join('')}</select></label>`
@@ -131,7 +133,8 @@ function paramsHtml(act, P) {
   else if (t === 'teleport') params = `<div class="door-row">${field(P + '-x', 'X', act.x, { step: 0.1 })}${field(P + '-y', 'Y', act.y, { step: 0.1 })}${field(P + '-z', 'Z', act.z, { step: 0.1 })}${field(P + '-rot', 'Direção (°)', act.rot, { step: 1 })}</div>
     <button type="button" class="btn small" id="${P}-here">Usar a câmera</button>`;
   else if (t === 'vehicle') params = field(P + '-model', 'Modelo do veículo (400 a 611)', act.model, { min: 400, max: 611, step: 1 });
-  else if (t === 'skin') params = field(P + '-model', 'Skin (0 a 311)', act.model, { min: 0, max: 311, step: 1 });
+  else if (t === 'skin') params = field(P + '-skin', 'Skin (0 a 311)', act.skin, { min: 0, max: 311, step: 1 })
+    + `<p class="insp-note warn" id="${P}-skinbad" ${spSkinOk(act.skin) ? 'hidden' : ''}>${SKIN_NOTE}</p>`;
   else if (t === 'weather') params = field(P + '-weather', 'Clima (0 a 45)', act.weather, { min: 0, max: 45, step: 1 });
   else if (t === 'time') params = `<div class="door-row">${field(P + '-hour', 'Hora', act.hour, { min: 0, max: 23, step: 1 })}${field(P + '-minute', 'Minuto', act.minute, { min: 0, max: 59, step: 1 })}</div>`;
   else if (t === 'explosion') params = `<label class="field">Tipo<select id="${P}-explosion">${[[0, 'Granada'], [1, 'Molotov'], [2, 'Foguete'], [4, 'Carro']].map(([v, n]) => `<option value="${v}" ${v === act.explosion ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
@@ -184,6 +187,17 @@ function bindFields(P, save) {
     if (el) el.onchange = () => { const v = num(id); if (Number.isFinite(v)) save(() => ({ [key]: int ? Math.round(v) : v })); };
   };
   bindNum('-amount', 'amount'); bindNum('-stat', 'statValue'); bindNum('-ammo', 'ammo'); bindNum('-stars', 'stars'); bindNum('-model', 'model');
+  const skin = $('#' + P + '-skin');
+  if (skin) {
+    const bad = $('#' + P + '-skinbad');
+    skin.oninput = () => { if (bad) bad.hidden = spSkinOk(Math.round(num('-skin'))); };
+    skin.onchange = () => {
+      const v = Math.max(0, Math.min(311, Math.round(num('-skin')) || 0));
+      skin.value = v;
+      if (bad) bad.hidden = spSkinOk(v);
+      save(() => ({ skin: v }));
+    };
+  }
   bindNum('-weather', 'weather'); bindNum('-hour', 'hour'); bindNum('-minute', 'minute'); bindNum('-price', 'price');
   bindNum('-x', 'x', false); bindNum('-y', 'y', false); bindNum('-z', 'z', false); bindNum('-rot', 'rot', false);
   for (const [id, key] of [['-weapon', 'weapon'], ['-explosion', 'explosion']]) {
@@ -227,6 +241,8 @@ function bindFields(P, save) {
 const menuSel = new Map();
 const BAD_NOTE = "O jogo só mostra letras sem acento, números, espaço e . , ! ? ' ( ) - + / : $";
 const defaultLabel = (type) => gameText(t(actionName(type)));
+// a new option takes the first action of the list that the menu does not have yet (the first one when it has all)
+const nextType = (m) => { const free = TYPES.map(([v]) => v).filter(v => v !== 'none'); return free.find(v => !m.options.some(o => o.type === v)) || free[0]; };
 
 export function menuSection(item) {
   if (!isSp()) return '';
@@ -237,7 +253,10 @@ export function menuSection(item) {
     const k = Math.min(menuSel.get(item.uid) ?? 0, m.options.length - 1);
     html += `<label class="field">Título do menu<input type="text" id="mnuTitle" maxlength="${MENU_TEXT_MAX}" value="${esc(m.title)}" placeholder="${esc(gameText(t('Escolha')))}" spellcheck="false"></label>
     <p class="insp-note warn" id="mnuBad" hidden>${BAD_NOTE}</p>
-    <ul class="menu-opts" id="mnuList">${m.options.map((o, i) => `<li class="menu-opt ${i === k ? 'sel' : ''}" data-k="${i}"><span>${esc(o.label || defaultLabel(o.type))}</span><button type="button" class="btn small icon" data-del="${i}" title="Remover opção"><svg><use href="#i-trash"/></svg></button></li>`).join('')}</ul>
+    <ul class="menu-opts" id="mnuList">${m.options.map((o, i) => `<li class="menu-opt ${i === k ? 'sel' : ''}" data-k="${i}" draggable="true"><span>${esc(o.label || defaultLabel(o.type))}</span>`
+      + `<button type="button" class="btn small icon" data-move="${i}" data-to="${i - 1}" title="Subir" ${i ? '' : 'disabled'}><svg><use href="#i-up"/></svg></button>`
+      + `<button type="button" class="btn small icon" data-move="${i}" data-to="${i + 1}" title="Descer" ${i < m.options.length - 1 ? '' : 'disabled'}><svg><use href="#i-down"/></svg></button>`
+      + `<button type="button" class="btn small icon" data-del="${i}" title="Remover opção"><svg><use href="#i-trash"/></svg></button></li>`).join('')}</ul>
     <button type="button" class="btn small" id="mnuAdd" ${m.options.length >= MENU_MAX ? 'disabled' : ''}><svg><use href="#i-plus"/></svg>Adicionar opção</button>
     <p class="insp-note">No jogo: setas para escolher, correr para confirmar, entrar no veículo para sair. Até ${MENU_MAX} opções.</p>`;
     const o = m.options[k];
@@ -262,7 +281,7 @@ export function bindMenu(item, project, rerender) {
   const on = $('#mnuOn');
   if (on) on.onchange = () => saveMenu((m) => {
     m.on = on.checked;
-    if (m.on && !m.options.length) m.options.push(makeAction({ type: 'health' }));
+    if (m.on && !m.options.length) m.options.push(makeAction({ type: nextType(m) }));
   });
   // the game cannot draw some letters: they are taken out as they are typed
   const clean = (el, warn) => {
@@ -277,7 +296,23 @@ export function bindMenu(item, project, rerender) {
   clean(title, $('#mnuBad'));
   if (title) title.onchange = () => saveMenu((m) => { m.title = menuText(title.value).trim(); }, false);
   const list = $('#mnuList');
+  // an option moves to another place (the arrows, or dragged onto another row); the one being edited goes with it
+  const move = (from, to) => {
+    if (from === to || to < 0) return;
+    saveMenu((m) => { if (to < m.options.length) m.options.splice(to, 0, ...m.options.splice(from, 1)); }, false);
+    menuSel.set(uid, to);
+    rerender();
+  };
+  if (list) {
+    let drag = -1;
+    list.ondragstart = (e) => { const li = e.target.closest('[data-k]'); drag = li ? +li.dataset.k : -1; if (li) e.dataTransfer.effectAllowed = 'move'; };
+    list.ondragover = (e) => { if (drag >= 0 && e.target.closest('[data-k]')) e.preventDefault(); };
+    list.ondrop = (e) => { const li = e.target.closest('[data-k]'); if (li && drag >= 0) { e.preventDefault(); move(drag, +li.dataset.k); } drag = -1; };
+    list.ondragend = () => { drag = -1; };
+  }
   if (list) list.onclick = (e) => {
+    const mv = e.target.closest('[data-move]');
+    if (mv) { move(+mv.dataset.move, +mv.dataset.to); return; }
     const del = e.target.closest('[data-del]');
     if (del) {
       const k = +del.dataset.del;
@@ -291,7 +326,7 @@ export function bindMenu(item, project, rerender) {
   const add = $('#mnuAdd');
   if (add) add.onclick = () => {
     let n = 0;
-    saveMenu((m) => { if (m.options.length < MENU_MAX) m.options.push(makeAction({ type: 'health' })); n = m.options.length; }, false);
+    saveMenu((m) => { if (m.options.length < MENU_MAX) m.options.push(makeAction({ type: nextType(m) })); n = m.options.length; }, false);
     menuSel.set(uid, n - 1);
     rerender();
   };

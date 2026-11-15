@@ -2683,5 +2683,7 @@
  "Alterar portão": "Zmień bramę",
  "Testando o portão": "Testowanie bramy",
  "Trocar posição do portão": "Zamień pozycję bramy",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Wsiada do pojazdu gracza dopiero, gdy ten zatrąbi w środku. Kolejne trąbienie albo wyjście gracza sprawia, że obrońcy wysiadają."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Wsiada do pojazdu gracza dopiero, gdy ten zatrąbi w środku. Kolejne trąbienie albo wyjście gracza sprawia, że obrońcy wysiadają.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Uzupełnia zdrowie do obecnego maksimum gracza.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ten skin nie istnieje w trybie singleplayer (postacie fabularne i skiny tylko z SA-MP): gra go nie zmienia."
 }

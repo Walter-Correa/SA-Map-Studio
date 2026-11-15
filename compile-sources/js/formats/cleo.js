@@ -2,6 +2,7 @@
 // Every instruction is: opcode (2 bytes), then its arguments, each with a type byte (1 = int32, 6 = float32, 3 = local variable).
 // A jump goes to an absolute offset inside the file, written as a NEGATIVE int32 (that is how CLEO scripts tell it from the main script's).
 import { WEAPONS, AMMO_WEAPONS, weaponModel } from '../world/spWeapons.js';
+import { spSkinOk } from '../editor/project.js';
 
 export const int = (v) => ({ t: 1, v });
 export const flt = (v) => ({ t: 6, v });
@@ -365,7 +366,15 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
     a.op(0x0109, int(0), int(-price));
   }
   switch (act.type) {
-    case 'health': a.op(0x0223, lv(PLAYER), int(act.amount || 100)); break;
+    case 'health':
+      // up to the player's max health now (100 at the start, up to 176 with the Max Health stat): the byte the game keeps for it in
+      // CPlayerInfo (0xB7CD98 + 0x14F), the one its health cheat uses
+      a.op(0x0A8D, int(0xB7CEE7), int(1), int(0), lv(T0));
+      a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(99)).op(0x004D, ref(u('hd')));
+      a.op(0x0223, lv(PLAYER), lv(T0));
+      a.jump(u('end'));
+      a.label(u('hd')).op(0x0223, lv(PLAYER), int(100));                                          // never less than a full bar of a new game
+      break;
     case 'armour': a.op(0x035F, lv(PLAYER), int(act.amount || 100)); break;
     case 'money': a.op(0x0109, int(0), int(act.amount | 0)); break;
     case 'weapon': {
@@ -433,11 +442,17 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
       a.label(u('sg'));
       a.op(0x03D8);
       break;
-    case 'skin':
-      loadModel(a, act.model, 'x' + id);
-      a.op(0x09C7, int(0), int(act.model));
-      a.op(0x0249, int(act.model));
+    case 'skin': {
+      // Only a skin of the game's peds.ide (the story characters and the SA-MP ones are no ped there: the game crashes), and on foot.
+      // CJ (0) is always loaded; his body and clothes are built again after
+      const s = act.skin | 0;
+      if (!spSkinOk(s)) break;
+      a.op(0x00D6, int(0)).op(0x80DF, lv(PLAYER)).op(0x004D, ref(u('end')));
+      if (s) loadModel(a, s, 'x' + id);
+      a.op(0x09C7, int(0), int(s));
+      if (s) a.op(0x0249, int(s)); else a.op(0x070D, int(0));
       break;
+    }
     case 'weather':
       a.op(0x01B6, int(act.weather));
       a.op(0x01B7);
@@ -479,11 +494,22 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
 // 0ADF, under keys of up to 7 letters) and the game's own menu panel shows them; the player picks a row with the sprint key or
 // leaves with the enter/exit key. Uses the locals MENU_H and MENU_ROW, which the pickups and checkpoints scripts keep free.
 export const MENU_H = 22, MENU_ROW = 23;
+const MENU_VAR = 1010;                        // CLEO shared variable: the game's time when an open menu last ran
+const MENU_LEAVES = new Set(['teleport', 'vehicle', 'save', 'jetpack']);
 function emitMenu(a, menu, x, y, z, id, dist) {
   const u = (n) => n + id;
   const opts = menu.options.slice(0, 12);
   if (!opts.length) return;
   a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(1)).op(0x004D, ref(u('ms')));                  // the player could not pay the action before it: no menu
+  // One menu at a time (another script may have one open): the open one writes the game's time in MENU_VAR every frame, and a menu
+  // only opens when that time is not from the last 300 ms (a time ahead of now is from before a saved game was loaded: free)
+  const beat = () => a.op(0x01BD, lv(T0)).op(0x0AB3, int(MENU_VAR), lv(T0));
+  const close = () => a.op(0x08DA, lv(MENU_H)).op(0x03E6).op(0x01B4, int(0), int(1)).op(0x0AB3, int(MENU_VAR), int(0));
+  a.op(0x01BD, lv(T0)).op(0x0AB4, int(MENU_VAR), lv(T1)).op(0x0062, lv(T0), lv(T1));
+  a.op(0x00D6, int(1)).op(0x0019, lv(T0), int(-1)).op(0x8019, lv(T0), int(300)).op(0x004D, ref(u('mf')));
+  a.jump(u('ms'));
+  a.label(u('mf'));
+  beat();
   a.op(0x0ADF, str(menu.titleKey), str(menu.title));
   opts.forEach(o => a.op(0x0ADF, str(o.key), str(o.row)));
   const longest = Math.max(menu.title.length, ...opts.map(o => o.row.length));
@@ -491,6 +517,7 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   // the keys may still be down (the player came running): it waits until they are up, before the panel exists, or walking
   // forward would move its selection up to the last row
   a.label(u('mr')).op(0x0001, int(0));
+  beat();
   a.op(0x00D6, int(22)).op(0x00E1, int(0), int(16)).op(0x00E1, int(0), int(15)).op(0x00E1, int(0), int(1)).op(0x004D, ref(u('mk')));
   a.jump(u('mr'));
   a.label(u('mk'));
@@ -500,23 +527,43 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   a.op(0x08DB, lv(MENU_H), int(0), str('DUMMY'), ...keys.map(k => str(k)));
   a.op(0x090E, lv(MENU_H), int(0));                                                             // the first option starts selected
   if (menu.hint) a.op(0x0ACA, str(menu.hint));
+  // the game takes the help box away when a pickup is taken: it is shown again half a second later (T1: done; 32@ is the timer of the script)
+  a.op(0x0006, lv(T1), int(0)).op(0x0006, lv(32), int(0));
   a.label(u('mw')).op(0x0001, int(0));
+  beat();
+  if (menu.hint) {
+    a.op(0x00D6, int(1)).op(0x0039, lv(T1), int(0)).op(0x0019, lv(32), int(500)).op(0x004D, ref(u('mh')));
+    a.op(0x0ACA, str(menu.hint)).op(0x0006, lv(T1), int(1));
+    a.label(u('mh'));
+  }
   a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref(u('mx')));                          // the player died or was arrested
   a.op(0x00D6, int(0)).op(0x00E1, int(0), int(15)).op(0x004D, ref(u('ma')));
   a.jump(u('mx'));                                                                              // leaves without choosing
   a.label(u('ma'));
   a.op(0x00D6, int(0)).op(0x00E1, int(0), int(16)).op(0x004D, ref(u('mw')));
   a.op(0x08D7, lv(MENU_H), lv(MENU_ROW));
-  a.op(0x08DA, lv(MENU_H)).op(0x03E6).op(0x01B4, int(0), int(1));
   opts.forEach((o, k) => {
     a.op(0x00D6, int(0)).op(0x0039, lv(MENU_ROW), int(k)).op(0x004D, ref(u('mo' + k)));
-    emitAction(a, o, x, y, z, id + 'o' + k, dist);
-    a.jump(u('me'));
+    if (MENU_LEAVES.has(o.type)) {
+      // it takes the player somewhere else or opens another screen: the menu closes first
+      close();
+      emitAction(a, o, x, y, z, id + 'o' + k, dist);
+      a.jump(u('me'));
+    } else {
+      // the menu stays, on the same row, and the next choice waits until the key is up again
+      emitAction(a, o, x, y, z, id + 'o' + k, dist);
+      if (menu.hint && !(o.text && o.msgStyle === 'box')) a.op(0x0ACA, str(menu.hint));
+      a.op(0x0006, lv(T1), int(1));                                                             // (the action may have used T1)
+      a.jump(u('mu'));
+    }
     a.label(u('mo' + k));
   });
-  a.jump(u('me'));
+  a.label(u('mu')).op(0x0001, int(0));
+  beat();
+  a.op(0x00D6, int(0)).op(0x00E1, int(0), int(16)).op(0x004D, ref(u('mw')));
+  a.jump(u('mu'));
   a.label(u('mx'));
-  a.op(0x08DA, lv(MENU_H)).op(0x03E6).op(0x01B4, int(0), int(1));
+  close();
   a.label(u('me'));
   a.op(0x0006, lv(T6), int(1));                                                                 // the item was used (whatever the option cost)
   a.label(u('ms'));
@@ -586,6 +633,12 @@ export function pickupsScript(items) {
       a.op(0x00D6, int(0)).op(0x0019, lv(base + 2), int(0)).op(0x004D, ref('rb' + i));
       a.jump('n' + i);
       a.label('rb' + i);
+      if (hasMenu(e)) {
+        // with a menu, only once the player has left it (made again under him, it would open the menu he just closed)
+        a.op(0x00D6, int(0)).op(0x00EC, lv(PLAYER), flt(e.x), flt(e.y), flt(3), flt(3), int(0)).op(0x004D, ref('ra' + i));
+        a.jump('n' + i);
+        a.label('ra' + i);
+      }
       a.op(0x0006, lv(base), int(0));                                                           // near again: it appears again
     },
   });

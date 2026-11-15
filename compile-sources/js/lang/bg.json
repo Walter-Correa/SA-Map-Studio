@@ -2683,5 +2683,7 @@
  "Alterar portão": "Промяна на портата",
  "Testando o portão": "Тестване на портата",
  "Trocar posição do portão": "Размяна на положението на портата",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Качва се в превозното средство на играча само след като той натисне клаксона в него. Още един клаксон или слизането на играча кара защитниците да слязат."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Качва се в превозното средство на играча само след като той натисне клаксона в него. Още един клаксон или слизането на играча кара защитниците да слязат.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Пълни здравето до текущия максимум на играча.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Този скин не съществува в singleplayer (герои от историята и скинове само от SA-MP): играта не го сменя."
 }

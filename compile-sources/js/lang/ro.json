@@ -2683,5 +2683,7 @@
  "Alterar portão": "Modifică poarta",
  "Testando o portão": "Se testează poarta",
  "Trocar posição do portão": "Schimbă poziția porții",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Urcă în vehiculul jucătorului doar după ce acesta claxonează în el. Încă un claxon, sau coborârea jucătorului, îi face pe protectori să coboare."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Urcă în vehiculul jucătorului doar după ce acesta claxonează în el. Încă un claxon, sau coborârea jucătorului, îi face pe protectori să coboare.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Umple viața până la maximul actual al jucătorului.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Acest skin nu există în singleplayer (personaje din poveste și skinuri doar din SA-MP): jocul nu îl schimbă."
 }

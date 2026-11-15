@@ -2683,5 +2683,7 @@
  "Alterar portão": "Change gate",
  "Testando o portão": "Testing the gate",
  "Trocar posição do portão": "Swap gate position",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Only gets into the player's vehicle after he sounds the horn in it. Another horn, or the player getting out, makes the protectors get out."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Only gets into the player's vehicle after he sounds the horn in it. Another horn, or the player getting out, makes the protectors get out.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Fills the health up to the player's current maximum.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "This skin does not exist in singleplayer (story characters and SA-MP-only skins): the game does not change it."
 }

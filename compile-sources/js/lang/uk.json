@@ -2683,5 +2683,7 @@
  "Alterar portão": "Змінити ворота",
  "Testando o portão": "Перевірка воріт",
  "Trocar posição do portão": "Поміняти положення воріт",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Сідає в машину гравця, лише коли він посигналить у ній. Ще один сигнал або вихід гравця змушує захисників вийти."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Сідає в машину гравця, лише коли він посигналить у ній. Ще один сигнал або вихід гравця змушує захисників вийти.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Відновлює здоров'я до поточного максимуму гравця.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Цього скіна немає в одиночній грі (сюжетні персонажі та скіни лише з SA-MP): гра його не змінює."
 }

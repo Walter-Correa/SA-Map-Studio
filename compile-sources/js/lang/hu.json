@@ -2683,5 +2683,7 @@
  "Alterar portão": "Kapu módosítása",
  "Testando o portão": "Kapu tesztelése",
  "Trocar posição do portão": "Kapu helyzetének cseréje",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Csak akkor száll be a játékos járművébe, ha az dudál benne. Egy újabb dudálás, vagy ha a játékos kiszáll, a védelmezőket is kiszállítja."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Csak akkor száll be a játékos járművébe, ha az dudál benne. Egy újabb dudálás, vagy ha a játékos kiszáll, a védelmezőket is kiszállítja.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Feltölti az életet a játékos jelenlegi maximumáig.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ez a skin nem létezik egyjátékos módban (történet szereplői és csak SA-MP skinek): a játék nem cseréli le."
 }
