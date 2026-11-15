@@ -811,6 +811,9 @@ const ENEMY_TYPE = 15;
 // places (the shared variable TASK_FREE holds that number plus 1, 0 = not measured) and the NPCs give no new task of those while few are left
 const TASK_FREE = 1008, TASK_TABLE = 0xC0B1E8, TASK_PLACES = 128, TASK_MIN_FREE = 12;
 const TARGET_LIMIT = 8000; // a protector that has not hurt its target in this time (ms) gives it up (see IGN_VARS) and looks for another
+const COVER_KEEP = 5000;   // how long (ms) a target that was not hurt but is not proof (behind cover) stays given up
+// The proofs of a character (02AB) in the flags of its physical part (dword at +0x40): against bullets and against melee
+const PROOF_BULLET = 0x40000, PROOF_MELEE = 0x200000;
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
 export const npcTravels = (e) => e.role !== 'neutral' && !!e.follow;
@@ -1703,7 +1706,10 @@ export function actorsScript(items) {
         a.op(0x0A8F, lv(T4), lv(tt), lv(T5));
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(TARGET_LIMIT)).op(0x004D, ref(L('gtn')));
         // Its health went down meanwhile (hurt by this protector, another one, the player or anyone): it keeps it (the time starts again).
-        // It did not (an invulnerable one): it gives it up, and for IGN_KEEP no protector takes it again (it would shoot at it for ever).
+        // It did not: it gives it up. Proof against the protector's weapon (an invulnerable one): for IGN_KEEP no protector takes it again (it
+        // would shoot at it for ever). Not proof, it is behind cover the line of sight does not see (a fence, a wall or a car are objects): only
+        // for COVER_KEEP, so they turn to the enemies they can hit and try it again soon (blocked for IGN_KEEP, every enemy of a mission behind
+        // cover was given up and the protectors stood still beside them).
         // (Asking the game whether this protector hurt it does not do: the game keeps only the last one who hurt a character)
         a.op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtg')));
         // hidden (behind a building) now: it is let go, not given up (another protector or a later search takes it when it shows)
@@ -1714,6 +1720,11 @@ export function actorsScript(items) {
         a.op(0x0085, lv(tt), lv(T4)).op(0x0085, lv(thp), lv(T6));
         a.jump(L('gtn'));
         a.label(L('gti'));
+        a.op(0x0A96, lv(tgt), lv(T6)).op(0x0A8E, lv(T6), int(0x40), lv(T6)).op(0x0A8D, lv(T6), int(4), int(0), lv(T6));
+        a.op(0x0B10, lv(T6), int(ranged ? PROOF_BULLET : PROOF_MELEE), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(0)).op(0x004D, ref(L('gtp')));
+        a.op(0x000E, lv(T4), int(IGN_KEEP - COVER_KEEP));                                        // blocked as if it had been given up earlier
+        a.label(L('gtp'));
         a.op(0x0AB4, int(IGN_IDX), lv(T5));
         a.op(0x0A8E, int(IGN_VARS), lv(T5), lv(T6)).op(0x0AB3, lv(T6), lv(tgt));
         a.op(0x0A8E, int(IGN_TIME), lv(T5), lv(T6)).op(0x0AB3, lv(T6), lv(T4));
