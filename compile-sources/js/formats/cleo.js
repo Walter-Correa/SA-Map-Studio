@@ -97,7 +97,11 @@ function taskGate(a, tag, skip) {
 // - ATK_VARS: the last 8 characters that shot at the player or at his vehicle, or hurt them, whether the shot hit or did any damage or not
 //   (an invulnerable player takes no damage, and the game then says nobody hurt him). ATK_TIME is when the last one came: after ATK_KEEP
 //   without any, the list is cleared
+// - BLUE_PEDS: the characters the game marks as friends of the player (a blue radar marker on them or on their vehicle), up to 16: never a target
+// - IGN_VARS: the last 8 targets a protector gave up because it could not hurt them (an invulnerable one), with the time (IGN_TIME): nobody
+//   takes them again for IGN_KEEP
 const RED_PEDS = 0, RED_PEDS_N = 16, RED_CARS = 16, RED_CARS_N = 4, ATK_VARS = 20, ATK_N = 8, ATK_IDX = 28, ATK_TIME = 29, ATK_KEEP = 10000;
+const BLUE_PEDS = 30, BLUE_PEDS_N = 16, IGN_VARS = 46, IGN_TIME = 54, IGN_N = 8, IGN_IDX = 62, IGN_KEEP = 30000;
 // The radar markers of the game (CRadar::ms_RadarTrace): 175 of 0x28 bytes. +0 colour, +4 the handle of what it is on, +0x25 flags (bit 1 in use,
 // bit 3 friendly), +0x26 display (bits 0-1, 0 = hidden) and type (bits 2-5: 1 vehicle, 2 character)
 // An address read from the game is used only above this (0 or a small number is no object; above 0x7FFFFFFF it reads as negative)
@@ -111,7 +115,7 @@ export function taskGuardScript() {
   const a = new Asm();
   a.op(0x0000);
   waitPlayer(a);
-  for (let k = 0; k <= ATK_TIME; k++) a.op(0x0AB3, int(k), int(0));
+  for (let k = 0; k <= IGN_IDX; k++) a.op(0x0AB3, int(k), int(0));
   // CLEO+ runs this piece when a bullet hits anything. Its events for a character hurt and a vehicle hit by a weapon brought the game down
   // in a fight of many NPCs (a crash inside CLEO+, found in the game): the bullets alone tell who shoots at the player or his vehicle
   a.op(0x0EE0, int(1), ref('evb'), lv(13), lv(14), lv(15), lv(16));
@@ -135,26 +139,32 @@ export function taskGuardScript() {
   // jumps to `to` when the variable is (ifEq) or is not (ifNe) the value
   const ifEq = (v, c, to) => a.op(0x00D6, int(0)).op(0x8039, lv(v), typeof c === 'number' ? int(c) : c).op(0x004D, ref(to));
   const ifNe = (v, c, to) => a.op(0x00D6, int(0)).op(0x0039, lv(v), typeof c === 'number' ? int(c) : c).op(0x004D, ref(to));
-  // The radar markers: 5 the address of the marker, 6 how many were looked at, 7 characters found, 8 vehicles found
-  a.op(0x0006, lv(5), int(RADAR_TRACES)).op(0x0006, lv(6), int(0)).op(0x0006, lv(7), int(0)).op(0x0006, lv(8), int(0));
+  // The radar markers: 5 the address of the marker, 6 how many were looked at, 7 red characters found, 8 vehicles found, 23 blue characters found,
+  // 24 the colour of the marker being looked at (0 red, 1 blue)
+  a.op(0x0006, lv(5), int(RADAR_TRACES)).op(0x0006, lv(6), int(0)).op(0x0006, lv(7), int(0)).op(0x0006, lv(8), int(0)).op(0x0006, lv(23), int(0));
   a.label('bs');
   a.op(0x0A8E, lv(5), int(0x24), lv(9)).op(0x0A8D, lv(9), int(4), int(0), lv(9));               // 9: the sprite and the flags
   a.op(0x0B10, lv(9), int(0x200), lv(10));
   ifEq(10, 0, 'bn');                                                                               // not in use
   a.op(0x0B15, lv(9), int(16), lv(10)).op(0x0B10, lv(10), int(3), lv(10));
   ifEq(10, 0, 'bn');                                                                               // hidden
-  a.op(0x0A8D, lv(5), int(4), int(0), lv(10));                                                   // the colour: red, or threat (red) when not friendly
+  // the colour: red (0, 5), blue (2, 6), or the threat colour (7), red when not friendly and blue when friendly
+  a.op(0x0A8D, lv(5), int(4), int(0), lv(10)).op(0x0006, lv(24), int(0));
   ifEq(10, 0, 'br');
   ifEq(10, 5, 'br');
+  ifEq(10, 2, 'bb');
+  ifEq(10, 6, 'bb');
   ifNe(10, 7, 'bn');
   a.op(0x0B10, lv(9), int(0x800), lv(10));
-  ifNe(10, 0, 'bn');
+  ifEq(10, 0, 'br');
+  a.label('bb').op(0x0006, lv(24), int(1));
   a.label('br');
   a.op(0x0B15, lv(9), int(18), lv(10)).op(0x0B10, lv(10), int(15), lv(10));                      // 10: the type
   a.op(0x0A8E, lv(5), int(4), lv(9)).op(0x0A8D, lv(9), int(4), int(0), lv(9));                  // 9: the handle
   ifEq(10, 2, 'bp');
   ifNe(10, 1, 'bn');
   a.op(0x00D6, int(0)).op(0x056E, lv(9)).op(0x004D, ref('bn'));                                  // a vehicle: it and the ones inside
+  ifEq(24, 1, 'bc');                                                                               // a blue one: only the ones inside
   a.op(0x00D6, int(0)).op(0x001B, int(RED_CARS_N), lv(8)).op(0x004D, ref('bc'));
   a.op(0x0A8E, int(RED_CARS), lv(8), lv(10)).op(0x0AB3, lv(10), lv(9)).op(0x000A, lv(8), int(1));
   a.label('bc');
@@ -184,6 +194,10 @@ export function taskGuardScript() {
   a.op(0x0A8E, int(RED_CARS), lv(8), lv(10)).op(0x0AB3, lv(10), int(0)).op(0x000A, lv(8), int(1));
   a.jump('bg');
   a.label('bh');
+  a.op(0x00D6, int(0)).op(0x001B, int(BLUE_PEDS_N), lv(23)).op(0x004D, ref('bh2'));
+  a.op(0x0A8E, int(BLUE_PEDS), lv(23), lv(10)).op(0x0AB3, lv(10), int(0)).op(0x000A, lv(23), int(1));
+  a.jump('bh');
+  a.label('bh2');
   // Whoever damaged the player's vehicle, with any weapon (a bat too) or by hitting it: the characters within 25 m are asked (21 the vehicle,
   // 22 how many were looked at). The vehicle forgets it afterwards, so the same hit is not taken again
   a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('dk'));
@@ -203,10 +217,16 @@ export function taskGuardScript() {
   for (let k = 0; k < ATK_N; k++) a.op(0x0AB3, int(ATK_VARS + k), int(0));
   a.jump('loop');
 
-  // Adds the character in 12 to the red list (7 = how many it has), when it exists and is not the player. Uses 13
+  // Adds the character in 12 to the red list (7 = how many it has), or to the blue one (23) when 24 is 1, when it exists and is not the
+  // player. Uses 13
   a.label('addped');
   a.op(0x00D6, int(0)).op(0x056D, lv(12)).op(0x004D, ref('ap0'));
   ifEq(12, lv(PLAYER), 'ap0');
+  ifEq(24, 0, 'ap1');
+  a.op(0x00D6, int(0)).op(0x001B, int(BLUE_PEDS_N), lv(23)).op(0x004D, ref('ap0'));
+  a.op(0x0A8E, int(BLUE_PEDS), lv(23), lv(13)).op(0x0AB3, lv(13), lv(12)).op(0x000A, lv(23), int(1));
+  a.jump('ap0');
+  a.label('ap1');
   a.op(0x00D6, int(0)).op(0x001B, int(RED_PEDS_N), lv(7)).op(0x004D, ref('ap0'));
   a.op(0x0A8E, int(RED_PEDS), lv(7), lv(13)).op(0x0AB3, lv(13), lv(12)).op(0x000A, lv(7), int(1));
   a.label('ap0').op(0x0051);
@@ -765,7 +785,7 @@ const NPC_TYPE = 16;
 // game fails soon after (found in a crash dump: 128 of 128 places taken, 103 of them by 05D3 and 24 by 05CA). The script taskguard counts the free
 // places (the shared variable TASK_FREE holds that number plus 1, 0 = not measured) and the NPCs give no new task of those while few are left
 const TASK_FREE = 1008, TASK_TABLE = 0xC0B1E8, TASK_PLACES = 128, TASK_MIN_FREE = 12;
-const TARGET_LIMIT = 15000; // a protector gives up a target it has not killed in this time (ms) and looks for another
+const TARGET_LIMIT = 8000; // a protector that has not hurt its target in this time (ms) gives it up (see IGN_VARS) and looks for another
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
 export const npcTravels = (e) => e.role !== 'neutral' && !!e.follow;
@@ -904,6 +924,35 @@ export function actorsScript(items) {
       // Jumps to `skip` when the candidate in T4 is a protector of the mod (each one, in any script, wrote its character in the shared variables
       // of CLEO). Uses T6 and T0
       const allyCheck = (pre, skip) => {
+        // one of the player's group (his friends, the gang he recruited)
+        a.op(0x07AF, int(0), lv(T6));
+        a.op(0x00D6, int(0)).op(0x06EE, lv(T4), lv(T6)).op(0x004D, ref(L(pre + 'gp')));
+        a.jump(skip);
+        a.label(L(pre + 'gp'));
+        // a friend the game marks blue (on him or on his vehicle)
+        a.op(0x0006, lv(T6), int(0));
+        a.label(L(pre + 'bl'));
+        a.op(0x00D6, int(0)).op(0x001B, int(BLUE_PEDS_N), lv(T6)).op(0x004D, ref(L(pre + 'bk')));
+        a.op(0x0A8E, int(BLUE_PEDS), lv(T6), lv(T0)).op(0x0AB4, lv(T0), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T4), lv(T0)).op(0x004D, ref(skip));
+        a.op(0x000A, lv(T6), int(1));
+        a.jump(L(pre + 'bl'));
+        a.label(L(pre + 'bk'));
+        // an NPC of the mod (they all have its ped type) that is not one of its enemies: a neutral one or another protector
+        a.op(0x089F, lv(T4), lv(T6));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T6), int(NPC_TYPE)).op(0x004D, ref(L(pre + 'mn')));
+        a.jump(L(pre + 'mk'));
+        a.label(L(pre + 'mn'));
+        if (e.enemyTotal > 0) {
+          a.op(0x0006, lv(T6), int(0));
+          a.label(L(pre + 'me'));
+          a.op(0x00D6, int(0)).op(0x001B, int(e.enemyTotal), lv(T6)).op(0x004D, ref(skip));
+          a.op(0x0A8E, int(ENEMY_VARS), lv(T6), lv(T0)).op(0x0AB4, lv(T0), lv(T0));
+          a.op(0x00D6, int(0)).op(0x8039, lv(T4), lv(T0)).op(0x004D, ref(L(pre + 'mk')));
+          a.op(0x000A, lv(T6), int(1));
+          a.jump(L(pre + 'me'));
+        } else a.jump(skip);
+        a.label(L(pre + 'mk'));
         if (!(e.guardTotal > 0)) return;
         a.op(0x0006, lv(T6), int(0));
         a.label(L(pre + 'ga'));
@@ -949,10 +998,34 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x82E0, lv(v)).op(0x004D, ref(yes));
         a.label(L(pre + 'm'));
       };
-      // Jumps to `notStory` when the character in `v` is not one of the story (the ped types of the characters of the missions, 23 to 31). Uses T6
+      // Jumps to `notStory` when the character in `v` is not one of the story (the ped types of the characters of the missions, 23 to 31) nor
+      // of the player's gang (Grove, 8: his friends). Uses T6
+      let storyN = 0;
       const storyCheck = (v, notStory) => {
+        const k = storyN++;
         a.op(0x089F, lv(v), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(8)).op(0x004D, ref(L('sty' + k)));
+        a.jump(L('stz' + k));
+        a.label(L('sty' + k));
         a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(22)).op(0x004D, ref(notStory));
+        a.label(L('stz' + k));
+      };
+      // Jumps to `skip` when the candidate in `v` was given up lately by a protector because it could not hurt it (see IGN_VARS). Uses T0, T6, T7
+      let ignN = 0;
+      const ignoreCheck = (v, skip) => {
+        const k = ignN++;
+        a.op(0x0006, lv(T7), int(0));
+        a.label(L('ig' + k));
+        a.op(0x00D6, int(0)).op(0x001B, int(IGN_N), lv(T7)).op(0x004D, ref(L('igx' + k)));
+        a.op(0x0A8E, int(IGN_VARS), lv(T7), lv(T6)).op(0x0AB4, lv(T6), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T6), lv(v)).op(0x004D, ref(L('ign' + k)));
+        a.op(0x0A8E, int(IGN_TIME), lv(T7), lv(T6)).op(0x0AB4, lv(T6), lv(T6));
+        a.op(0x01BD, lv(T0)).op(0x0A8F, lv(T0), lv(T6), lv(T0));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(IGN_KEEP)).op(0x004D, ref(skip));
+        a.label(L('ign' + k));
+        a.op(0x000A, lv(T7), int(1));
+        a.jump(L('ig' + k));
+        a.label(L('igx' + k));
       };
       // Jumps to `yes` when the character in `v` is in the red list of the watcher script. Uses T6 and T7
       const redCheck = (v, pre, yes) => {
@@ -1350,17 +1423,54 @@ export function actorsScript(items) {
         a.label(L('nw'));
       }
       if (e.role === 'guard') {
+        // A protector never attacks the player, his vehicle or his group, whatever the game does to the relationships (a gang war makes the gangs
+        // hate the player, and the protectors are gang members). Every cycle it respects the player again (its own relationships and those of its
+        // ped type), and an attack the game gave it against him (its kill target, or the target of the gun it aims: the player, his vehicle, one
+        // of his group) is cancelled
+        [0, 1, 8].forEach((pt) => { a.op(0x077B, lv(h), int(4), int(pt)).op(0x077B, lv(h), int(3), int(pt)); a.op(0x0747, int(4), int(NPC_TYPE), int(pt)).op(0x0747, int(3), int(NPC_TYPE), int(pt)); });
+        a.op(0x077A, lv(h), int(0), int(0));
+        a.op(0x0E44, lv(h), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(PLAYER)).op(0x004D, ref(L('pz')));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('pg')));
+        a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('pg')));
+        a.op(0x07AF, int(0), lv(T6));
+        a.op(0x00D6, int(0)).op(0x06EE, lv(T0), lv(T6)).op(0x004D, ref(L('pg')));
+        a.jump(L('pz'));
+        a.label(L('pg'));
+        a.op(0x00D6, int(0)).op(0x0E42, lv(h), int(1017)).op(0x004D, ref(L('pk')));
+        a.op(0x0E43, lv(h), int(1017), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(PTR_MIN)).op(0x004D, ref(L('pk')));
+        a.op(0x0A8E, lv(T6), int(0x1C), lv(T6)).op(0x0A8D, lv(T6), int(4), int(0), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T6), int(PTR_MIN)).op(0x004D, ref(L('pk')));
+        a.op(0x0A96, lv(PLAYER), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T6), lv(T0)).op(0x004D, ref(L('pz')));
+        a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref(L('pk')));
+        a.op(0x03C0, lv(PLAYER), lv(T0)).op(0x0A97, lv(T0), lv(T0));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T6), lv(T0)).op(0x004D, ref(L('pz')));
+        a.jump(L('pk'));
+        a.label(L('pz'));
+        a.op(0x0687, lv(h));
+        a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0)).op(0x0006, lv(cnt), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        a.jump(done);
+        a.label(L('pk'));
         // A protector never fights a character of the story on its own either (the game makes it hit back when one of them hurts it or shoots
         // at it): when what it is attacking is one of them, is not marked red and does not attack the player, its tasks are cleared. Not in a
         // vehicle (it would be taken out)
         a.op(0x0E44, lv(h), lv(T0));
         a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('sk')));
         a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('sk')));
+        a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(tgt)).op(0x004D, ref(L('sk')));             // the script chose it (it attacked the player): it stays
+        // Nor anyone the protectors never fight (one of the player's group, a friend marked blue, an NPC of the mod that is not an enemy)
+        // (or a target given up because it could not be hurt: the game itself would keep it attacking)
+        a.op(0x0085, lv(T4), lv(T0));
+        ignoreCheck(T4, L('spx'));
+        allyCheck('spa', L('spx'));
+        a.op(0x0085, lv(T0), lv(T4));
         storyCheck(T0, L('sk'));
         redCheck(T0, 'sr', L('sk'));
-        a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(tgt)).op(0x004D, ref(L('sk')));             // the script chose it (it attacked the player): it stays
-        a.op(0x0085, lv(T4), lv(T0));
         aimsAtPlayer(T4, 'ssa', L('sk'));                                                         // unless it attacks the player
+        a.label(L('spx'));
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('sc')));
         a.jump(L('sk'));
         a.label(L('sc'));
@@ -1471,6 +1581,7 @@ export function actorsScript(items) {
             a.jump(L(P + 'yn'));
             a.label(L(P + 'yo'));
           }
+          ignoreCheck(T4, L(P + 'yn'));
           wreckCheck(T4, P + 'ywk', L(P + 'yn'));
           losCheck(L(P + 'yn'));
           capCheck(P + 'y', L(P + 'yn'), limit);
@@ -1519,6 +1630,7 @@ export function actorsScript(items) {
           a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(6)).op(0x004D, ref(L(P + 'gn')));
           a.op(0x00D6, int(0)).op(0x010F, int(0), int(0)).op(0x004D, ref(L(P + 'gn')));
           a.label(L(P + 'gf'));
+          ignoreCheck(T4, L(P + 'gn'));
           wreckCheck(T4, P + 'gwk', L(P + 'gn'));
           losCheck(L(P + 'gn'));
           capCheck(P + 'g', L(P + 'gn'), limit);
@@ -1534,7 +1646,7 @@ export function actorsScript(items) {
         searchPass('b', -1, L('gd'));
         a.label(L('gd'));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), lv(tgt));
-        // How long it has had this target: after TARGET_LIMIT without killing it, it lets it go (and clears its tasks) so it is never stuck on one
+        // How long it has had this target: after TARGET_LIMIT without hurting it, it lets it go (and clears its tasks) so it is never stuck on one
         a.op(0x01BD, lv(T4));
         a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gtm')));
         a.op(0x0006, lv(tt), int(0));
@@ -1543,6 +1655,21 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0019, lv(tt), int(0)).op(0x004D, ref(L('gts')));
         a.op(0x0A8F, lv(T4), lv(tt), lv(T5));
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(TARGET_LIMIT)).op(0x004D, ref(L('gtn')));
+        // It has hurt it: it keeps it (the time starts again). It never could (an invulnerable one): it gives it up, and for IGN_KEEP no
+        // protector takes it again (it would shoot at it for ever)
+        a.op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtg')));
+        a.op(0x00D6, int(0)).op(0x051A, lv(tgt), lv(h)).op(0x004D, ref(L('gti')));
+        a.op(0x0085, lv(tt), lv(T4));
+        a.jump(L('gtn'));
+        a.label(L('gti'));
+        a.op(0x0AB4, int(IGN_IDX), lv(T5));
+        a.op(0x0A8E, int(IGN_VARS), lv(T5), lv(T6)).op(0x0AB3, lv(T6), lv(tgt));
+        a.op(0x0A8E, int(IGN_TIME), lv(T5), lv(T6)).op(0x0AB3, lv(T6), lv(T4));
+        a.op(0x000A, lv(T5), int(1));
+        a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(IGN_N - 1)).op(0x004D, ref(L('gtj')));
+        a.op(0x0006, lv(T5), int(0));
+        a.label(L('gtj')).op(0x0AB3, int(IGN_IDX), lv(T5));
+        a.label(L('gtg'));
         a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('gt0')));
