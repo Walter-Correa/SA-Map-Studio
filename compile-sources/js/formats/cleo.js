@@ -527,15 +527,16 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   a.op(0x08DB, lv(MENU_H), int(0), str('DUMMY'), ...keys.map(k => str(k)));
   a.op(0x090E, lv(MENU_H), int(0));                                                             // the first option starts selected
   if (menu.hint) a.op(0x0ACA, str(menu.hint));
-  // the game takes the help box away when a pickup is taken: it is shown again half a second later, only when the box is empty (showing it
-  // again while it is on the screen plays its sound once more). T1: done; 32@ is the timer of the script; the text of the box is at 0xBAA7A0
+  // the game takes the help box away when a pickup is taken: it is shown again half a second later, only when no help box is on the screen
+  // (showing it again while it is there plays its sound once more). T1: done; 32@ is the timer of the script; the state of the box is at
+  // 0xBAA474 (0: nothing shown)
   a.op(0x0006, lv(T1), int(0)).op(0x0006, lv(32), int(0));
   a.label(u('mw')).op(0x0001, int(0));
   beat();
   if (menu.hint) {
     a.op(0x00D6, int(1)).op(0x0039, lv(T1), int(0)).op(0x0019, lv(32), int(500)).op(0x004D, ref(u('mh')));
     a.op(0x0006, lv(T1), int(1));
-    a.op(0x0A8D, int(0xBAA7A0), int(1), int(0), lv(T0));
+    a.op(0x0A8D, int(0xBAA474), int(4), int(0), lv(T0));
     a.op(0x00D6, int(0)).op(0x0039, lv(T0), int(0)).op(0x004D, ref(u('mh')));
     a.op(0x0ACA, str(menu.hint));
     a.label(u('mh'));
@@ -555,7 +556,7 @@ function emitMenu(a, menu, x, y, z, id, dist) {
       a.jump(u('me'));
     } else {
       // the menu stays, on the same row, and the next choice waits until the key is up again
-      // the hint comes back half a second later when the action took the help box away (it stays when the action showed a message in it)
+      // the hint comes back half a second later when no help box is on the screen (not while the action shows a message in it)
       emitAction(a, o, x, y, z, id + 'o' + k, dist);
       a.op(0x0006, lv(T1), int(0)).op(0x0006, lv(32), int(0));
       a.jump(u('mu'));
