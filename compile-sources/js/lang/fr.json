@@ -2683,5 +2683,7 @@
  "Alterar portão": "Modifier le portail",
  "Testando o portão": "Test du portail",
  "Trocar posição do portão": "Échanger la position du portail",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "N’entre dans le véhicule du joueur qu’après un coup de klaxon de sa part. Un autre coup de klaxon, ou la sortie du joueur, fait descendre les protecteurs."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "N’entre dans le véhicule du joueur qu’après un coup de klaxon de sa part. Un autre coup de klaxon, ou la sortie du joueur, fait descendre les protecteurs.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Remplit la santé jusqu'au maximum actuel du joueur.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Ce skin n'existe pas en solo (personnages de l'histoire et skins propres à SA-MP) : le jeu ne le change pas."
 }

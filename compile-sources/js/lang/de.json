@@ -2683,5 +2683,7 @@
  "Alterar portão": "Tor ändern",
  "Testando o portão": "Tor wird getestet",
  "Trocar posição do portão": "Torposition tauschen",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Steigt erst in das Fahrzeug des Spielers ein, nachdem er darin hupt. Erneutes Hupen oder das Aussteigen des Spielers lässt die Beschützer aussteigen."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Steigt erst in das Fahrzeug des Spielers ein, nachdem er darin hupt. Erneutes Hupen oder das Aussteigen des Spielers lässt die Beschützer aussteigen.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Füllt die Gesundheit bis zum aktuellen Maximum des Spielers auf.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Dieser Skin existiert im Einzelspieler nicht (Story-Figuren und reine SA-MP-Skins): Das Spiel wechselt ihn nicht."
 }

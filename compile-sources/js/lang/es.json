@@ -2683,5 +2683,7 @@
  "Alterar portão": "Cambiar portón",
  "Testando o portão": "Probando el portón",
  "Trocar posição do portão": "Intercambiar posición del portón",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Solo entra en el vehículo del jugador después de que él toque la bocina dentro. Otro bocinazo, o que el jugador se baje, hace que los protectores se bajen."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Solo entra en el vehículo del jugador después de que él toque la bocina dentro. Otro bocinazo, o que el jugador se baje, hace que los protectores se bajen.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Llena la vida hasta el máximo que el jugador tiene ahora.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Esta skin no existe en el singleplayer (personajes de la historia y skins solo de SA-MP): el juego no la cambia."
 }

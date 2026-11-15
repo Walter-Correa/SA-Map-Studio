@@ -249,7 +249,11 @@ export function makeMenu(d) {
     .filter(o => o.type !== 'none');
   return { on: !!d.on, title: menuText(d.title), options };
 }
-export const STAT_RANGE = { statMaxHealth: [569, 1000] }; // the least and the most of the stats an action changes (0 to 1000 for the others)
+// Skins the player cannot wear in the singleplayer game: the story characters (special models, loaded by the missions in the slots 290 to 299,
+// which are empty otherwise), those slots, and 300 to 311, which only SA-MP has. The game crashes when the player takes one of them
+const SP_SKIN_MISSING = new Set([1, 2, 3, 4, 5, 6, 8, 42, 65, 74, 86, 119, 149, 208, 265, 266, 267, 268, 269, 270, 271, 272, 273, 289]);
+export const spSkinOk = (id) => Number.isInteger(id) && id >= 0 && id < 290 && !SP_SKIN_MISSING.has(id);
+export const STAT_RANGE ={ statMaxHealth: [569, 1000] }; // the least and the most of the stats an action changes (0 to 1000 for the others)
 export function makeAction(data) {
   const d = data || {};
   const n = (v, f) => (Number.isFinite(+v) ? +v : f);
@@ -275,6 +279,8 @@ export function makeAction(data) {
     stars: Math.max(0, Math.min(6, n(d.stars, 0) | 0)),
     x: n(d.x, 0), y: n(d.y, 0), z: n(d.z, 0), rot: n(d.rot, 0),
     model: n(d.model, 411) | 0,
+    // its own field (the vehicle one is 400 to 611); the actions saved before took the vehicle's
+    skin: ((v) => (v >= 0 && v <= 311 ? v : 0))(n(d.skin !== undefined ? d.skin : (d.type === 'skin' ? d.model : 0), 0) | 0),
     weather: Math.max(0, Math.min(45, n(d.weather, 0) | 0)),
     hour: Math.max(0, Math.min(23, n(d.hour, 12) | 0)), minute: Math.max(0, Math.min(59, n(d.minute, 0) | 0)),
     explosion: [0, 1, 2, 4].includes(n(d.explosion, 0) | 0) ? n(d.explosion, 0) | 0 : 0,

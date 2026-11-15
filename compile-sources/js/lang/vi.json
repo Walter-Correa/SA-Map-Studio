@@ -2683,5 +2683,7 @@
  "Alterar portão": "Thay đổi cổng",
  "Testando o portão": "Đang thử cổng",
  "Trocar posição do portão": "Hoán đổi vị trí cổng",
- "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Chỉ lên xe của người chơi sau khi người chơi bấm còi trong xe. Bấm còi lần nữa, hoặc người chơi xuống xe, sẽ khiến người bảo vệ xuống."
+ "Só entra no veículo do jogador depois que ele buzina dentro dele. Outra buzina, ou o jogador descer, faz os protetores descerem.": "Chỉ lên xe của người chơi sau khi người chơi bấm còi trong xe. Bấm còi lần nữa, hoặc người chơi xuống xe, sẽ khiến người bảo vệ xuống.",
+ "Enche a vida até o máximo que o jogador tem agora.": "Hồi máu đến mức tối đa hiện tại của người chơi.",
+ "Esta skin não existe no singleplayer (personagens da história e skins só do SA-MP): o jogo não a troca.": "Skin này không có trong chế độ chơi đơn (nhân vật cốt truyện và skin chỉ có ở SA-MP): trò chơi không đổi nó."
 }
