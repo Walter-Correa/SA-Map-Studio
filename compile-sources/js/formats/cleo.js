@@ -798,7 +798,7 @@ export const NPC_HEALTH_MAX = 100000;
 export const npcHealth = (v) => { const n = Math.round(+v); return Number.isFinite(n) && v !== '' && v != null ? Math.max(1, Math.min(NPC_HEALTH_MAX, n)) : 100; };
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
-export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 7 : 5) : e.role !== 'neutral' && e.follow ? 4 : 3);
+export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 8 : 6) : e.role !== 'neutral' && e.follow ? 4 : 3);
 // The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
 // brings no stars (the civilians, type 4, do)
 const NPC_TYPE = 16;
@@ -889,6 +889,7 @@ export function actorsScript(items) {
     },
     manage: (a, e, i, base) => {
       const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, tt = base + 4, pd = base + 5, done = 'n' + i;
+      const thp = base + (e.follow ? 7 : 5);   // a protector: the health its target had when it took it (or when it last saw it hurt)
       const travel = e.role === 'guard' && !!e.follow;
       // goes to where the player is, running (6) or sprinting (7): TASK_GOTO_CHAR has no speed, so this one is used (the player's coordinates are in T1..T3)
       // Each protector has its own place around the player (a ring of 5 m or more, by its number), so they never pile up on the same point
@@ -941,10 +942,12 @@ export function actorsScript(items) {
       };
       // The protector only goes for what it can hit: the line between it and the candidate in T4 (buildings and objects, not cars or peds)
       // must be clear, or it goes to `blocked`. Uses T0, T6 and T7 to T10
+      // Line of sight to a target: buildings only. Objects (lamp posts, fences, signs, trees) do not count: they are everywhere in the streets,
+      // and with them the script would never take a target the game itself can see and shoot (the protectors stood there turning their heads)
       const losCheck = (blocked) => {
         a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7));
         a.op(0x00A0, lv(T4), lv(T8), lv(T9), lv(T10));
-        a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(blocked));
+        a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(0), int(0)).op(0x004D, ref(blocked));
       };
       // Jumps to `skip` when the candidate in T4 is a protector of the mod (each one, in any script, wrote its character in the shared variables
       // of CLEO). Uses T6 and T0
@@ -1594,11 +1597,13 @@ export function actorsScript(items) {
         wreckCheck(tgt, 'gvk', L('gr'));
         a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7));
         a.op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
-        a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('gr')));
-        a.jump(L('gd'));                                                                          // visible: it keeps fighting, no new search
+        // Visible or not, it keeps fighting it, no new search: an enemy that goes behind a wall for a moment is not let go (that made the
+        // protector turn to another one every second and never shoot, nor walk to where it could see it). The kill order takes it there;
+        // hidden for TARGET_LIMIT, it is let go (see below)
+        a.jump(L('gd'));
         a.label(L('gr'));
         a.op(0x0006, lv(tt), int(0));
-        a.op(0x0006, lv(tgt), int(0));                                                           // behind a wall or an object: it lets it go and looks for another
+        a.op(0x0006, lv(tgt), int(0));                                                           // a wrecked vehicle: it lets it go and looks for another
         a.label(L('gw'));
         // Two passes: first the targets that no other protector is on (so they spread over the enemies), then any target (nobody stays still
         // while there is an enemy; they all go to the same one if there is only one)
@@ -1697,11 +1702,16 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0019, lv(tt), int(0)).op(0x004D, ref(L('gts')));
         a.op(0x0A8F, lv(T4), lv(tt), lv(T5));
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(TARGET_LIMIT)).op(0x004D, ref(L('gtn')));
-        // It has hurt it: it keeps it (the time starts again). It never could (an invulnerable one): it gives it up, and for IGN_KEEP no
-        // protector takes it again (it would shoot at it for ever)
+        // Its health went down meanwhile (hurt by this protector, another one, the player or anyone): it keeps it (the time starts again).
+        // It did not (an invulnerable one): it gives it up, and for IGN_KEEP no protector takes it again (it would shoot at it for ever).
+        // (Asking the game whether this protector hurt it does not do: the game keeps only the last one who hurt a character)
         a.op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtg')));
-        a.op(0x00D6, int(0)).op(0x051A, lv(tgt), lv(h)).op(0x004D, ref(L('gti')));
-        a.op(0x0085, lv(tt), lv(T4));
+        // hidden (behind a building) now: it is let go, not given up (another protector or a later search takes it when it shows)
+        a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7)).op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
+        a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(0), int(0)).op(0x004D, ref(L('gtg')));
+        a.op(0x0226, lv(tgt), lv(T6));
+        a.op(0x00D6, int(0)).op(0x001D, lv(thp), lv(T6)).op(0x004D, ref(L('gti')));
+        a.op(0x0085, lv(tt), lv(T4)).op(0x0085, lv(thp), lv(T6));
         a.jump(L('gtn'));
         a.label(L('gti'));
         a.op(0x0AB4, int(IGN_IDX), lv(T5));
@@ -1721,6 +1731,8 @@ export function actorsScript(items) {
         a.jump(done);
         a.label(L('gts'));
         a.op(0x0085, lv(tt), lv(T4));
+        a.op(0x0006, lv(thp), int(0)).op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtn')));
+        a.op(0x0226, lv(tgt), lv(thp));
         a.label(L('gtn'));
         a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gx')));
         a.jump(L('gu'));
@@ -1751,7 +1763,7 @@ export function actorsScript(items) {
           a.op(0x041A, lv(h), int(e.weapon), lv(T8));
           a.op(0x00D6, int(0)).op(0x0019, lv(T8), int(0)).op(0x004D, ref(L('rcn')));
           a.op(0x00A0, lv(h), lv(T8), lv(T9), lv(T10));
-          a.op(0x00D6, int(0)).op(0x06BD, lv(T8), lv(T9), lv(T10), lv(T0), lv(T6), lv(T7), int(1), int(0), int(0), int(1), int(0)).op(0x004D, ref(L('rcn')));
+          a.op(0x00D6, int(0)).op(0x06BD, lv(T8), lv(T9), lv(T10), lv(T0), lv(T6), lv(T7), int(1), int(0), int(0), int(0), int(0)).op(0x004D, ref(L('rcn')));
           a.op(0x000A, lv(cnt), int(1));
           a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
           a.op(0x0006, lv(cnt), int(0));
