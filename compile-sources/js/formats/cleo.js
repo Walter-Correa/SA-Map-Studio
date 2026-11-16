@@ -867,6 +867,14 @@ const TARGET_LIMIT = 8000; // a protector that has not hurt its target in this t
 const COVER_KEEP = 5000;   // how long (ms) a target that was not hurt but is not proof (behind cover) stays given up
 // The proofs of a character (02AB) in the flags of its physical part (dword at +0x40): against bullets and against melee
 const PROOF_BULLET = 0x40000, PROOF_MELEE = 0x200000;
+// What a protector saw of its target meanwhile, kept above the health in the same variable (thp: the low 16 bits are the health it had):
+// this protector hurt it (it was the last one who hurt it at some check), and this protector shot
+const SEEN_HIT = 0x10000, SEEN_SHOT = 0x20000, SEEN_HP = 0xFFFF;
+// The game does no damage with the shots of a character at a target that is not on the screen (tested: the same shooters killed an enemy
+// in front of the camera in two seconds and never hurt it beside or behind the player). In a mission the camera often stays on the player
+// (Green Sabre: kneeling beside Sweet) and the protectors shot at the enemies round him for ever. So while a protector shoots at a target
+// off the screen with nothing in between, the script takes the damage of one shot of its weapon (weapon.dat) off it at each turn
+const GUN_DAMAGE = { 22: 25, 23: 40, 24: 70, 25: 30, 26: 30, 27: 30, 28: 20, 29: 25, 30: 30, 31: 30, 32: 20, 33: 75, 34: 125, 35: 75, 36: 75, 37: 25, 38: 140 };
 // The slot of a weapon in the ped (the weapons of the ped are in an array by slot)
 const weaponSlot = (w) => (w >= 22 && w <= 24 ? 2 : w >= 25 && w <= 27 ? 3 : w === 28 || w === 29 || w === 32 ? 4 : w === 30 || w === 31 ? 5 : w === 33 || w === 34 ? 6 : w >= 35 && w <= 38 ? 7 : 8);
 export const npcTravels = (e) => e.role !== 'neutral' && !!e.follow;
@@ -1561,6 +1569,10 @@ export function actorsScript(items) {
         a.op(0x0E44, lv(h), lv(T0));
         a.op(0x00D6, int(0)).op(0x0019, lv(T0), int(0)).op(0x004D, ref(L('sk')));
         a.op(0x00D6, int(0)).op(0x056D, lv(T0)).op(0x004D, ref(L('sk')));
+        // a dead one (the game keeps the order on the body of the enemy it killed): nothing to cancel, it looks for the next one below
+        a.op(0x00D6, int(0)).op(0x0118, lv(T0)).op(0x004D, ref(L('sd')));
+        a.jump(L('sk'));
+        a.label(L('sd'));
         a.op(0x00D6, int(0)).op(0x8039, lv(T0), lv(tgt)).op(0x004D, ref(L('sk')));             // the script chose it (it attacked the player): it stays
         // Nor anyone the protectors never fight (one of the player's group, a friend marked blue, an NPC of the mod that is not an enemy)
         // (or a target given up because it could not be hurt: the game itself would keep it attacking)
@@ -1578,7 +1590,8 @@ export function actorsScript(items) {
         a.op(0x0687, lv(h));
         a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0)).op(0x0006, lv(cnt), int(0));
         if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
-        a.jump(done);
+        // and it looks for a target of its own now: leaving here, a protector the game kept giving such an order never looked for one and
+        // stood still beside the enemies
         a.label(L('sk'));
         // First priority: a police helicopter (Police Maverick) within 60 m of the player while he is wanted. It lets go of any target it had and
         // shoots at the helicopter itself (they have no pilot). Only with a weapon that shoots and has ammunition. The order is given once a second,
@@ -1756,20 +1769,56 @@ export function actorsScript(items) {
         a.jump(L('gtn'));
         a.label(L('gtm'));
         a.op(0x00D6, int(0)).op(0x0019, lv(tt), int(0)).op(0x004D, ref(L('gts')));
+        a.op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtg')));
+        // What this protector does to it, checked every turn: the game keeps only the last one who hurt a character, so a protector that hits
+        // it is that one at some of the checks; and whether it shoots
+        a.op(0x00D6, int(0)).op(0x051A, lv(tgt), lv(h)).op(0x004D, ref(L('gh1')));
+        a.op(0x0B11, lv(thp), int(SEEN_HIT), lv(thp));
+        a.label(L('gh1'));
+        // It has the kill order on a target on foot that is off the screen, in sight (buildings, vehicles and objects) and within 60 m: one
+        // shot's damage (see GUN_DAMAGE), and it counts as hurt by this protector. The last shot kills it (0321). (Whether it is shooting at
+        // that moment is rarely seen at a check, even while it kills)
+        if (ranged && GUN_DAMAGE[e.weapon]) {
+          a.op(0x0E44, lv(h), lv(T5));
+          a.op(0x00D6, int(2)).op(0x003B, lv(T5), lv(tgt)).op(0x82CB, lv(tgt)).op(0x80DF, lv(tgt)).op(0x004D, ref(L('gs0')));
+          a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7)).op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
+          a.op(0x00D6, int(0)).op(0x00FE, lv(tgt), lv(T0), lv(T6), lv(T7), flt(60), flt(60), flt(30), int(0)).op(0x004D, ref(L('gs0')));
+          a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(1), int(0), int(1), int(0)).op(0x004D, ref(L('gs0')));
+          a.op(0x0226, lv(tgt), lv(T5));
+          a.op(0x000E, lv(T5), int(GUN_DAMAGE[e.weapon]));
+          a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(0)).op(0x004D, ref(L('gsk')));
+          a.op(0x0223, lv(tgt), lv(T5));
+          a.jump(L('gsh'));
+          a.label(L('gsk'));
+          a.op(0x0321, lv(tgt));
+          a.label(L('gsh'));
+          a.op(0x0B11, lv(thp), int(SEEN_HIT), lv(thp));
+          a.label(L('gs0'));
+        }
+        a.op(0x00D6, int(0)).op(0x02E0, lv(h)).op(0x004D, ref(L('gh2')));
+        a.op(0x0B11, lv(thp), int(SEEN_SHOT), lv(thp));
+        a.label(L('gh2'));
         a.op(0x0A8F, lv(T4), lv(tt), lv(T5));
         a.op(0x00D6, int(0)).op(0x0019, lv(T5), int(TARGET_LIMIT)).op(0x004D, ref(L('gtn')));
-        // Its health went down meanwhile (hurt by this protector, another one, the player or anyone): it keeps it (the time starts again).
-        // It did not: it gives it up. Proof against the protector's weapon (an invulnerable one): for IGN_KEEP no protector takes it again (it
+        // It keeps it (the time starts again) when this protector hurt it, or when it shot and the health went down. Not when only someone else
+        // hurt it (another protector, the player): the protectors that could not hit it stood still beside it until the player killed it.
+        // Otherwise it gives it up. Proof against the protector's weapon (an invulnerable one): for IGN_KEEP no protector takes it again (it
         // would shoot at it for ever). Not proof, it is behind cover the line of sight does not see (a fence, a wall or a car are objects): only
         // for COVER_KEEP, so they turn to the enemies they can hit and try it again soon (blocked for IGN_KEEP, every enemy of a mission behind
-        // cover was given up and the protectors stood still beside them).
-        // (Asking the game whether this protector hurt it does not do: the game keeps only the last one who hurt a character)
-        a.op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtg')));
-        // hidden (behind a building) now: it is let go, not given up (another protector or a later search takes it when it shows)
+        // cover was given up and the protectors stood still beside them). The protectors that hit it keep it: the block only stops new ones.
+        // Hidden (behind a building) now: it is let go, not given up (another protector or a later search takes it when it shows)
         a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7)).op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
         a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(0), int(0)).op(0x004D, ref(L('gtg')));
         a.op(0x0226, lv(tgt), lv(T6));
-        a.op(0x00D6, int(0)).op(0x001D, lv(thp), lv(T6)).op(0x004D, ref(L('gti')));
+        a.op(0x0B10, lv(thp), int(SEEN_HIT), lv(T5));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T5), int(0)).op(0x004D, ref(L('gtk')));
+        a.op(0x0B10, lv(thp), int(SEEN_SHOT), lv(T5));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T5), int(0)).op(0x004D, ref(L('gth')));
+        a.jump(L('gti'));
+        a.label(L('gth'));
+        a.op(0x0B10, lv(thp), int(SEEN_HP), lv(T5));
+        a.op(0x00D6, int(0)).op(0x001D, lv(T5), lv(T6)).op(0x004D, ref(L('gti')));
+        a.label(L('gtk'));
         a.op(0x0085, lv(tt), lv(T4)).op(0x0085, lv(thp), lv(T6));
         a.jump(L('gtn'));
         a.label(L('gti'));
@@ -1805,6 +1854,30 @@ export function actorsScript(items) {
         a.op(0x000A, lv(cnt), int(1));
         a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
         a.op(0x0006, lv(cnt), int(0));
+        // Both on foot and it still has the kill order on this target (CLEO+): the game's task goes on, walking it to where it can see the
+        // enemy. Given again every two seconds it started over each time, and against enemies behind cars the protectors stood there turning
+        // their heads, never shooting nor moving
+        a.op(0x00D6, int(1)).op(0x80DF, lv(h)).op(0x80DF, lv(tgt)).op(0x004D, ref(L('gxa')));
+        // A car, a fence or a wall between them (the line with objects and vehicles) and more than 6 m away: it runs toward the enemy. The
+        // game's kill order did not take them round the cover: twenty protectors stood 20 m from enemies hidden behind cars, turning their heads
+        a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7)).op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
+        a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(1), int(0), int(1), int(0)).op(0x004D, ref(L('gxc')));
+        a.jump(L('gxk'));
+        a.label(L('gxc'));
+        a.op(0x050A, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), lv(T5));
+        a.op(0x00D6, int(0)).op(0x0021, lv(T5), flt(6)).op(0x004D, ref(L('gxk')));
+        // Only for the time it takes to come within about 5 m (some 128 ms a metre, running): running the whole way, they ended on top of the
+        // enemy, too close to shoot
+        a.op(0x0092, lv(T6), lv(T5)).op(0x000E, lv(T6), int(5)).op(0x0B16, lv(T6), int(7), lv(T6));
+        taskGate(a, 'gxr' + i, done);
+        a.op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
+        a.op(0x05D3, lv(h), lv(T8), lv(T9), lv(T10), int(7), lv(T6));
+        a.jump(done);
+        a.label(L('gxk'));
+        a.op(0x0E44, lv(h), lv(T6));
+        a.op(0x00D6, int(0)).op(0x003B, lv(T6), lv(tgt)).op(0x004D, ref(L('gxa')));
+        a.jump(done);
+        a.label(L('gxa'));
         a.op(0x0085, lv(T4), lv(tgt));
         attackTask(T4, 'gxat');
         a.jump(done);
