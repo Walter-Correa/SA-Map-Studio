@@ -627,6 +627,7 @@
           <legend class="sub">Organização</legend>
           <label class="radio"><input type="radio" name="exLayout" value="module" checked> Funções prontas para usar</label>
           <label class="radio"><input type="radio" name="exLayout" value="lines"> Só as linhas</label>
+          <label class="radio" title="Script completo: cria tudo ao carregar, destrói ao descarregar e tem comandos para testar (/fs)"><input type="radio" name="exLayout" value="filterscript"> Exportar como filterscript</label>
           <legend class="sub">Incluir</legend>
           <label class="check"><input type="checkbox" id="exRemoved" checked> Objetos removidos</label>
           <label class="check"><input type="checkbox" id="exVehicles" checked> Veículos</label>
@@ -673,9 +674,9 @@
 <dialog class="dialog" id="dlgTest" style="width: min(1140px, 95vw); max-width: 1140px; height: min(686px, 90vh); min-height: min(686px, 90vh);">
   <form method="dialog" class="dialog-body" style="padding: 26px 32px; gap: 18px; height: 100%; max-height: 90vh; justify-content: space-between; box-sizing: border-box;">
     <header class="dialog-head"><h2 style="font-size: 24px;">Testar o mapa no jogo</h2><button class="btn icon" value="close" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></header>
-    <p class="dialog-text" style="font-size: 14px; line-height: 1.5; margin: 0; max-width: 100%;">Servidor de teste local (porta <b id="testPort">7777</b>). Comandos no jogo: <code>/fly</code> (voar), <code>/map</code> (centro do mapa), <code class="i18n-code">/w [clima]</code>, <code class="i18n-code">/t [hora]</code>, <code>/jetpack</code>, <code class="i18n-code">/v [carro]</code>, <code>/spawn</code> e <code>/pos</code>.</p>
-    <div class="test-columns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; flex: 1; align-content: center;">
-      <div style="display: flex; flex-direction: column; gap: 10px;">
+    <p class="dialog-text" style="font-size: 14px; line-height: 1.5; margin: 0; max-width: 100%;">Servidor de teste local (porta <b id="testPort">7777</b>). Comandos no jogo: <code>/fly</code> (voar), <code>/map</code> (centro do mapa), <code class="i18n-code">/w [clima]</code>, <code class="i18n-code">/t [hora]</code>, <code>/jetpack</code>, <code class="i18n-code">/v [carro]</code>, <code>/spawn</code>, <code>/pos</code>, <code>/god</code>, <code class="i18n-code">/gravar [nome]</code> e <code class="i18n-code">/weapon [id] [munição]</code>.</p>
+    <div class="test-columns" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr); gap: 32px; align-items: stretch; flex: 1; min-height: 0;">
+      <div style="display: flex; flex-direction: column; justify-content: center; gap: 10px; min-height: 0;">
         <div>
           <div class="insp-label" style="margin-top: 0; margin-bottom: 6px; font-size: 13.5px;">Jogo (GTA San Andreas)</div>
           <div class="setup-row" style="margin-bottom: 6px;">
@@ -700,9 +701,10 @@
           <label class="radio" style="font-size: 13.5px;"><input type="radio" name="testSpawn" value="center"> No centro do mapa do projeto</label>
           <label class="radio" style="font-size: 13.5px;"><input type="radio" name="testSpawn" value="selection"> Em cima do objeto selecionado</label>
         </div>
+          <pre class="code log" id="testLog" hidden style="flex: 0 1 120px; min-height: 48px; margin: 0; overflow: auto;"></pre>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; flex-direction: column; justify-content: center; gap: 14px; min-height: 0;">
         <div>
           <div class="insp-label" style="margin-top: 0; margin-bottom: 8px; font-size: 13.5px;">Local e Ambiente no jogo</div>
           <div class="pair" style="margin-bottom: 12px; gap: 12px;">
@@ -715,15 +717,16 @@
           </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px; min-height: 0; flex: 0 1 auto;">
           <div class="insp-label" style="font-size: 13.5px;">Opções</div>
-          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
-          <label class="check" style="font-size: 13.5px;" title="Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga"><input type="checkbox" id="testGod" checked> Entrar em god mode</label>
-          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testStreamer" checked> Usar plugin Streamer (itens dinâmicos)</label>
-
-          <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;">
+            <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testJetpack"> Começar com jetpack</label>
+            <label class="check" style="font-size: 13.5px;" title="Desligado: cada skin anda e corre do seu jeito, também os NPCs (use_player_ped_anims do servidor; vale para todos os jogadores)"><input type="checkbox" id="testPedAnims" checked> Todos andam e correm como o CJ</label>
+            <label class="check" style="font-size: 13.5px;" title="Vida infinita e veículo sempre consertado; no jogo, /god liga e desliga"><input type="checkbox" id="testGod" checked> Entrar em god mode</label>
+            <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testStreamer" checked> Usar plugin Streamer (itens dinâmicos)</label>
+            <label class="check" style="font-size: 13.5px;"><input type="checkbox" id="testLaunch" checked> Abrir o jogo automaticamente</label>
+          </div>
           <div class="insp-note" id="testWarn"></div>
-          <pre class="code log" id="testLog" hidden style="max-height: 120px; margin-top: 6px;"></pre>
         </div>
       </div>
     </div>

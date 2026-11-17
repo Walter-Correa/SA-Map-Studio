@@ -167,6 +167,13 @@ export function renderInspector() {
     el.innerHTML = emptyInspector();
     const btnAll = $('#btnSelectAll');
     if (btnAll) btnAll.onclick = () => ed.selectAll(true);
+    const selServer = $('#selProjectServer');
+    if (selServer) selServer.onchange = () => {
+      app.project.server = selServer.value === 'samp' ? 'samp' : 'omp';
+      app.project.touch('server');
+      if (app.project.server === 'samp' && (app.project.actors || []).some(a => a.npc)) toast('No SA-MP os NPCs são exportados como actors (CreateActor). As configurações deles ficam guardadas.', 'ok', 6000);
+      renderInspector();
+    };
     return;
   }
   const objs = items.filter(i => i.kind === 'objects').map(i => i.item);
@@ -184,6 +191,7 @@ export function renderInspector() {
   } else if (kind === 'actors') {
     el.innerHTML = actorInspector(item);
     bindActor(item);
+    bindOmpNpc(item, renderInspector);
     titleThumb(item.skin ?? 0, true);
   } else if (kind === 'labels') {
     el.innerHTML = labelInspector(item);
@@ -225,6 +233,7 @@ function emptyInspector() {
     <div class="stat-line"><span>Objetos</span><b>${p.objects?.length || 0}</b></div>
     <div class="stat-line"><span>Veículos</span><b>${p.vehicles?.length || 0}</b></div>
     <div class="stat-line"><span>Actors</span><b>${p.actors?.length || 0}</b></div>
+    ${sp || p.server === 'samp' ? '' : `<div class="stat-line"><span>NPCs do open.mp</span><b>${(p.actors || []).filter(a => a.npc).length}</b></div>`}
     ${sp ? '' : `<div class="stat-line"><span>Textos 3D</span><b>${p.labels?.length || 0}</b></div>`}
     <div class="stat-line"><span>Pickups</span><b>${p.pickups?.length || 0}</b></div>
     <div class="stat-line"><span>Checkpoints</span><b>${p.checkpoints?.length || 0}</b></div>
@@ -233,6 +242,7 @@ function emptyInspector() {
     <div class="stat-line"><span>TextDraws</span><b>${p.textDraws?.length || 0}</b></div>`}
     <div class="stat-line"><span>Objetos removidos</span><b>${p.removed?.length || 0}</b></div>
     ${sp ? '' : `<div class="stat-line"><span>Câmeras</span><b>${c.shots.length + c.paths.length}</b></div>`}
+    ${sp ? '' : `<div class="pair" style="margin-top:10px;"><label title="Os NPCs controláveis exigem open.mp">Servidor do projeto<select id="selProjectServer"><option value="omp" ${p.server !== 'samp' ? 'selected' : ''}>open.mp</option><option value="samp" ${p.server === 'samp' ? 'selected' : ''}>SA-MP</option></select></label></div>`}
     ${total > 0 ? `<button type="button" class="btn primary block" id="btnSelectAll" style="margin: 12px 0 16px;"><svg><use href="#i-move"/></svg>Mover todo o projeto (${total} itens)</button>` : ''}
     <ul>
       <li>Escolha um objeto na aba Objetos e clique no mapa para posicionar.</li>
@@ -555,6 +565,7 @@ function vehicleInspector(v) {
 
 import { npcSection, bindNpc, actionSection, bindAction, menuSection, bindMenu } from './spInspector.js';
 import { gateSection, bindGate } from './gateInspector.js';
+import { ompNpcSection, bindOmpNpc } from './ompNpcInspector.js';
 
 function spawnInspector(s) {
   return `<div class="insp-title">
@@ -619,16 +630,18 @@ function actorInspector(a) {
         <label data-mp>Mundo virtual<input type="number" step="1" min="-1" data-field="world" value="${a.world ?? -1}"></label>
         <label data-mp>Vida (Health)<input type="number" step="1" min="0" max="1000" data-field="health" value="${a.health ?? 100}"></label>
       </div>
-      <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkInvulnerable" ${a.invulnerable ? 'checked' : ''}> ${app.project?.mode === 'sp' ? 'Invulnerável (tem prioridade sobre a vida)' : 'Invulnerável (SetActorInvulnerable)'}</label>
+      <label class="check" style="margin-top:6px;"><input type="checkbox" id="chkInvulnerable" ${a.invulnerable ? 'checked' : ''}> ${app.project?.mode === 'sp' ? 'Invulnerável (tem prioridade sobre a vida)' : (a.npc && app.project?.server !== 'samp' ? 'Invulnerável (NPC_SetInvulnerable)' : 'Invulnerável (SetActorInvulnerable)')}</label>
     </div>
 
     ${npcSection(a)}
+    ${ompNpcSection(a)}
 
     <!-- Animation -->
     <div class="insp-section">
-      <div class="insp-label">${app.project?.mode === 'sp' ? 'Animação' : 'Animação (ApplyActorAnimation)'}</div>
+      <div class="insp-label">${app.project?.mode === 'sp' ? 'Animação' : (a.npc && app.project?.server !== 'samp' ? 'Animação (NPC_ApplyAnimation)' : 'Animação (ApplyActorAnimation)')}</div>
       <label class="check" style="margin: 4px 0 8px;"><input type="checkbox" id="chkActorAnim" ${a.anim ? 'checked' : ''} ${app.project?.mode === 'sp' && a.weapon ? 'disabled' : ''}> Ativar animação</label>
       ${app.project?.mode === 'sp' && a.weapon ? '<div class="insp-note">Com uma arma o NPC não usa animação.</div>' : ''}
+      ${a.anim && a.npc && app.project?.mode !== 'sp' && app.project?.server !== 'samp' && !['idle', 'guard'].includes(a.npc.mode) ? '<div class="insp-note warn" style="margin-bottom: 6px;">A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.</div>' : ''}
       ${a.anim ? `
         <button type="button" class="btn small block" id="btnOpenAnimPicker" style="margin: 6px 0 8px;"><svg><use href="#i-search"/></svg> Abrir Galeria de Animações</button>
         <div style="padding: 7px 10px; background: var(--asphalt-800); border: 1px solid var(--line); border-radius: var(--radius-s); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">

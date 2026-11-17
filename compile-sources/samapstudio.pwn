@@ -60,11 +60,11 @@ new gFlySavedWorld[MAX_PLAYERS];
 new bool:gReturningFromFly[MAX_PLAYERS];
 // Messages shown in game. The editor sends the translation in the chosen language (MSG|id|text lines in
 // mapa.txt); with no translation Portuguese is used. The order is the same as TEST_MESSAGES in the editor's dialogs.js.
-#define SAMSP_MAX_MSGS        30
+#define SAMSP_MAX_MSGS        37
 new gMsg[SAMSP_MAX_MSGS][192] =
 {
     "SA Map Studio: teste do mapa.",
-    "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god",
+    "Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god /gravar [nome] /weapon [id] [munição]",
     "Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly para sair.",
     "Modo de voo desativado. Você retornou à posição onde o voo foi ativado.",
     "Animações dos actors sincronizadas e reaplicadas.",
@@ -92,8 +92,18 @@ new gMsg[SAMSP_MAX_MSGS][192] =
     "  /jetpack, /spawn, /pos - Utilidades gerais",
     "God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.",
     "God mode desativado.",
-    "  /god - Vida infinita (de novo: desativa)"
+    "  /god - Vida infinita (de novo: desativa)",
+    "  /gravar [nome] - Gravar um trajeto para os NPCs (de novo: para)",
+    "Gravando \"%s\": ande ou dirija e digite /gravar para parar.",
+    "Gravação \"%s\" salva. No editor, importe-a no NPC (Gravações do servidor de teste).",
+    "Uso: /gravar [nome] (letras, números e _)",
+    "  /weapon [id] [munição] - Pegar uma arma (ex: /weapon 31 500)",
+    "Uso: /weapon [1 a 46] [munição] (ex: /weapon 24 200)",
+    "Arma %d com %d balas."
 };
+new bool:gGravando[MAX_PLAYERS];
+new bool:gPedAnims = true;
+new gGravacao[MAX_PLAYERS][32];
 
 new bool:gPlayerSpawned[MAX_PLAYERS];
 // Spawn already requested and not yet done: the character selection is called several times and must not spawn again
@@ -532,6 +542,7 @@ stock SAMSP_CarregarMapa()
                 if (gHora < 0 || gHora > 23) gHora = 10;
                 gMinuto = SAMSP_Int(linha, 3);
                 if (gMinuto < 0 || gMinuto > 59) gMinuto = 0;
+                gPedAnims = (SAMSP_Int(linha, 4) != 0);
             }
             case 'C':
             {
@@ -580,7 +591,15 @@ stock SAMSP_CarregarMapa()
                 if (odist <= 0.0) odist = 300.0;
 
                 new id;
-                if (gUseStreamer)
+                // Field 9 = 1: an object a NPC surfs on (it needs a server object, also with the Streamer)
+                if (SAMSP_Int(linha, 9) == 1)
+                {
+                    id = CreateObject(SAMSP_Int(linha, 1), ox, oy, oz, orx, ory, orz, odist);
+                    new svar[16];
+                    format(svar, sizeof(svar), "samsp_o%d", gTotalObjetos);
+                    SetSVarInt(svar, id);
+                }
+                else if (gUseStreamer)
                 {
                     id = _:CreateDynamicObject(SAMSP_Int(linha, 1), ox, oy, oz, orx, ory, orz, -1, -1, -1, (odist > 300.0 ? odist : 300.0), odist);
                 }
@@ -702,6 +721,9 @@ stock SAMSP_CarregarMapa()
                 new veh = CreateVehicle(SAMSP_Int(linha, 1), vx, vy, vz,
                     SAMSP_Float(linha, 5), SAMSP_Int(linha, 6), SAMSP_Int(linha, 7), -1);
                 gVeiculos[gTotalVeiculos] = veh;
+                new svar[16];
+                format(svar, sizeof(svar), "samsp_v%d", gTotalVeiculos);
+                SetSVarInt(svar, veh);
                 gVeiculoTotalComps[gTotalVeiculos] = 0;
                 gVeiculoPaintjob[gTotalVeiculos] = -1;
                 gTotalVeiculos++;
@@ -1039,14 +1061,19 @@ stock SAMSP_CarregarMapa()
 public OnGameModeInit()
 {
     SetGameModeText("SA Map Studio");
-    UsePlayerPedAnims();
     DisableInteriorEnterExits();
-    ShowPlayerMarkers(PLAYER_MARKERS_MODE_OFF);
+    // Radar markers on: the open.mp NPCs can show theirs (each NPC chooses with the alpha of its colour)
+    ShowPlayerMarkers(PLAYER_MARKERS_MODE_GLOBAL);
     SAMSP_CarregarMapa();
+    // Everybody walks and runs like CJ, or each skin with its own walk (option of the test)
+    if (gPedAnims) UsePlayerPedAnims();
     AddPlayerClass(0, gSpawn[0], gSpawn[1], gSpawn[2], gSpawn[3], 0, 0, 0, 0, 0, 0);
     SetWorldTime(gHora);
     SetWeather(gClima);
     SetTimer("SAMSP_GodTick", 100, true);
+    // open.mp NPCs of the map (side script samapnpc): they start after the map, with the ids of its vehicles and objects
+    SetSVarInt("samsp_ready", 1);
+    CallRemoteFunction("SAMSP_NpcStart", "");
     return 1;
 }
 
@@ -1444,6 +1471,7 @@ public OnPlayerConnect(playerid)
 
 public OnPlayerDisconnect(playerid, reason)
 {
+    if (gGravando[playerid]) { StopRecordingPlayerData(playerid); gGravando[playerid] = false; }
     if (gNoClip[playerid][noclip_cameramode] == CAMERA_MODE_FLY)
     {
         DestroyPlayerObject(playerid, gNoClip[playerid][noclip_flyobject]);
@@ -2229,7 +2257,64 @@ public OnPlayerCommandText(playerid, cmdtext[])
         SendClientMessage(playerid, SAMSP_COR_OK, gMsg[25]);
         SendClientMessage(playerid, SAMSP_COR_OK, gMsg[26]);
         SendClientMessage(playerid, SAMSP_COR_OK, gMsg[29]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[30]);
+        SendClientMessage(playerid, SAMSP_COR_OK, gMsg[34]);
 
+        return 1;
+    }
+
+    // Gives a weapon and its ammo (/weapon [id] [ammo], /arma): to test the NPCs that fight
+    if ((!strcmp(cmdtext, "/weapon", true, 7) && (cmdtext[7] == ' ' || cmdtext[7] == EOS)) ||
+        (!strcmp(cmdtext, "/arma", true, 5) && (cmdtext[5] == ' ' || cmdtext[5] == EOS)))
+    {
+        new p = (cmdtext[1] == 'w' || cmdtext[1] == 'W') ? 7 : 5;
+        while (cmdtext[p] == ' ') p++;
+        new arma = cmdtext[p] ? strval(cmdtext[p]) : -1;
+        while (cmdtext[p] && cmdtext[p] != ' ') p++;
+        while (cmdtext[p] == ' ') p++;
+        new balas = cmdtext[p] ? strval(cmdtext[p]) : 500;
+        if (arma < 1 || arma > 46 || (arma >= 19 && arma <= 21) || balas < 1)
+        {
+            SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[35]);
+            return 1;
+        }
+        GivePlayerWeapon(playerid, WEAPON:arma, balas);
+        new msg[96];
+        format(msg, sizeof(msg), gMsg[36], arma, balas);
+        SendClientMessage(playerid, SAMSP_COR_OK, msg);
+        return 1;
+    }
+
+    // Records a path for the NPCs (open.mp, scriptfiles/<name>.rec): on foot or driving
+    if (!strcmp(cmdtext, "/gravar", true, 7) && (cmdtext[7] == ' ' || cmdtext[7] == EOS))
+    {
+        if (gGravando[playerid])
+        {
+            StopRecordingPlayerData(playerid);
+            gGravando[playerid] = false;
+            new msg[192];
+            format(msg, sizeof(msg), gMsg[32], gGravacao[playerid]);
+            SendClientMessage(playerid, SAMSP_COR_OK, msg);
+            return 1;
+        }
+        new nome[32], j = 0;
+        for (new i = 8; cmdtext[7] != EOS && cmdtext[i] != EOS && j < sizeof(nome) - 1; i++)
+        {
+            new c = cmdtext[i];
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') nome[j++] = c;
+        }
+        nome[j] = EOS;
+        if (j == 0)
+        {
+            SendClientMessage(playerid, SAMSP_COR_INFO, gMsg[33]);
+            return 1;
+        }
+        strcopy(gGravacao[playerid], nome);
+        StartRecordingPlayerData(playerid, GetPlayerState(playerid) == PLAYER_STATE_DRIVER ? PLAYER_RECORDING_TYPE_DRIVER : PLAYER_RECORDING_TYPE_ONFOOT, nome);
+        gGravando[playerid] = true;
+        new msg[192];
+        format(msg, sizeof(msg), gMsg[31], nome);
+        SendClientMessage(playerid, SAMSP_COR_OK, msg);
         return 1;
     }
     return 0;

@@ -144,6 +144,9 @@ if defined SRVSRC (
     if exist "%SRVSRC%\plugins" robocopy "%SRVSRC%\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if exist "omp-server-source\plugins" robocopy "omp-server-source\plugins" "%ST%\plugins" /E /NFL /NDL /NJH /NJS /NP >nul
+rem open.mp NPCs: the test compiles the exported NPC code as a side script with the server's own compiler
+if exist "omp-server-source\pawno\pawncc.exe" robocopy "omp-server-source\pawno" "%ST%\pawno" pawncc.exe pawnc.dll /NFL /NDL /NJH /NJS /NP >nul
+if exist "omp-server-source\pawno\include" robocopy "omp-server-source\pawno\include" "%ST%\pawno\include" /E /NFL /NDL /NJH /NJS /NP >nul
 del /q /s "%ST%\components\*.pdb" 2>nul
 del /q /s "%ST%\components\*.dmp" 2>nul
 del /q /s "%ST%\plugins\*.pdb" 2>nul

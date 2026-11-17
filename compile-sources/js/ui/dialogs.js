@@ -7,6 +7,8 @@ import { t, tFallback, getLanguage } from './i18n.js';
 import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, pbMinOf, clampPbLerpMs, clampPbLabelText, PB_LABEL_DEFAULT } from '../editor/project.js';
 import { tdfxMapLine } from '../editor/tdfx.js';
 import { isGate, gateTestLine } from '../editor/gates.js';
+import { projectNpcs, npcTestScript } from '../editor/ompNpc.js';
+import { refreshNpcStreets } from '../editor/npcRoute.js';
 import { isText, keepsTexture, parseColor } from '../editor/materials.js';
 import { positionCameraOverProject, switchTo, uniqueName } from './projects.js';
 import { toSingleplayerImport, isSampModel } from './singleplayer.js';
@@ -41,7 +43,11 @@ export function setupExport() {
       plural(project.vehicles.length, 'veículo', 'veículos'), plural(project.removed.length, 'objeto removido', 'objetos removidos'),
       plural(c.shots.length + c.paths.length, 'câmera', 'câmeras'), plural(text.split('\n').length - 1, 'linha', 'linhas')].map(s => `<span>${s}</span>`).join('');
     dlg.dataset.ext = format;
-    $('#exportNote').textContent = format === 'ipl' ? 'O IPL não guarda veículos, remoções, trocas de textura nem câmeras.' : '';
+    // The filterscript always uses the real positions, one call per item
+    const fs = format === 'pwn' && opt.layout === 'filterscript';
+    for (const id of ['#exArray', '#exRelative']) if ($(id)) $(id).disabled = fs;
+    $('#exportNote').textContent = format === 'ipl' ? 'O IPL não guarda veículos, remoções, trocas de textura nem câmeras.'
+      : fs ? 'No servidor: loadfs com o nome do arquivo. No jogo: /fs mostra os comandos.' : '';
   };
   dlg.addEventListener('change', (e) => {
     if (e.target.id === 'exportText') return;
@@ -270,7 +276,7 @@ export function setupImport() {
 // to the editor's language (MSG|id|text lines); in Portuguese the gamemode already has the text.
 const TEST_MESSAGES = [
   'SA Map Studio: teste do mapa.',
-  'Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god',
+  'Comandos: /fly /map /w [clima] /t [hora] /anim /jetpack /v [modelo] /spawn /pos /god /gravar [nome] /weapon [id] [munição]',
   'Modo de voo livre ativado! W/S/A/D para mover, mouse para olhar. Digite /fly para sair.',
   'Modo de voo desativado. Você retornou à posição onde o voo foi ativado.',
   'Animações dos actors sincronizadas e reaplicadas.',
@@ -299,6 +305,13 @@ const TEST_MESSAGES = [
   'God mode ativado: vida infinita e veículo sempre consertado. Digite /god para sair.',
   'God mode desativado.',
   '  /god - Vida infinita (de novo: desativa)',
+  '  /gravar [nome] - Gravar um trajeto para os NPCs (de novo: para)',
+  'Gravando "%s": ande ou dirija e digite /gravar para parar.',
+  'Gravação "%s" salva. No editor, importe-a no NPC (Gravações do servidor de teste).',
+  'Uso: /gravar [nome] (letras, números e _)',
+  '  /weapon [id] [munição] - Pegar uma arma (ex: /weapon 31 500)',
+  'Uso: /weapon [1 a 46] [munição] (ex: /weapon 24 200)',
+  'Arma %d com %d balas.',
 ];
 
 // The SA-MP chat only shows Windows-1252: letters outside it lose their accent (ł → l, ș → s, ơ → o);
@@ -324,7 +337,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
     `X|${useStreamer ? 1 : 0}`,
     `S|${spawn.x.toFixed(4)}|${spawn.y.toFixed(4)}|${spawn.z.toFixed(4)}|${spawn.a.toFixed(2)}|${spawn.interior}|${spawn.world}|${spawn.jetpack ? 1 : 0}|${spawn.god ? 1 : 0}`
   ];
-  if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}`);
+  if (env) lines.push(`E|${env.weather}|${env.hour}|${env.minute}|${env.pedAnims === false ? 0 : 1}`);
   if (center) lines.push(`C|${center.x.toFixed(4)}|${center.y.toFixed(4)}|${center.z.toFixed(4)}`);
   if (getLanguage() !== 'pt') {
     TEST_MESSAGES.forEach((m, i) => {
@@ -338,10 +351,12 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
   const vehUidToIdx = new Map();
   let objIdx = 0;
   let vehIdx = 0;
+  // Objects an open.mp NPC surfs on: server objects (field 9 = 1), also with the Streamer
+  const surfObjs = new Set(allProjects.flatMap(p => projectNpcs(p)).filter(a => a.npc.surf?.type === 'object').map(a => a.npc.surf.uid));
   for (const p of allProjects) {
     for (const o of p.objects || []) {
       objUidToIdx.set(o.uid, objIdx);
-      lines.push(`O|${o.model}|${o.x.toFixed(5)}|${o.y.toFixed(5)}|${o.z.toFixed(5)}|${o.rx.toFixed(4)}|${o.ry.toFixed(4)}|${o.rz.toFixed(4)}|${(o.drawDist > 0 ? o.drawDist : 300).toFixed(1)}`);
+      lines.push(`O|${o.model}|${o.x.toFixed(5)}|${o.y.toFixed(5)}|${o.z.toFixed(5)}|${o.rx.toFixed(4)}|${o.ry.toFixed(4)}|${o.rz.toFixed(4)}|${(o.drawDist > 0 ? o.drawDist : 300).toFixed(1)}${surfObjs.has(o.uid) ? '|1' : ''}`);
       for (const m of o.materials || []) {
         if (isText(m)) lines.push(`T|${objIdx}|${m.index}|${m.size}|${m.fontSize}|${m.bold ? 1 : 0}|${signed(m.fontColor)}|${signed(m.backColor)}|${m.align}|${clean(m.font)}|${String(m.text).replace(/\r?\n/g, '\\n').replace(/\r/g, '')}`);
         else lines.push(`M|${objIdx}|${m.index}|${keepsTexture(m) ? -1 : m.model}|${clean(keepsTexture(m) ? 'none' : m.txd)}|${clean(keepsTexture(m) ? 'none' : m.texture)}|${signed(m.color)}`);
@@ -375,6 +390,7 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       }
     }
     for (const a of p.actors || []) {
+      if (a.npc && p.server !== 'samp') continue; // open.mp NPC: created by the NPC side script
       const animStr = a.anim && a.anim.lib && a.anim.name
         ? `${clean(a.anim.lib)}|${clean(a.anim.name)}|${(a.anim.delta ?? 4.1).toFixed(1)}|${(a.anim.loop ?? 1) ? 1 : 0}|${a.anim.lockx ? 1 : 0}|${a.anim.locky ? 1 : 0}|${a.anim.freeze ? 1 : 0}|${a.anim.time ?? 0}`
         : '|||||||';
@@ -441,6 +457,32 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
   return lines.join('\n') + '\n';
 }
 
+// open.mp NPCs of the test: the exported NPC code of all the open projects, compiled by the server as a side script.
+// The indexes of the vehicles and objects are the ones of mapLines (the gamemode gives their ids in server variables).
+export function npcTestPayload(project) {
+  const allProjects = [project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])];
+  const npcs = allProjects.flatMap(p => projectNpcs(p));
+  if (!npcs.length) return null;
+  const testVeh = new Map(), testObj = new Map();
+  let oi = 0, vi = 0;
+  for (const p of allProjects) {
+    for (const o of p.objects || []) testObj.set(o.uid, oi++);
+    for (const v of p.vehicles || []) testVeh.set(v.uid, vi++);
+  }
+  const vehIdx = new Map(), objIdx = new Map();
+  const addV = (uid) => { if (uid && testVeh.has(uid) && !vehIdx.has(uid)) vehIdx.set(uid, vehIdx.size); };
+  for (const a of npcs) {
+    const n = a.npc;
+    addV(n.vehicle?.uid);
+    if (n.surf?.type === 'vehicle') addV(n.surf.uid);
+    if (n.surf?.type === 'object' && testObj.has(n.surf.uid) && !objIdx.has(n.surf.uid)) objIdx.set(n.surf.uid, objIdx.size);
+    for (const pt of n.points) for (const ac of pt.acts) addV(ac.veh);
+  }
+  const recordings = {};
+  for (const p of allProjects) Object.assign(recordings, p.recordings || {});
+  return { script: npcTestScript(npcs, { vehIdx, objIdx, testVeh, testObj }), count: npcs.length, recordings };
+}
+
 function spawnPoint(kind) {
   const ed = app.editor, cam = app.vp.camera;
   const yaw = app.vp.fly.yaw;
@@ -479,6 +521,7 @@ export function setupTest() {
   if (saved.spawn) {
  const r = $(`input[name="testSpawn"][value="${saved.spawn}"]`); if (r) r.checked = true; }
   $('#testJetpack').checked = saved.jetpack ?? false;
+  if ($('#testPedAnims')) $('#testPedAnims').checked = saved.pedAnims ?? true;
   if ($('#testStreamer')) $('#testStreamer').checked = saved.streamer ?? true;
   if ($('#testGod')) $('#testGod').checked = saved.god ?? true;
   if (saved.launch !== undefined) $('#testLaunch').checked = saved.launch;
@@ -532,6 +575,7 @@ export function setupTest() {
     store.set('test', {
       spawn: kind,
       jetpack: $('#testJetpack').checked,
+      pedAnims: Boolean($('#testPedAnims')?.checked),
       god: Boolean($('#testGod')?.checked),
       streamer,
       launch: $('#testLaunch').checked,
@@ -540,13 +584,17 @@ export function setupTest() {
     });
     const sp = spawnPoint(kind);
     const spawn = { ...sp, interior: Math.max(0, +$('#testInterior').value | 0), world: Math.max(0, +$('#testWorld').value | 0), jetpack: $('#testJetpack').checked, god: Boolean($('#testGod')?.checked) };
-    const env = { weather, hour, minute };
+    const pedAnims = $('#testPedAnims') ? $('#testPedAnims').checked : true;
+    const env = { weather, hour, minute, pedAnims };
     const center = projectCenter(app.project);
 
     $('#testGo').disabled = true;
     $('#testStatus').textContent = 'Preparando o servidor de teste';
     try {
-      const res = await postJSON('/api/test/start', { map: mapLines(app.project, spawn, env, center, streamer), launch: $('#testLaunch').checked, streamer });
+      await refreshNpcStreets([app.project, ...(app.editor?.extraProjects ? [...app.editor.extraProjects.values()].map(e => e.project) : [])]);
+      const npc = npcTestPayload(app.project);
+      const res = await postJSON('/api/test/start', { map: mapLines(app.project, spawn, env, center, streamer), launch: $('#testLaunch').checked, streamer,
+        npcScript: npc?.script || '', npcCount: npc?.count || 0, recordings: npc?.recordings || {}, pedAnims });
       if (!res.ok) { $('#testStatus').textContent = ''; toast(res.error || 'Não consegui iniciar o teste', 'error', 7000); if (res.log) showInfo({ ...info, log: res.log }); return; }
       $('#testStatus').textContent = res.launched ? `Abrindo o jogo em ${res.address}` : `Servidor pronto. Conecte o SA-MP em ${res.address}.`;
       toast(res.launched ? 'Abrindo o GTA SA no seu mapa' : `Servidor de teste pronto em ${res.address}`, 'ok', 6000);

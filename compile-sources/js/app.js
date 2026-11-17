@@ -19,6 +19,7 @@ import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.
 import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel } from './ui/inspector.js';
 import { setupCameras, stopPreview } from './ui/cameras.js';
 import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
+import { initNpcOverlay } from './editor/npcOverlay.js';
 import { setupAbout, AUTHORS } from './ui/about.js';
 import { initUpdateCheck } from './ui/updateCheck.js';
 import { setupLogsDialog } from './ui/logger.js';
@@ -263,6 +264,7 @@ async function start(cfg) {
   setupMode();
   setupImport();
   setupTest();
+  initNpcOverlay();
   setupKeys();
   setupAbout();
   // The logo opens the project page in the user's browser (the program window must not navigate away from the editor)
