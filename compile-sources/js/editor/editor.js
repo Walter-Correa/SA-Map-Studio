@@ -1705,6 +1705,8 @@ export class Editor extends EventTarget {
       if (clickPt && clickPt.point) {
         this.emit('map-click-coords', clickPt.point);
       }
+      // A tool that takes clicks on the map (the points of a NPC path): the click does not select
+      if (this.clickHook && clickPt?.point && !this.placing && this.clickHook(clickPt.point, e) !== false) return;
       if (this.placing) { this.confirmPlace(e.shiftKey); return; }
       this.pick(e);
     });

@@ -5,6 +5,8 @@ import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
 import { textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, textDrawPawn, PB_INCLUDE, PB_LABEL_ORIENTS } from './project.js';
 import { TDFX_FUNCTIONS, TDFX_INCLUDE, tdfxActive, tdfxFromCall } from './tdfx.js';
 import { gatePawn, gateVar, importGates } from './gates.js';
+import { npcPawn, npcIdent, projectNpcs, importNpcs } from './ompNpc.js';
+import { filterscriptPawn } from './filterscript.js';
 
 import { t as tr, uiLocale } from '../ui/i18n.js';
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
@@ -1086,6 +1088,8 @@ export function parsePwn(source) {
     }
   }
   importGates(masked, vars);
+  // open.mp NPCs (exported by the editor or written by hand): they come as actors with the NPC settings
+  for (const t of importNpcs(masked, vehicles, vars)) actors.push({ ...t, comment: t.npc.name, preComment: '', blankLinesBefore: 0 });
   for (const { fx, ref } of fxRefs) {
     const o = vars.get(ref);
     if (o && o.type !== 'progress') { if (!o.uid) o.uid = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); fx.bottomBarTD = o.uid; }
@@ -1217,6 +1221,8 @@ export function projectCenter(project) {
 
 export function exportPawn(project, options = {}) {
   const opt = { ...EXPORT_DEFAULTS, ...options };
+  // The filterscript keeps the ids of what it creates: real positions, one call per item, vehicles that can be destroyed
+  if (opt.layout === 'filterscript') Object.assign(opt, { relative: false, exportArray: false, vehicleFn: 'CreateVehicle' });
   const d = opt.decimals;
   const center = opt.relative ? projectCenter(project) : { x: 0, y: 0, z: 0 };
   const objs = project.objects;
@@ -1238,10 +1244,32 @@ export function exportPawn(project, options = {}) {
   const gateId = sanitizeIdent(project.name).slice(0, 17).replace(/_+$/, '');
   const gateObjs = objs.filter(o => o.gate && !o.attach);
   const gateIdx = new Map(gateObjs.map((o, k) => [o.uid, k]));
+  // open.mp NPCs: actors that are NPCs leave the actors; the vehicles they use go into Npc_<id>_Veh and the objects they surf on
+  // (server objects, also with the Streamer) into Npc_<id>_Obj
+  const npcActors = projectNpcs(project).filter(a => actors.includes(a));
+  const npcSet = new Set(npcActors);
+  const npcVehIdx = new Map(), npcObjIdx = new Map();
+  const addNpcVeh = (uid) => { if (uid && vehUidSet.has(uid) && !npcVehIdx.has(uid)) npcVehIdx.set(uid, npcVehIdx.size); };
+  for (const a of npcActors) {
+    const n = a.npc;
+    addNpcVeh(n.vehicle?.uid);
+    if (n.surf?.type === 'vehicle') addNpcVeh(n.surf.uid);
+    if (n.surf?.type === 'object' && objUidSet.has(n.surf.uid) && !npcObjIdx.has(n.surf.uid)) npcObjIdx.set(n.surf.uid, npcObjIdx.size);
+    for (const p of n.points) for (const ac of p.acts) addNpcVeh(ac.veh);
+  }
+  const npcP = npcIdent(gateId);
+  const npcMod = npcPawn(npcActors, { id: gateId, fmt: (v) => f(v, d), center, vehIdx: npcVehIdx, objIdx: npcObjIdx, tr });
   const emitObjectBlock = (targetArr, o, varName = 'objectid') => {
     const hasExtras = (o.materials && o.materials.length) || o.move || o.attach || parentObjUids.has(o.uid) || gateIdx.has(o.uid);
     const cmt = commentSuffix(o);
-    if (gateIdx.has(o.uid)) {
+    if (npcObjIdx.has(o.uid)) {
+      // An object a NPC surfs on: NPC_SetSurfingObject needs a server object
+      const ov = `${npcP}_Obj[${npcObjIdx.get(o.uid)}]`, so = { ...opt, objectFn: 'CreateObject' };
+      targetArr.push(`${ov} = ${objectLine(o, so, center)};${cmt}`);
+      if (o.materials?.length) targetArr.push(...materialLines(o, so, ov));
+      if (o.move) targetArr.push(`MoveObject(${ov}, ${f(o.move.targetX - center.x, d)}, ${f(o.move.targetY - center.y, d)}, ${f(o.move.targetZ - center.z, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});`);
+      if (parentObjUids.has(o.uid)) targetArr.push(`attachtoid = ${ov};`);
+    } else if (gateIdx.has(o.uid)) {
       const gv = gateVar(gateId, gateIdx.get(o.uid));
       targetArr.push(`${gv} = ${objectLine(o, opt, center)};${cmt}`);
       if (o.materials?.length) targetArr.push(...materialLines(o, opt, gv));
@@ -1296,10 +1324,11 @@ export function exportPawn(project, options = {}) {
       }
     }
     const attachedToVeh = objs.filter(o => o.attach && o.attach.to === v.uid).slice(0, 25);
-    const hasMods = (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || attachedToVeh.length > 0;
+    const hasMods = (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || attachedToVeh.length > 0 || npcVehIdx.has(v.uid);
     const cmt = commentSuffix(v);
     if (hasMods) {
       vehLines.push(`vehicleid = ${vehicleLine(v, opt, center)}${cmt}`);
+      if (npcVehIdx.has(v.uid)) vehLines.push(`${npcP}_Veh[${npcVehIdx.get(v.uid)}] = vehicleid;`);
       if (v.paintjob !== undefined && v.paintjob >= 0) vehLines.push(`ChangeVehiclePaintjob(vehicleid, ${v.paintjob});`);
       for (const comp of (v.components || [])) {
         const cInfo = VEHICLE_COMPONENTS[comp];
@@ -1317,6 +1346,7 @@ export function exportPawn(project, options = {}) {
   const actorLines = [];
   for (let idx = 0; idx < actors.length; idx++) {
     const a = actors[idx];
+    if (npcSet.has(a)) continue;
     if (a.blankLinesBefore > 0 && idx > 0) actorLines.push('');
     if (a.preComment) {
       for (const pl of a.preComment.split('\n')) {
@@ -1478,7 +1508,7 @@ export function exportPawn(project, options = {}) {
   const needObjId = objs.some(o => !gateIdx.has(o.uid) && ((o.materials && o.materials.length) || o.move || o.attach));
   const gates = gatePawn(gateObjs, { id: gateId, dynamic: opt.objectFn !== 'CreateObject', center, fmt: (v) => f(v, d), tr });
   const needAttachToId = parentObjUids.size > 0;
-  const needVehId = vehs.some(v => (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || objs.some(o => o.attach && o.attach.to === v.uid));
+  const needVehId = npcVehIdx.size > 0 || vehs.some(v => (v.paintjob !== undefined && v.paintjob >= 0) || (v.components && v.components.length > 0) || objs.some(o => o.attach && o.attach.to === v.uid));
   const needActorId = actorLines.length > 0;
   const needGzId = gangZoneLines.length > 0;
 
@@ -1486,7 +1516,7 @@ export function exportPawn(project, options = {}) {
   const arrayLines = [];
   // Only simple objects go in the array; those with texture, movement or attachment are created separately
   // (otherwise the object would be created twice in the game)
-  const arrayObjs = objs.filter(o => !(o.materials && o.materials.length) && !o.move && !o.attach && !gateIdx.has(o.uid));
+  const arrayObjs = objs.filter(o => !(o.materials && o.materials.length) && !o.move && !o.attach && !gateIdx.has(o.uid) && !npcObjIdx.has(o.uid));
   if (opt.exportArray && arrayObjs.length) {
     arrayLines.push('// Object coordinates array: Model, X, Y, Z, RX, RY, RZ');
     arrayLines.push('new Float:MapObjects[][7] = {');
@@ -1518,6 +1548,13 @@ export function exportPawn(project, options = {}) {
   if (textDraws.some(td => td.type === 'progress')) incs.push(PB_INCLUDE);
   if (textDraws.some(tdfxActive)) incs.push(TDFX_INCLUDE);
 
+  if (opt.layout === 'filterscript') {
+    const fs = filterscriptPawn({ project, fc: (v) => f(v, d), fileName: sanitizeIdent(project.name).toLowerCase(), gateId, gateObjs, gates, npcMod, npcActors,
+      actors: actors.filter(a => !npcSet.has(a)), vehs, cams, objLines, vehLines, actorLines, remLines, labelLines, pickupLines, gangZoneLines,
+      checkpointLines, mapIconLines, needObjId, needAttachToId, needVehId });
+    return withIncludes(fs.lines, fs.incAt, incs);
+  }
+
   if (opt.layout === 'lines') {
     const cleanHeader = cleanPwnHeader(project.pwnHeader);
     if (cleanHeader) lines.push(cleanHeader, '');
@@ -1529,7 +1566,7 @@ export function exportPawn(project, options = {}) {
       lines.push('for (new i = 0; i < sizeof(MapObjects); i++) {');
       lines.push(`    ${opt.objectFn === 'CreateObject' ? 'CreateObject' : 'CreateDynamicObject'}(floatround(MapObjects[i][0]), MapObjects[i][1], MapObjects[i][2], MapObjects[i][3], MapObjects[i][4], MapObjects[i][5], MapObjects[i][6]);`);
       lines.push('}');
-      const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach || gateIdx.has(o.uid)) && !(o.attach && vehUidSet.has(o.attach.to)));
+      const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach || gateIdx.has(o.uid) || npcObjIdx.has(o.uid)) && !(o.attach && vehUidSet.has(o.attach.to)));
       if (extraObjs.length) {
         lines.push('', '// Object extras (textures, movement and attachment):');
         if (needObjId) lines.push('new objectid;');
@@ -1557,6 +1594,7 @@ export function exportPawn(project, options = {}) {
     if (remLines.length) lines.push('', '// Removed objects (put in OnPlayerConnect):', ...remLines);
     if (cams.code) lines.push('', cams.code);
     if (gates.code) lines.push('', gates.decl, '', gates.code);
+    if (npcMod.code) lines.push('', `// ${tr('NPCs do open.mp: chame depois de criar os veículos:')}`, npcMod.load, '', npcMod.decl, '', npcMod.code);
     return withIncludes(lines, incAt, incs);
   }
 
@@ -1572,9 +1610,10 @@ export function exportPawn(project, options = {}) {
   if (labels.length || pickups.length || gangZones.length || textDraws.length || checkpoints.length || mapIcons.length) {
     lines.push(`// ${tr('Textos 3D: {0}', labels.length)}   Pickups: ${pickups.length}   GangZones: ${gangZones.length}   Checkpoints: ${checkpoints.length}   MapIcons: ${mapIcons.length}   TextDraws: ${textDraws.length}`);
   }
+  if (npcActors.length) lines.push(`// ${tr('NPCs do open.mp: {0}', npcActors.length)}`);
   lines.push('// ----------------------------------------------------------------');
   lines.push(`// ${tr('Como usar:')}`);
-  lines.push(`//   OnGameModeInit():   Map_${id}_Load();`);
+  lines.push(`//   OnGameModeInit():   Map_${id}_Load();${npcActors.length ? `  // ${tr('também cria os NPCs')}` : ''}`);
   if (remLines.length) lines.push(`//   OnPlayerConnect():  Map_${id}_Remove(playerid);`);
   for (const u of gates.usage) lines.push('//   ' + u);
   if (cams.usage.length) { lines.push(`//   ${tr('Câmeras (chame quando quiser, com o jogador já spawnado):')}`); for (const u of cams.usage) lines.push('//     ' + u); }
@@ -1588,6 +1627,7 @@ export function exportPawn(project, options = {}) {
   }
 
   if (gates.decl) lines.push(gates.decl, '');
+  if (npcMod.decl) lines.push(npcMod.decl, '');
   lines.push(`stock Map_${id}_Load()`);
   lines.push('{');
   if (needObjId) lines.push('    new objectid;');
@@ -1602,7 +1642,7 @@ export function exportPawn(project, options = {}) {
     lines.push('    {');
     lines.push(`        ${opt.objectFn === 'CreateObject' ? 'CreateObject' : 'CreateDynamicObject'}(floatround(MapObjects[i][0]), MapObjects[i][1], MapObjects[i][2], MapObjects[i][3], MapObjects[i][4], MapObjects[i][5], MapObjects[i][6]);`);
     lines.push('    }');
-    const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach || gateIdx.has(o.uid)) && !(o.attach && vehUidSet.has(o.attach.to)));
+    const extraObjs = objs.filter(o => ((o.materials && o.materials.length) || o.move || o.attach || gateIdx.has(o.uid) || npcObjIdx.has(o.uid)) && !(o.attach && vehUidSet.has(o.attach.to)));
     if (extraObjs.length) {
       lines.push('    // Object extras (textures, movement and attachment):');
       const tmp = [];
@@ -1623,6 +1663,7 @@ export function exportPawn(project, options = {}) {
   if (checkpointLines.length) { lines.push('', '    // Checkpoints:'); for (const l of checkpointLines) lines.push(indent(l)); }
   if (mapIconLines.length) { lines.push('', '    // MapIcons:'); for (const l of mapIconLines) lines.push(indent(l)); }
   if (textDrawLines.length) { lines.push('', '    // TextDraws:'); for (const l of textDrawLines) lines.push(indent(l)); }
+  if (npcMod.load) lines.push('', `    // ${tr('NPCs do open.mp:')}`, indent(npcMod.load));
   lines.push('    return 1;');
   lines.push('}');
   if (remLines.length) {
@@ -1635,6 +1676,7 @@ export function exportPawn(project, options = {}) {
   }
   if (cams.code) { lines.push(''); lines.push(cams.code); }
   if (gates.code) lines.push('', gates.code);
+  if (npcMod.code) lines.push('', npcMod.code);
   return withIncludes(lines, incAt, incs);
 }
 export const exportPwn = exportPawn;

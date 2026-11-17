@@ -5,6 +5,7 @@ import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
 import { t as tr } from '../ui/i18n.js';
 import { makeFx, tdfxPawn } from './tdfx.js';
 import { normalizeGate } from './gates.js';
+import { normalizeNpc } from './ompNpc.js';
 
 let uidCounter = 1;
 let _globalOpSeq = 0;
@@ -52,6 +53,13 @@ export function prepareImportItems(items) {
   }
   for (const it of items) {
     if (it.attach?.to && map.has(it.attach.to)) it.attach = { ...it.attach, to: map.get(it.attach.to) };
+    // open.mp NPC: its vehicle, what it surfs on and the vehicles of its actions
+    const n = it.npc;
+    if (n) {
+      if (n.vehicle?.uid && map.has(n.vehicle.uid)) n.vehicle = { ...n.vehicle, uid: map.get(n.vehicle.uid) };
+      if (n.surf?.uid && map.has(n.surf.uid)) n.surf = { ...n.surf, uid: map.get(n.surf.uid) };
+      for (const p of n.points || []) for (const a of p.acts || []) if (a.veh && map.has(a.veh)) a.veh = map.get(a.veh);
+    }
   }
   return items;
 }
@@ -153,6 +161,8 @@ export function makeActor(data) {
       freeze: data.anim.freeze ?? 0,
       time: +data.anim.time || 0,
     } : null,
+    // Multiplayer for open.mp: a NPC controlled by the server instead of an actor (see ompNpc.js)
+    npc: data.npc ? normalizeNpc(data.npc) : null,
   };
 }
 
@@ -829,6 +839,8 @@ export class Project {
   constructor(name = 'Meu mapa') {
     this.name = name;
     this.mode = Project.defaultMode;
+    this.server = 'omp'; // Multiplayer: 'omp' (open.mp) or 'samp' (SA-MP); the open.mp NPCs need open.mp
+    this.recordings = {}; // open.mp NPC recordings (.rec), name -> file in base64
     this.objects = [];
     this.vehicles = [];
     this.actors = [];
@@ -864,6 +876,9 @@ export class Project {
   static fromJSON(data) {
     const p = new Project(data.name || 'Meu mapa');
     p.mode = data.mode === 'sp' ? 'sp' : 'mp';
+    p.server = data.server === 'samp' ? 'samp' : 'omp';
+    p.recordings = {};
+    for (const [k, v] of Object.entries(data.recordings || {})) if (/^[\w\-.]{1,31}$/.test(k) && typeof v === 'string') p.recordings[k] = v;
     p.doors = (data.doors || []).map(makeDoor);
     p.world = makeWorld(data.world);
     p.customModels = (data.customModels || []).map(makeCustomModel);
@@ -893,7 +908,7 @@ export class Project {
 
   toJSON() {
     return {
-      app: 'SA Map Studio', format: 1, name: this.name, mode: this.mode, savedAt: new Date().toISOString(),
+      app: 'SA Map Studio', format: 1, name: this.name, mode: this.mode, server: this.server, recordings: this.recordings, savedAt: new Date().toISOString(),
       pwnHeader: this.pwnHeader || '', rawPawn: this.rawPawn || '',
       camera: this.camera, lastSelection: this.lastSelection || [], cameras: this.cameras,
       objects: this.objects, vehicles: this.vehicles, actors: this.actors, removed: this.removed,

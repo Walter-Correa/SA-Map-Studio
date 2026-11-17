@@ -1663,3 +1663,27 @@ body:not(:has(.app.mode-sp)) #dlgImport .sp-only, body:has(.app.mode-sp) #dlgImp
 .update-banner .ub-text span { color: var(--paper-dim); font-size: 12.5px; }
 .update-banner a.btn { text-decoration: none; flex: none; }
 
+
+/* open.mp NPCs (inspector) */
+.npc-sec details summary { cursor: pointer; color: var(--paper-mute); font-size: 12px; font-weight: 600; }
+.npc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; margin-top: 4px; }
+.npc-grid label.check { align-self: end; }
+.npc-points { display: grid; gap: 2px; max-height: 220px; overflow: auto; margin-top: 6px; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 3px; }
+.npc-point { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.npc-point:hover { background: var(--asphalt-800); }
+.npc-point.sel { background: var(--asphalt-800); outline: 1px solid var(--gold-400); }
+.npc-point .n { width: 22px; color: var(--gold-400); font-weight: 700; text-align: right; }
+.npc-point .c { flex: 1; min-width: 0; font-family: monospace; color: var(--paper-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.npc-pt-edit { margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--asphalt-900, transparent); }
+.npc-action { margin-top: 6px; padding: 6px; border-left: 2px solid var(--gold-400); background: var(--asphalt-800); border-radius: 4px; }
+.npc-action-head { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.npc-action-head b { flex: 1; }
+body.npc-picking #viewport, body.npc-picking canvas { cursor: crosshair; }
+.npc-pick-bar { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; background: var(--asphalt-800); border: 1px solid var(--gold-400); border-radius: var(--radius-s); box-shadow: 0 4px 16px rgba(0, 0, 0, .4); font-size: 13px; }
+details.npc-sec > summary.insp-label { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: flex-start; text-align: left; gap: 8px; margin-bottom: 0; }
+details.npc-sec > summary.insp-label::-webkit-details-marker { display: none; }
+details.npc-sec > summary.insp-label::before { content: '▸'; color: var(--gold-400); font-size: 17px; line-height: 1; width: 14px; flex: none; }
+details.npc-sec[open] > summary.insp-label::before { content: '▾'; }
+details.npc-sec[open] > summary.insp-label { margin-bottom: 6px; }
+.npc-range { display: grid; gap: 2px; margin-top: 4px; font-size: 12px; }
+.npc-range input[type=range] { width: 100%; }

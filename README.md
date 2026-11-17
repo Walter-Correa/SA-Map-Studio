@@ -137,6 +137,39 @@ never changed and removing the mod is deleting its folder.
   (the game's 135 animation libraries, with a video preview and an offline package to download).
 - Actors stand upright with their feet on the surface (`CreateActor`).
 
+### open.mp NPCs (controllable NPCs)
+- In a Multiplayer project for **open.mp** (the project server, in the project panel), any actor can become a **NPC
+  controlled by the server**, using the official NPC component of open.mp (`NPC_*` natives, no plugins). SA-MP projects
+  show the option locked: the NPC component only exists in open.mp (there the NPCs are exported as actors).
+- Properties: player name, skin, health, armour, invulnerable, interior, virtual world, fighting style, special action,
+  animation, weapon with ammunition, clip, infinite ammo, reloading, accuracy, shoot and reload times, clip size and the
+  skill with the 11 weapon classes, respawn time, damage taken (multiplier), reaction to damage (nothing, fight back,
+  flee).
+- Fights: how it chases (walking, running, sprinting) and when it gives up, hand to hand strikes (normal, the special one
+  of the fighting style or both in turns, time between strikes, reach), with a gun the shooting range, stopping to shoot or
+  shooting while walking, where it aims (body, head, legs), time between shots and what it does out of ammo (puts the gun
+  away and fights hand to hand, flees or keeps aiming), how it flees and how it goes back to its place. A NPC in a vehicle
+  gets out to fight, then walks back to its vehicle, gets in and drives on.
+- Seen by the players: colour and radar icon, and a chat bubble (the game shows no name tag over a NPC).
+- Behaviours: standing (with animation, looking at the player who comes close), **path drawn on the 3D map** (patrol or
+  driver, in a loop, there and back or once, by clicking the ground), **route through the streets or sidewalks** to a
+  clicked point (worked out by the editor over the official open.mp street nodes), **wandering the streets** on foot or
+  driving, free (`NPC_PlayNode`, going from one area of the map to the next) or **inside a radius or an area** drawn on the
+  map like a gang zone (over the streets of the place, keeping to the right lane on roads with traffic both ways, never
+  against a one-way road, with rounded corners), **guard** (attacks whoever comes within range and
+  goes back to its place), **follow the player** and **recordings** (`.rec`, with the path previewed on the map). A NPC
+  that moves can start when a player first sees it, so it is seen leaving its place.
+- Each point of a path can have **actions on arrival**: wait, animations, special action, turn, aim and shoot at a point,
+  strike, enter, exit or be put in a vehicle, siren, landing gear, Hydra thrusters, train speed, vehicle health, weapon
+  and weapon state, keys, push, teleport, interior, world, health, armour, skin, play a recording, wander the streets,
+  surf, die and stop.
+- Vehicles of the map as driver or passenger (siren and vehicle health) and surfing on a vehicle or an object.
+- **Preview in the editor** (the NPC walks its path or recording at its speed) and the **real test** in the open.mp test
+  server, which compiles and runs exactly the exported code. In game, `/gravar name` records a path (on foot or driving)
+  and the editor imports it into the project.
+- The Pawn export has tables with the settings (read back by the import) and a ready routine with the OnNPC* callbacks
+  hooked by themselves; the import also reads NPCs written by hand (`NPC_Create` and `NPC_Set*` calls).
+
 ### Dynamic objects
 - **`MoveObject` / `MoveDynamicObject`**: test the movement in the world (one cycle) and save its parameters.
 - **`AttachObjectToObject` / `AttachObjectToVehicle`**: attach objects with direct editing of the child object's
@@ -239,7 +272,10 @@ never changed and removing the mod is deleting its folder.
   vehicles with their real tuning/paintjobs (`AddVehicleComponent`, `ChangeVehiclePaintjob`), 3D Texts
   (`Create3DTextLabel`), Pickups (`CreatePickup`), GangZones (`GangZoneCreate`), TextDraws and progress bars, opening
   SA-MP already connected and spawning where the camera is looking. Changes in the map are synchronized with the server.
-- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos`, `/som [id]`, `/cp`, `/god` (infinite health, the vehicle always repaired and upright; once more turns it off) and `/help`.
+- open.mp NPCs: the exported NPC code is compiled by the server's own compiler (`pawno`) and loaded as a side script, so
+  what runs in the test is exactly what is exported. The street nodes and the project's recordings go with it.
+- In game: `/fly`, `/map`, `/w`, `/t`, `/v [model]`, `/anim`, `/jetpack`, `/spawn`, `/pos`, `/som [id]`, `/cp`, `/god` (infinite health, the vehicle always repaired and upright; once more turns it off), `/gravar [name]` (records a path for the NPCs; once more stops), `/weapon [id] [ammo]` (gets a weapon) and `/help`. The test
+  window chooses whether everyone walks and runs like CJ or each skin, NPCs included, with its own walk.
   The messages follow the editor language.
 - Options before testing: start in god mode and use the Streamer plugin (both on by default), start with a jetpack and
   open the game by itself.
@@ -253,6 +289,10 @@ never changed and removing the mod is deleting its folder.
 - **Exports** to Pawn (`CreateDynamicObject` or `CreateObject`, ready-made functions or just the lines, with the
   cameras), optionally with the coordinates as an array, and to IPL. The Pawn script can be edited by hand before it is
   saved. The `.pwn` is saved as ANSI so accents show correctly in pawno. The generated code compiles **without warnings**.
+- **Export as filterscript**: a complete script (`loadfs name`) that creates every item of the project in
+  `OnFilterScriptInit`, destroys them in `OnFilterScriptExit`, handles each player on connect (removed buildings,
+  textdraws, progress bars, map icons, gang zones, checkpoints), runs the gates and open.mp NPCs, and has test commands
+  (`/fs` lists them: go to an item, show/hide textdraws, checkpoints, cameras, gates, recreate the NPCs).
 - The original file is preserved on import: comments (`//` and `/* */`), blank lines, headers, `0xAARRGGBB` materials
   and material text.
 - In the exported code, the information comments follow the editor language, while functions and section separators
@@ -436,7 +476,7 @@ compile-sources/
 ├── js/app.js                  startup
 ├── js/ui/                     tabs, inspector, color palette and converter, cameras, dialogs, hover preview, projects, editors, translation (i18n.js)
 ├── js/lang/                   interface translations (one file per language)
-├── js/editor/                 core: editor, project, materials, import, Pawn/IPL export
+├── js/editor/                 core: editor, project, materials, import, Pawn/IPL export, open.mp NPCs (ompNpc.js, npcRoute.js, npcOverlay.js)
 ├── js/world/                  game data, map streaming, models, categories, workers
 ├── js/formats/                readers for the GTA formats (IMG, IDE, IPL, DFF, TXD), CLEO script assembler (cleo.js) and TXD/COL writers (rwwrite.js)
 ├── js/data/                   static catalogs (sprites)

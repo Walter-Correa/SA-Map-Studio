@@ -1674,6 +1674,93 @@ def port_free(port):
         sock.close()
 
 
+# ---------------------------------------------------------------- open.mp NPCs
+# The NPCs of the test are the exported NPC code itself, compiled as a side script with the server's own compiler (pawno).
+NPC_NODES_URL = "https://assets.open.mp/npc_nodes/NODES%d.DAT"
+NPC_SCRIPT = "samapnpc"
+
+
+def find_pawncc():
+    for c in (os.path.join(TEST_DIR, "pawno", "pawncc.exe"), os.path.join(APP_DIR, "pawno", "pawncc.exe"),
+              os.path.join(ROOT_DIR, "omp-server-source", "pawno", "pawncc.exe"),
+              os.path.join(BASE_DIR, "omp-server-source", "pawno", "pawncc.exe")):
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def npc_node_file(n):
+    """The street nodes of an area of the map (NODES<n>.DAT, 0 to 63): the open.mp files the NPC component uses."""
+    name = "NODES%d.DAT" % n
+    cache_dir = os.path.join(CACHE_DIR, "npc_nodes")
+    for d in (cache_dir, os.path.join(TEST_DIR, "scriptfiles", "NPCs", "nodes")):
+        full = os.path.join(d, name)
+        if os.path.isfile(full) and os.path.getsize(full) > 20:
+            with open(full, "rb") as f:
+                return f.read()
+    try:
+        import urllib.request
+        req = urllib.request.Request(NPC_NODES_URL % n, headers={"User-Agent": "SAMapStudio/" + VERSION})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = resp.read()
+        if len(data) > 20:
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(os.path.join(cache_dir, name), "wb") as f:
+                f.write(data)
+            return data
+    except Exception as err:
+        print(f"[SA Map Studio] NPC nodes {name}: {err}")
+    gta = State.detected_gta or detect_gta(load_config().get("gta_path") or "")
+    full = os.path.join(gta, "data", "Paths", name) if gta else ""
+    if full and os.path.isfile(full):
+        with open(full, "rb") as f:
+            return f.read()
+    return None
+
+
+def compile_npc_script(script):
+    """Compiles the NPC side script in the test-server folder. Returns (amx path or None, compiler output)."""
+    pawncc = find_pawncc()
+    if not pawncc:
+        return None, "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs."
+    fs = os.path.join(TEST_DIR, "filterscripts")
+    os.makedirs(fs, exist_ok=True)
+    src = os.path.join(fs, NPC_SCRIPT + ".pwn")
+    amx = os.path.join(fs, NPC_SCRIPT + ".amx")
+    with open(src, "w", encoding="cp1252", errors="replace", newline="\r\n") as f:
+        f.write(script)
+    try:
+        os.remove(amx)
+    except OSError:
+        pass
+    inc = os.path.join(os.path.dirname(pawncc), "include")
+    flags = 0x08000000 if IS_WINDOWS else 0
+    try:
+        r = subprocess.run([pawncc, src, "-o" + amx, "-i" + inc, "-d0", "-Z+", "-;+", "-(+"], cwd=fs, capture_output=True,
+                           text=True, errors="replace", timeout=60, creationflags=flags)
+        out = (r.stdout or "") + (r.stderr or "")
+    except Exception as err:
+        return None, str(err)
+    errors = [l for l in out.splitlines() if " error " in l or "fatal error" in l]
+    if not os.path.isfile(amx) or errors:
+        return None, "\n".join(errors[:12]) or out[-1500:]
+    return amx, out
+
+
+def test_recordings():
+    """Recordings made in the test server (/gravar): scriptfiles/*.rec of the test-server folder."""
+    out = []
+    d = os.path.join(TEST_DIR, "scriptfiles")
+    if os.path.isdir(d):
+        for n in sorted(os.listdir(d)):
+            full = os.path.join(d, n)
+            if n.lower().endswith(".rec") and os.path.isfile(full) and os.path.getsize(full) <= 8 * 1024 * 1024:
+                with open(full, "rb") as f:
+                    out.append({"name": n[:-4], "size": os.path.getsize(full), "time": int(os.path.getmtime(full)),
+                                "data": base64.b64encode(f.read()).decode("ascii")})
+    return out
+
+
 def start_test(body):
     info = test_info()
     exe = server_exe_in(info["serverPath"])
@@ -1736,6 +1823,16 @@ def start_test(body):
 
     rcon = base64.b32encode(os.urandom(10)).decode().lower()
     map_data = body.get("map", "")
+    # open.mp NPCs: the exported code compiled as a side script; each NPC takes a player slot of its own (max_bots)
+    npc_script = body.get("npcScript") or ""
+    npc_count = max(0, min(900, int(body.get("npcCount") or 0)))
+    npc_amx = None
+    if npc_script and npc_count and is_omp:
+        npc_amx, npc_log = compile_npc_script(npc_script)
+        if not npc_amx:
+            return {"ok": False, "error": "O código dos NPCs não compilou.", "log": npc_log}
+    recordings = body.get("recordings") or {}
+    node_cache = os.path.join(CACHE_DIR, "npc_nodes")
     for td in target_dirs:
         try:
             os.makedirs(os.path.join(td, "gamemodes"), exist_ok=True)
@@ -1751,6 +1848,24 @@ def start_test(body):
                 if os.path.normcase(os.path.abspath(streamer_src)) != os.path.normcase(os.path.abspath(dst_streamer)):
                     copy_if_newer(streamer_src, dst_streamer)
             load_streamer = bool(streamer_src or use_streamer)
+            fs_amx = os.path.join(td, "filterscripts", NPC_SCRIPT + ".amx")
+            if npc_amx:
+                os.makedirs(os.path.dirname(fs_amx), exist_ok=True)
+                if os.path.normcase(os.path.abspath(npc_amx)) != os.path.normcase(os.path.abspath(fs_amx)):
+                    shutil.copy2(npc_amx, fs_amx)
+                rec_dir = os.path.join(td, "npcmodes", "recordings")
+                os.makedirs(rec_dir, exist_ok=True)
+                for rname, rdata in recordings.items():
+                    clean = re.sub(r"[^0-9A-Za-z_\-.]", "", str(rname))[:31]
+                    if clean:
+                        with open(os.path.join(rec_dir, clean + ".rec"), "wb") as f:
+                            f.write(base64.b64decode(rdata))
+                # Street nodes already downloaded by the editor: the server does not need to download them again
+                if os.path.isdir(node_cache):
+                    for n in os.listdir(node_cache):
+                        copy_if_newer(os.path.join(node_cache, n), os.path.join(td, "scriptfiles", "NPCs", "nodes", n))
+            elif os.path.isfile(fs_amx):
+                os.remove(fs_amx)
             # open.mp reads config.json; server.cfg is only written for a classic SA-MP server
             if not is_omp:
                 plugins_line = "plugins streamer.dll\n" if load_streamer else "plugins\n"
@@ -1761,11 +1876,13 @@ def start_test(body):
                             "query 1\nchatlogging 0\nweburl localhost\nonfoot_rate 40\nincar_rate 40\nweapon_rate 40\n"
                             "stream_distance 300.0\nstream_rate 1000\nmaxnpc 0\nlogtimeformat [%%H:%%M:%%S]\nlanguage English\n" % (rcon, TEST_PORT, plugins_line))
             cfg = {
-                "name": "SA Map Studio - Testing server", "max_players": 10, "announce": False, "enable_query": True,
+                "name": "SA Map Studio - Testing server", "max_players": 10 + (npc_count if npc_amx else 0),
+                "max_bots": npc_count if npc_amx else 0, "announce": False, "enable_query": True,
                 "network": {"port": TEST_PORT},
-                "pawn": {"main_scripts": ["samapstudio"], "side_scripts": [], "legacy_plugins": ["streamer"] if load_streamer else []},
+                "pawn": {"main_scripts": ["samapstudio"], "side_scripts": ["filterscripts/" + NPC_SCRIPT] if npc_amx else [],
+                         "legacy_plugins": ["streamer"] if load_streamer else []},
                 "rcon": {"enable": False, "password": rcon},
-                "game": {"use_entry_exit_markers": False, "use_player_ped_anims": True, "use_all_animations": True},
+                "game": {"use_entry_exit_markers": False, "use_player_ped_anims": bool(body.get("pedAnims", True)), "use_all_animations": True},
             }
             with open(os.path.join(td, "config.json"), "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2)
@@ -2682,6 +2799,28 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json({"missing": True})
         if path == "/api/test/info":
             return self.send_json(test_info())
+        if path == "/api/npc/recordings":
+            return self.send_json({"ok": True, "recordings": test_recordings()})
+        if path.startswith("/api/npc/nodes/"):
+            try:
+                n = int(path.rsplit("/", 1)[1])
+            except ValueError:
+                n = -1
+            data = npc_node_file(n) if 0 <= n < 64 else None
+            if not data:
+                return self.send_json({"ok": False}, 404)
+            self.close_connection = True
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            try:
+                self.wfile.write(data)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         if path == "/api/logs":
             lines = []
             if os.path.isfile(LOG_FILE_PATH):
