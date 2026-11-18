@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MPL-2.0
 // Visual GangZone editor and manager (GangZoneCreate)
 // Modal with the GTA SA radar map (-3000 to +3000), zoom, pan,
 import { gzColorToRgba, gzColorToHexAndAlpha, hexAndAlphaToGzColor, DEFAULT_GANGZONE_COLORS, snapGangZoneEdges, getNextGangZoneName, findFreeGangZoneSpot } from '../world/gangzones.js';
 import { makeGangZone } from '../editor/project.js';
-import { toast, arrowStep, showAlert, themeVar } from './common.js';
+import { toast, arrowStep, showAlert, themeVar, esc } from './common.js';
 
 export function parseAndNormalizeHexColor(input, currentAlpha = 0.56) {
   if (!input) return null;
@@ -257,10 +258,13 @@ function setupDialogEvents() {
 
   // Selected zone inputs
   const nameInput = dialogEl.querySelector('#gzName');
+  // One undo step for each name typed or color dragged, taken before the first change (it was taken after, or never)
+  let nameTyping = false, colorTyping = false;
   if (nameInput) {
     nameInput.oninput = (e) => {
       const z = getSelectedZone();
       if (!z) return;
+      if (!nameTyping) { gzPushUndo(); nameTyping = true; }
       z.name = e.target.value;
       z.comment = e.target.value;
       appRef.project.modified = true;
@@ -270,8 +274,8 @@ function setupDialogEvents() {
     };
     nameInput.onchange = (e) => {
       const z = getSelectedZone();
+      nameTyping = false;
       if (!z) return;
-      gzPushUndo();
       z.name = e.target.value.trim();
       z.comment = e.target.value.trim();
       appRef.project.modified = true;
@@ -317,6 +321,7 @@ function setupDialogEvents() {
     const hex = colorInput.value;
     const a = +alphaSlider.value / 100;
     if (alphaVal) alphaVal.textContent = `${Math.round(a * 100)}%`;
+    if (!colorTyping) { gzPushUndo(); colorTyping = true; }
     z.color = hexAndAlphaToGzColor(hex, a);
     if (hexInput) {
       hexInput.value = '0x' + (Number(z.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
@@ -326,8 +331,8 @@ function setupDialogEvents() {
     updateSidebarList();
   };
 
-  if (colorInput) colorInput.oninput = onColorChange;
-  if (alphaSlider) alphaSlider.oninput = onColorChange;
+  if (colorInput) { colorInput.oninput = onColorChange; colorInput.onchange = () => { colorTyping = false; }; }
+  if (alphaSlider) { alphaSlider.oninput = onColorChange; alphaSlider.onchange = () => { colorTyping = false; }; }
 
   const onHexChange = () => {
     const z = getSelectedZone();
@@ -335,6 +340,7 @@ function setupDialogEvents() {
     const curA = (+alphaSlider?.value || 56) / 100;
     const res = parseAndNormalizeHexColor(hexInput.value, curA);
     if (!res) return;
+    if (!colorTyping) { gzPushUndo(); colorTyping = true; }
     z.color = res.num;
     if (colorInput) colorInput.value = res.rgbHex;
     if (alphaSlider) alphaSlider.value = Math.round(res.alpha * 100);
@@ -346,7 +352,7 @@ function setupDialogEvents() {
   };
 
   if (hexInput) {
-    hexInput.onchange = onHexChange;
+    hexInput.onchange = () => { onHexChange(); colorTyping = false; };
     hexInput.oninput = () => {
       const str = hexInput.value.trim().replace(/^0x/i, '').replace(/^#/i, '');
       if (str.length === 6 || str.length === 8) onHexChange();
@@ -1075,7 +1081,7 @@ function updateSidebarList() {
     item.innerHTML = `
       <div class="gz-badge" style="background:${hex}; opacity:${alpha};"></div>
       <div class="gz-info">
-        <span class="gz-title">${z.name || 'GangZone'}</span>
+        <span class="gz-title">${esc(z.name || 'GangZone')}</span>
         <span class="gz-sub">${z.minx}, ${z.miny} a ${z.maxx}, ${z.maxy}</span>
       </div>
     `;
@@ -1293,9 +1299,13 @@ function copyAllGangZonesPawn() {
     return;
   }
   const lines = ['// GangZones geradas pelo SA Map Studio', 'new gangzoneid;'];
+  // A Pawn float: 100 -> 100.0, 100.5 stays 100.5 (adding ".0" to it gave 100.5.0, which does not compile)
+  const pf = (v) => { const s = String(Math.round((Number(v) || 0) * 10000) / 10000); return /[.e]/.test(s) ? s : s + '.0'; };
   for (const z of zones) {
     const cHex = '0x' + (Number(z.color) >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    lines.push(`gangzoneid = GangZoneCreate(${z.minx}.0, ${z.miny}.0, ${z.maxx}.0, ${z.maxy}.0); // ${z.name || 'GangZone'}`);
+    const minx = Math.min(+z.minx || 0, +z.maxx || 0), maxx = Math.max(+z.minx || 0, +z.maxx || 0);
+    const miny = Math.min(+z.miny || 0, +z.maxy || 0), maxy = Math.max(+z.miny || 0, +z.maxy || 0);
+    lines.push(`gangzoneid = GangZoneCreate(${pf(minx)}, ${pf(miny)}, ${pf(maxx)}, ${pf(maxy)}); // ${String(z.name || 'GangZone').replace(/[\r\n]+/g, ' ')}`);
     lines.push(`GangZoneShowForAll(gangzoneid, ${cHex});`);
   }
   const text = lines.join('\n');

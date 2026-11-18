@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Editor core: ties the project to the scene, handles selection, the gizmo,
 // object placement mode and removal of buildings from the original map.
 import * as THREE from 'three';
@@ -26,6 +27,23 @@ export function eulerFromItem(o, kind) {
 
 export function quatOfItem(o, kind = 'objects') {
   return new THREE.Quaternion().setFromEuler(eulerFromItem(o, kind));
+}
+
+// Frees the GPU memory of a node taken out of the map. The models of the game share their geometry and materials with every
+// copy (and with the cache), so only what was made for this one node is freed: the markers (3D texts, checkpoints, spawn,
+// map icons) and the stand-in diamond of a pickup without a model
+const OWN_NODE_KINDS = new Set(['labels', 'checkpoints', 'spawns', 'mapIcons']);
+function disposeNode(node) {
+  if (!node) return;
+  const free = (root, textures) => root.traverse(c => {
+    c.geometry?.dispose?.();
+    for (const m of Array.isArray(c.material) ? c.material : (c.material ? [c.material] : [])) {
+      if (textures) m.map?.dispose?.();   // (the checkered flag of a checkpoint is one texture for all of them: it stays)
+      m.dispose?.();
+    }
+  });
+  if (OWN_NODE_KINDS.has(node.userData?.kind)) { free(node, node.userData.kind !== 'checkpoints'); return; }
+  node.traverse(c => { if (c.userData?.ownsGpu) free(c, true); });
 }
 
 const round = (v, d = 4) => Math.round(v * 10 ** d) / 10 ** d;
@@ -241,6 +259,19 @@ export class Editor extends EventTarget {
     this.emit('change');
   }
 
+  // Records an edit of items that may belong to different projects (the open one and the coexisting ones): one undo step in each
+  // project, with its own items only (the step of the open project took the items of the other one, and the undo put them in it)
+  recordSnaps(label, before) {
+    const byProject = new Map();
+    for (const snap of before) {
+      if (!snap) continue;
+      const p = this.findProjectOf(snap.uid);
+      if (!byProject.has(p)) byProject.set(p, []);
+      byProject.get(p).push(snap);
+    }
+    for (const [p, snaps] of byProject) p.record(label, snaps, snaps.map(s => p.snapshot(s.uid)));
+  }
+
   // Turns the selection `deg` degrees around an axis of the manipulator (of the world, or of the object when it is alone and the axes are its own)
   rotateAroundAxis(axis, deg) {
     const items = this.selectedItems();
@@ -318,7 +349,7 @@ export class Editor extends EventTarget {
       this.extraProjects = new Map();
     }
     this.project = project;
-    for (const n of this.nodes.values()) this.root.remove(n);
+    for (const n of this.nodes.values()) { this.root.remove(n); disposeNode(n); }
     this.nodes.clear();
     this.selection = [];
     this.worldSelection = [];
@@ -356,7 +387,11 @@ export class Editor extends EventTarget {
     if (!entry) return;
     entry.unsub?.();
     this.extraProjects.delete(name);
+    // Its items leave the selection too (they stayed selected, with the manipulator on nothing)
+    const before = this.selection.length;
+    this.selection = this.selection.filter(u => !entry.project.find(u));
     this.syncAll();
+    if (this.selection.length !== before) { this.fixMatSel(); this.emit('selection'); }
   }
 
   isProjectReadonly(proj) {
@@ -402,7 +437,7 @@ export class Editor extends EventTarget {
     else if (kind === 'mapIcons') sig = JSON.stringify([o.type, o.color, o.style]);
 
     if (!node || node.userData.model !== modelId || node.userData.matSig !== sig) {
-      if (node) this.root.remove(node);
+      if (node) { this.root.remove(node); disposeNode(node); }
       node = this.createNode(o, kind);
       node.userData.matSig = sig;
       node.userData.projectId = p.name;
@@ -425,7 +460,7 @@ export class Editor extends EventTarget {
       const kind = item ? p.kindOf(uid) : null;
       if (!item || !KINDS.includes(kind)) {
         const node = this.nodes.get(uid);
-        if (node) { this.root.remove(node); this.nodes.delete(uid); }
+        if (node) { this.root.remove(node); disposeNode(node); this.nodes.delete(uid); }
         continue;
       }
       this.syncOne(p, kind, item);
@@ -449,7 +484,7 @@ export class Editor extends EventTarget {
       }
     }
     for (const [uid, node] of this.nodes) {
-      if (!alive.has(uid)) { this.root.remove(node); this.nodes.delete(uid); }
+      if (!alive.has(uid)) { this.root.remove(node); disposeNode(node); this.nodes.delete(uid); }
     }
     this.updateAttachedChildren();
     this.updateHiddenWorld();
@@ -514,7 +549,9 @@ export class Editor extends EventTarget {
         }
       } else {
         if (kind === 'pickups') {
-          node.add(createPickupFallbackMesh(modelId));
+          const fallback = createPickupFallbackMesh(modelId);
+          fallback.userData.ownsGpu = true;
+          node.add(fallback);
         } else {
           node.add(this.models.missingMarker());
         }
@@ -1264,7 +1301,7 @@ export class Editor extends EventTarget {
     const deltaEuler = new THREE.Euler(rxDeg * D2R, ryDeg * D2R, rzDeg * D2R, 'ZXY');
     const Q = new THREE.Quaternion().setFromEuler(deltaEuler);
 
-    const before = items.map(s => this.project.snapshot(s.uid));
+    const before = items.map(s => s.project.snapshot(s.uid));
     for (const s of items) {
       const node = this.nodes.get(s.uid);
       if (!node) continue;
@@ -1280,8 +1317,7 @@ export class Editor extends EventTarget {
     }
     this.attachGizmo();
     this.refreshSelectionBoxes();
-    const after = items.map(s => this.project.snapshot(s.uid));
-    this.project.record(`Girar ${items.length} itens`, before, after);
+    this.recordSnaps(`Girar ${items.length} itens`, before);
     this.emit('change');
   }
 

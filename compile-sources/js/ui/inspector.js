@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Inspector (right panel): position, rotation, options and the SA-MP material editor
 // (SetObjectMaterial and SetObjectMaterialText) with all of the object's indices.
 import * as THREE from 'three';
@@ -86,6 +87,23 @@ let matTab = store.get('matTab', 'texture');
 let textDraft = { text: 'Texto', ...TEXT_DEFAULTS };
 let suppress = false;
 let pendingSlots = new Set();
+
+// Typing a text or dragging a color: the edits of one go are one undo step (each key was one, and 200 keys wiped the history).
+// The step grows while it is still the last one of the project and the same field keeps changing; endTyping() closes it.
+let typing = null;
+function typingUpdate(project, key, label, uids, mutate) {
+  const stack = project.undoStack;
+  const prev = stack[stack.length - 1];
+  project.updateItems(label, uids, mutate);
+  const top = stack[stack.length - 1];
+  if (!top || top === prev) return;
+  if (typing && typing.key === key && typing.entry === prev && prev.label === label) {
+    prev.after = top.after;
+    prev._seq = top._seq;
+    stack.pop();
+  } else typing = { key, entry: top };
+}
+const endTyping = () => { typing = null; };
 let creatingLabelDraft = null;
 let creatingCheckpointDraft = null;
 
@@ -879,8 +897,7 @@ function bindVecArrows(targetUids, project, isMulti = false) {
       if (initialTimer) { clearTimeout(initialTimer); initialTimer = null; }
       if (timer) { clearInterval(timer); timer = null; }
       if (before) {
-        const after = uids.map(u => (app.editor.findProjectOf(u) || project).snapshot(u)).filter(Boolean);
-        project.record(`Editar ${field}`, before, after);
+        app.editor.recordSnaps(`Editar ${field}`, before);
         before = null;
       }
       window.removeEventListener('pointerup', stop);
@@ -1683,7 +1700,7 @@ function bindMulti(items) {
       const oldCenter = getCenter();
       const delta = round(newV - oldCenter[field], 4);
       if (Math.abs(delta) < 1e-6) return;
-      const before = items.map(s => project.snapshot(s.uid));
+      const before = items.map(s => s.project.snapshot(s.uid));
       for (const s of items) {
         s.item[field] = round(s.item[field] + delta);
         const node = app.editor.nodes.get(s.uid);
@@ -1691,8 +1708,7 @@ function bindMulti(items) {
       }
       app.editor.refreshSelectionBoxes();
       app.editor.attachGizmo();
-      const after = items.map(s => project.snapshot(s.uid));
-      project.record(isAll ? 'Mover todo o projeto' : `Mover ${items.length} itens`, before, after);
+      app.editor.recordSnaps(isAll ? 'Mover todo o projeto' : `Mover ${items.length} itens`, before);
     });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
@@ -1703,7 +1719,7 @@ function bindMulti(items) {
     let startCenter = 0;
     let startPositions = new Map();
     sp.addEventListener('pointerdown', () => {
-      before = items.map(s => project.snapshot(s.uid));
+      before = items.map(s => s.project.snapshot(s.uid));
       startCenter = getCenter()[field];
       startPositions = new Map(items.map(s => [s.uid, s.item[field]]));
     }, { capture: true });
@@ -1724,8 +1740,7 @@ function bindMulti(items) {
       },
       done: () => {
         if (before) {
-          const after = items.map(s => project.snapshot(s.uid));
-          project.record(isAll ? 'Mover todo o projeto' : `Mover ${items.length} itens`, before, after);
+          app.editor.recordSnaps(isAll ? 'Mover todo o projeto' : `Mover ${items.length} itens`, before);
           before = null;
         }
       },
@@ -2213,13 +2228,14 @@ function bindLabel(l) {
       updateCount(val);
       suppress = true;
       try {
-        project.updateItems('Editar Texto 3D', [uid], (o) => { o.text = val; });
+        typingUpdate(project, 'label-text:' + uid, 'Editar Texto 3D', [uid], (o) => { o.text = val; });
         app.editor.syncAll();
         updateLabelCode(project.find(uid));
       } finally {
         suppress = false;
       }
     };
+    txt.addEventListener('change', endTyping);
   }
 
   const scaleRange = $('#lblScaleRange');
@@ -2774,6 +2790,8 @@ function gangZoneInspector(gz) {
 function bindGangZone(gz) {
   bindCommon();
   const uid = gz.uid, project = app.editor.findProjectOf(uid) || app.project;
+  // The name as it was before typing: the undo step goes back to it (typing changed the zone directly, so the step had nothing to undo)
+  const startName = { name: gz.name, comment: gz.comment };
 
   const nameInp = $('#gzName');
   if (nameInp) {
@@ -2786,6 +2804,8 @@ function bindGangZone(gz) {
       }
     };
     nameInp.onchange = () => {
+      const it = project.find(uid);
+      if (it) { it.name = startName.name; it.comment = startName.comment; }
       project.updateItems('Renomear GangZone', [uid], (o) => {
         o.name = nameInp.value.trim();
         o.comment = nameInp.value.trim();
@@ -2811,29 +2831,34 @@ function bindGangZone(gz) {
     if (alphaSlider) alphaSlider.value = a;
     if (alphaLbl) alphaLbl.textContent = `${Math.round(a * 100)}%`;
     const num = hexAndAlphaToGzColor(hex, a);
-    project.updateItems('Alterar Cor GangZone', [uid], (o) => { o.color = num; });
+    typingUpdate(project, 'gz-color:' + uid, 'Alterar Cor GangZone', [uid], (o) => { o.color = num; });
     app.editor.syncAll();
     updateGangZoneCode(project.find(uid));
   };
 
-  if (cp) cp.oninput = () => applyGzColor(cp.value.toUpperCase(), parseFloat(alphaSlider?.value || 0.5));
+  if (cp) { cp.oninput = () => applyGzColor(cp.value.toUpperCase(), parseFloat(alphaSlider?.value || 0.5)); cp.addEventListener('change', endTyping); }
   if (hexInp) {
     hexInp.onchange = () => {
       let h = hexInp.value.trim();
       if (!h.startsWith('#')) h = '#' + h;
+      endTyping();
       applyGzColor(h.toUpperCase(), parseFloat(alphaSlider?.value || 0.5));
+      endTyping();
     };
   }
   if (alphaSlider) {
     alphaSlider.oninput = () => {
       applyGzColor(hexInp?.value || '#FF0000', parseFloat(alphaSlider.value));
     };
+    alphaSlider.addEventListener('change', endTyping);
   }
   $$('#inspector [data-gz-color]').forEach(b => {
     b.onclick = () => {
       const val = parseInt(b.dataset.gzColor, 10);
       const { hex, alpha } = gzColorToHexAndAlpha(val);
+      endTyping();
       applyGzColor(hex, alpha);
+      endTyping();
     };
   });
 

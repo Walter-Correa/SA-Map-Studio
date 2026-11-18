@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 import { uiLocale, t } from './i18n.js';
 // Projects: autosave, open (saving and closing the current one), create, rename and delete.
 import * as THREE from 'three';
@@ -42,6 +43,11 @@ export function autosaveOnClose(dialogEl, kind) {
   if (!dialogEl) return;
   let before = null;
   const snap = () => JSON.stringify(app.project?.[kind] || []);
+  // While the window is open, an edit marks the project as not saved (closing the browser then saves it first)
+  const markDirty = () => {
+    if (dialogEl.open && before !== null && app.project && !isDirty() && snap() !== before) setSaveState('Não salvo', 'dirty');
+  };
+  for (const ev of ['input', 'change', 'pointerup', 'keyup']) dialogEl.addEventListener(ev, markDirty, true);
   // The "open" attribute changes with any way of opening or closing the <dialog>
   new MutationObserver(() => {
     if (dialogEl.open) {
@@ -84,11 +90,27 @@ async function doSave(project) {
     const res = await fetch(projUrl(project.name), { method: 'POST', body: JSON.stringify(project.toJSON()) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     if (app.project === project) { currentName = project.name; store.set(lastKey(), project.name); setSaveState('Salvo'); }
+    const backup = store.get('backup', null);
+    if (backup && sameName(backup.name, project.name)) store.set('backup', null);
+    return true;
   } catch {
     if (app.project === project) setSaveState('Erro ao salvar', 'error');
-    store.set('backup', project.toJSON());
+    // Kept in the browser: restored on the next start if the file is still older than it (see restoreBackup)
+    store.set('backup', { v: 2, at: Date.now(), name: project.name, mode: Project.defaultMode, project: project.toJSON() });
+    return false;
   }
 }
+
+// The name of the project file: the same cleaning as the server's safe_name (letters and digits of any language, _ - . space and
+// parentheses; anything else becomes _; no spaces or dots at the ends; at most 80 characters). The project's name is always this one,
+// so the open project is the one in the list, and two names that make the same file are the same name
+export function safeName(name) {
+  let s = String(name ?? '').normalize('NFC').replace(/[^\p{L}\p{N}_\-. ()]+/gu, '_').replace(/^[ .]+|[ .]+$/g, '');
+  s = Array.from(s).slice(0, 80).join('');
+  return s || 'sem_nome';
+}
+// Windows does not tell "Casa" from "casa": the same file
+export const sameName = (a, b) => a != null && b != null && safeName(a).toLowerCase() === safeName(b).toLowerCase();
 
 // Each mode keeps its projects in its own folder (projects/multiplayer, projects/singleplayer)
 const projUrl = (name) => '/api/projects/' + encodeURIComponent(name) + '?mode=' + Project.defaultMode;
@@ -105,16 +127,42 @@ export async function listProjects() {
 
 export async function uniqueName(base) {
   const { projects } = await listProjects();
-  const names = new Set(projects.map(p => p.name.toLowerCase()));
+  const names = new Set(projects.map(p => safeName(p.name).toLowerCase()));
+  base = safeName(base);
   let n = base, i = 2;
-  while (names.has(n.toLowerCase())) n = `${base} ${i++}`;
+  while (names.has(n.toLowerCase())) {
+    const suffix = ` ${i++}`;
+    n = safeName(Array.from(base).slice(0, 80 - suffix.length).join('') + suffix);
+  }
   return n;
 }
 
 async function fetchProject(name) {
   const res = await fetch(projUrl(name));
   if (!res.ok) throw new Error('Projeto não encontrado');
-  return Project.fromJSON(await res.json());
+  const p = Project.fromJSON(await res.json());
+  // The name inside the file can be one the file name does not match (made before the cleaning, or a file renamed by hand): the file wins
+  p.name = sameName(p.name, name) ? safeName(p.name) : safeName(name);
+  return p;
+}
+
+// A save that failed left a copy in the browser: when it is still newer than the file (or the file is gone), it is saved back
+async function restoreBackup() {
+  const b = store.get('backup', null);
+  if (!b) return;
+  if (b.v !== 2 || !b.project || (b.mode || 'mp') !== Project.defaultMode) {
+    if (b.v !== 2) store.set('backup', null);   // (an old copy, without a date: there is no telling if it is newer)
+    return;
+  }
+  const { projects } = await listProjects();
+  const file = projects.find(p => sameName(p.name, b.name));
+  if (file && file.modified * 1000 >= b.at) { store.set('backup', null); return; }
+  try {
+    const res = await fetch(projUrl(b.name), { method: 'POST', body: JSON.stringify(b.project) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    store.set('backup', null);
+    toast(t('As alterações de "{0}" que não tinham sido salvas foram recuperadas.', b.name), 'ok', 8000);
+  } catch { /* stays for the next start */ }
 }
 
 // Camera on open or import: computes the center of all the project's items and focuses on the item closest to it
@@ -181,15 +229,17 @@ export function useProject(p, { keepCamera = false } = {}) {
 // Opens another project: saves and closes the one that was open
 export async function switchTo(nameOrProject) {
   const old = app.project;
-  await saveNow();
+  const saved = await saveNow();
+  if (old && saved[0] === false) throw new Error(t('Não consegui salvar "{0}". Ele continua aberto.', old.name));
   const next = typeof nameOrProject === 'string' ? await fetchProject(nameOrProject) : nameOrProject;
   useProject(next);
   if (typeof nameOrProject !== 'string') await saveNow();
-  if (old && old.name !== next.name) toast(`"${old.name}" foi salvo e fechado. "${next.name}" está aberto.`, 'ok', 4000);
+  if (old && !sameName(old.name, next.name)) toast(`"${old.name}" foi salvo e fechado. "${next.name}" está aberto.`, 'ok', 4000);
   return next;
 }
 
 export async function openInitialProject() {
+  try { await restoreBackup(); } catch { /* the server is not answering: nothing to restore now */ }
   const last = store.get(lastKey(), null);
   if (last) { try { useProject(await fetchProject(last)); app.initialProjectLoaded = true; return; } catch { /* abre outro */ } }
   const list = await listProjects();
@@ -212,13 +262,23 @@ export async function openInitialProject() {
 async function renameProject(newName) {
   const project = app.project;
   newName = newName.trim().replace(/[\\/:*?"<>|]+/g, '-').slice(0, 80);
-  if (!newName || newName === project.name) { $('#projectName').value = project.name; return; }
-  const old = currentName;
-  newName = await uniqueName(newName);
+  if (!newName || safeName(newName) === project.name) { $('#projectName').value = project.name; return; }
+  const oldName = project.name, old = currentName;
+  // Only the case changes ("casa" -> "Casa"): the same file, which must not be deleted afterwards
+  const sameFile = sameName(newName, oldName);
+  newName = sameFile ? safeName(newName) : await uniqueName(newName);
   project.name = newName;
   $('#projectName').value = newName;
-  await saveNow();
-  if (old && old !== newName) await fetch(projUrl(old), { method: 'DELETE' });
+  // The old file is only deleted once the new one was saved (it was deleted even when the save failed)
+  if (!await saveProject(project)) {
+    project.name = oldName;
+    $('#projectName').value = oldName;
+    const backup = store.get('backup', null);   // (the copy kept in the browser goes back to the name of its file too)
+    if (backup?.project && backup.name === newName) store.set('backup', { ...backup, name: oldName, project: { ...backup.project, name: oldName } });
+    toast(t('Não consegui salvar "{0}". O nome continua "{1}".', newName, oldName), 'error', 6000);
+    return;
+  }
+  if (old && !sameName(old, newName)) await fetch(projUrl(old), { method: 'DELETE' });
   toast(`Projeto renomeado para "${newName}"`);
 }
 
@@ -229,9 +289,10 @@ async function openProjectsDialog() {
   ul.innerHTML = projects.length ? '' : '<li class="ol-empty">Nenhum projeto salvo ainda.</li>';
   for (const p of projects) {
     const li = document.createElement('li');
-    const isCurrent = p.name === app.project.name;
-    const extraEntry = app.editor.extraProjects?.get(p.name);
+    const isCurrent = sameName(p.name, app.project.name);
+    const extraEntry = app.editor.extraProjects?.get(p.name) || [...(app.editor.extraProjects?.values() || [])].find(e => sameName(e.project.name, p.name));
     const isCoexisting = !!extraEntry;
+    const extraKey = extraEntry ? extraEntry.project.name : p.name;
     const isReadonly = !!extraEntry?.readonly;
 
     const counts = isCurrent ? {
@@ -308,7 +369,7 @@ async function openProjectsDialog() {
     const btnToggleCoexist = li.querySelector('[data-toggle-coexist]');
     if (btnToggleCoexist) {
       btnToggleCoexist.onclick = () => {
-        const entry = app.editor.extraProjects?.get(p.name);
+        const entry = app.editor.extraProjects?.get(extraKey);
         if (entry) {
           entry.readonly = !entry.readonly;
           app.editor.syncAll();
@@ -322,7 +383,7 @@ async function openProjectsDialog() {
     const btnUncoexist = li.querySelector('[data-uncoexist]');
     if (btnUncoexist) {
       btnUncoexist.onclick = () => {
-        app.editor.removeExtraProject(p.name);
+        app.editor.removeExtraProject(extraKey);
         toast(`Projeto "${p.name}" removido da visualização do mundo.`);
         openProjectsDialog();
       };
@@ -345,9 +406,9 @@ async function openProjectsDialog() {
 
     li.querySelector('[data-del]').onclick = async () => {
       if (!await showConfirm(`Apagar o projeto "${p.name}"? Essa ação não pode ser desfeita.`, { danger: true, confirmText: 'Apagar' })) return;
-      if (app.editor.extraProjects?.has(p.name)) app.editor.removeExtraProject(p.name);
+      if (extraEntry) app.editor.removeExtraProject(extraKey);
       await fetch(projUrl(p.name), { method: 'DELETE' });
-      if (p.name === app.project.name) { useProject(new Project(await uniqueName('Meu mapa'))); saveNow(); }
+      if (isCurrent) { useProject(new Project(await uniqueName('Meu mapa'))); saveNow(); }
       openProjectsDialog();
     };
 
@@ -365,7 +426,8 @@ export function setupProjects() {
   $('#btnProjects').onclick = openProjectsDialog;
   $('#newProjectBtn').onclick = async () => {
     const name = await uniqueName(($('#newProjectName').value || 'Novo mapa').trim());
-    await switchTo(new Project(name));
+    try { await switchTo(new Project(name)); }
+    catch (err) { toast(err.message, 'error', 6000); return; }
     $('#dlgProjects').close();
   };
   const btnOpenExt = $('#openExternalProjectBtn');
@@ -382,8 +444,11 @@ export function setupProjects() {
         const nameFromFile = file.name.replace(/\.[^/.]+$/, '').trim();
         if (!json.name && nameFromFile) json.name = nameFromFile;
         const project = Project.fromJSON(json);
+        const before = project.name;
+        project.name = await uniqueName(project.name);
         // a copy of a project that is already here gets its own permanent id (the installed mod stays with the original)
-        if (project.modId && ((await listProjects()).projects || []).some(p => p.modId === project.modId && p.name !== project.name)) project.modId = newModId();
+        if (project.modId && ((await listProjects()).projects || []).some(p => p.modId === project.modId)) project.modId = newModId();
+        if (!sameName(before, project.name)) toast(t('Já existe um projeto "{0}": o arquivo foi aberto como "{1}".', safeName(before), project.name), 'warn', 7000);
         await switchTo(project);
         $('#dlgProjects').close();
         toast(`Projeto "${project.name}" carregado com sucesso!`, 'ok');

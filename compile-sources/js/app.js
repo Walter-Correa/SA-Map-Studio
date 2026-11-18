@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // SA Map Studio: program startup and the part of the interface that ties everything together
 // (toolbar, view, teleport, tabs, project list, shortcuts).
 import * as THREE from 'three';
@@ -944,6 +945,7 @@ function setupTabs() {
 // =====================================================================  project list
 function setupOutline() {
   app.outlineInverted = store.get('outlineInverted', false);
+  let lastHtml = null;
 
   const render = () => {
     const project = app.project, ed = app.editor;
@@ -1002,7 +1004,7 @@ function setupOutline() {
     // Singleplayer: only map objects (new, textured), cars, doors and removed ones; the rest has no equivalent in the game
     const sp = Project.defaultMode === 'sp';
     const mp = (html) => (sp ? '' : html);
-    $('#outline').innerHTML = group('Veículos', 'vehicles', order(project.vehicles), 'i-car', 'Nenhum veículo.') + (sp ? doorsGroup() : '') +
+    const html = group('Veículos', 'vehicles', order(project.vehicles), 'i-car', 'Nenhum veículo.') + (sp ? doorsGroup() : '') +
       (sp ? group('Local de spawn', 'spawns', order(project.spawns || []), 'i-flag', 'Crie um em Mundo.') : '') +
       group('Actors', 'actors', order(project.actors || []), 'i-actor', 'Nenhum actor criado.') +
       mp(group('Textos 3D', 'labels', order(project.labels || []), 'i-text3d', 'Nenhum texto 3D criado.')) +
@@ -1015,6 +1017,8 @@ function setupOutline() {
       group('Texturizações', 'objects', texObjs, 'i-image', 'Nenhum objeto texturizado.') +
       mp(group('Texto em objetos', 'objects', textObjs, 'i-text', 'Nenhum objeto com texto.')) +
       group('Objetos removidos', 'removed', order(project.removed), 'i-demolish', 'Clique num objeto do mapa e use "Remover objeto".');
+    // Most changes (a move, a turn) do not change the list: the page is only rebuilt when it does
+    if (html !== lastHtml) { $('#outline').innerHTML = html; lastHtml = html; }
 
     $('#outlineCount').textContent =
       project.objects.length +
@@ -1124,24 +1128,8 @@ function setupOutline() {
     if (doorDel) { app.emit('door-delete', doorDel.dataset.doorDel); return; }
     if (doorRow) { app.emit('door-select', doorRow.dataset.door); return; }
     const del = e.target.closest('[data-del]'), res = e.target.closest('[data-restore]');
-    if (del) {
-      const kind = del.dataset.delKind;
-      if (kind && kind !== 'objects' && kind !== 'vehicles' && kind !== 'actors') {
-        const arr = project[kind];
-        if (arr) {
-          const idx = arr.findIndex(item => item.uid === del.dataset.del);
-          if (idx >= 0) {
-            arr.splice(idx, 1);
-            ed.syncAll();
-            project.saveUndoState?.(`Excluir ${kind}`);
-            render();
-            return;
-          }
-        }
-      }
-      project.deleteItems('Apagar', [del.dataset.del]);
-      return;
-    }
+    // Any kind (labels, pickups, zones...) is deleted the same way: one undo step, and the project is saved
+    if (del) { project.deleteItems('Apagar', [del.dataset.del]); return; }
     if (res) { ed.restoreRemoved([res.dataset.restore]); toast('Objeto restaurado'); return; }
     const it = e.target.closest('.ol-item'); if (!it) return;
     if (it.dataset.kind === 'gangZones') {

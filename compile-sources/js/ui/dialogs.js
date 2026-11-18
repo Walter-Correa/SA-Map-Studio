@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Export, import (any format) and in-game map test dialogs.
 import * as THREE from 'three';
 import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pwn.js';
@@ -32,6 +33,7 @@ export function setupExport() {
       includeCameras: $('#exCameras').checked,
       relative: $('#exRelative').checked,
       exportArray: $('#exArray')?.checked || false,
+      chatText: gameText,
     };
     store.set('export', { fn: opt.objectFn, layout: opt.layout, removed: opt.includeRemoved, vehicles: opt.includeVehicles, cameras: opt.includeCameras, ansi: $('#exAnsi').checked, array: opt.exportArray });
     $('#pwnOptions').hidden = format !== 'pwn';
@@ -53,7 +55,11 @@ export function setupExport() {
     if (e.target.id === 'exportText') return;
     gen();
   });
-  $('#btnExport').onclick = () => { gen(); dlg.showModal(); };
+  // The open.mp NPCs walk on a street graph kept in the project: a stale one (after an import, or an NPC moved without the inspector) is rebuilt first
+  $('#btnExport').onclick = async () => {
+    try { await refreshNpcStreets([app.project]); } catch (err) { console.warn('NPC streets', err); }
+    gen(); dlg.showModal();
+  };
   const fileName = () => sanitizeIdent(app.project.name).toLowerCase() + '.' + (dlg.dataset.ext === 'ipl' ? 'ipl' : 'pwn');
   $('#exCopy').onclick = async () => { await copyText($('#exportText').value); toast('Código copiado'); };
   $('#exDownload').onclick = () => {
@@ -162,11 +168,11 @@ export function setupImport() {
     catch (err) { parsed = null; summary.textContent = `Não consegui ler esse arquivo: ${err.message}`; return; }
     show();
   };
-  let t;
+  let typingTimer;
   $('#importText').addEventListener('input', () => {
     fileBytes = null; fileName = ''; $('#importFileName').textContent = '';
-    clearTimeout(t);
-    t = setTimeout(() => analyzeBytes(new TextEncoder().encode($('#importText').value), ''), 250);
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => analyzeBytes(new TextEncoder().encode($('#importText').value), ''), 250);
   });
   const takeFile = async (f) => {
     if (!f) return;
@@ -211,6 +217,7 @@ export function setupImport() {
     if (!replace && !merge) {
       $('#importGo').disabled = true;
       try { await switchTo(new Project(await uniqueName(projName || 'Mapa importado'))); }
+      catch (err) { toast(err.message, 'error', 6000); return; }
       finally { $('#importGo').disabled = false; }
     }
     const project = app.project, ed = app.editor;
@@ -533,7 +540,7 @@ export function setupTest() {
   const showInfo = (i) => {
     info = i;
     $('#testServer').value = i.serverPath || '';
-    $('#testPort').textContent = i.port;
+    $('#testIntro').textContent = `Servidor de teste local (porta ${i.port}). Comandos no jogo:`;
     const notes = [];
     if (i.serverExe && i.builtin) notes.push(`Usando o servidor da pasta <b>test-server</b> do programa (<b>${esc(i.serverExe)}</b>).`);
     else if (i.serverExe) notes.push(`Servidor encontrado: <b>${esc(i.serverExe)}</b>. Ao testar, ele é copiado para a pasta <b>test-server</b> do programa (seu servidor não é alterado).`);

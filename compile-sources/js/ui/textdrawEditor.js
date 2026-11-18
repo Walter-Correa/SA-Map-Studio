@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: MPL-2.0
 // Visual, interactive TextDraw editor (TextDrawCreate / CreatePlayerTextDraw)
 // SA-MP 640x448 screen shown at 16:9; texts drawn with the game's own fonts (tdrender.js),
 // interactive dragging, fonts 0-5 (including Font 5 model previews), boxes, alignment, RGBA colors and Pawn export.
 import { makeTextDraw, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_LIMITS, pbMinSize, fitPbBorder, maxPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, pbAutoFillValue, textDrawPawn, pbMinOf, pbCurrentColour, pbLerpValue, clampPbLerpMs, pbLabelTextDraw, clampPbLabelText, PB_INCLUDE } from '../editor/project.js';
 import { TDFX_EFFECTS, TDFX_BY_ID, TDFX_INCLUDE, tdfxActive, tdfxAllowed, tdfxParams, tdfxFrame, tdfxLength, makeFx, newFx, letterboxBar, letterboxTopSize, letterboxBottomSize } from '../editor/tdfx.js';
 import { TD_SCREEN, TD_WIDTH, TD_HEIGHT, loadGtaFonts, drawTextDraw, textDrawRect, textDrawTextWidth, drawProgressBar } from '../editor/tdrender.js';
-import { toast, arrowStep, themeVar } from './common.js';
+import { toast, arrowStep, themeVar, esc } from './common.js';
 import { modelPreviewImage } from '../editor/modelPreview.js';
 import { t, onLanguageChange } from './i18n.js';
 
@@ -1847,6 +1848,26 @@ function stripColorTags(str) {
   return s;
 }
 
+// A tinted sprite is drawn once per sprite and color and kept (each redraw made a new canvas for every tinted sprite)
+const tintCache = new Map();
+function tintedSprite(img, key, col) {
+  const k = `${key}|${col.r},${col.g},${col.b}`;
+  const hit = tintCache.get(k);
+  if (hit && hit.img === img) return hit.canvas;
+  const off = document.createElement('canvas');
+  off.width = img.naturalWidth;
+  off.height = img.naturalHeight;
+  const offCtx = off.getContext('2d');
+  offCtx.drawImage(img, 0, 0);
+  offCtx.globalCompositeOperation = 'source-in';
+  offCtx.fillStyle = `rgb(${col.r}, ${col.g}, ${col.b})`;
+  offCtx.fillRect(0, 0, off.width, off.height);
+  tintCache.delete(k);
+  tintCache.set(k, { img, canvas: off });
+  if (tintCache.size > 64) tintCache.delete(tintCache.keys().next().value);
+  return off;
+}
+
 function renderSpriteTextDraw(td, bounds) {
   const sprite = (td.text || 'hud:radardisc').trim();
   const col = toHexRgba(td.color ?? 0xFFFFFFFF);
@@ -1861,15 +1882,7 @@ function renderSpriteTextDraw(td, bounds) {
       const isPureWhite = col.r === 255 && col.g === 255 && col.b === 255;
       if (!isPureWhite) {
         try {
-          const off = document.createElement('canvas');
-          off.width = img.naturalWidth;
-          off.height = img.naturalHeight;
-          const offCtx = off.getContext('2d');
-          offCtx.drawImage(img, 0, 0);
-          offCtx.globalCompositeOperation = 'source-in';
-          offCtx.fillStyle = `rgb(${col.r}, ${col.g}, ${col.b})`;
-          offCtx.fillRect(0, 0, off.width, off.height);
-          ctx.drawImage(off, bounds.x, bounds.y, bounds.w, bounds.h);
+          ctx.drawImage(tintedSprite(img, `${lib}:${name}`, col), bounds.x, bounds.y, bounds.w, bounds.h);
         } catch (_) {
           ctx.drawImage(img, bounds.x, bounds.y, bounds.w, bounds.h);
         }
@@ -1997,7 +2010,7 @@ function updateSidebarList() {
     item.innerHTML = `
       <div class="td-badge" style="background:${col.hex};"></div>
       <div class="td-info">
-        <span class="td-title">${td.isPlayer && td.type !== 'progress' ? '[Player] ' : ''}${label}</span>
+        <span class="td-title">${td.isPlayer && td.type !== 'progress' ? '[Player] ' : ''}${esc(label)}</span>
         <span class="td-sub">Camada ${idx + 1} · Pos: ${td.x}, ${td.y}${td.type === 'progress' ? '' : ` | Font: ${td.font}`}</span>
       </div>
     `;
