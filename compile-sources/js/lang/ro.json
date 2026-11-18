@@ -3070,5 +3070,11 @@
  "Font 4: Sprite / TXD": "Font 4: Sprite / TXD",
  "Objetos: {0} | Veículos: {1} | Actors: {2} | Pickups: {3} | Removidos: {4}": "Obiecte: {0} | Vehicule: {1} | Actori: {2} | Pickup-uri: {3} | Eliminate: {4}",
  "texturas trocadas no mapa todo": "texturi înlocuite pe toată harta",
- "Câmera Fotográfica (Camera)": "Cameră foto"
+ "Câmera Fotográfica (Camera)": "Cameră foto",
+ "Aviso: {0} objetos ficam soltos: um objeto do streamer não se prende a um objeto do servidor (onde um NPC anda), nem o contrário.": "Atenție: {0} obiecte rămân libere: un obiect din streamer nu se atașează de un obiect al serverului (pe care se deplasează un NPC), nici invers.",
+ "Aviso: {0} ícones do mapa, mais que os {1} lugares de SetPlayerMapIcon: os {2} a mais ficaram fora do código (com o streamer, saem todos).": "Atenție: {0} pictograme de hartă, mai multe decât cele {1} locuri ale SetPlayerMapIcon: cele {2} în plus au rămas în afara codului (cu streamer, ies toate).",
+ "A text of the CLEO script has more than 255 letters:": "Un text al scriptului CLEO are mai mult de 255 de caractere:",
+ "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio a fost repornit și această pagină a pierdut conexiunea cu el. Reîncarcă pagina pentru a continua: modificările nesalvate au fost păstrate în browser și vor fi recuperate.",
+ "Recarregar a página": "Reîncarcă pagina",
+ "Agora não": "Nu acum"
 }

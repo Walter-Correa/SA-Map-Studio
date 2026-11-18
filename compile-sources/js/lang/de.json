@@ -3070,5 +3070,11 @@
  "Font 4: Sprite / TXD": "Font 4: Sprite / TXD",
  "Objetos: {0} | Veículos: {1} | Actors: {2} | Pickups: {3} | Removidos: {4}": "Objekte: {0} | Fahrzeuge: {1} | Actors: {2} | Pickups: {3} | Entfernt: {4}",
  "texturas trocadas no mapa todo": "auf der ganzen Karte ersetzte Texturen",
- "Câmera Fotográfica (Camera)": "Kamera"
+ "Câmera Fotográfica (Camera)": "Kamera",
+ "Aviso: {0} objetos ficam soltos: um objeto do streamer não se prende a um objeto do servidor (onde um NPC anda), nem o contrário.": "Warnung: {0} Objekte bleiben lose: Ein Streamer-Objekt lässt sich nicht an ein Server-Objekt (auf dem sich ein NPC bewegt) anhängen und umgekehrt auch nicht.",
+ "Aviso: {0} ícones do mapa, mais que os {1} lugares de SetPlayerMapIcon: os {2} a mais ficaram fora do código (com o streamer, saem todos).": "Warnung: {0} Kartensymbole, mehr als die {1} Plätze von SetPlayerMapIcon: Die {2} überzähligen wurden nicht in den Code übernommen (mit dem Streamer werden alle exportiert).",
+ "A text of the CLEO script has more than 255 letters:": "Ein Text des CLEO-Skripts hat mehr als 255 Zeichen:",
+ "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio wurde neu gestartet und diese Seite hat die Verbindung dazu verloren. Laden Sie die Seite neu, um fortzufahren: Nicht gespeicherte Änderungen wurden im Browser aufbewahrt und werden wiederhergestellt.",
+ "Recarregar a página": "Seite neu laden",
+ "Agora não": "Nicht jetzt"
 }

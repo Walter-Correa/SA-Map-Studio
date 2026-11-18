@@ -3070,5 +3070,11 @@
  "Font 4: Sprite / TXD": "Font 4: Sprite / TXD",
  "Objetos: {0} | Veículos: {1} | Actors: {2} | Pickups: {3} | Removidos: {4}": "Objektumok: {0} | Járművek: {1} | Actorok: {2} | Pickupok: {3} | Eltávolítva: {4}",
  "texturas trocadas no mapa todo": "az egész térképen lecserélt textúra",
- "Câmera Fotográfica (Camera)": "Fényképezőgép"
+ "Câmera Fotográfica (Camera)": "Fényképezőgép",
+ "Aviso: {0} objetos ficam soltos: um objeto do streamer não se prende a um objeto do servidor (onde um NPC anda), nem o contrário.": "Figyelem: {0} objektum lazán marad: a streamer objektuma nem kapcsolódik a szerver objektumához (amelyen egy NPC mozog), és fordítva sem.",
+ "Aviso: {0} ícones do mapa, mais que os {1} lugares de SetPlayerMapIcon: os {2} a mais ficaram fora do código (com o streamer, saem todos).": "Figyelem: {0} térképikon, több mint a SetPlayerMapIcon {1} helye: a {2} fölösleges kimaradt a kódból (a streamerrel mind bekerül).",
+ "A text of the CLEO script has more than 255 letters:": "A CLEO szkript egyik szövege 255 karakternél hosszabb:",
+ "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "Az SA Map Studio újraindult, és ez az oldal elvesztette vele a kapcsolatot. Töltsd újra az oldalt a folytatáshoz: a nem mentett változtatások a böngészőben maradtak, és visszaállnak.",
+ "Recarregar a página": "Oldal újratöltése",
+ "Agora não": "Most nem"
 }

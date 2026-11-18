@@ -423,3 +423,5 @@ NODES{0}.DAT: HTTP {1}
 NODES{0}.DAT: unreadable
 Look
 modloader/SA Map Studio/
+Color
+Colour

@@ -3070,5 +3070,11 @@
  "Font 4: Sprite / TXD": "Font 4: Sprite / TXD",
  "Objetos: {0} | Veículos: {1} | Actors: {2} | Pickups: {3} | Removidos: {4}": "Об'єкти: {0} | Транспорт: {1} | Актори: {2} | Пікапи: {3} | Видалено: {4}",
  "texturas trocadas no mapa todo": "текстури, замінені на всій карті",
- "Câmera Fotográfica (Camera)": "Фотоапарат"
+ "Câmera Fotográfica (Camera)": "Фотоапарат",
+ "Aviso: {0} objetos ficam soltos: um objeto do streamer não se prende a um objeto do servidor (onde um NPC anda), nem o contrário.": "Увага: непов'язаних об'єктів: {0}. Об'єкт стримера не прикріплюється до серверного об'єкта (по якому ходить NPC), і навпаки.",
+ "Aviso: {0} ícones do mapa, mais que os {1} lugares de SetPlayerMapIcon: os {2} a mais ficaram fora do código (com o streamer, saem todos).": "Увага: іконок мапи: {0}, більше за {1} місць SetPlayerMapIcon: зайві ({2}) не потрапили в код (зі стримером виводяться всі).",
+ "A text of the CLEO script has more than 255 letters:": "Текст скрипту CLEO довший за 255 символів:",
+ "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio було перезапущено, і ця сторінка втратила з ним зв'язок. Перезавантажте сторінку, щоб продовжити: незбережені зміни залишилися в браузері й будуть відновлені.",
+ "Recarregar a página": "Перезавантажити сторінку",
+ "Agora não": "Не зараз"
 }

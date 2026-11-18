@@ -3070,5 +3070,11 @@
  "Font 4: Sprite / TXD": "Font 4: Sprite / TXD",
  "Objetos: {0} | Veículos: {1} | Actors: {2} | Pickups: {3} | Removidos: {4}": "Objek: {0} | Kendaraan: {1} | Actor: {2} | Pickup: {3} | Dihapus: {4}",
  "texturas trocadas no mapa todo": "tekstur yang diganti di seluruh peta",
- "Câmera Fotográfica (Camera)": "Kamera"
+ "Câmera Fotográfica (Camera)": "Kamera",
+ "Aviso: {0} objetos ficam soltos: um objeto do streamer não se prende a um objeto do servidor (onde um NPC anda), nem o contrário.": "Peringatan: {0} objek tetap lepas: objek streamer tidak menempel ke objek server (tempat NPC bergerak), begitu pula sebaliknya.",
+ "Aviso: {0} ícones do mapa, mais que os {1} lugares de SetPlayerMapIcon: os {2} a mais ficaram fora do código (com o streamer, saem todos).": "Peringatan: {0} ikon peta, lebih dari {1} slot SetPlayerMapIcon: {2} sisanya tidak dimasukkan ke kode (dengan streamer, semuanya diekspor).",
+ "A text of the CLEO script has more than 255 letters:": "Sebuah teks skrip CLEO memiliki lebih dari 255 karakter:",
+ "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio dimulai ulang dan halaman ini kehilangan koneksi dengannya. Muat ulang halaman untuk melanjutkan: perubahan yang belum disimpan tetap tersimpan di browser dan akan dipulihkan.",
+ "Recarregar a página": "Muat ulang halaman",
+ "Agora não": "Nanti saja"
 }
