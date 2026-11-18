@@ -414,11 +414,12 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   if (anyGraph) L.push(...flat(`stock ${P}_WPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of the next streets of each NPC'));
   L.push(`stock Float:${P}_HomeP[${N}][3]; // where each NPC was placed (its vehicle, for a driver)`);
   L.push(`// leg, direction, action, target, timer, busy (1 fighting, 2 fleeing, 3 going back, 4 going to the street, 5 waiting to be seen, 6 back to its vehicle,`);
-  L.push(`// 7 on the alert after fleeing, 8 waiting before going back),`);
+  L.push(`// 7 on the alert after fleeing, 8 waiting before going back, 9 back to where its recording stopped),`);
   L.push(`// street point (or area of the map), previous street point (or point of the area), chase step (0 none, 1 walking and aiming, 2 running, 3 hand to hand, 4 getting out of its vehicle), strike kind, strike count,`);
   L.push(`// stunned by blows (steps of 200 ms without shooting)`);
   L.push(`stock ${P}_St[${N}][12];`);
   L.push(`stock bool:${P}_Node[NPC_MAX_NODES], ${P}_Timer, ${P}_BubbleTimer;`);
+  if (anyPlayback) L.push(`stock Float:${P}_PbAt[${N}][3]; // where each recording was stopped by a fight or a flee`);
   if (anyFlee) L.push(...flat(`stock ${P}_FPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of each NPC when it flees by the streets'));
   if (anyThink) L.push(`stock ${P}_Pl[MAX_PLAYERS], ${P}_PlN; // the players (not the NPCs) at each step of the Think`);
   const decl = L.splice(0).join('\n');
@@ -898,7 +899,8 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`    new npcid = ${P}_Id[k];`);
     C.push(`    if (${P}_St[k][4]) { KillTimer(${P}_St[k][4]); ${P}_St[k][4] = 0; }`);
     C.push('    if (NPC_IsPlayingNode(npcid)) NPC_PausePlayingNode(npcid);');
-    C.push('    if (NPC_IsPlayingPlayback(npcid)) NPC_PausePlayback(npcid, true);');
+    if (anyPlayback) C.push(`    if (NPC_IsPlayingPlayback(npcid) && !NPC_IsPlaybackPaused(npcid)) { NPC_GetPos(npcid, ${P}_PbAt[k][0], ${P}_PbAt[k][1], ${P}_PbAt[k][2]); NPC_PausePlayback(npcid, true); }`);
+    else C.push('    if (NPC_IsPlayingPlayback(npcid)) NPC_PausePlayback(npcid, true);');
     C.push('    // Always: a NPC that follows a player and stands next to it is not moving, but open.mp still keeps it following and');
     C.push('    // would turn the next move (fleeing, fighting) back towards that player');
     C.push('    NPC_StopMove(npcid);');
@@ -1002,26 +1004,28 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       C.push(`    else NPC_ClearPath(${P}_FPath[k]);`);
       C.push(`    new path = ${P}_FPath[k], count = 0, Float:sx = x, Float:sy = y;`);
       C.push('    for (new s = 0; s < 60; s++)', '    {');
-      C.push('        // The next point: near, farther from the attacker than where it is, ahead (the first one, to reach the sidewalk or road,');
-      C.push('        // may also be to a side); straight on and near beats far');
-      C.push('        new best = -1, Float:bs = -1.0e9, Float:far = VectorSize(sx - ax, sy - ay, 0.0), Float:lim = count == 0 ? 20.0 : step;');
+      C.push('        // The next point: near, farther from the attacker than where it is and ahead; straight on and near beats far. The first');
+      C.push('        // one is the nearest sidewalk or road point that is not towards the attacker: it goes there first, then along the street');
+      C.push('        new best = -1, Float:bs = -1.0e9, Float:far = VectorSize(sx - ax, sy - ay, 0.0), Float:lim = count == 0 ? 30.0 : step;');
       C.push('        for (new i = 0; i < n; i++)', '        {');
       C.push('            if (used[i]) continue;');
       C.push('            new Float:dx = qx[i] - sx, Float:dy = qy[i] - sy, Float:dd = VectorSize(dx, dy, 0.0);');
       C.push('            if (dd < 1.5 || dd > lim || VectorSize(qx[i] - ax, qy[i] - ay, 0.0) < far + 0.5) continue;');
       C.push('            new Float:c = (dx * ux + dy * uy) / dd;');
-      C.push('            if (c < (count == 0 ? -0.3 : 0.4)) continue;');
-      C.push('            new Float:sc = c - dd / lim;');
+      C.push('            // Ahead or to a side (a sidewalk can run across the way it flees); never back, as every point is farther from the attacker');
+      C.push('            if (c < -0.4) continue;');
+      C.push('            new Float:sc = count == 0 ? -dd : c - dd / lim;');
       C.push('            if (sc > bs) { bs = sc; best = i; }');
       C.push('        }');
       C.push('        if (best < 0) break;');
       C.push('        used[best] = true;');
       C.push('        NPC_AddPointToPath(path, qx[best], qy[best], qz[best], car ? 2.0 : 0.5);');
       C.push('        count++;');
-      C.push('        // The way it goes now: along the street, bent away from the attacker');
+      C.push('        // The way it goes now: away from the attacker once on the street, then along the street, bent away from the attacker');
       C.push('        new Float:vx = qx[best] - sx, Float:vy = qy[best] - sy, Float:vl = VectorSize(vx, vy, 0.0);');
       C.push('        new Float:wx = qx[best] - ax, Float:wy = qy[best] - ay, Float:wl = VectorSize(wx, wy, 0.0);');
-      C.push('        if (vl > 0.1 && wl > 0.1)', '        {');
+      C.push('        if (count == 1 && wl > 0.1) { ux = wx / wl; uy = wy / wl; }');
+      C.push('        else if (vl > 0.1 && wl > 0.1)', '        {');
       C.push('            ux = vx / vl * 0.6 + wx / wl * 0.4; uy = vy / vl * 0.6 + wy / wl * 0.4;');
       C.push('            l = VectorSize(ux, uy, 0.0);');
       C.push('            if (l > 0.1) { ux /= l; uy /= l; }');
@@ -1068,7 +1072,19 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     else if (anyWander) C.push(`        case 2: { ${P}_St[k][5] = 0; ${wanderResume} }`);
     else if (anyGraph) C.push(`        case 2: { ${P}_St[k][5] = 0; ${P}_St[k][6] = -1; ${P}_GWalk(k); }`);
     C.push(`        case 4: { ${P}_St[k][10] = 0; ${P}_St[k][5] = 0; }`);
-    if (anyPlayback) C.push(`        case 5: { ${P}_St[k][5] = 0; if (NPC_IsPlaybackPaused(npcid)) NPC_PausePlayback(npcid, false); else ${P}_Start(k); }`);
+    if (anyPlayback) {
+      C.push('        // A recording goes on from where it stopped: it walks or drives back there first (no jump)');
+      C.push('        case 5:', '        {');
+      C.push(`            ${P}_St[k][5] = 0;`);
+      C.push(`            if (!NPC_IsPlaybackPaused(npcid)) ${P}_Start(k);`);
+      C.push('            else', '            {');
+      C.push('                new Float:x, Float:y, Float:z;');
+      C.push('                NPC_GetPos(npcid, x, y, z);');
+      C.push(`                if (VectorSize(${P}_PbAt[k][0] - x, ${P}_PbAt[k][1] - y, 0.0) < 1.5) NPC_PausePlayback(npcid, false);`);
+      C.push(`                else { ${P}_St[k][5] = 9; NPC_Move(npcid, ${P}_PbAt[k][0], ${P}_PbAt[k][1], ${P}_PbAt[k][2], ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][13]), NPC_MOVE_SPEED_AUTO, 1.0); }`);
+      C.push('            }');
+      C.push('        }');
+    }
     C.push('        default:', '        {');
     C.push(`            ${P}_St[k][5] = 3;`);
     C.push(`            NPC_Move(npcid, ${P}_Home(k, 0), ${P}_Home(k, 1), ${P}_Home(k, 2), ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][13]), NPC_MOVE_SPEED_AUTO, 0.3);`);
@@ -1192,7 +1208,8 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       `new k = ${P}_Index(npcid);`,
       anyThink ? `if (k >= 0 && ${P}_St[k][5] == 2) ${P}_FleeEnd(k);` : '',
       `${anyThink ? 'else ' : ''}if (k >= 0 && ${P}_St[k][5] == 3) { ${P}_St[k][5] = 0; ${P}_Start(k); NPC_ClearAnimations(npcid); SetTimerEx("${P}_PoseLater", 400, false, "i", k); }`,
-      anyWander ? `else if (k >= 0 && ${P}_St[k][5] == 4) { ${P}_St[k][5] = 0; ${P}_PlayNode(k); } // reached the street` : ''], 'npcid');
+      anyWander ? `else if (k >= 0 && ${P}_St[k][5] == 4) { ${P}_St[k][5] = 0; ${P}_PlayNode(k); } // reached the street` : '',
+      anyPlayback ? `else if (k >= 0 && ${P}_St[k][5] == 9) { ${P}_St[k][5] = 0; NPC_PausePlayback(npcid, false); } // back where its recording stopped` : ''], 'npcid');
   }
   if (anyThink) {
     // An invulnerable NPC never gets OnNPCTakeDamage (open.mp drops the damage first): the attack comes from the player's side
