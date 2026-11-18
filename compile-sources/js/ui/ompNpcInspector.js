@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Inspector part of the open.mp NPCs: an actor of a Multiplayer project for open.mp can become a NPC controlled by the server
 // (see editor/ompNpc.js). SA-MP projects show the option locked: the NPC component only exists in open.mp.
 import { app, $, $$, esc, fmt, toast, modelLabel } from './common.js';
@@ -7,7 +8,7 @@ import {
 } from '../editor/ompNpc.js';
 import { WEAPONS } from '../world/spWeapons.js';
 import { ALL_WEAPONS } from '../world/weapons.js';
-import { streetRoute, streetsKey, refreshNpcStreets } from '../editor/npcRoute.js';
+import { streetRoute, streetsKey, refreshNpcStreets, streetsFailed } from '../editor/npcRoute.js';
 import { refreshNpcOverlay, previewNpc, stopNpcPreview, npcPreviewing, setNpcPointSelectHandler } from '../editor/npcOverlay.js';
 
 let pick = null; // { uid, kind: 'add' | 'route' | 'act', act }
@@ -57,7 +58,7 @@ export function ompNpcSection(a) {
 
   let html = `<div class="insp-section">${head}
     <div class="pair" style="margin-top:6px;"><label>Nome do NPC (nome de jogador)<input data-npc="name" maxlength="24" value="${esc(n.name)}" spellcheck="false"></label></div>
-    ${nameWarning(a)}</div>`;
+    ${nameWarning(a)}${countWarning()}</div>`;
 
   // 1. Behaviour
   let b = pair(sel('O que ele faz', 'mode', MODES, true));
@@ -110,7 +111,9 @@ export function ompNpcSection(a) {
 
   // 3. Fights
   const fights = n.mode === 'guard' || n.onDamage === 'fight';
-  let f = pair(sel('Ao levar dano', 'onDamage', DAMAGE, true), sel('Estilo de luta', 'fightStyle', FIGHT_STYLES));
+  // A guard always fights back: "Ao levar dano" would have no effect on it
+  let f = n.mode === 'guard' ? pair(sel('Estilo de luta', 'fightStyle', FIGHT_STYLES)) + note('A guarda sempre revida quem a ataca.')
+    : pair(sel('Ao levar dano', 'onDamage', DAMAGE, true), sel('Estilo de luta', 'fightStyle', FIGHT_STYLES));
   if (fights) {
     f += pair(sel('Como persegue', 'chaseMove', MOVES3), num('Desiste a (m, 0 = automático)', 'giveUp', 0, 1000, 5, 'Automático: a guarda desiste a 1,5 vez o alcance dela; os outros, a 60 m'))
       + pair(num('Atualiza o destino a cada (ms)', 'chaseUpdate', 100, 5000, 50, 'NPC_MoveToPlayer: de quanto em quanto tempo ele confere onde o alvo está'));
@@ -126,9 +129,12 @@ export function ompNpcSection(a) {
         + note('Fora do alcance ele guarda a mira e corre atrás; ao chegar, para e atira (ou atira andando).');
     }
   }
-  if (n.onDamage === 'flee' || (ranged && n.noAmmo === 'flee' && fights)) f += pair(num('Foge até (m)', 'fleeDist', 3, 300, 1), sel('Como foge', 'fleeMove', MOVES3));
+  const flees = n.onDamage === 'flee' && n.mode !== 'guard';
+  if (flees || (ranged && n.noAmmo === 'flee' && fights)) f += pair(num('Foge até (m)', 'fleeDist', 3, 300, 1), sel('Como foge', 'fleeMove', MOVES3));
   if (fights && ['idle', 'guard'].includes(n.mode)) f += pair(sel('Volta ao lugar', 'returnMove', MOVES3));
-  if (drives && n.onDamage !== 'none') f += note('No veículo, como motorista, ele persegue, foge e volta dirigindo.');
+  // In a vehicle: to fight it gets out (and gets back in after); to flee, a driver drives away
+  if (n.vehicle && n.onDamage === 'fight') f += note('No veículo, ele desce para lutar e depois volta para o veículo e segue dali.');
+  else if (drives && flees) f += note('Como motorista, ele foge dirigindo e depois segue dali.');
   html += sec('fight', 'Reação e luta', f);
 
   // 4. Weapon
@@ -177,6 +183,11 @@ function streetsNote(a) {
   const key = streetsKey(a, app.project), st = a.npc.streets;
   if (!key) return '';
   if (!st || st.key !== key) {
+    // The street files could not be read (the editor's server stopped?): says so; the button, a test or an export try again
+    if (streetsFailed(key) && !making.has(a.uid)) {
+      return `<div class="insp-note warn">Não consegui ler as ruas do lugar.</div>
+        <div class="mini-actions" style="margin-top:4px;"><button type="button" class="btn small" data-npc-act="streets">Tentar de novo</button></div>`;
+    }
     if (!making.has(a.uid)) {
       making.add(a.uid);
       refreshNpcStreets([app.project]).then(() => { making.delete(a.uid); refreshNpcOverlay(); if (app.editor.selection.includes(a.uid)) lastRerender?.(); });
@@ -190,6 +201,13 @@ function streetsNote(a) {
 function nameWarning(a) {
   const same = projectNpcs(app.project).filter(x => x !== a && x.npc.name.toLowerCase() === a.npc.name.toLowerCase());
   return same.length ? '<div class="insp-note warn">Outro NPC tem esse nome: na exportação ele ganha um número no fim.</div>' : '';
+}
+
+// Each NPC takes a player slot: the test server creates at most 900 of them (npc_count of serve.py) and open.mp has 1000 slots in all
+function countWarning() {
+  const count = projectNpcs(app.project).length;
+  if (count <= 900) return '';
+  return `<div class="insp-note warn">O projeto tem ${count} NPCs: o servidor de teste cria no máximo 900. No seu servidor, cada NPC ocupa uma vaga de jogador (o open.mp tem 1000 ao todo, jogadores incluídos).</div>`;
 }
 
 function pathEditor(a) {
@@ -425,6 +443,14 @@ async function onAction(a, act, rerender) {
   if (act === 'area') {
     setPick(pick?.kind === 'area' && pick.uid === uid ? null : { uid, kind: 'area' }, rerender);
     rerender();
+  } else if (act === 'streets') {
+    if (making.has(uid)) return;
+    making.add(uid);
+    rerender();
+    await refreshNpcStreets(app.project);
+    making.delete(uid);
+    refreshNpcOverlay();
+    if (app.editor.selection.includes(uid)) rerender();
   } else if (act === 'add' || act === 'route') {
     setPick(pick?.kind === act && pick.uid === uid ? null : { uid, kind: act }, rerender);
     if (pick) toast(act === 'add' ? 'Clique no chão para pôr pontos. Esc para parar.' : 'Clique no destino. Esc para parar.');

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // open.mp NPCs: an actor of a Multiplayer project for open.mp can become a NPC controlled by the server (the NPC component of
 // open.mp, natives NPC_*). Shared by the inspector, the 3D preview, the Pawn export and import and the test server (which compiles
 // exactly the exported code as a side script).
@@ -140,7 +141,8 @@ export function normalizeNpc(n) {
     clip: int(n.clip, d.clip, -1, 9999),
     infiniteAmmo: bool(n.infiniteAmmo, d.infiniteAmmo),
     reload: bool(n.reload, d.reload),
-    accuracy: n.accuracy === -1 || n.accuracy === undefined ? -1 : clamp(fin(n.accuracy, -1), 0, 1),
+    // -1 = the game's own (also when the box is empty or not a number: never 0, which would make it miss every shot)
+    accuracy: fin(n.accuracy, -1) < 0 ? -1 : clamp(fin(n.accuracy, -1), 0, 1),
     reloadTime: int(n.reloadTime, d.reloadTime, -1, 60000),
     shootTime: int(n.shootTime, d.shootTime, -1, 60000),
     clipSize: int(n.clipSize, d.clipSize, -1, 9999),
@@ -300,17 +302,22 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       });
     }
     if (n.mode === 'wander' && !st) anyWander = true;
-    if (['guard', 'follow'].includes(n.mode) || n.look || n.onDamage !== 'none') anyThink = true;
+    // Looking at the players is for a NPC that stands (one that walks would turn to the player while it goes)
+    const looks = n.look && n.mode === 'idle';
+    if (['guard', 'follow'].includes(n.mode) || looks || n.onDamage !== 'none') anyThink = true;
     if (n.vehicle?.uid && vehIdx.has(n.vehicle.uid) && (n.onDamage === 'fight' || n.mode === 'guard')) anyCar = true; // gets out to fight
     if (n.dmgMult !== 1) anyMult = true;
     if (n.mode === 'playback' && n.rec) { anyPlayback = true; if (n.recPreload) anyPreload = true; }
     const recS = n.mode === 'playback' && n.rec ? strIdx(n.rec) : -1;
-    ai.push([MODE_CODE[n.mode], MOVE_CONST[n.moveType], LOOP_CODE[n.loop], lg.length ? first : -1, lg.length, DMG_CODE[n.onDamage],
-      n.respawn * 1000, recS, (n.recFromNpc ? 1 : 0) | (n.recLoop ? 2 : 0) | (n.recPreload ? 4 : 0), n.look ? 1 : 0, n.chase ? 1 : 0, loopStart, MOVE_CONST[n.chaseMove], MOVE_CONST[n.returnMove], MOVE_CONST[n.fleeMove], bubbleIdx(n),
+    // A path of one point repeated would start again at once, over and over (it is already there): it goes there once, unless its
+    // actions wait (then they repeat)
+    const onePoint = seq.length === 1 && !n.points[0].acts.some(x => x.t === 'wait' && x.ms > 0);
+    ai.push([MODE_CODE[n.mode], MOVE_CONST[n.moveType], onePoint ? LOOP_CODE.once : LOOP_CODE[n.loop], lg.length ? first : -1, lg.length, DMG_CODE[n.onDamage],
+      n.respawn * 1000, recS, (n.recFromNpc ? 1 : 0) | (n.recLoop ? 2 : 0) | (n.recPreload ? 4 : 0), looks ? 1 : 0, n.chase ? 1 : 0, loopStart, MOVE_CONST[n.chaseMove], MOVE_CONST[n.returnMove], MOVE_CONST[n.fleeMove], bubbleIdx(n),
       n.startWhen === 'seen' ? 1 : 0, n.aimMove === 'walk' ? 1 : 0, { stay: 0, melee: 1, flee: 2 }[n.noAmmo], { normal: 0, special: 1, mix: 2 }[n.meleeKind], n.meleeTime,
       g0, gc, n.chaseUpdate, n.shootDelay]);
     aiF.push([n.speed > 0 ? F(n.speed / 10) : '-1.0', F(n.mode === 'follow' ? n.followDist : n.range), F(n.giveUp), F(n.fleeDist), F(n.shootDist), F(n.followRange), F(n.dmgMult), F(n.wanderLimit === 'radius' ? n.wanderRadius : 0), F(n.bubbleDist),
-      F(n.smooth), F(AIM_Z[n.aimAt]), F(n.meleeReach)]);
+      F(n.smooth), F(AIM_Z[n.aimAt]), F(n.meleeReach), F(n.lane)]);
     look.push([(n.color & 0xFFFFFF00) | (n.marker ? 0xFF : 0) >>> 0, n.bubbleColor >>> 0]);
     if (n.mode === 'wander' && n.wanderLimit === 'radius' && n.wanderRadius > 0 && !st) anyRadius = true;
     if (n.bubble) anyBubble = true;
@@ -327,6 +334,21 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     out.push('};');
     return out;
   };
+  // A list of values: on one line while it is short, else a few values per line (with many NPCs one line would be too long to compile)
+  const flat = (head, values, tail = '') => {
+    const one = `${head} = {${values.join(', ')}};${tail}`;
+    if (one.length <= 200) return [one];
+    const out = [`${head} =${tail}`, '{'];
+    let cur = '';
+    values.forEach((v, i) => {
+      const cell = v + (i < values.length - 1 ? ',' : '');
+      if (cur && cur.length + 1 + cell.length > 160) { out.push('    ' + cur); cur = ''; }
+      cur += (cur ? ' ' : '') + cell;
+    });
+    if (cur) out.push('    ' + cur);
+    out.push('};');
+    return out;
+  };
   const L = [];
   L.push('// ================================================================');
   L.push(`// ${tr('NPCs do open.mp ({0}): controlados pelo servidor.', N)}`);
@@ -339,7 +361,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   L.push('    #error "NPCs need the open.mp includes (omp_npc.inc)."');
   L.push('#endif');
   L.push('');
-  L.push(`stock const ${P}_Name[${N}][MAX_PLAYER_NAME + 1] = {${names.map(qs).join(', ')}};`);
+  L.push(...flat(`stock const ${P}_Name[${N}][MAX_PLAYER_NAME + 1]`, names.map(qs)));
   L.push('// Mode (0 idle, 1 path, 2 streets, 3 guard, 4 follow, 5 recording), move type, loop (0 once, 1 loop, 2 there and back), first leg, legs,');
   L.push('// on damage (0 nothing, 1 fight back, 2 flee), respawn (ms, 0 = no), recording (text), recording flags (1 from the NPC, 2 repeat, 4 preload),');
   L.push('// look at players, chase, first leg of the loop, move type when it chases, when it goes back to its place and when it flees,');
@@ -352,8 +374,8 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   L.push('};');
   L.push('// Speed (-1.0 = of the move type), range (guard, look) or distance (follow), gives up the chase at (0.0 = automatic),');
   L.push('// flees how far, shoots from, looks for the player to follow up to, damage taken x, streets radius (0.0 = free), bubble distance,');
-  L.push('// rounded corners (m), aim height (Z offset), reach of the strikes (m)');
-  L.push(...table(`stock const Float:${P}_AiF[${N}][12]`, aiF, 1));
+  L.push('// rounded corners (m), aim height (Z offset), reach of the strikes (m), lane of a driver on the streets (m, read back by the editor)');
+  L.push(...table(`stock const Float:${P}_AiF[${N}][13]`, aiF, 1));
   L.push('// Seen by the players: colour (0xRRGGBBAA, alpha FF = marker on the radar), chat bubble colour');
   const hx = (v) => '0x' + (v >>> 0).toString(16).toUpperCase().padStart(8, '0');
   L.push(...table(`stock const ${P}_Look[${N}][2]`, look.map(r => [hx(r[0]), hx(r[1])]), 6));
@@ -369,7 +391,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   L.push(`stock const Float:${P}_Act[${Math.max(1, acts.length)}][9] = {`);
   rows(acts, 9, 0).forEach((r, i, all) => L.push(`    {${r.map(v => F(v)).join(', ')}}${i < all.length - 1 ? ',' : ''}${acts.length ? ` // ${ACTION.get(NPC_ACTIONS[r[0] - 1][0]).label}` : ''}`));
   L.push('};');
-  L.push(`stock const ${P}_Str[${Math.max(1, strs.length)}][128] = {${(strs.length ? strs : ['']).map(qs).join(', ')}};`);
+  L.push(...flat(`stock const ${P}_Str[${Math.max(1, strs.length)}][128]`, (strs.length ? strs : ['']).map(qs)));
   if (anyGraph) {
     L.push('// Streets of the radius or area of each NPC: points (X, Y, Z), their ways (first, count) and the ways (to point, lane offset X, Y)');
     L.push(...table(`stock const Float:${P}_Gn[${gn.length}][3]`, gn, 6));
@@ -377,19 +399,20 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     L.push(...table(`stock const Float:${P}_Ge[${Math.max(1, ge.length)}][3]`, rows(ge, 3, '0.0'), 6));
   }
   L.push('');
-  L.push(`stock ${P}_Id[${N}] = {${Array(N).fill('INVALID_NPC_ID').join(', ')}};`);
-  L.push(`stock ${P}_Veh[${nV}] = {${Array(nV).fill('INVALID_VEHICLE_ID').join(', ')}}; // vehicles of the map the NPCs use`);
-  if (anyCar) L.push(`stock ${P}_Car[${N}][2] = {${Array(N).fill('{INVALID_VEHICLE_ID, 0}').join(', ')}}; // its vehicle and seat: it gets out to fight and back in after`);
-  L.push(`stock ${P}_Obj[${nO}] = {${Array(nO).fill('INVALID_OBJECT_ID').join(', ')}}; // objects the NPCs surf on`);
-  L.push(`stock ${P}_Path[${Math.max(1, legs.length)}] = {${Array(Math.max(1, legs.length)).fill('INVALID_PATH_ID').join(', ')}};`);
-  L.push(`stock ${P}_Rec[${N}] = {${Array(N).fill('INVALID_RECORD_ID').join(', ')}};`);
-  if (anyGraph) L.push(`stock ${P}_WPath[${N}] = {${Array(N).fill('INVALID_PATH_ID').join(', ')}}; // path of the next streets of each NPC`);
+  L.push(...flat(`stock ${P}_Id[${N}]`, Array(N).fill('INVALID_NPC_ID')));
+  L.push(...flat(`stock ${P}_Veh[${nV}]`, Array(nV).fill('INVALID_VEHICLE_ID'), ' // vehicles of the map the NPCs use'));
+  if (anyCar) L.push(...flat(`stock ${P}_Car[${N}][2]`, Array(N).fill('{INVALID_VEHICLE_ID, 0}'), ' // its vehicle and seat: it gets out to fight and back in after'));
+  L.push(...flat(`stock ${P}_Obj[${nO}]`, Array(nO).fill('INVALID_OBJECT_ID'), ' // objects the NPCs surf on'));
+  L.push(...flat(`stock ${P}_Path[${Math.max(1, legs.length)}]`, Array(Math.max(1, legs.length)).fill('INVALID_PATH_ID')));
+  L.push(...flat(`stock ${P}_Rec[${N}]`, Array(N).fill('INVALID_RECORD_ID')));
+  if (anyGraph) L.push(...flat(`stock ${P}_WPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of the next streets of each NPC'));
   L.push(`stock Float:${P}_HomeP[${N}][3]; // where each NPC was placed (its vehicle, for a driver)`);
   L.push(`// leg, direction, action, target, timer, busy (1 fighting, 2 fleeing, 3 going back, 4 going to the street, 5 waiting to be seen, 6 back to its vehicle),`);
   L.push(`// street point (or area of the map), previous street point (or point of the area), chase step (0 none, 1 walking and aiming, 2 running, 3 hand to hand, 4 getting out of its vehicle), strike kind, strike count,`);
   L.push(`// stunned by blows (steps of 200 ms without shooting)`);
   L.push(`stock ${P}_St[${N}][12];`);
   L.push(`stock bool:${P}_Node[NPC_MAX_NODES], ${P}_Timer, ${P}_BubbleTimer;`);
+  if (anyThink) L.push(`stock ${P}_Pl[MAX_PLAYERS], ${P}_PlN; // the players (not the NPCs) at each step of the Think`);
   const decl = L.splice(0).join('\n');
 
   // ------------------------------------------------ routine
@@ -407,11 +430,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     } else C.push(`            NPC_AddPointToPath(${P}_Path[l], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2], ${P}_Pt[p][3]);`);
     C.push('        }', '    }');
   }
-  if (anyWander) {
-    C.push('    for (new a = 0; a < NPC_MAX_NODES; a++)', '    {');
-    C.push(`        if (!NPC_IsNodeOpen(a) && NPC_OpenNode(a)) ${P}_Node[a] = true;`);
-    C.push('    }');
-  }
+  if (anyWander) C.push(`    for (new a = 0; a < NPC_MAX_NODES; a++) ${P}_Hold(a);`);
   if (anyPreload) {
     C.push(`    new path[64];`);
     C.push(`    for (new k = 0; k < ${N}; k++)`, '    {');
@@ -423,12 +442,55 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push(`    for (new k = 0; k < ${N}; k++)`, '    {');
   C.push(`        ${P}_St[k][3] = INVALID_PLAYER_ID;`);
   if (anyGraph) C.push(`        if (${P}_Ai[k][22] > 0) ${P}_WPath[k] = NPC_CreatePath();`);
-  C.push(`        ${P}_Id[k] = NPC_Create(${P}_Name[k]);`);
+  C.push(`        ${P}_Id[k] = ${P}_Create(k);`);
   C.push(`        if (${P}_Id[k] != INVALID_NPC_ID) NPC_Spawn(${P}_Id[k]);`);
   C.push('    }');
   if (anyThink) C.push(`    ${P}_Timer = SetTimer("${P}_Think", 200, true);`);
   if (anyBubble) C.push(`    ${P}_BubbleTimer = SetTimer("${P}_Bubbles", 5000, true);`, `    ${P}_Bubbles();`);
   C.push('    return 1;', '}', '');
+
+  C.push('// Is the name used by a player or a NPC (of any script)?');
+  C.push(`stock bool:${P}_Taken(const name[])`, '{');
+  C.push('    new players[MAX_PLAYERS], count = GetPlayers(players), other[MAX_PLAYER_NAME + 1];');
+  C.push('    for (new i = 0; i < count; i++)', '    {');
+  C.push('        GetPlayerName(players[i], other);');
+  C.push('        if (!strcmp(other, name, true)) return true;');
+  C.push('    }');
+  C.push('    return false;', '}', '');
+  C.push('// Creates a NPC (NPC_Create gives an invalid id, not always INVALID_NPC_ID, when it fails). When its name is taken (a NPC of');
+  C.push('// another script, or a player) it gets a number at the end');
+  C.push(`stock ${P}_Create(k)`, '{');
+  C.push(`    new npcid = NPC_Create(${P}_Name[k]);`);
+  C.push('    if (NPC_IsValid(npcid)) return npcid;');
+  C.push(`    if (${P}_Taken(${P}_Name[k]))`, '    {');
+  C.push('        new base[22], name[MAX_PLAYER_NAME + 1];');
+  C.push(`        strcat(base, ${P}_Name[k]);`);
+  C.push('        for (new i = 2; i <= 99; i++)', '        {');
+  C.push('            format(name, sizeof(name), "%s_%d", base, i);');
+  C.push(`            if (${P}_Taken(name)) continue;`);
+  C.push('            npcid = NPC_Create(name);');
+  C.push('            if (NPC_IsValid(npcid)) return npcid;');
+  C.push('            break;');
+  C.push('        }');
+  C.push('    }');
+  C.push(`    printf("NPC %s was not created: the server is full (max_bots of config.json) or the name is taken.", ${P}_Name[k]);`);
+  C.push('    return INVALID_NPC_ID;', '}', '');
+  if (anyWander) {
+    C.push('// Streets of an area of the map: an area serves the NPCs of every script; the server counts the scripts that use it and the last');
+    C.push('// one to leave closes it (only when one of them opened it)');
+    C.push(`stock ${P}_Hold(a)`, '{');
+    C.push(`    if (a < 0 || a >= NPC_MAX_NODES || ${P}_Node[a]) return 1;`);
+    C.push('    new key[16];');
+    C.push('    if (!NPC_IsNodeOpen(a))', '    {');
+    C.push('        if (!NPC_OpenNode(a)) return 0;');
+    C.push('        format(key, sizeof(key), "samsp_ndo%d", a);');
+    C.push('        SetSVarInt(key, 1);');
+    C.push('    }');
+    C.push(`    ${P}_Node[a] = true;`);
+    C.push('    format(key, sizeof(key), "samsp_nd%d", a);');
+    C.push('    SetSVarInt(key, GetSVarInt(key) + 1);');
+    C.push('    return 1;', '}', '');
+  }
 
   C.push(`stock ${P}_Unload()`, '{');
   if (anyThink) C.push(`    KillTimer(${P}_Timer);`);
@@ -450,10 +512,20 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push(`        if (${P}_Path[l] != INVALID_PATH_ID && NPC_IsValidPath(${P}_Path[l])) NPC_DestroyPath(${P}_Path[l]);`);
   C.push(`        ${P}_Path[l] = INVALID_PATH_ID;`);
   C.push('    }');
-  C.push('    for (new a = 0; a < NPC_MAX_NODES; a++)', '    {');
-  C.push(`        if (${P}_Node[a]) NPC_CloseNode(a);`);
-  C.push(`        ${P}_Node[a] = false;`);
-  C.push('    }');
+  if (anyWander) {
+    C.push('    // The areas of streets: closed by the last script that uses them');
+    C.push('    new key[16];');
+    C.push('    for (new a = 0; a < NPC_MAX_NODES; a++)', '    {');
+    C.push(`        if (!${P}_Node[a]) continue;`);
+    C.push(`        ${P}_Node[a] = false;`);
+    C.push('        format(key, sizeof(key), "samsp_nd%d", a);');
+    C.push('        new users = GetSVarInt(key) - 1;');
+    C.push('        if (users > 0) { SetSVarInt(key, users); continue; }');
+    C.push('        DeleteSVar(key);');
+    C.push('        format(key, sizeof(key), "samsp_ndo%d", a);');
+    C.push('        if (GetSVarInt(key)) { DeleteSVar(key); if (NPC_IsNodeOpen(a)) NPC_CloseNode(a); }');
+    C.push('    }');
+  }
   C.push('    return 1;', '}', '');
 
   C.push(`stock ${P}_Index(npcid)`, '{');
@@ -705,7 +777,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       health: 'NPC_SetHealth(npcid, V(1));',
       armour: 'NPC_SetArmour(npcid, V(1));',
       skin: 'NPC_SetSkin(npcid, I(1));',
-      playback: `${P}_Play(k, I(1), B(2)); return -1;`,
+      playback: `${P}_Play(k, I(1), B(2), true); return -1;`,
       wander: `${P}_Wander(k); return -1;`,
       surf: 'NPC_SetSurfingVehicle(npcid, VEH(1)); NPC_SetSurfingOffsets(npcid, V(2), V(3), V(4));',
       stopSurf: 'NPC_ResetSurfingData(npcid);',
@@ -728,9 +800,12 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`stock ${P}_Wander(k)`, '{');
     C.push(`    new npcid = ${P}_Id[k], Float:x, Float:y, Float:z, Float:px, Float:py, Float:pz;`);
     C.push('    NPC_GetPos(npcid, x, y, z);');
-    C.push('    new node = floatround((y + 3000.0) / 750.0, floatround_floor) * 8 + floatround((x + 3000.0) / 750.0, floatround_floor);');
-    C.push('    if (node < 0) node = 0; else if (node >= NPC_MAX_NODES) node = NPC_MAX_NODES - 1;');
-    C.push(`    if (!NPC_IsNodeOpen(node) && NPC_OpenNode(node)) ${P}_Node[node] = true;`);
+    C.push('    // The area of the map: 8 x 8 squares of 750 m (each side kept inside the map, so a NPC past an edge takes the square at that edge)');
+    C.push('    new col = floatround((x + 3000.0) / 750.0, floatround_floor), row = floatround((y + 3000.0) / 750.0, floatround_floor);');
+    C.push('    if (col < 0) col = 0; else if (col > 7) col = 7;');
+    C.push('    if (row < 0) row = 0; else if (row > 7) row = 7;');
+    C.push('    new node = row * 8 + col;');
+    C.push(`    ${P}_Hold(node);`);
     C.push('    new veh, ped, navi, from, to, best = -1, Float:bd = 1.0e12;');
     C.push('    NPC_GetNodeInfo(node, veh, ped, navi);');
     C.push('    #pragma unused navi');
@@ -761,10 +836,12 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('    return 1;', '}', '');
   }
   if (anyPlayback) {
-    C.push(`stock ${P}_Play(k, rec, bool:fromNpc)`, '{');
+    C.push('// fromNpc: the recording starts at the NPC, at its place (here = false) or where it is now (here = true, an action of its path)');
+    C.push(`stock ${P}_Play(k, rec, bool:fromNpc, bool:here = false)`, '{');
     C.push(`    new npcid = ${P}_Id[k], Float:x = 0.0, Float:y = 0.0, Float:z = 0.0;`);
     C.push('    if (rec < 0) return 0;');
-    C.push(`    if (fromNpc) { x = ${P}_Home(k, 0); y = ${P}_Home(k, 1); z = ${P}_Home(k, 2); }`);
+    C.push(`    if (fromNpc && here) NPC_GetPos(npcid, x, y, z);`);
+    C.push(`    else if (fromNpc) { x = ${P}_Home(k, 0); y = ${P}_Home(k, 1); z = ${P}_Home(k, 2); }`);
     C.push(`    if (NPC_IsValidRecord(${P}_Rec[k]) && rec == ${P}_Ai[k][7]) return NPC_StartPlaybackEx(npcid, ${P}_Rec[k], false, x, y, z, 0.0, 0.0, 0.0);`);
     C.push(`    return NPC_StartPlayback(npcid, ${P}_Str[rec], false, x, y, z, 0.0, 0.0, 0.0);`);
     C.push('}', '');
@@ -787,11 +864,13 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('    return 1;', '}', '');
   }
   if (anyThink) {
+    C.push('// The nearest player it sees (only the players of this step of the Think, not every slot of the server)');
     C.push(`stock ${P}_Closest(npcid, Float:range)`, '{');
     C.push('    new Float:x, Float:y, Float:z, best = INVALID_PLAYER_ID, Float:bd = range * range;');
     C.push('    NPC_GetPos(npcid, x, y, z);');
-    C.push('    for (new p = 0; p < MAX_PLAYERS; p++)', '    {');
-    C.push('        if (!IsPlayerConnected(p) || IsPlayerNPC(p) || !NPC_IsStreamedIn(npcid, p)) continue;');
+    C.push(`    for (new i = 0; i < ${P}_PlN; i++)`, '    {');
+    C.push(`        new p = ${P}_Pl[i];`);
+    C.push('        if (!IsPlayerConnected(p) || !NPC_IsStreamedIn(npcid, p)) continue;');
     C.push('        if (GetPlayerState(p) == PLAYER_STATE_WASTED || GetPlayerState(p) == PLAYER_STATE_SPECTATING) continue;');
     C.push('        if (GetPlayerVirtualWorld(p) != NPC_GetVirtualWorld(npcid) || GetPlayerInterior(p) != NPC_GetInterior(npcid)) continue;');
     C.push('        new Float:px, Float:py, Float:pz;');
@@ -932,14 +1011,18 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('    if (NPC_IsAiming(npcid)) NPC_StopAim(npcid);');
     C.push(`    if (${P}_St[k][8] == 1) { ${P}_St[k][8] = 0; if (NPC_IsMoving(npcid)) NPC_StopMove(npcid); }`);
     C.push('    return 1;', '}', '');
-    C.push('// Someone hurt the NPC: it fights back or flees (a guard always fights back)');
+    C.push('// A player hurt the NPC: it fights back or flees (a guard always fights back). Not for the damage of another NPC (a stray');
+    C.push('// bullet would make two NPCs fight to the death)');
     C.push(`stock ${P}_Hurt(k, issuerid)`, '{');
-    C.push(`    if (k < 0 || issuerid == INVALID_PLAYER_ID || issuerid == ${P}_Id[k] || ${P}_St[k][3] == issuerid) return 0;`);
+    C.push(`    if (k < 0 || issuerid == INVALID_PLAYER_ID || issuerid == ${P}_Id[k] || ${P}_St[k][3] == issuerid || IsPlayerNPC(issuerid)) return 0;`);
     C.push(`    if (${P}_Ai[k][5] == 1 || ${P}_Ai[k][0] == 3) ${P}_Fight(k, issuerid);`);
     C.push(`    else if (${P}_Ai[k][5] == 2) ${P}_Flee(k, issuerid);`);
     C.push('    return 1;', '}', '');
     C.push(`forward ${P}_Think();`);
     C.push(`public ${P}_Think()`, '{');
+    C.push(`    new all = GetPlayers(${P}_Pl);`);
+    C.push(`    ${P}_PlN = 0;`);
+    C.push(`    for (new i = 0; i < all; i++) if (!IsPlayerNPC(${P}_Pl[i])) ${P}_Pl[${P}_PlN++] = ${P}_Pl[i];`);
     C.push(`    for (new k = 0; k < ${N}; k++)`, '    {');
     C.push(`        new npcid = ${P}_Id[k];`);
     C.push('        if (npcid == INVALID_NPC_ID || !NPC_IsSpawned(npcid) || NPC_IsDead(npcid) || !NPC_IsAnyStreamedIn(npcid)) continue;');
@@ -1027,6 +1110,16 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     hook('OnPlayerGiveDamage', 'playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart', [
       `new k = ${P}_Index(damagedid);`,
       `if (k >= 0 && NPC_IsInvulnerable(damagedid)) { ${P}_Stun(k, weaponid); ${P}_Hurt(k, playerid); }`], 'playerid, damagedid, amount, weaponid, bodypart');
+    // Without it the NPC would keep fighting (or following) a player who left until someone else came near (its id may even go to
+    // the next player who connects)
+    hook('OnPlayerDisconnect', 'playerid, reason', [
+      '// The player it fought, fled from or followed left: it goes back to what it was doing',
+      `for (new k = 0; k < ${N}; k++)`, '{',
+      `    new npcid = ${P}_Id[k];`,
+      '    if (npcid == INVALID_NPC_ID || npcid == playerid || !NPC_IsValid(npcid) || NPC_IsDead(npcid)) continue;',
+      `    if (${P}_St[k][3] == playerid && (${P}_St[k][5] == 1 || ${P}_St[k][5] == 2)) ${P}_Resume(k);`,
+      '    else if (NPC_GetPlayerMovingTo(npcid) == playerid) NPC_StopMove(npcid);',
+      '}'], 'playerid, reason');
   }
   hook('OnPlayerStreamIn', 'playerid, forplayerid', [
     '// A player sees the NPC: its radar marker and its fighting style; a NPC that waits to be',
@@ -1065,7 +1158,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       `if (k >= 0 && ${P}_St[k][5] == 0) ${P}_Wander(k);`], 'npcid, nodeid');
     hook('OnNPCChangeNode', 'npcid, newnodeid, oldnodeid', [
       '// Goes on to the next area of the map (opens it when it is closed)',
-      `if (${P}_Index(npcid) >= 0 && !NPC_IsNodeOpen(newnodeid) && NPC_OpenNode(newnodeid)) ${P}_Node[newnodeid] = true;`], 'npcid, newnodeid, oldnodeid');
+      `if (${P}_Index(npcid) >= 0) ${P}_Hold(newnodeid);`], 'npcid, newnodeid, oldnodeid');
   }
 
   if (anyBubble) {
@@ -1184,6 +1277,7 @@ export function importNpcs(masked, vehicles = [], vars = new Map()) {
     const pt = rowsOf(grab('Pt')).map(r => r.map(Number)), ptA = rowsOf(grab('PtA')).map(r => r.map(Number));
     const leg = rowsOf(grab('Leg')).map(r => r.map(Number)), act = rowsOf(grab('Act')).map(r => r.map(Number));
     const strs = strList(grab('Str'));
+    const lookRows = rowsOf(grab('Look')).map(r => r.map(Number));
     // The area of a NPC that wanders inside one: the box of its street points
     const gnRows = rowsOf(grab('Gn')).map(r => r.map(Number));
     const gnBox = (g0, gc) => {
@@ -1199,11 +1293,16 @@ export function importNpcs(masked, vehicles = [], vars = new Map()) {
     for (const [k, v] of objVars) { const mm = k.match(new RegExp(`^${P}_Obj\\[(\\d+)\\]$`)); if (mm) objAt.set(+mm[1], v); }
     const uidOf = (v, pre) => (v ? (v.uid || (v.uid = pre + Math.random().toString(36).slice(2, 10))) : '');
     const npcs = names.map((name, k) => {
-      const r = ai[k] || [], f = aiF[k] || [];
+      const r = ai[k] || [], f = aiF[k] || [], lk = lookRows[k] || [];
+      const mode = MODE_BY[r[0]] || 'idle';
       const n = {
-        name, mode: MODE_BY[r[0]] || 'idle', moveType: MOVE_BY[r[1]] || 'auto', loop: LOOP_BY[r[2]] || 'loop', onDamage: DMG_BY[r[5]] || 'none',
+        name, mode, moveType: MOVE_BY[r[1]] || 'auto', loop: LOOP_BY[r[2]] || 'loop', onDamage: DMG_BY[r[5]] || 'none',
         respawn: (r[6] || 0) / 1000, rec: r[7] >= 0 ? strs[r[7]] || '' : '', recFromNpc: !!(r[8] & 1), recLoop: !!(r[8] & 2), recPreload: !!(r[8] & 4),
-        look: !!r[9], chase: !!r[10], speed: f[0] > 0 ? f[0] * 10 : 0, range: f[1] || 20, followDist: f[1] || 2, points: [],
+        // The same column is the distance of a NPC that follows and the range of the others
+        look: !!r[9], chase: !!r[10], speed: f[0] > 0 ? f[0] * 10 : 0, range: mode === 'follow' ? undefined : f[1] || 20, followDist: mode === 'follow' ? f[1] || 2 : undefined, points: [],
+        // Seen by the players: colour (its alpha FF = marker on the radar), chat bubble colour; lane of a driver (newer exports)
+        color: Number.isFinite(lk[0]) ? ((lk[0] & 0xFFFFFF00) | 0xFF) >>> 0 : undefined, marker: Number.isFinite(lk[0]) ? (lk[0] & 0xFF) !== 0 : undefined,
+        bubbleColor: Number.isFinite(lk[1]) ? lk[1] >>> 0 : undefined, lane: f[12],
         chaseMove: MOVE_BY[r[12]], returnMove: MOVE_BY[r[13]], giveUp: f[2], fleeDist: f[3], shootDist: f[4], followRange: f[5], dmgMult: f[6], wanderRadius: f[7], bubbleDist: f[8], fleeMove: MOVE_BY[r[14]], bubble: r[15] >= 0 ? strs[r[15]] || '' : '',
         startWhen: r[16] === 0 ? 'create' : 'seen', aimMove: r[17] === 1 ? 'walk' : 'stop', noAmmo: ['stay', 'melee', 'flee'][r[18]], meleeKind: ['normal', 'special', 'mix'][r[19]],
         meleeTime: r[20], chaseUpdate: r[23], shootDelay: r[24],

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // 3D view of the open.mp NPCs: the path of each NPC (the selected one bright, with its points; the points with actions in gold), the
 // range of the guards, the path of the recording, and the preview that walks the NPC along its path at its speed.
 import * as THREE from 'three';
@@ -139,7 +140,9 @@ export function previewNpc(uid, onEnd) {
     let s = segs[k], t = (now - start) / s.ms;
     while (t >= 1 && (now - start) >= s.ms + s.wait) {
       start += s.ms + s.wait; k++;
-      if (k >= segs.length) { if (n.loop === 'once' || n.mode === 'playback' && !n.recLoop) { stopNpcPreview(); onEnd?.(); return; } k = 0; }
+      // A path of one point is walked once, as in the game (there it stays at the point)
+      const once = n.loop === 'once' || (n.mode === 'path' && n.points.length === 1) || (n.mode === 'playback' && !n.recLoop);
+      if (k >= segs.length) { if (once) { stopNpcPreview(); onEnd?.(); return; } k = 0; }
       s = segs[k]; t = (now - start) / s.ms;
     }
     t = Math.min(1, t);

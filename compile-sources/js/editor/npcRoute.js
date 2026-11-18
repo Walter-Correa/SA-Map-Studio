@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Routes through the streets for the open.mp NPCs: the open.mp NPC component only wanders through the street nodes (NPC_PlayNode), it
 // does not find the way from one place to another. The editor finds it here, over the same official files (NODES0.DAT to NODES63.DAT,
 // served by /api/npc/nodes/<area>), and the route becomes the points of a NPC path (NPC_CreatePath / NPC_MoveByPath).
@@ -40,10 +41,15 @@ function parseArea(buf) {
   return { nodes, veh, navis };
 }
 
+// Rejects when the file could not be read; a failed download is not kept, so the next call tries again
 function loadArea(a) {
   if (a < 0 || a > 63) return Promise.resolve(null);
   if (!areas.has(a)) {
-    areas.set(a, fetch(`/api/npc/nodes/${a}`).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => (b ? parseArea(b) : null)).catch(() => null));
+    const p = fetch(`/api/npc/nodes/${a}`)
+      .then(r => { if (!r.ok) throw new Error(`NODES${a}.DAT: HTTP ${r.status}`); return r.arrayBuffer(); })
+      .then(b => { const d = parseArea(b); if (!d) throw new Error(`NODES${a}.DAT: unreadable`); return d; });
+    areas.set(a, p);
+    p.catch(() => { if (areas.get(a) === p) areas.delete(a); });
   }
   return areas.get(a);
 }
@@ -59,7 +65,7 @@ export async function streetRoute(a, b, car, lane = 0) {
     for (let gx = Math.max(0, Math.min(ax, bx) - 1); gx <= Math.min(7, Math.max(ax, bx) + 1); gx++) want.push(gy * 8 + gx);
   }
   const loaded = new Map();
-  await Promise.all(want.map(async (id) => { const d = await loadArea(id); if (d) loaded.set(id, d); }));
+  await Promise.all(want.map(async (id) => { const d = await loadArea(id).catch(() => null); if (d) loaded.set(id, d); }));
   if (!loaded.size) return null;
   const isType = (area, i) => { const d = loaded.get(area); return d && (car ? i < d.veh : i >= d.veh); };
   const nearest = (p) => {
@@ -182,53 +188,97 @@ export async function streetGraph(a, project) {
     }
     return out;
   });
-  // Strongly connected parts (Kosaraju): keeps the one nearest to the NPC (or the biggest, when that one is tiny)
-  const N = nodes.length, order = [], seen = new Uint8Array(N);
-  for (let s = 0; s < N; s++) {
-    if (seen[s]) continue;
-    const stack = [[s, 0]]; seen[s] = 1;
-    while (stack.length) {
-      const top = stack[stack.length - 1], e = adj[top[0]][top[1]++];
-      if (e) { if (!seen[e[0]]) { seen[e[0]] = 1; stack.push([e[0], 0]); } } else { order.push(top[0]); stack.pop(); }
-    }
-  }
-  const radj = nodes.map(() => []);
-  adj.forEach((list, u) => list.forEach(([v]) => radj[v].push(u)));
-  const comp = new Int32Array(N).fill(-1), sizes = [];
-  for (let i = order.length - 1; i >= 0; i--) {
-    const s = order[i];
-    if (comp[s] >= 0) continue;
-    const c = sizes.length, stack = [s];
-    comp[s] = c; let size = 0;
-    while (stack.length) { const u = stack.pop(); size++; for (const v of radj[u]) if (comp[v] < 0) { comp[v] = c; stack.push(v); } }
-    sizes.push(size);
-  }
+  // Strongly connected parts: keeps the one nearest to the NPC (or the biggest, when that one is tiny)
+  const N = nodes.length;
   if (!N) return { nodes: [], adj: [] };
-  let near = 0, nd = Infinity;
-  nodes.forEach((p, i) => { const d = Math.hypot(p.x - h.x, p.y - h.y, (p.z - h.z) * 2); if (d < nd) { nd = d; near = i; } });
-  let keep = comp[near];
-  if (sizes[keep] < 8) keep = sizes.indexOf(Math.max(...sizes));
+  const all = Array.from({ length: N }, (_, i) => i);
+  const nearest = (list) => {
+    let near = list[0], nd = Infinity;
+    for (const i of list) { const p = nodes[i], d = Math.hypot(p.x - h.x, p.y - h.y, (p.z - h.z) * 2); if (d < nd) { nd = d; near = i; } }
+    return near;
+  };
+  // The part to keep among the points of `list` (only the ways between them count)
+  const pick = (list) => {
+    const { comp, sizes } = strongParts(list, adj);
+    let keep = comp.get(nearest(list));
+    if (sizes[keep] < 8) keep = sizes.indexOf(Math.max(...sizes));
+    return list.filter(i => comp.get(i) === keep);
+  };
+  let members = pick(all);
+  const cut = members.length > MAX_STREET_NODES;
+  if (cut) {
+    // Too many: the points nearest to the NPC along the streets (a walk outwards from its nearest point), then again only the part
+    // where it can always go on and come back, so no point is left without a way out (the NPC would stop there)
+    const inPart = new Set(members), start = nearest(members), taken = new Set([start]), queue = [start];
+    for (let q = 0; q < queue.length && taken.size < MAX_STREET_NODES; q++) {
+      for (const [j] of adj[queue[q]]) {
+        if (taken.size >= MAX_STREET_NODES) break;
+        if (inPart.has(j) && !taken.has(j)) { taken.add(j); queue.push(j); }
+      }
+    }
+    members = pick([...taken].sort((x, y) => x - y));
+  }
   const remap = new Map();
-  nodes.forEach((_, i) => { if (comp[i] === keep && remap.size < MAX_STREET_NODES) remap.set(i, remap.size); });
+  members.forEach((i) => remap.set(i, remap.size));
   const r2 = (v) => Math.round(v * 100) / 100;
   const outNodes = [], outAdj = [];
   for (const [i] of remap) {
     outNodes.push([r2(nodes[i].x), r2(nodes[i].y), r2(nodes[i].z + 1)]);
     outAdj.push(adj[i].filter(([j]) => remap.has(j)).map(([j, ox, oy]) => [remap.get(j), r2(ox), r2(oy)]));
   }
-  return { nodes: outNodes, adj: outAdj, cut: comp.filter(c => c === keep).length > MAX_STREET_NODES };
+  return { nodes: outNodes, adj: outAdj, cut };
 }
 
-// Brings the street graphs of the NPCs of these projects up to date (before a test or an export)
+// Strongly connected parts (Kosaraju) of the points of `list` over the ways between them: comp (point -> part), sizes (of each part)
+function strongParts(list, adj) {
+  const inList = new Set(list), order = [], seen = new Set();
+  const out = (u) => adj[u].filter(([v]) => inList.has(v));
+  for (const s of list) {
+    if (seen.has(s)) continue;
+    const stack = [[s, out(s), 0]]; seen.add(s);
+    while (stack.length) {
+      const top = stack[stack.length - 1], e = top[1][top[2]++];
+      if (e) { if (!seen.has(e[0])) { seen.add(e[0]); stack.push([e[0], out(e[0]), 0]); } } else { order.push(top[0]); stack.pop(); }
+    }
+  }
+  const radj = new Map(list.map(i => [i, []]));
+  for (const u of list) for (const [v] of out(u)) radj.get(v).push(u);
+  const comp = new Map(), sizes = [];
+  for (let i = order.length - 1; i >= 0; i--) {
+    const s = order[i];
+    if (comp.has(s)) continue;
+    const c = sizes.length, stack = [s];
+    comp.set(s, c); let size = 0;
+    while (stack.length) { const u = stack.pop(); size++; for (const v of radj.get(u)) if (!comp.has(v)) { comp.set(v, c); stack.push(v); } }
+    sizes.push(size);
+  }
+  return { comp, sizes };
+}
+
+// Keys of the graphs whose street files could not be read (the inspector says so instead of trying again at every redraw)
+const failedKeys = new Set();
+export const streetsFailed = (key) => failedKeys.has(key);
+
+// Brings the street graphs of the NPCs of these projects (a project or a list of them) up to date: only the ones whose key is stale
+// (the NPC moved, its radius, area, vehicle or lane changed, or the project was imported). Awaited before a test and an export.
+// A graph is kept only when every street file was read: after a failed download the NPC has none and the next call tries again.
 export async function refreshNpcStreets(projects) {
   let changed = false;
-  for (const p of projects) {
+  for (const p of Array.isArray(projects) ? projects : [projects]) {
     if (!p || p.mode === 'sp' || p.server === 'samp') continue;
     for (const a of p.actors || []) {
       const key = streetsKey(a, p);
       if (!key) { if (a.npc?.streets) { a.npc.streets = null; changed = true; } continue; }
       if (a.npc.streets?.key === key) continue;
-      try { a.npc.streets = { key, ...(await streetGraph(a, p)) }; changed = true; } catch { a.npc.streets = null; }
+      try {
+        a.npc.streets = { key, ...(await streetGraph(a, p)) };
+        failedKeys.delete(key);
+      } catch (err) {
+        console.warn('NPC streets', err);
+        a.npc.streets = null;
+        failedKeys.add(key);
+      }
+      changed = true;
     }
   }
   return changed;
