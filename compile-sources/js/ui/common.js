@@ -291,6 +291,11 @@ export function showAlert(message, { title = 'SA Map Studio', okText = 'OK', htm
 if (typeof window !== 'undefined') {
   window.showConfirm = showConfirm;
   window.showAlert = showAlert;
+  // The X of a window (data-close) is a plain button, not the form's submit: Enter in a field of the window no longer closes it
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest?.('button[data-close]');
+    if (btn) btn.closest('dialog')?.close('close');
+  });
 }
 
 

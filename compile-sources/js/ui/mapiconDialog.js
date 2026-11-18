@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // 2D visual MapIcon editor (similar to the GangZone one) + Visual MapIcon List Window (IDs 0 to 63)
 import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl, getNextMapIconName } from '../world/mapicons.js';
-import { makeMapIcon, nextMapIconSlot } from '../editor/project.js';
+import { makeMapIcon, nextMapIconSlot, mapIconSlots } from '../editor/project.js';
 import { app, $, $$, esc, toast, copyText, arrowStep, themeVar } from './common.js';
 import { t } from './i18n.js';
 
@@ -922,10 +922,11 @@ function copyAllMapIconsPawn() {
     return;
   }
   const lines = ['// MapIcons (SetPlayerMapIcon) gerados pelo SA Map Studio'];
+  const slots = mapIconSlots(list);   // (the same slots as the export: one per icon)
   list.forEach((m, i) => {
     const cHex = '0x' + ((m.color ?? 0) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const comm = m.comment ? ` // ${m.comment}` : '';
-    lines.push(`SetPlayerMapIcon(playerid, ${m.iconid ?? i % 100}, ${m.x.toFixed(4)}, ${m.y.toFixed(4)}, ${m.z.toFixed(4)}, ${m.type ?? 0}, ${cHex}, ${m.style ?? 0});${comm}`);
+    lines.push(`SetPlayerMapIcon(playerid, ${slots[i]},${m.x.toFixed(4)}, ${m.y.toFixed(4)}, ${m.z.toFixed(4)}, ${m.type ?? 0}, ${cHex}, ${m.style ?? 0});${comm}`);
   });
   copyText(lines.join('\n'));
   toast(`${list.length} MapIcon(s) copiado(s) em formato Pawn!`, 'ok');

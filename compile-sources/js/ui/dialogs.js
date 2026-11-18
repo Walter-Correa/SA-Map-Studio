@@ -5,7 +5,7 @@ import { exportPwn, exportIpl, sanitizeIdent, projectCenter } from '../editor/pw
 import { quatOfItem } from '../editor/editor.js';
 import { importAny, sampMissing, sampInstalled } from '../editor/importers.js';
 import { t, tFallback, getLanguage } from './i18n.js';
-import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, pbMinOf, clampPbLerpMs, clampPbLabelText, PB_LABEL_DEFAULT } from '../editor/project.js';
+import { Project, clampPbSegmentScale, makeDoor, makeCustomModel, makeWorld, newDoorName, normalizeCameras, prepareImportItems, textDrawNative, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, pbMinOf, clampPbLerpMs, clampPbLabelText, PB_LABEL_DEFAULT, mapIconSlots } from '../editor/project.js';
 import { tdfxMapLine } from '../editor/tdfx.js';
 import { isGate, gateTestLine } from '../editor/gates.js';
 import { projectNpcs, npcTestScript } from '../editor/ompNpc.js';
@@ -60,7 +60,11 @@ export function setupExport() {
     try { await refreshNpcStreets([app.project]); } catch (err) { console.warn('NPC streets', err); }
     gen(); dlg.showModal();
   };
-  const fileName = () => sanitizeIdent(app.project.name).toLowerCase() + '.' + (dlg.dataset.ext === 'ipl' ? 'ipl' : 'pwn');
+  // The filterscript gets its own name (_fs): saving it no longer replaces the module of the same map, and the other way round
+  const fileName = () => {
+    const fs = dlg.dataset.ext !== 'ipl' && $('input[name="exLayout"]:checked')?.value === 'filterscript';
+    return sanitizeIdent(app.project.name).toLowerCase() + (fs ? '_fs' : '') + '.' + (dlg.dataset.ext === 'ipl' ? 'ipl' : 'pwn');
+  };
   $('#exCopy').onclick = async () => { await copyText($('#exportText').value); toast('Código copiado'); };
   $('#exDownload').onclick = () => {
     const blob = new Blob([$('#exportText').value.replace(/\n/g, '\r\n')], { type: 'text/plain' });
@@ -428,12 +432,12 @@ export function mapLines(project, spawn, env, center, useStreamer = false) {
       const nz = cp.nextz ?? cp.z;
       lines.push(`CP|${isRace}|${type}|${cp.x.toFixed(4)}|${cp.y.toFixed(4)}|${cp.z.toFixed(4)}|${nx.toFixed(4)}|${ny.toFixed(4)}|${nz.toFixed(4)}|${size.toFixed(2)}`);
     }
-    let miIdx = 0;
-    for (const mi of p.mapIcons || []) {
+    // Each icon in its own slot, the same ones the export uses (two icons in one slot: the last one replaced the other)
+    const miSlots = mapIconSlots(p.mapIcons || []);
+    (p.mapIcons || []).forEach((mi, miIdx) => {
       const colorInt = signed(mi.color ?? 0xFF0000FF);
-      lines.push(`MI|${mi.iconid !== undefined ? mi.iconid : miIdx}|${mi.x.toFixed(4)}|${mi.y.toFixed(4)}|${mi.z.toFixed(4)}|${mi.type ?? 0}|${colorInt}|${mi.style ?? 0}`);
-      miIdx++;
-    }
+      lines.push(`MI|${miSlots[miIdx]}|${mi.x.toFixed(4)}|${mi.y.toFixed(4)}|${mi.z.toFixed(4)}|${mi.type ?? 0}|${colorInt}|${mi.style ?? 0}`);
+    });
     // Order of the D lines: the DF lines (TextDrawFX effect) say which TextDraw has the effect, after every D line
     const plainTds = (p.textDraws || []).filter(t => t.type !== 'progress');
     const fxLines = [];

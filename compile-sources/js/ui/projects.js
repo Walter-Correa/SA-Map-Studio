@@ -8,7 +8,7 @@ import { app, $, esc, store, toast, showConfirm } from './common.js';
 
 let currentName = null;
 let unsub = null;
-const saveTimers = new WeakMap();
+const saveTimers = new Map();   // the projects with a save waiting (each one leaves the list when it is saved)
 
 function setSaveState(text, cls = '') {
   const el = $('#saveState');
@@ -44,9 +44,10 @@ export function autosaveOnClose(dialogEl, kind) {
   let before = null;
   const snap = () => JSON.stringify(app.project?.[kind] || []);
   // While the window is open, an edit marks the project as not saved (closing the browser then saves it first)
-  const markDirty = () => {
+  // (checked after the window's own handlers ran: in the capture phase a change, like a picked <select> option, is not applied yet)
+  const markDirty = () => setTimeout(() => {
     if (dialogEl.open && before !== null && app.project && !isDirty() && snap() !== before) setSaveState('Não salvo', 'dirty');
-  };
+  });
   for (const ev of ['input', 'change', 'pointerup', 'keyup']) dialogEl.addEventListener(ev, markDirty, true);
   // The "open" attribute changes with any way of opening or closing the <dialog>
   new MutationObserver(() => {
@@ -90,24 +91,51 @@ async function doSave(project) {
     const res = await fetch(projUrl(project.name), { method: 'POST', body: JSON.stringify(project.toJSON()) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     if (app.project === project) { currentName = project.name; store.set(lastKey(), project.name); setSaveState('Salvo'); }
-    const backup = store.get('backup', null);
-    if (backup && sameName(backup.name, project.name)) store.set('backup', null);
+    setBackup(project.name, null);
     return true;
   } catch {
     if (app.project === project) setSaveState('Erro ao salvar', 'error');
     // Kept in the browser: restored on the next start if the file is still older than it (see restoreBackup)
-    store.set('backup', { v: 2, at: Date.now(), name: project.name, mode: Project.defaultMode, project: project.toJSON() });
+    setBackup(project.name, { v: 2, at: Date.now(), name: project.name, mode: Project.defaultMode, project: project.toJSON() });
     return false;
   }
+}
+
+// Copies of the saves that failed, kept in the browser: one per project (name and mode), so a failed save of one project never
+// takes the place of another's. The old single copy ("backup") moves into the list the first time it is read
+const backupKey = (name, mode = Project.defaultMode) => (mode || 'mp') + ':' + safeName(name).toLowerCase();
+function getBackups() {
+  const all = store.get('backups', null);
+  const list = all && typeof all === 'object' && !Array.isArray(all) ? all : {};
+  const old = store.get('backup', null);
+  if (old) {
+    if (old.v === 2 && old.project && old.name != null) {
+      const k = backupKey(old.name, old.mode);
+      if (!list[k] || !(list[k].at >= old.at)) list[k] = old;
+    }
+    store.set('backups', list);
+    try { localStorage.removeItem('samap.backup'); } catch { /* no storage */ }
+  }
+  return list;
+}
+function setBackup(name, value, mode = Project.defaultMode) {
+  const list = getBackups(), k = backupKey(name, mode);
+  if (value) list[k] = value;
+  else if (k in list) delete list[k];
+  else return;
+  store.set('backups', list);
 }
 
 // The name of the project file: the same cleaning as the server's safe_name (letters and digits of any language, _ - . space and
 // parentheses; anything else becomes _; no spaces or dots at the ends; at most 80 characters). The project's name is always this one,
 // so the open project is the one in the list, and two names that make the same file are the same name
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 export function safeName(name) {
   let s = String(name ?? '').normalize('NFC').replace(/[^\p{L}\p{N}_\-. ()]+/gu, '_').replace(/^[ .]+|[ .]+$/g, '');
-  s = Array.from(s).slice(0, 80).join('');
-  return s || 'sem_nome';
+  s = Array.from(s).slice(0, 80).join('') || 'sem_nome';
+  // CON, NUL, COM1... are devices on Windows, not files: the server puts a _ before them (and so does the name here)
+  if (WINDOWS_RESERVED.test(s.split('.')[0].trim())) s = '_' + s;
+  return s;
 }
 // Windows does not tell "Casa" from "casa": the same file
 export const sameName = (a, b) => a != null && b != null && safeName(a).toLowerCase() === safeName(b).toLowerCase();
@@ -148,21 +176,19 @@ async function fetchProject(name) {
 
 // A save that failed left a copy in the browser: when it is still newer than the file (or the file is gone), it is saved back
 async function restoreBackup() {
-  const b = store.get('backup', null);
-  if (!b) return;
-  if (b.v !== 2 || !b.project || (b.mode || 'mp') !== Project.defaultMode) {
-    if (b.v !== 2) store.set('backup', null);   // (an old copy, without a date: there is no telling if it is newer)
-    return;
-  }
+  const mine = Object.values(getBackups()).filter(b => (b?.mode || 'mp') === Project.defaultMode);
+  if (!mine.length) return;
   const { projects } = await listProjects();
-  const file = projects.find(p => sameName(p.name, b.name));
-  if (file && file.modified * 1000 >= b.at) { store.set('backup', null); return; }
-  try {
-    const res = await fetch(projUrl(b.name), { method: 'POST', body: JSON.stringify(b.project) });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    store.set('backup', null);
-    toast(t('As alterações de "{0}" que não tinham sido salvas foram recuperadas.', b.name), 'ok', 8000);
-  } catch { /* stays for the next start */ }
+  for (const b of mine) {
+    const file = projects.find(p => sameName(p.name, b.name));
+    if (file && file.modified * 1000 >= b.at) { setBackup(b.name, null); continue; }
+    try {
+      const res = await fetch(projUrl(b.name), { method: 'POST', body: JSON.stringify(b.project) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      setBackup(b.name, null);
+      toast(t('As alterações de "{0}" que não tinham sido salvas foram recuperadas.', b.name), 'ok', 8000);
+    } catch { /* stays for the next start */ }
+  }
 }
 
 // Camera on open or import: computes the center of all the project's items and focuses on the item closest to it
@@ -273,13 +299,21 @@ async function renameProject(newName) {
   if (!await saveProject(project)) {
     project.name = oldName;
     $('#projectName').value = oldName;
-    const backup = store.get('backup', null);   // (the copy kept in the browser goes back to the name of its file too)
-    if (backup?.project && backup.name === newName) store.set('backup', { ...backup, name: oldName, project: { ...backup.project, name: oldName } });
+    // (the copy kept in the browser goes back to the name of its file too)
+    const backup = sameFile ? null : getBackups()[backupKey(newName)];
+    if (backup?.project) {
+      setBackup(newName, null);
+      setBackup(oldName, { ...backup, name: oldName, project: { ...backup.project, name: oldName } });
+    }
     toast(t('Não consegui salvar "{0}". O nome continua "{1}".', newName, oldName), 'error', 6000);
+    app.emit('project-renamed', project);
     return;
   }
+  // A copy of the old name, kept from an earlier failed save, would bring the old project back on the next start
+  if (!sameFile) setBackup(oldName, null);
   if (old && !sameName(old, newName)) await fetch(projUrl(old), { method: 'DELETE' });
   toast(`Projeto renomeado para "${newName}"`);
+  app.emit('project-renamed', project);
 }
 
 async function openProjectsDialog() {
@@ -419,16 +453,59 @@ async function openProjectsDialog() {
   if (!dlg.open) dlg.showModal();
 }
 
+// The program was closed and opened again while this page stayed open: the page still has the old session, so the server
+// refuses every call to the API (403). Once, the changes not saved yet are kept in the browser (the save fails and leaves its
+// copy, restored on the next start) and a notice asks to reload the page. Reloading is the user's choice: it never repeats by itself
+let sessionLost = false, leaving = false;
+function watchSession() {
+  const fetch0 = window.fetch.bind(window);
+  const isApi = (input) => {
+    try {
+      const u = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, location.href);
+      return u.origin === location.origin && u.pathname.startsWith('/api/');
+    } catch { return false; }
+  };
+  window.fetch = async (input, init) => {
+    const res = await fetch0(input, init);
+    if (res.status === 403 && !sessionLost && isApi(input)) onSessionLost();
+    return res;
+  };
+}
+async function keepUnsaved() {
+  const list = new Set(saveTimers.keys());
+  if (isDirty() && app.project) list.add(app.project);
+  await Promise.all([...list].map(p => saveProject(p).catch(() => false)));
+}
+async function onSessionLost() {
+  sessionLost = true;
+  await keepUnsaved();
+  const reload = await showConfirm(t('O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.'),
+    { confirmText: t('Recarregar a página'), cancelText: t('Agora não') });
+  if (!reload) return;
+  await keepUnsaved();
+  leaving = true;
+  location.reload();
+}
+
 export function setupProjects() {
   const nameInput = $('#projectName');
   nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); if (e.key === 'Escape') { nameInput.value = app.project.name; nameInput.blur(); } });
   nameInput.addEventListener('change', () => renameProject(nameInput.value));
   $('#btnProjects').onclick = openProjectsDialog;
+  // Enter in the name of the new project creates it (it closed the window before)
+  $('#newProjectName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('#newProjectBtn').click(); }
+  });
+  let creating = false;   // (a second Enter or click while it is being created does not make another project)
   $('#newProjectBtn').onclick = async () => {
-    const name = await uniqueName(($('#newProjectName').value || 'Novo mapa').trim());
-    try { await switchTo(new Project(name)); }
-    catch (err) { toast(err.message, 'error', 6000); return; }
-    $('#dlgProjects').close();
+    if (creating) return;
+    creating = true;
+    try {
+      const name = await uniqueName(($('#newProjectName').value || 'Novo mapa').trim());
+      try { await switchTo(new Project(name)); }
+      catch (err) { toast(err.message, 'error', 6000); return; }
+      $('#dlgProjects').close();
+    } finally { creating = false; }
   };
   const btnOpenExt = $('#openExternalProjectBtn');
   const fileExt = $('#externalProjectFileInput');
@@ -459,7 +536,9 @@ export function setupProjects() {
   }
   // Called by the program window (serve.py) before closing: saves everything and only then the window closes
   window.__samapSaveAll = () => saveNow().then(() => true, () => false);
+  watchSession();
   window.addEventListener('beforeunload', (e) => {
+    if (leaving) return;
     if (isDirty()) { saveNow(); e.preventDefault(); e.returnValue = ''; }
   });
 }

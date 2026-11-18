@@ -17,7 +17,7 @@ import { app, $, $$, esc, fmt, store, toast, copyText, modelLabel, parseCoords, 
 import { setupProjects, openInitialProject, saveNow, autosaveOnClose } from './ui/projects.js';
 import { setupCatalog, renderCatalogRows } from './ui/catalog.js';
 import { setupTexturesTab, renderTexRows, updateTarget } from './ui/texturesTab.js';
-import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel } from './ui/inspector.js';
+import { setupInspector, openCreate3DTextPanel, openCreateCheckpointPanel, renderInspector } from './ui/inspector.js';
 import { setupCameras, stopPreview } from './ui/cameras.js';
 import { setupExport, setupImport, setupTest } from './ui/dialogs.js';
 import { initNpcOverlay } from './editor/npcOverlay.js';
@@ -287,6 +287,9 @@ async function start(cfg) {
   autosaveOnClose($('#dlgTextDraw'), 'textDraws');
   autosaveOnClose($('#dlgMapIcons'), 'mapIcons');
   autosaveOnClose($('#dlgGangZones'), 'gangZones');
+  // The project summary on the right (and the selected item) shows what the edit windows changed, and the new name of a renamed project
+  app.on('project-change', (ch) => { if (ch?.type === 'edit') renderInspector(); });
+  app.on('project-renamed', () => renderInspector());
   await openInitialProject();
   $('#overlay').hidden = true;
   initUpdateCheck();                                                                              // in the background, never delays the editor

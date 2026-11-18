@@ -36,7 +36,7 @@ const OWN_NODE_KINDS = new Set(['labels', 'checkpoints', 'spawns', 'mapIcons']);
 function disposeNode(node) {
   if (!node) return;
   const free = (root, textures) => root.traverse(c => {
-    c.geometry?.dispose?.();
+    if (!c.isSprite) c.geometry?.dispose?.();   // (every THREE.Sprite shares one geometry: freeing it would break the others)
     for (const m of Array.isArray(c.material) ? c.material : (c.material ? [c.material] : [])) {
       if (textures) m.map?.dispose?.();   // (the checkered flag of a checkpoint is one texture for all of them: it stays)
       m.dispose?.();
