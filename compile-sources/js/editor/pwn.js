@@ -7,7 +7,7 @@ import { mapIconSlots, textDrawNative, progressBarPawn, progressBarVar, textDraw
 import { TDFX_FUNCTIONS, TDFX_INCLUDE, tdfxActive, tdfxFromCall } from './tdfx.js';
 import { gatePawn, gateVar, importGates } from './gates.js';
 import { npcPawn, npcIdent, projectNpcs, importNpcs } from './ompNpc.js';
-import { filterscriptPawn, tdParts, boolArgs } from './filterscript.js';
+import { filterscriptPawn, tdParts, boolArgs, ompArgs } from './filterscript.js';
 
 import { t as tr, uiLocale } from '../ui/i18n.js';
 const VEHICLE_MIN = 400, VEHICLE_MAX = 611;
@@ -92,12 +92,24 @@ function splitArgs(s) {
   return out;
 }
 
+// The open.mp names of the values the export writes as numbers (TextDraw font and alignment, map icon style, race checkpoint type)
+const OMP_VALUES = Object.fromEntries([
+  ...['0', '1', '2', '3', 'SPRITE_DRAW', 'MODEL_PREVIEW'].map((n, i) => [`TEXT_DRAW_FONT_${n}`, i]),
+  ...['BANK', 'STANDARD', 'SPACEAGE', 'HEADING', 'SPRITE', 'PREVIEW'].map((n, i) => [`TEXT_DRAW_FONT_${n}`, i]),
+  ...['BECKETT_REGULAR', 'AHARONI_BOLD', 'BANK_GOTHIC', 'PRICEDOWN'].map((n, i) => [`TEXT_DRAW_FONT_${n}`, i]),
+  ['TEXT_DRAW_ALIGN_LEFT', 1], ['TEXT_DRAW_ALIGN_CENTRE', 2], ['TEXT_DRAW_ALIGN_CENTER', 2], ['TEXT_DRAW_ALIGN_RIGHT', 3],
+  ...['LOCAL', 'GLOBAL', 'LOCAL_CHECKPOINT', 'GLOBAL_CHECKPOINT'].map((n, i) => [`MAPICON_${n}`, i]),
+  ...['GROUND_NORMAL', 'GROUND_FINISH', 'GROUND_EMPTY', 'AIR_NORMAL', 'AIR_FINISH', 'AIR_ROTATING', 'AIR_STROBING', 'AIR_SWINGING', 'AIR_BOBBING'].map((n, i) => [`CP_TYPE_${n}`, i]),
+]);
 const num = (v, def = 0) => {
   if (v === undefined) return def;
   // open.mp takes true/false in the bool arguments (the export writes them so)
   if (/^\s*true\s*$/i.test(v)) return 1;
   if (/^\s*false\s*$/i.test(v)) return 0;
-  const n = parseFloat(String(v).replace(/^Float:/i, '').replace(/[^\d.eE+\-]/g, ''));
+  // Without the tag (Float:1.0, and TEXT_DRAW_FONT:1 and the others of open.mp), or by the open.mp name
+  const s = String(v).trim().replace(/^\(?\s*[A-Za-z_@][\w@]*:\s*/, '');
+  if (OMP_VALUES[s] !== undefined) return OMP_VALUES[s];
+  const n = parseFloat(s.replace(/[^\d.eE+\-]/g, ''));
   return Number.isFinite(n) ? n : def;
 };
 const int = (v, def = 0) => { const n = Math.trunc(num(v, NaN)); return Number.isFinite(n) ? n : def; };
@@ -106,7 +118,7 @@ const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 // A wrapped function name also counts: the known name must be a whole word inside the identifier, with an optional
 // prefix ending in "_" (new_CreatePlayerTextDraw) and an optional suffix starting with "Ex" or "_" (CreatePlayerTextDrawEx).
 // The lookbehind keeps TextDrawFont from matching inside PlayerTextDrawFont; group 3 is the suffix.
-const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?(?<![\w@])(?:[\w@]*_)?(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)((?:Ex(?![a-z])|_)[\w@]*)?\s*\(`, 'g');
+const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?(?<![\w@])(?:[\w@]*_)?(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawSetPreviewVehicleColou?rs|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawSetPreviewVehicleColou?rs|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)((?:Ex(?![a-z])|_)[\w@]*)?\s*\(`, 'g');
 // Streamer functions whose Ex version has its own parameter order (streamer.inc): parameter names of the base
 // function and of the Ex one. The Ex call is rewritten in the base order; worlds/interiors/players lists keep
 // only their first value, areas and priority are dropped.
@@ -496,7 +508,8 @@ export function parsePwn(source) {
     const inner = masked.slice(re.lastIndex, i - 1);
     re.lastIndex = i;
     const stmtEnd = i;
-    let fn = m[2];
+    // The open.mp names (TextDrawSetPreviewVehicleColours) are read as the SA-MP ones
+    let fn = m[2].replace(/VehicleColou?rs$/, 'VehCol');
     // CreateDynamicObjectEx is in the list on its own; the other streamer Ex functions come as base name + "Ex" suffix
     const exBase = fn === 'CreateDynamicObjectEx' ? 'CreateDynamicObject'
       : (m[3] && /^Ex/.test(m[3]) && STREAMER_EX.has(fn) ? fn : null);
@@ -1285,6 +1298,8 @@ export function exportPawn(project, options = {}) {
   if (opt.layout === 'filterscript') Object.assign(opt, { relative: false, exportArray: false, vehicleFn: 'CreateVehicle' });
   const d = opt.decimals;
   const dyn = opt.objectFn !== 'CreateObject';
+  // open.mp project: the Pawn gets the open.mp tags and names (filterscript.js, ompArgs); a SA-MP one keeps the plain numbers
+  const omp = project.server !== 'samp';
   const center = opt.relative ? projectCenter(project) : { x: 0, y: 0, z: 0 };
   const objs = project.objects;
   const vehs = opt.includeVehicles ? project.vehicles : [];
@@ -1625,7 +1640,7 @@ export function exportPawn(project, options = {}) {
     const fs = filterscriptPawn({ project, fc: (v) => f(v, d), fileName: sanitizeIdent(project.name).toLowerCase(), gateId, gateObjs, gates, npcMod, npcActors,
       actors: actors.filter(a => !npcSet.has(a)), vehs, cams, objLines, vehLines, actorLines, remLines, labelLines, pickupLines, gangZoneLines,
       checkpointLines, mapIconLines, needObjId, attachDecl, needVehId, warnLines, chatText: opt.chatText });
-    return withIncludes(fs.lines, fs.incAt, incs);
+    return withIncludes(fs.lines, fs.incAt, incs, omp);
   }
 
   if (opt.layout === 'lines') {
@@ -1665,7 +1680,7 @@ export function exportPawn(project, options = {}) {
     if (gates.code) lines.push('', gates.decl, '', gates.code);
     // The NPC system goes outside the functions, like the cameras and the gates (its call is with the other lines above)
     if (npcMod.code) lines.push('', npcMod.decl, '', npcMod.code);
-    return withIncludes(lines, incAt, incs);
+    return withIncludes(lines, incAt, incs, omp);
   }
 
   // Module: Map_<id>_Load() creates the map, Map_<id>_Player(playerid) gives each player what is per player
@@ -1765,19 +1780,20 @@ export function exportPawn(project, options = {}) {
   if (cams.code) { lines.push(''); lines.push(cams.code); }
   if (gates.code) lines.push('', gates.code);
   if (npcMod.code) lines.push('', npcMod.code);
-  return withIncludes(lines, incAt, incs);
+  return withIncludes(lines, incAt, incs, omp);
 }
 export const exportPwn = exportPawn;
 
 // Puts the includes the code needs at the top, each with the address to download it; the streamer comes first
 // when the code uses dynamic items
 const STREAMER_INCLUDE = '#include <streamer>//https://github.com/samp-incognito/samp-streamer-plugin';
-function withIncludes(lines, at, incs) {
-  // open.mp takes true/false where the lines write 0/1 (the same value in SA-MP, without warning 213 in open.mp)
+function withIncludes(lines, at, incs, omp = false) {
+  // open.mp takes true/false where the lines write 0/1 (the same value in SA-MP, without warning 213 in open.mp); the open.mp
+  // projects also get the tags and names of open.mp (ompArgs), which SA-MP does not know
   const dynamic = /\b(CreateDynamic\w*|MoveDynamicObject|SetDynamicObject\w*|AttachDynamicObject\w*|Streamer_\w+)\s*\(/.test(lines.join('\n'));
   const all = [...(dynamic ? [STREAMER_INCLUDE] : []), ...incs];
   if (all.length) lines.splice(at, 0, ...all, '');
-  return lines.join('\n').split('\n').map(boolArgs).join('\n') + '\n';
+  return lines.join('\n').split('\n').map(l => (omp ? ompArgs(boolArgs(l)) : boolArgs(l))).join('\n') + '\n';
 }
 
 export function exportIpl(project, quatOf, modelName) {

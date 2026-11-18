@@ -30,23 +30,60 @@ const BOOL_ARGS = {
   SetObjectMaterialText: [6], AttachObjectToObject: [8],
 };
 const CALL_RE = new RegExp(`^(\\s*(?:[\\w\\[\\]]+ = )*)(${Object.keys(BOOL_ARGS).join('|')})\\(`);
-export function boolArgs(l) {
-  const m = CALL_RE.exec(l);
-  if (!m) return l;
-  // The arguments up to the closing parenthesis, outside strings
-  const start = m[0].length, args = [];
-  let depth = 0, str = false, from = start, end = -1;
-  for (let i = start; i < l.length && end < 0; i++) {
+// The arguments of the call that starts at l[start] (after its parenthesis), outside strings: { args, end } (end: the
+// closing parenthesis), or null when it does not close on this line
+function callArgs(l, start) {
+  const args = [];
+  let depth = 0, str = false, from = start;
+  for (let i = start; i < l.length; i++) {
     const c = l[i];
     if (str) { if (c === '\\') i++; else if (c === '"') str = false; continue; }
     if (c === '"') str = true;
     else if (c === '(') depth++;
-    else if (c === ')' && depth-- === 0) { args.push(l.slice(from, i)); end = i; }
+    else if (c === ')' && depth-- === 0) { args.push(l.slice(from, i)); return { args, end: i }; }
     else if (c === ',' && depth === 0) { args.push(l.slice(from, i)); from = i + 1; }
   }
-  if (end < 0) return l;
+  return null;
+}
+export function boolArgs(l) {
+  const m = CALL_RE.exec(l);
+  if (!m) return l;
+  const start = m[0].length, call = callArgs(l, start);
+  if (!call) return l;
+  const { args, end } = call;
   for (const k of BOOL_ARGS[m[2]]) if (/^\s*[01]\s*$/.test(args[k] ?? '')) args[k] = args[k].replace(/[01]/, (v) => (v === '1' ? 'true' : 'false'));
   return l.slice(0, start) + args.join(',') + l.slice(end);
+}
+
+// open.mp gives these arguments a tag: a plain number there is warning 213 in a script without SAMP_COMPAT. The tag does not
+// change the value (SAMP_COMPAT drops it), but SA-MP does not know it: only the open.mp projects get it
+// (function: { position: tag })
+const OMP_TAGS = {
+  TextDrawFont: { 1: 'TEXT_DRAW_FONT' }, PlayerTextDrawFont: { 2: 'TEXT_DRAW_FONT' },
+  TextDrawAlignment: { 1: 'TEXT_DRAW_ALIGN' }, PlayerTextDrawAlignment: { 2: 'TEXT_DRAW_ALIGN' },
+  SetObjectMaterialText: { 3: 'OBJECT_MATERIAL_SIZE', 9: 'OBJECT_MATERIAL_TEXT_ALIGN' },
+  SetPlayerMapIcon: { 7: 'MAPICON' }, SetPlayerRaceCheckpoint: { 1: 'CP_TYPE' },
+};
+// The open.mp names of the SA-MP functions it marks as deprecated (warning 234)
+const OMP_NAMES = { TextDrawSetPreviewVehCol: 'TextDrawSetPreviewVehicleColours', PlayerTextDrawSetPreviewVehCol: 'PlayerTextDrawSetPreviewVehicleColours' };
+const OMP_RE = new RegExp(`(?<![\\w@])(${[...Object.keys(OMP_TAGS), ...Object.keys(OMP_NAMES)].join('|')})\\(`, 'g');
+export function ompArgs(l) {
+  if (/^\s*\/\//.test(l) || !OMP_RE.test(l)) return l;
+  OMP_RE.lastIndex = 0;
+  let out = '', from = 0, m;
+  while ((m = OMP_RE.exec(l))) {
+    const fn = m[1], start = m.index + m[0].length;
+    out += l.slice(from, m.index) + (OMP_NAMES[fn] || fn) + '(';
+    from = start;
+    const call = OMP_TAGS[fn] && callArgs(l, start);
+    if (!call) continue;
+    const { args, end } = call;
+    for (const [k, tag] of Object.entries(OMP_TAGS[fn])) if (/^\s*-?\d+\s*$/.test(args[k] ?? '')) args[k] = args[k].replace(/-?\d+/, (v) => `${tag}:${v}`);
+    out += args.join(',');
+    from = end;
+    OMP_RE.lastIndex = end;
+  }
+  return out + l.slice(from);
 }
 // The Pawn lines are written here as "if(" (so the language check does not take them for interface texts); the script gets "if ("
 const spaced = (l) => l.replace(/^(\s*)(if|else if|switch|for|while)\(/, '$1$2 (');

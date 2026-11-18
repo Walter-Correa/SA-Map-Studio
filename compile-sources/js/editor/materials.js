@@ -81,7 +81,8 @@ function splitTop(s) {
 
 export const toInt = (v, def) => {
   if (v === undefined || v === '') return def;
-  const s = String(v).trim();
+  // Without the tag of open.mp (OBJECT_MATERIAL_SIZE:90, OBJECT_MATERIAL_TEXT_ALIGN:1)
+  const s = String(v).trim().replace(/^\(?\s*[A-Za-z_@][\w@]*:\s*/, '');
   if (SIZE_BY_NAME[s.toUpperCase()] !== undefined) return SIZE_BY_NAME[s.toUpperCase()];
   if (ALIGN_BY_NAME[s.toUpperCase()] !== undefined) return ALIGN_BY_NAME[s.toUpperCase()];
   if (/^(true)$/i.test(s)) return 1;
