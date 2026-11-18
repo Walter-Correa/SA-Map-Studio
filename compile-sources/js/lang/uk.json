@@ -2814,7 +2814,6 @@
  "Repetição": "Повтор",
  "Persegue o alvo": "Переслідує ціль",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Атакує гравця, що увійшов у радіус (зброєю або голими руками), і повертається на місце, коли гравець іде або гине.",
- "Distância do jogador (m)": "Відстань до гравця (м)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Іде за найближчим гравцем. З «Дати відсіч» у «Під час шкоди» захищається від того, хто в нього стріляє.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Справжній тест: кнопка «Тест» на мапі. Тестовий сервер open.mp запускає саме експортований код.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Інший NPC має таке ж ім'я: під час експорту він отримає номер у кінці.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Після втечі лишається насторожі цей час: якщо нападник наблизиться, тікає знову (0 = ні)",
  "Espera antes de voltar (s)": "Чекає перед поверненням (с)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Час, який він стоїть після втечі, перш ніж повернутися до своєї справи",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Пішки тікає тротуарами, а за кермом — дорогами, завжди віддаляючись від нападника; якщо поруч немає тротуару чи дороги, тікає по прямій."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Пішки тікає тротуарами, а за кермом — дорогами, завжди віддаляючись від нападника; якщо поруч немає тротуару чи дороги, тікає по прямій.",
+ "Distância do jogador a pé (m)": "Відстань до гравця пішки (м)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Дістається до гравця тротуарами (пішки) або дорогами (на транспорті). Пішки тримається на відстані вище; на транспорті лишається за 5 м від гравця, завжди на дорозі й у своїй смузі."
 }
