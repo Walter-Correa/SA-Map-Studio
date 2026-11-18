@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer mode: the project becomes a Modloader mod (a folder of loose files), so the original game files are never changed.
 //  - new objects and vehicles -> <project>.ipl (inst + cars sections)
 //  - removed buildings        -> a copy of the IPL that holds each one, with that instance buried (Z = BURIED_Z)
@@ -16,7 +17,7 @@ import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
 import { actionName, gameText } from './spInspector.js';
-import { usesMenuOrAction, vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels, npcHealth } from '../formats/cleo.js';
+import { usesMenuOrAction, vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels, npcHealth, npcSkinOk, npcAnimOk, modSlots, giveVehicleOk } from '../formats/cleo.js';
 import { gatesScript, GATE_VARS } from '../formats/cleoGates.js';
 import { isGate, gateOpenRot } from '../editor/gates.js';
 
@@ -120,14 +121,18 @@ export const worldSettings = (project) => { const w = project.world || {}; retur
 export const usesCleo = (project) => project.vehicles.some(v => app.gd.models.get(v.model)?.type === 'cars')
   || project.pickups?.length > 0 || project.actors?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0
   || project.objects.some(isMover) || worldSettings(project);
-// What stays in the world (objects, pickups, radar icons) is taken away by CLEO+ just before the game is saved: the saved games have nothing of the mod
-export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0 || project.objects.some(isMover) || (project.actors || []).some(n => n.role === 'guard');
+// What stays in the world (objects, pickups, radar icons) is taken away by CLEO+ just before the game is saved: the saved games have nothing of the mod.
+// Any NPC needs it too: the script that watches the game for them (taskGuardScript) uses its events
+export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0 || project.objects.some(isMover) || (project.actors || []).length > 0;
 
 // A short fingerprint of what goes into the mod: the installed mod remembers it, to tell whether it is up to date
 export function projectHash(project) {
   let text = JSON.stringify([project.objects, project.vehicles, project.removed, project.doors || [], project.actors, project.pickups, project.mapIcons, project.checkpoints, project.world, project.customModels, project.retex, project.handling, project.drawDist, project.weapons, project.spawns]);
-  const menus = [...(project.pickups || []), ...(project.checkpoints || [])].some(i => i.menu?.on);
-  if (menus) text += getLanguage();
+  const items = [...(project.pickups || []), ...(project.checkpoints || [])];
+  const menus = items.some(i => i.menu?.on);
+  // the texts of the menus and the "not enough money" message are in the language of the editor
+  const priced = items.some(i => i.action?.price > 0 || i.menu?.options?.some(o => o.price > 0));
+  if (menus || priced) text += getLanguage();
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0') + '-' + text.length.toString(16);
@@ -336,7 +341,6 @@ function removedTargets(project) {
 // ---------------------------------------------------------------------------  textured copies of models
 // A texture swap only exists per object in SA-MP. In the game it belongs to the model, so each distinct texturing becomes
 // a copy of the model with its own id, DFF, TXD (only the swapped textures; the original TXD is its parent) and collision.
-const FIRST_FREE_ID = 19999;
 let colIndex = null; // lowercase model name -> { buffer, block }
 
 async function findCollision(name, say) {
@@ -382,7 +386,7 @@ function texturedGroups(project) {
   return groups;
 }
 
-async function buildClones(project, files, info, say, customCols = new Map()) {
+async function buildClones(project, files, info, say, mod, customCols = new Map()) {
   const clones = new Map(); // object uid -> { id, name }
   const groups = texturedGroups(project);
   if (!groups.size) return clones;
@@ -394,7 +398,6 @@ async function buildClones(project, files, info, say, customCols = new Map()) {
     }
     return txdCache.get(name);
   };
-  let nextId = FIRST_FREE_ID;
   const ideObjs = info.ideObjs, ideParents = info.ideParents;
   for (const g of groups.values()) {
     const slots = await app.models.slots(g.model);
@@ -413,10 +416,9 @@ async function buildClones(project, files, info, say, customCols = new Map()) {
       chunks.set(target.toLowerCase(), made || renameNative(chunk, target));
     }
     if (!chunks.size) continue;
-    while (nextId > 0 && app.gd.models.has(nextId)) nextId--;
-    if (nextId < 18631) { info.texMissing += g.objects.length; continue; }
-    const id = nextId--;
-    const name = 'samsp_' + id;
+    const id = mod.alloc();
+    if (!id) { info.texMissing += g.objects.length; continue; }
+    const name = mod.name('_', id);
     const dff = await app.gd.readEntry(g.def.model.toLowerCase() + '.dff');
     if (!dff) { info.texMissing += g.objects.length; continue; }
     files.set(name + '.dff', new Uint8Array(dff));
@@ -424,7 +426,7 @@ async function buildClones(project, files, info, say, customCols = new Map()) {
     const col = customCols.get(g.def.model) || await findCollision(g.def.model, say);
     if (col) files.set(name + '.col', cloneColBlock(col.buffer, col.block, name, id)); else info.noCol++;
     ideObjs.push([id, name, name, g.def.drawDist, g.def.flags | 0].join(', '));
-    ideParents.push([name, g.def.txd].join(', '));
+    ideParents.push([name, mod.renamed.get(g.def.txd) || g.def.txd].join(', ')); // an imported model has another name in the mod
     for (const o of g.objects) clones.set(o.uid, { id, name });
     info.cloned++;
   }
@@ -434,9 +436,11 @@ async function buildClones(project, files, info, say, customCols = new Map()) {
 // The objects of SA-MP that the project uses (their definitions come from SAMP/SAMP.ide): the mod brings the model, the texture and the collision with
 // the names SA-MP gives them, and a model line for each, so they are mod objects like the ones imported from files
 export const isSampModel = (def) => !!def && /^samp[\/]/i.test(def.source || '');
+// (the pickups too: a pickup of a model the game does not have waited for it for ever). info.sampIds: the ones that went into the mod
 async function addSampModels(project, files, info, say) {
   const ids = new Set();
-  for (const o of project.objects) if (isSampModel(app.gd.models.get(o.model))) ids.add(o.model);
+  info.sampIds = new Set();
+  for (const o of [...project.objects, ...(project.pickups || [])]) if (isSampModel(app.gd.models.get(o.model))) ids.add(o.model);
   for (const id of ids) {
     const def = app.gd.models.get(id);
     const model = def.model.toLowerCase(), txd = String(def.txd || '').toLowerCase();
@@ -451,16 +455,20 @@ async function addSampModels(project, files, info, say) {
     if (col) files.set(model + '.col', cloneColBlock(col.buffer, col.block, model, id)); else info.noCol++;
     info.ideObjs.push([id, model, txd || 'generic', def.drawDist, def.flags | 0].join(', '));
     info.sampObjects = (info.sampObjects || 0) + 1;
+    info.sampIds.add(id);
   }
 }
 
-// The models imported from files that an object of the project uses: their files go into the mod, and a model line for each
-async function addCustomModels(project, files, info) {
+// The models imported from files that an object (or a pickup) of the project uses: their files go into the mod, and a model line for each. In the mod
+// each one has an id and a name of the mod (see modModels): mod.custom maps the id of the project to { id, name }
+async function addCustomModels(project, files, info, mod) {
   const cols = new Map();
-  const used = new Set(project.objects.map(o => o.model));
+  const used = new Set([...project.objects, ...(project.pickups || [])].map(o => o.model));
   for (const m of project.customModels || []) {
     if (!used.has(m.id)) continue;
-    const name = customName(m.id);
+    const id = mod.alloc();
+    if (!id) { info.failed++; continue; }
+    const name = mod.name('c', id);
     const get = async (file) => {
       const r = await fetch(`/gta/__sp/${m.asset}/${encodeURIComponent(file)}`);
       if (!r.ok) throw new Error(file);
@@ -475,14 +483,16 @@ async function addCustomModels(project, files, info) {
         const buf = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
         const blocks = listColBlocks(buf);
         if (blocks.length) {
-          const out = cloneColBlock(buf, blocks[0], name, m.id);
+          const out = cloneColBlock(buf, blocks[0], name, id);
           files.set(name + '.col', out);
-          cols.set(name, { buffer: out.buffer.slice(0), block: { pos: 0, size: out.length } });
+          cols.set(customName(m.id), { buffer: out.buffer.slice(0), block: { pos: 0, size: out.length } }); // by the name the editor gives it
           hasCol = true;
         }
       }
       if (!hasCol) info.noCol++;
-      info.ideObjs.push([m.id, name, m.txd ? name : 'generic', m.drawDist, 0].join(', '));
+      info.ideObjs.push([id, name, m.txd ? name : 'generic', m.drawDist, 0].join(', '));
+      mod.custom.set(m.id, { id, name });
+      if (m.txd) mod.renamed.set(customName(m.id), name);
       info.custom++;
     } catch (err) {
       info.failed++;
@@ -567,7 +577,7 @@ function writeIde(project, files, info) {
   if (!info.ideObjs.length) return;
   const ide = ['# Generated by SA Map Studio', 'objs', ...info.ideObjs, 'end'];
   if (info.ideParents.length) ide.push('txdp', ...info.ideParents, 'end');
-  const ideName = 'samsp_' + sanitize(project.name) + '.ide';
+  const ideName = 'samsp_' + modBase(project) + '.ide';
   files.set('data/maps/' + ideName, fromLatin1(ide.join('\r\n') + '\r\n'));
   info.dataLines.unshift(dataLine('IDE', ideName));
 }
@@ -605,12 +615,89 @@ function organize(files) {
   return out;
 }
 
+// The mod's own tag, from the permanent id of the project: `num` (a number that is not 0) for its shared variables, `str` (4 letters) for the names of its
+// files and models. Two mods never share a file name (the Modloader finds the files by name in every mod: "Minha casa" and "Minha_casa" had the same ones)
+export function modTag(project) {
+  let id = project.modId;
+  if (!MOD_ID_RE.test(id || '')) {
+    let h = 0x811c9dc5;
+    for (const ch of String(project.name || '')) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+    id = h.toString(16).padStart(8, '0').repeat(2);
+  }
+  return { num: parseInt(id.slice(0, 7), 16) || 1, str: (parseInt(id.slice(7, 15), 16) % 1679616).toString(36).padStart(4, '0') };
+}
+const modBase = (project) => sanitize(project.name) + '_' + modTag(project).str;
+
+// The ids of the models the mod brings (textured copies and imported models) are ids that no model of the game uses, and those are the same for every mod:
+// two mods with the same id swapped their models or brought the game down. Each mod starts at a place of its own among them (from its tag) and skips the
+// ids that the other mods of this editor installed in the game use (read from their IDE files)
+async function otherModsIds(project) {
+  const taken = new Set();
+  let mods = [];
+  try { mods = (await postJSON('/api/sp/list', {})).mods || []; } catch { return taken; }
+  const mine = new Set([modFolder(project.name), modFolder(project.installedAs || project.name)]);
+  for (const m of mods) {
+    if ((project.modId && m.id === project.modId) || (!m.id && mine.has(m.folder))) continue; // this project's own mod
+    for (const root of ['modloader/SA Map Studio/' + m.folder, 'modloader/' + m.folder]) {
+      const get = async (path) => {
+        try {
+          const r = await fetch('/gta/' + [...root.split('/'), ...path.split('/')].map(encodeURIComponent).join('/'), { cache: 'no-store' });
+          return r.ok ? await r.text() : null;
+        } catch { return null; }
+      };
+      const readme = await get('README.txt');
+      if (readme == null) continue;
+      for (const [, file] of readme.matchAll(/^IDE DATA\\MAPS\\(\S+)\s*$/gim)) {
+        const ide = (await get('objects/' + file)) ?? (await get('data/maps/' + file));
+        let objs = false;
+        for (const line of (ide || '').split(/\r?\n/)) {
+          const l = line.trim().toLowerCase();
+          if (l === 'objs') objs = true;
+          else if (l === 'end') objs = false;
+          else if (objs && parseInt(l, 10) > 0) taken.add(parseInt(l, 10));
+        }
+      }
+      break;
+    }
+  }
+  return taken;
+}
+async function modModels(project) {
+  const tag = modTag(project);
+  const taken = await otherModsIds(project);
+  const pool = [];
+  for (let id = 18631; id <= 19999; id++) pool.push(id);
+  for (let id = 18630; id >= 12000; id--) pool.push(id);
+  // free: no model of the game (the imported models of the project have ids of the editor only)
+  const free = pool.filter(id => { const def = app.gd.models.get(id); return !def || def.source === 'samsp-custom'; });
+  let k = free.length ? tag.num % free.length : 0, left = free.length;
+  return {
+    custom: new Map(), renamed: new Map(),
+    alloc() {
+      while (left-- > 0) {
+        const id = free[k];
+        k = (k + 1) % free.length;
+        if (!taken.has(id)) { taken.add(id); return id; }
+      }
+      return 0;
+    },
+    name: (kind, id) => 'samsp_' + tag.str + kind + id,
+  };
+}
+
 export async function buildFiles(project, say = () => {}) {
   const files = new Map(); // path inside the mod -> Uint8Array
   const info = { objects: 0, vehicles: 0, skipped: 0, buried: 0, patched: 0, failed: 0, moved: 0, dataLines: [], ideObjs: [], ideParents: [], custom: 0, cloned: 0, retexed: 0, handling: 0, weapons: 0, noCol: 0, texMissing: 0 };
-  const customCols = await addCustomModels(project, files, info);
+  const mod = await modModels(project);
+  const customCols = await addCustomModels(project, files, info, mod);
   await addSampModels(project, files, info, say);
-  const clones = await buildClones(project, files, info, say, customCols);
+  const clones = await buildClones(project, files, info, say, mod, customCols);
+  // The objects of an imported model take its id and name in the mod; one whose model could not go into the mod is left out (the game has no such model)
+  const lost = new Set();
+  for (const o of project.objects) {
+    if (app.gd.models.get(o.model)?.source !== 'samsp-custom' || clones.has(o.uid)) continue;
+    if (mod.custom.has(o.model)) clones.set(o.uid, mod.custom.get(o.model)); else lost.add(o);
+  }
   await addGameData(project, files, info);
   writeIde(project, files, info);
   const { byFile, moved, movedObjects } = removedTargets(project);
@@ -655,9 +742,9 @@ export async function buildFiles(project, say = () => {}) {
     } catch (err) { console.warn(file, err); }
   }
   // Objects that move, pickups, characters, radar icons, checkpoints and the world settings: scripts of the same mod
-  const base = sanitize(project.name);
-  const movers = project.objects.filter(o => isMover(o) && isMapObject(o) && !o.gate);
-  const gates = project.objects.filter(o => isGate(o) && isMapObject(o));
+  const base = modBase(project);
+  const movers = project.objects.filter(o => isMover(o) && isMapObject(o) && !o.gate && !lost.has(o));
+  const gates = project.objects.filter(o => isGate(o) && isMapObject(o) && !lost.has(o));
   const putScripts = (name, list, varsOf, make, budget) => {
     chunkByVars(list, varsOf, budget).forEach((part, k) => files.set(`samsp_${base}_${name}${k + 1}.cs`, make(part)));
   };
@@ -675,12 +762,25 @@ export async function buildFiles(project, say = () => {}) {
   const tag = (parseInt(String(project.modId || '').slice(0, 8), 16) || 0) % 46656;
   const key = () => ('Z' + tag.toString(36).padStart(3, '0') + (menuKeys++).toString(36).padStart(3, '0')).toUpperCase();
   const hint = gameText(t('Escolher: ~k~~PED_SPRINT~ Sair: ~k~~VEHICLE_ENTER_EXIT~'), true);
+  // An action: the message when the player cannot pay (in the language of the editor), and whether the vehicle it gives is one the game has (one that
+  // is not is left out of the action: see giveVehicleOk)
+  const poorText = gameText(t('Dinheiro insuficiente'), true);
+  info.badVehicles = 0;
+  const prep = (act) => {
+    if (!act) return act;
+    const out = { ...act, poorText };
+    if (act.type === 'vehicle') {
+      out.carOk = app.gd.models.get(act.model)?.type === 'cars';
+      if (!giveVehicleOk(act.model, out.carOk)) info.badVehicles++;
+    }
+    return out;
+  };
   const menuOf = (item) => {
     const m = item.menu;
     if (!m || !m.on || !m.options?.length) return null;
     return {
       title: m.title || gameText(t('Escolha')), titleKey: key(), hint,
-      options: m.options.slice(0, 12).map(o => ({ ...o, key: key(), row: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
+      options: m.options.slice(0, 12).map(o => ({ ...prep(o), key: key(), row: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
     };
   };
   putScripts('gates', gates.map(o => {
@@ -690,14 +790,28 @@ export async function buildFiles(project, say = () => {}) {
       time: g.time, closeDelay: g.closeDelay, horn: g.trigger === 'horn', vk: g.spKey, range: g.range, sound: g.sound,
     };
   }), () => GATE_VARS, gatesScript);
-  putScripts('pickups', (project.pickups || []).map(p => ({
-    model: p.model, type: p.type === 3 || p.model === 1212 ? 3 : 2, x: p.x, y: p.y, z: p.z, action: p.action, menu: menuOf(p),
+  // A pickup's model in the game: an imported model takes its id in the mod, a model of SA-MP must have gone into the mod; with none the script would wait
+  // for the model for ever (0: left out)
+  const pickupModel = (m) => {
+    const def = app.gd.models.get(m);
+    if (!def) return 0;
+    if (def.source === 'samsp-custom') return mod.custom.get(m)?.id || 0;
+    return isSampModel(def) && !info.sampIds.has(m) ? 0 : m;
+  };
+  const pickups = (project.pickups || []).filter(p => pickupModel(p.model));
+  info.badPickups = (project.pickups || []).length - pickups.length;
+  putScripts('pickups', pickups.map(p => ({
+    model: pickupModel(p.model), type: p.type === 3 || p.model === 1212 ? 3 : 2, x: p.x, y: p.y, z: p.z, action: prep(p.action), menu: menuOf(p),
   })), (p) => (usesMenuOrAction(p) ? 3 : 2), pickupsScript, 22);
   // As many scripts as needed: the NPCs that follow or chase (they share the door logic) go apart from the others, which fit more per script
-  const npcs = (project.actors || []).map(a => ({
+  const allNpcs = (project.actors || []).map(a => ({
     skin: a.skin, x: a.x, y: a.y, z: a.z, rz: a.rz, invulnerable: !!a.invulnerable, health: npcHealth(a.health), anim: a.weapon ? null : a.anim,
     weapon: a.weapon | 0, role: a.role || 'neutral', follow: !!a.follow, speedPct: Math.max(100, Math.min(200, Math.round(+a.speedPct || 100))), ammoInfinite: a.ammoInfinite !== false, ammo: Math.max(1, Math.round(+a.ammo || 100)), runFast: a.runFast !== false, respawn: a.invulnerable ? 0 : Math.max(0, +a.respawn || 0),
   }));
+  // A skin the singleplayer game does not have brought the game down: those NPCs are left out. An animation with a name too long for the game is not played
+  const npcs = allNpcs.filter(npcSkinOk);
+  info.badSkins = allNpcs.length - npcs.length;
+  info.longAnims = npcs.filter(n => !npcAnimOk(n.anim)).length;
   let guardCount = 0;
   for (const n of npcs) n.gid = n.role === 'guard' && guardCount < 300 ? guardCount++ : -1;
   for (const n of npcs) n.guardTotal = guardCount;
@@ -705,11 +819,14 @@ export async function buildFiles(project, say = () => {}) {
   let enemyCount = 0;
   for (const n of npcs) n.eid = n.role === 'enemy' && enemyCount < 300 ? enemyCount++ : -1;
   for (const n of npcs) n.enemyTotal = enemyCount;
+  // where this mod's guards and enemies start in the shared lists of the game (see modSlots)
+  const slots = modSlots(modTag(project).num, guardCount, enemyCount);
+  for (const n of npcs) Object.assign(n, slots);
   putScripts('npcs', npcs.filter(n => !npcTravels(n)), npcVars, actorsScript, ACTORS_BUDGET);
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
   // The game keeps a table of 128 places for the tasks scripts give to characters and fails when it is full: this script watches it (see taskGuardScript)
-  if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript());
-  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: c.action, menu: menuOf(c), blip: !!c.radarIcon })), () => 3, checkpointsScript, 21);
+  if (npcs.length) files.set(`samsp_${base}_npcs0.cs`, taskGuardScript(modTag(project).num));
+  putScripts('checkpoints', (project.checkpoints || []).map(c => ({ x: c.x, y: c.y, z: c.z, radius: c.size, action: prep(c.action), menu: menuOf(c), blip: !!c.radarIcon })), () => 3, checkpointsScript, 21);
   const w = project.world || {};
   putScripts('icons', (project.mapIcons || []).map(m => ({ sprite: m.markertype, x: m.x, y: m.y, z: m.z })), () => 1, blipsScript);
   if (worldSettings(project)) {
@@ -717,7 +834,7 @@ export async function buildFiles(project, say = () => {}) {
       spawn: project.spawns?.[0] ? { x: project.spawns[0].x, y: project.spawns[0].y, z: project.spawns[0].z, rot: project.spawns[0].rz } : null, weather: w.weather ?? -1, hour: w.hour ?? -1, minute: w.minute ?? 0,
     }));
   }
-  const created = buildNewIpl(project, clones, new Set([...movedObjects, ...movers, ...gates]), carsDone);
+  const created = buildNewIpl(project, clones, new Set([...movedObjects, ...movers, ...gates, ...lost]), carsDone);
   Object.assign(info, { objects: created.objects, vehicles: created.vehicles + carsDone.size, skipped: created.skipped });
   if (created.objects || created.vehicles || created.doors) {
     // The Modloader only loads an IPL that has a matching gta.dat line. A gta.dat file in the mod would REPLACE the game's own
@@ -729,7 +846,7 @@ export async function buildFiles(project, say = () => {}) {
 }
 
 // The prefix keeps it from ever having the name of one of the game's own IPL files
-export const newIplName = (project) => 'samsp_' + sanitize(project.name) + '.ipl';
+export const newIplName = (project) => 'samsp_' + modBase(project) + '.ipl';
 const sanitize = (name) => String(name || 'map').replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') || 'map';
 
 function toBase64(bytes) {
@@ -864,7 +981,15 @@ function setupSingleplayer() {
     const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project), id: app.project.modId, npcs: (app.project.actors || []).length, guards: (app.project.actors || []).filter(a => a.role === 'guard').length, enemies: (app.project.actors || []).filter(a => a.role === 'enemy').length } });
     if (!r.ok) throw new Error(r.error || 'erro');
     $('#spFiles').innerHTML = [...files].map(([p, b]) => `<li>${p.replace(/[<>&]/g, '')} · ${(b.length / 1024).toFixed(1)} KB</li>`).join('');
-    if (info.noCol) say(`${info.noCol} modelo(s) com textura nova ficaram sem colisão.`, 'warn');
+    // What the game could not take and was left out of the mod (each one brought the game down or stopped a script)
+    const left = [
+      info.badSkins && t('{0} NPC(s) com skin que não existe no singleplayer ficaram de fora do mod.', info.badSkins),
+      info.badVehicles && t('{0} ação(ões) "Dar um veículo" com um modelo que não é um carro do jogo foram ignoradas.', info.badVehicles),
+      info.badPickups && t('{0} pickup(s) com modelo que o jogo não tem ficaram de fora do mod.', info.badPickups),
+      info.longAnims && t('{0} NPC(s) ficaram sem animação: o nome dela passa de 15 letras e o jogo não a aceita.', info.longAnims),
+    ].filter(Boolean);
+    if (left.length) say(left.join(' '), 'warn');
+    else if (info.noCol) say(`${info.noCol} modelo(s) com textura nova ficaram sem colisão.`, 'warn');
     else if (info.texMissing) say(`${info.texMissing} troca(s) de textura não puderam ser aplicadas.`, 'warn');
     else if (info.failed) say(`${info.failed} arquivo(s) do jogo não puderam ser lidos; as remoções deles ficaram de fora.`, 'warn');
     else if (info.skipped) say(`Mod gerado. Itens sem equivalente no jogo original ficaram de fora: ${info.skipped}.`, 'warn');

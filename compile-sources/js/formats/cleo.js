@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // A tiny assembler for CLEO scripts (.cs): raw SCM bytecode, no header. It only knows what the Singleplayer mod's script needs.
 // Every instruction is: opcode (2 bytes), then its arguments, each with a type byte (1 = int32, 6 = float32, 3 = local variable).
 // A jump goes to an absolute offset inside the file, written as a NEGATIVE int32 (that is how CLEO scripts tell it from the main script's).
@@ -116,7 +117,13 @@ const RADAR_TRACES = 0xBA86F0, RADAR_TRACE_SIZE = 0x28, RADAR_TRACE_COUNT = 175;
 // Counts the free places of the table of tasks of the game (a place is free when its three fields that matter are zero, as the game itself tests it)
 // and leaves the number plus 1 in TASK_FREE, four times a second. Only for the game version of SA-MP (1.0 US).
 // It also watches who is against the player for the protectors (see RED_PEDS and ATK_VARS above)
-export function taskGuardScript() {
+// Every mod with NPCs has this script, and what it does is for the whole game: only one of them works at a time, the owner (OWNER_VAR holds the tag
+// of its mod, a number that is not 0, and OWNER_TIME the game's time of its last turn). The others wait while the owner's turns go on, and one of them
+// takes its place when they stop for a second (or the time is ahead of now: from before a saved game was loaded). Two of them both working undid each
+// other's horn (two turns on and off at each touch). A mod alone is always the owner. Uses 29 and 30
+const OWNER_VAR = 1011, OWNER_TIME = 1012;
+export function taskGuardScript(tag = 1) {
+  tag = (tag | 0) || 1;
   const a = new Asm();
   a.op(0x0000);
   waitPlayer(a);
@@ -128,6 +135,13 @@ export function taskGuardScript() {
   // the horn was down the last time)
   a.op(0x0AB3, int(RIDE_VAR), int(0)).op(0x0006, lv(25), int(0)).op(0x0006, lv(26), int(0));
   a.label('loop').op(0x0001, int(50));
+  a.op(0x01BD, lv(29)).op(0x0AB4, int(OWNER_VAR), lv(30));
+  a.op(0x00D6, int(0)).op(0x8039, lv(30), int(tag)).op(0x004D, ref('ow'));                       // this one is the owner
+  a.op(0x00D6, int(0)).op(0x8039, lv(30), int(0)).op(0x004D, ref('ow'));                         // nobody is
+  a.op(0x0AB4, int(OWNER_TIME), lv(30)).op(0x0A8F, lv(29), lv(30), lv(30));                       // 30 = how long since the owner's last turn
+  a.op(0x00D6, int(0)).op(0x0019, lv(30), int(-1)).op(0x004D, ref('ow'));                        // ahead of now
+  a.op(0x00D6, int(0)).op(0x0019, lv(30), int(1000)).op(0x004D, ref('loop'));                    // the owner is working: this one waits
+  a.label('ow').op(0x0AB3, int(OWNER_VAR), int(tag)).op(0x0AB3, int(OWNER_TIME), lv(29));
   a.op(0x00D6, int(0)).op(0x00DF, lv(PLAYER)).op(0x004D, ref('hz'));
   a.op(0x00D6, int(0)).op(0x0122, int(0)).op(0x004D, ref('hu'));
   a.op(0x00D6, int(0)).op(0x0039, lv(26), int(0)).op(0x004D, ref('hk'));                         // held down: once per touch
@@ -297,8 +311,25 @@ export function taskGuardScript() {
   return a.build();
 }
 
-// Plain letters only: the game's text takes no accents here
-export const ascii = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7e]/g, '?');
+// A text for the game: its font only draws plain letters. Cyrillic is written in Latin letters, accents go away
+const LATIN = { ł: 'l', Ł: 'L', ı: 'i', İ: 'I', đ: 'd', Đ: 'D', ß: 'ss', ø: 'o', Ø: 'O', æ: 'ae', Æ: 'AE', œ: 'oe', Œ: 'OE' };
+const CYR_MAP = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: '', ю: 'yu', я: 'ya', і: 'i', ї: 'yi', є: 'ye', ґ: 'g', ы: 'y', э: 'e' };
+export function plainLetters(text) {
+  let out = '';
+  for (const ch of String(text || '')) {
+    const low = ch.toLowerCase();
+    if (CYR_MAP[low] !== undefined) {
+      const l = CYR_MAP[low];
+      out += ch !== low && l ? l[0].toUpperCase() + l.slice(1) : l;
+    } else out += LATIN[ch] ?? ch;
+  }
+  return out.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+// Plain letters only: the game's text takes no accents here (what has no Latin letter becomes ?)
+export const ascii = (s) => plainLetters(s).replace(/[^\x20-\x7e]/g, '?');
+// The codes of a message (~r~, ~n~...): a ~ that does not open a code the game knows brought the game down (an odd number of them, a ~1~
+// that waits for a number): only the colors, ~h~ and ~n~ stay, the other ~ go
+export const gameCodes = (s) => String(s).replace(/~([rgbypwlshn])~|~/gi, (m, c) => (c ? '~' + c.toLowerCase() + '~' : ''));
 
 // Waits until the game has a player to talk about (before that its handle means nothing)
 function waitPlayer(a) {
@@ -355,9 +386,15 @@ export function nearScript(items, { radius, wait, spawn, manage, init, pre, save
 }
 
 // ---------------------------------------------------------------------------  what happens when a checkpoint or a pickup is used
+// The vehicle of the action "give a vehicle": a model of the game's vehicles (400 to 611), never a train (it needs its rails) nor a trailer (it has
+// no seat for the player). `carOk` is false when the game data says the model is not a vehicle
+const NOT_GIVEN = new Set([449, 537, 538, 569, 570, 590, 435, 450, 584, 591, 606, 607, 608, 610, 611]);
+export const giveVehicleOk = (model, carOk = true) => Number.isInteger(model) && model >= 400 && model <= 611 && !NOT_GIVEN.has(model) && carOk !== false;
 // act: the action (see makeAction in project.js); x, y, z: where the item is. `id` makes the labels of this copy unique.
 // T6 is left at 1 when the action happened and at 0 when it did not (the player could not pay).
 function emitAction(a, act, x, y, z, id, dist = 3) {
+  // A vehicle the game cannot make (not a car of the game: it fell at once) is not given, nor charged for: only the message stays
+  if (act.type === 'vehicle' && !giveVehicleOk(act.model, act.carOk)) act = { ...act, type: 'none', price: 0 };
   const u = (n) => n + id;
   const price = act.price | 0;
   if (price > 0) {
@@ -476,14 +513,15 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
   a.label(u('end'));
   if (act.text) {
     // ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ ~s~ in the text change its color, as in SA-MP
-    if (act.msgStyle === 'box') a.op(0x0ACA, str(ascii(act.text)));
-    else a.op(0x0ACD, str(ascii(act.text)), int(4000));
+    const msg = gameCodes(ascii(act.text));
+    if (act.msgStyle === 'box') a.op(0x0ACA, str(msg));
+    else a.op(0x0ACD, str(msg), int(4000));
   }
   a.op(0x0006, lv(T6), int(1));
   if (price > 0) {
     a.jump(u('paid'));
     a.label(u('poor'));
-    a.op(0x0ACD, str('Dinheiro insuficiente'), int(3000));
+    a.op(0x0ACD, str(gameCodes(ascii(act.poorText || 'Dinheiro insuficiente'))), int(3000));                // poorText: in the language of the editor
     a.op(0x0006, lv(T6), int(0));
     a.label(u('paid'));
   }
@@ -652,6 +690,7 @@ export function pickupsScript(items) {
 // checkpoints: { x, y, z, radius, action }. The red cylinder of the missions of the game (a script sphere, the one the game draws for the
 // places of its missions) with a point on the radar; with an action it happens when the player gets in.
 // The game only draws 16 spheres at a time, so each one is made when the player is near (160 m) and removed when he goes away (220 m)
+const SPHERES = 0xA91268, SPHERE_SIZE = 0x18, SPHERE_COUNT = 16, SPHERES_MAX = 12;
 export function checkpointsScript(items) {
   const a = new Asm();
   a.op(0x0000);
@@ -718,6 +757,10 @@ export function checkpointsScript(items) {
   });
   a.op(0x0006, lv(FLAG), int(0));
   a.label('fl');
+  // The game has 16 script spheres (CTheScripts::ScriptSphereArray, 0xA91268: 16 of 0x18 bytes, the first byte says it is in use) for its missions and
+  // every script, and it does not check that one is free: a 17th writes over what comes after it. Before a sphere is made the ones in use are
+  // counted, and it is made only while fewer than SPHERES_MAX are (the rest stay for the missions); otherwise it waits, at `wait`. Uses T0 to T3
+  const sphereRoom = (wait) => a.op(0x0050, ref('sph')).op(0x00D6, int(0)).op(0x001B, int(SPHERES_MAX), lv(T1)).op(0x004D, ref(wait));
   items.forEach((e, i) => {
     const base = e.base;
     // state 0: no sphere; 1: waiting for the player; 2: the player is inside; 3: used up
@@ -726,11 +769,13 @@ export function checkpointsScript(items) {
     a.label('t' + i);
     a.op(0x00D6, int(0)).op(0x0039, lv(base), int(0)).op(0x004D, ref('m' + i));
     a.op(0x00D6, int(0)).op(0x00FE, lv(PLAYER), flt(e.x), flt(e.y), flt(e.z), flt(160), flt(160), flt(160), int(0)).op(0x004D, ref('n' + i));
+    sphereRoom('n' + i);
     a.op(0x03BC, flt(e.x), flt(e.y), flt(e.z), flt(Math.max(0.5, e.radius)), lv(base + 2));
     a.op(0x0006, lv(base), int(1)).jump('n' + i);
     a.label('m' + i);
-    // the sphere was taken away for the save while the player was inside: it comes back as it was
+    // the sphere was taken away for the save while the player was inside: it comes back as it was (when there is room; it waits otherwise)
     a.op(0x00D6, int(0)).op(0x0039, lv(base), int(5)).op(0x004D, ref('m5' + i));
+    sphereRoom('n' + i);
     a.op(0x03BC, flt(e.x), flt(e.y), flt(e.z), flt(Math.max(0.5, e.radius)), lv(base + 2));
     a.op(0x0006, lv(base), int(2)).jump('n' + i);
     a.label('m5' + i);
@@ -767,6 +812,19 @@ export function checkpointsScript(items) {
     a.label('n' + i);
   });
   a.jump('loop');
+  // How many script spheres of the game are in use: T1 (T0 the address, T2 the place, T3 its first byte)
+  a.label('sph');
+  a.op(0x0006, lv(T0), int(SPHERES)).op(0x0006, lv(T1), int(0)).op(0x0006, lv(T2), int(0));
+  a.label('spl');
+  a.op(0x0A8D, lv(T0), int(1), int(0), lv(T3));
+  a.op(0x00D6, int(0)).op(0x0039, lv(T3), int(0)).op(0x004D, ref('spu'));
+  a.jump('spn');
+  a.label('spu').op(0x000A, lv(T1), int(1));
+  a.label('spn');
+  a.op(0x000A, lv(T0), int(SPHERE_SIZE)).op(0x000A, lv(T2), int(1));
+  a.op(0x00D6, int(0)).op(0x001B, int(SPHERE_COUNT), lv(T2)).op(0x004D, ref('spx'));
+  a.jump('spl');
+  a.label('spx').op(0x0051);
   // Just before a save (see saveGuard): the points on the radar and the spheres go; the loop makes them again afterwards
   a.label('sv');
   items.forEach((e, i) => {
@@ -847,6 +905,11 @@ const ENEMY_VARS = 100; // the shared variables (100 + enemy) where each enemy N
 const TARGET_VARS = 400; // the shared variables (400 + guard) where each guard leaves who it is fighting: no more than two guards fight the same one
 const PH_HEALTH = 1001, PH_ARMOUR = 1002, CHAOS_VAR = 1005, CHAOS_TIME = 1006; // the health and the armour the player had a moment ago
 const GUARD_VARS = 700; // the shared variables of CLEO (0 to 1023) where the guards leave their characters
+// The shared variables are the same for every mod in the game: each mod keeps its guards (and their targets) and its enemies from a place of its own
+// in those lists of 300, chosen by its tag (from the permanent id of the project), so the NPCs of two mods do not write over each other. A mod alone
+// works the same wherever its place is. `guards` and `enemies`: how many it numbers (up to 300 each)
+const LIST_SLOTS = 300;
+export const modSlots = (tag, guards, enemies) => ({ gbase: (tag >>> 0) % (LIST_SLOTS - guards + 1), ebase: Math.floor((tag >>> 0) / 7) % (LIST_SLOTS - enemies + 1) });
 export const ACTORS_BUDGET = 20;
 const DM_EMPTY = 65542; // the empty decision maker template of the game (m_empty.ped): no response to any event
 // The health of a NPC: 100 by default, 1 the least. The game keeps it as a float, and the higher it is the bigger the damages lost in the
@@ -856,7 +919,8 @@ export const NPC_HEALTH_MAX = 100000;
 export const npcHealth = (v) => { const n = Math.round(+v); return Number.isFinite(n) && v !== '' && v != null ? Math.max(1, Math.min(NPC_HEALTH_MAX, n)) : 100; };
 
 // A NPC that fights or follows keeps one more variable (who it is fighting). The ones that follow or chase also share variables with the door logic, so fewer fit in a script
-export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 8 : 6) : e.role !== 'neutral' && e.follow ? 4 : 3);
+// An invulnerable one that follows or chases keeps one more, the last: the vehicle it made invulnerable (it is made normal again when the NPC leaves it)
+export const npcVars = (e) => (e.role === 'guard' ? (e.follow ? 8 : 6) : e.role !== 'neutral' && e.follow ? 4 : 3) + (e.invulnerable && npcTravels(e) ? 1 : 0);
 // The kind of character the NPCs are (a gang member): the game does not count a crime against gang members, so running one over or hurting one
 // brings no stars (the civilians, type 4, do)
 const NPC_TYPE = 16;
@@ -898,8 +962,13 @@ function playAnim(a, e, h, tag) {
   if (!permanent) a.op(0x04EF, strn(e.anim.lib));
 }
 
+// A skin the singleplayer game has as a ped (the story characters and the SA-MP ones are not there: asking for the model waited for ever, or the
+// game fell), and an animation whose names fit the game's own text (15 letters: a longer one cannot be written for 0605)
+export const npcSkinOk = (e) => spSkinOk(e.skin);
+export const npcAnimOk = (anim) => !anim || (String(anim.lib || '').length <= 15 && String(anim.name || '').length <= 15);
+
 export function actorsScript(items) {
-  const list = items.map(e => ({ ...e, vars: npcVars(e) }));
+  const list = items.filter(npcSkinOk).map(e => ({ ...e, anim: npcAnimOk(e.anim) ? e.anim : null, vars: npcVars(e) }));
   // The NPCs keep the variables below 20 (ACTORS_BUDGET): 20 to 23 are T10 to T7. A script of 24 that mixed protectors with other NPCs had their
   // characters written over by the protectors' work and the game fell at the next order given to them (found in the game: a crash at 0x40491E)
   if (list.reduce((n, e) => n + e.vars, 0) > ACTORS_BUDGET) throw new Error('actors_budget');
@@ -914,7 +983,7 @@ export function actorsScript(items) {
       a.op(0x00A0, lv(PLAYER), lv(T1), lv(T2), lv(T3));
     },
     spawn: (a, e, i, base) => {
-      const h = base + 1;
+      const h = base + 1, gb = e.gbase | 0, eb = e.ebase | 0;
       // CJ (skin 0) is the player's own model: it is always in memory (asking for it and letting it go would take it away from the player)
       // (BUILD_PLAYER_MODEL takes the number of the player, 0, not the handle of his character: with the handle it took the game down)
       if (e.skin !== 0) loadModel(a, e.skin, 'a' + i);
@@ -951,15 +1020,33 @@ export function actorsScript(items) {
       }
       if (e.role !== 'neutral') a.op(0x04D8, lv(h), int(0));                                    // it does not drown in the water: it swims
       if (e.role !== 'neutral' && e.follow) a.op(0x0588, lv(h), int(1));                        // the ground stays loaded around it, wherever it walks
-      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(GUARD_VARS + e.gid), lv(h));        // so the other guards know it is an ally
-      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
-      if (e.role === 'enemy' && e.eid >= 0) a.op(0x0AB3, int(ENEMY_VARS + e.eid), lv(h));
+      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(GUARD_VARS + gb + e.gid), lv(h));        // so the other guards know it is an ally
+      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
+      if (e.role === 'enemy' && e.eid >= 0) a.op(0x0AB3, int(ENEMY_VARS + eb + e.eid), lv(h));
       if (!e.weapon && e.anim) playAnim(a, e, h, 's' + i);
     },
     manage: (a, e, i, base) => {
       const st = base, h = base + 1, cnt = base + 2, tgt = base + 3, tt = base + 4, pd = base + 5, done = 'n' + i;
+      const gb = e.gbase | 0, eb = e.ebase | 0;   // where the guards and the enemies of this mod start in the shared lists (see modSlots)
       const thp = base + (e.follow ? 7 : 5);   // a protector: the health its target had when it took it (or when it last saw it hurt)
+      // That health is kept below the bits of what it saw (SEEN_HP): a target with 65536 or more ran into them, and the protector never let it go
+      const hpCap = (v, tag) => {
+        a.op(0x00D6, int(0)).op(0x0019, lv(v), int(SEEN_HP)).op(0x004D, ref(L(tag)));
+        a.op(0x0006, lv(v), int(SEEN_HP));
+        a.label(L(tag));
+      };
       const travel = e.role === 'guard' && !!e.follow;
+      // the vehicle an invulnerable NPC that follows or chases made invulnerable (see npcVars), and how it is made normal again (when it still exists)
+      const cv = e.invulnerable && npcTravels(e) ? base + npcVars(e) - 1 : -1;
+      const carBack = (tag) => {
+        a.op(0x00D6, int(0)).op(0x8039, lv(cv), int(0)).op(0x004D, ref(L('cb' + tag)));
+        a.op(0x00D6, int(0)).op(0x056E, lv(cv)).op(0x004D, ref(L('cc' + tag)));
+        a.op(0x02AC, lv(cv), int(0), int(0), int(0), int(0), int(0));
+        a.op(0x03F5, lv(cv), int(1));
+        a.op(0x053F, lv(cv), int(1));
+        a.label(L('cc' + tag)).op(0x0006, lv(cv), int(0));
+        a.label(L('cb' + tag));
+      };
       // goes to where the player is, running (6) or sprinting (7): TASK_GOTO_CHAR has no speed, so this one is used (the player's coordinates are in T1..T3)
       // Each protector has its own place around the player (a ring of 5 m or more, by its number), so they never pile up on the same point
       // (more than 300 protectors have no number of their own: the one in the list of the script is used, so two never share the same place)
@@ -995,7 +1082,7 @@ export function actorsScript(items) {
         a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(e.gid)).op(0x004D, ref(L(pre + 'cj')));
         a.jump(L(pre + 'cx'));
         a.label(L(pre + 'cj'));
-        a.op(0x0A8E, int(TARGET_VARS), lv(T6), lv(T5));
+        a.op(0x0A8E, int(TARGET_VARS + gb), lv(T6), lv(T5));
         a.op(0x0AB4, lv(T5), lv(T5));
         a.op(0x00D6, int(0)).op(0x0039, lv(T5), lv(T4)).op(0x004D, ref(L(pre + 'cx')));
         a.op(0x000A, lv(T0), int(1));
@@ -1044,7 +1131,7 @@ export function actorsScript(items) {
           a.op(0x0006, lv(T6), int(0));
           a.label(L(pre + 'me'));
           a.op(0x00D6, int(0)).op(0x001B, int(e.enemyTotal), lv(T6)).op(0x004D, ref(skip));
-          a.op(0x0A8E, int(ENEMY_VARS), lv(T6), lv(T0)).op(0x0AB4, lv(T0), lv(T0));
+          a.op(0x0A8E, int(ENEMY_VARS + eb), lv(T6), lv(T0)).op(0x0AB4, lv(T0), lv(T0));
           a.op(0x00D6, int(0)).op(0x8039, lv(T4), lv(T0)).op(0x004D, ref(L(pre + 'mk')));
           a.op(0x000A, lv(T6), int(1));
           a.jump(L(pre + 'me'));
@@ -1054,7 +1141,7 @@ export function actorsScript(items) {
         a.op(0x0006, lv(T6), int(0));
         a.label(L(pre + 'ga'));
         a.op(0x00D6, int(0)).op(0x001B, int(e.guardTotal), lv(T6)).op(0x004D, ref(L(pre + 'gk')));
-        a.op(0x0A8E, int(GUARD_VARS), lv(T6), lv(T0));
+        a.op(0x0A8E, int(GUARD_VARS + gb), lv(T6), lv(T0));
         a.op(0x0AB4, lv(T0), lv(T0));
         a.op(0x00D6, int(0)).op(0x0039, lv(T4), lv(T0)).op(0x004D, ref(L(pre + 'gb')));
         a.jump(skip);
@@ -1219,13 +1306,13 @@ export function actorsScript(items) {
       a.op(0x0006, lv(st), int(0)).op(0x0006, lv(cnt), int(0));
       if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
       if (e.role === 'guard') a.op(0x0006, lv(tt), int(0));
-      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(GUARD_VARS + e.gid), int(0)).op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
-      if (e.role === 'enemy' && e.eid >= 0) a.op(0x0AB3, int(ENEMY_VARS + e.eid), int(0));
+      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(GUARD_VARS + gb + e.gid), int(0)).op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
+      if (e.role === 'enemy' && e.eid >= 0) a.op(0x0AB3, int(ENEMY_VARS + eb + e.eid), int(0));
       a.jump(done);
       a.label(L('sz'));
       // dead: it stays dead, or comes back after the time asked for
       a.op(0x00D6, int(0)).op(0x0118, lv(h)).op(0x004D, ref(L('av')));
-      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+      if (e.role === 'guard' && e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
       if (e.respawn > 0 && !e.invulnerable) {
         a.op(0x000A, lv(cnt), int(1));
         a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(Math.round(e.respawn * 8))).op(0x004D, ref(done));
@@ -1234,6 +1321,7 @@ export function actorsScript(items) {
         if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
         if (e.role === 'guard') a.op(0x0006, lv(tt), int(0));
       } else {
+        if (cv >= 0) carBack('n3');
         a.op(0x0006, lv(st), int(9));                                                          // dead for good
       }
       a.jump(done);
@@ -1374,8 +1462,26 @@ export function actorsScript(items) {
         a.op(0x0A8E, lv(T0), int(0x5A0 + weaponSlot(e.weapon) * 28 + 8), lv(T0));
         a.op(0x0A8C, lv(T0), int(4), int(99), int(0));
       }
-      // an invulnerable NPC makes the car it is in invulnerable too
-      if (e.invulnerable) {
+      // an invulnerable NPC makes the car it is in invulnerable too. One that follows or chases (the only ones that get into vehicles) keeps that
+      // vehicle (cv) and makes it normal again once it is out of it (it was invulnerable for ever, the player's car too)
+      if (e.invulnerable && cv >= 0) {
+        a.op(0x00D6, int(0)).op(0x00DF, lv(h)).op(0x004D, ref(L('nj')));
+        a.op(0x03C0, lv(h), lv(T0));
+        a.op(0x00D6, int(0)).op(0x0039, lv(cv), lv(T0)).op(0x004D, ref(L('nk')));
+        a.jump(L('nm'));
+        a.label(L('nk'));
+        carBack('n1');                                                                            // it went into another one
+        a.op(0x0085, lv(cv), lv(T0));
+        a.label(L('nm'));
+        a.op(0x02AC, lv(T0), int(1), int(1), int(1), int(1), int(1));
+        a.op(0x03F5, lv(T0), int(0));
+        a.op(0x053F, lv(T0), int(0));
+        a.op(0x0224, lv(T0), int(1000));
+        a.jump(L('ni'));
+        a.label(L('nj'));
+        carBack('n2');
+        a.label(L('ni'));
+      } else if (e.invulnerable) {
         a.op(0x00D6, int(0)).op(0x00DF, lv(h)).op(0x004D, ref(L('ni')));
         a.op(0x03C0, lv(h), lv(T0));
         a.op(0x02AC, lv(T0), int(1), int(1), int(1), int(1), int(1));
@@ -1432,7 +1538,7 @@ export function actorsScript(items) {
         a.op(0x0006, lv(st), int(1)).op(0x0006, lv(cnt), int(0));                                // it got near by itself
         a.jump(L('fn'));
         a.label(L('fa'));
-        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
         a.op(0x00D6, int(0)).op(0x0039, lv(st), int(3)).op(0x004D, ref(L('fs')));
         // Checked every five seconds. In another area of the game (an interior): taken at once. In the same area: only when it is not getting closer
         // (more than 1 m closer than at the last check): stuck, or left behind. One that is running toward the player is left alone
@@ -1497,7 +1603,7 @@ export function actorsScript(items) {
         if (npcVars(e) >= 4) a.op(0x0006, lv(tgt), int(0));
         if (e.role === 'guard') {
           a.op(0x0006, lv(tt), int(0));                                                          // the teleport is a reset: no target, no mark
-          if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+          if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
         }
         a.jump(done);
         a.label(L('fs'));
@@ -1565,7 +1671,7 @@ export function actorsScript(items) {
         a.label(L('pz'));
         a.op(0x0687, lv(h));
         a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0)).op(0x0006, lv(cnt), int(0));
-        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
         a.jump(done);
         a.label(L('pk'));
         // A protector never fights a character of the story on its own either (the game makes it hit back when one of them hurts it or shoots
@@ -1594,7 +1700,7 @@ export function actorsScript(items) {
         a.label(L('sc'));
         a.op(0x0687, lv(h));
         a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0)).op(0x0006, lv(cnt), int(0));
-        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
         // and it looks for a target of its own now: leaving here, a protector the game kept giving such an order never looked for one and
         // stood still beside the enemies
         a.label(L('sk'));
@@ -1611,7 +1717,7 @@ export function actorsScript(items) {
           a.op(0x00D6, int(0)).op(0x0AE2, lv(T1), lv(T2), lv(T3), flt(60), lv(T5), int(1), lv(T4)).op(0x004D, ref(L('hk')));
           a.op(0x00D6, int(0)).op(0x0137, lv(T4), int(497)).op(0x004D, ref(L('hn')));
           a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0));
-          if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+          if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
           a.op(0x000A, lv(cnt), int(1));
           a.op(0x00D6, int(0)).op(0x0019, lv(cnt), int(8)).op(0x004D, ref(done));
           a.op(0x0006, lv(cnt), int(0));
@@ -1718,7 +1824,7 @@ export function actorsScript(items) {
         const searchPass = (P, lim, endLabel) => {
           limit = lim;
           // The enemy NPCs of the mod are always known (they do not have to be shooting at that moment)
-          if (e.enemyTotal > 0) listPass(P + 'e', ENEMY_VARS, e.enemyTotal, false, false);
+          if (e.enemyTotal > 0) listPass(P + 'e', ENEMY_VARS + eb, e.enemyTotal, false, false);
           // The characters the game marks red against the player (on them or on their vehicle), even before they attack
           listPass(P + 'r', RED_PEDS, RED_PEDS_N, false, true);
           // Whoever shot at the player or at his vehicle lately, or hurt them, whether it did any damage or not
@@ -1766,7 +1872,7 @@ export function actorsScript(items) {
         a.label(L('pass2'));
         searchPass('b', -1, L('gd'));
         a.label(L('gd'));
-        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), lv(tgt));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), lv(tgt));
         // How long it has had this target: after TARGET_LIMIT without hurting it, it lets it go (and clears its tasks) so it is never stuck on one
         a.op(0x01BD, lv(T4));
         a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gtm')));
@@ -1815,6 +1921,7 @@ export function actorsScript(items) {
         a.op(0x00A0, lv(h), lv(T0), lv(T6), lv(T7)).op(0x00A0, lv(tgt), lv(T8), lv(T9), lv(T10));
         a.op(0x00D6, int(0)).op(0x06BD, lv(T0), lv(T6), lv(T7), lv(T8), lv(T9), lv(T10), int(1), int(0), int(0), int(0), int(0)).op(0x004D, ref(L('gtg')));
         a.op(0x0226, lv(tgt), lv(T6));
+        hpCap(T6, 'hc1');
         a.op(0x0B10, lv(thp), int(SEEN_HIT), lv(T5));
         a.op(0x00D6, int(0)).op(0x0039, lv(T5), int(0)).op(0x004D, ref(L('gtk')));
         a.op(0x0B10, lv(thp), int(SEEN_SHOT), lv(T5));
@@ -1841,7 +1948,7 @@ export function actorsScript(items) {
         a.label(L('gtj')).op(0x0AB3, int(IGN_IDX), lv(T5));
         a.label(L('gtg'));
         a.op(0x0006, lv(tgt), int(0)).op(0x0006, lv(tt), int(0));
-        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + e.gid), int(0));
+        if (e.gid >= 0) a.op(0x0AB3, int(TARGET_VARS + gb + e.gid), int(0));
         a.op(0x00D6, int(0)).op(0x0449, lv(h)).op(0x004D, ref(L('gt0')));
         a.jump(done);                                                                             // sitting in a vehicle: its tasks are not cleared (it would be taken out)
         a.label(L('gt0'));
@@ -1851,6 +1958,7 @@ export function actorsScript(items) {
         a.op(0x0085, lv(tt), lv(T4));
         a.op(0x0006, lv(thp), int(0)).op(0x00D6, int(0)).op(0x056D, lv(tgt)).op(0x004D, ref(L('gtn')));
         a.op(0x0226, lv(tgt), lv(thp));
+        hpCap(thp, 'hc2');
         a.label(L('gtn'));
         a.op(0x00D6, int(0)).op(0x0039, lv(tgt), int(0)).op(0x004D, ref(L('gx')));
         a.jump(L('gu'));
@@ -2140,7 +2248,7 @@ export function worldScript(world) {
       // The game chooses where the player comes back when he dies, so the spawn point is set as the next restart all the time,
       a.op(0x016E, flt(s.x), flt(s.y), flt(s.z), flt(s.rot));
       // Backup for when the game still takes him to a hospital: he was not playing (dead or arrested) and is back: he is taken to the spawn point
-      a.op(0x00D6, int(0)).op(0x0256, lv(PLAYER)).op(0x004D, ref('pd'));
+      a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref('pd'));                               // (the number of the player, not his character)
       a.op(0x00D6, int(0)).op(0x0039, lv(10), int(1)).op(0x004D, ref('alive'));
       a.op(0x0006, lv(10), int(0));
       a.op(0x04E4, flt(s.x), flt(s.y));

@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer inspector parts: what a NPC carries and does, and what happens when a checkpoint or a pickup is used.
 import { app, $, esc, toast } from './common.js';
 import { t } from './i18n.js';
 import { makeAction, makeMenu, menuText, MENU_BAD_CHARS, MENU_MAX, MENU_TEXT_MAX, STAT_RANGE, npcLimit, npcRole, spSkinOk } from '../editor/project.js';
 import { NPC_WEAPONS, WEAPONS, optionsHtml } from '../world/spWeapons.js';
-import { npcHealth, NPC_HEALTH_MAX } from '../formats/cleo.js';
+import { npcHealth, NPC_HEALTH_MAX, plainLetters } from '../formats/cleo.js';
 
 const isSp = () => app.project?.mode === 'sp';
 
@@ -99,21 +100,8 @@ const field = (id, label, value, attrs = {}) => `<label class="field">${label}<i
 
 export const actionName = (type) => (TYPES.find(([v]) => v === type) || TYPES[0])[1];
 
-// A text for the game (menus): its font only draws plain letters. Cyrillic is written in Latin letters, accents go away;
+// A text for the game (menus): its font only draws plain letters. Cyrillic is written in Latin letters, accents go away (plainLetters);
 // `codes` keeps the game's ~k~ codes (for the help text)
-const LATIN = { ł: 'l', Ł: 'L', ı: 'i', İ: 'I', đ: 'd', Đ: 'D', ß: 'ss', ø: 'o', Ø: 'O', æ: 'ae', Æ: 'AE', œ: 'oe', Œ: 'OE' };
-const CYR_MAP = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: '', ю: 'yu', я: 'ya', і: 'i', ї: 'yi', є: 'ye', ґ: 'g', ы: 'y', э: 'e' };
-function plainLetters(text) {
-  let out = '';
-  for (const ch of String(text || '')) {
-    const low = ch.toLowerCase();
-    if (CYR_MAP[low] !== undefined) {
-      const l = CYR_MAP[low];
-      out += ch !== low && l ? l[0].toUpperCase() + l.slice(1) : l;
-    } else out += LATIN[ch] ?? ch;
-  }
-  return out.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
 export function gameText(text, codes = false) {
   const out = plainLetters(text);
   return codes ? out.replace(/[^\x20-\x7e]/g, '').trim() : out.replace(MENU_BAD_CHARS, '').replace(/\s+/g, ' ').trim();
