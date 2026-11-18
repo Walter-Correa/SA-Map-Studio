@@ -7,7 +7,7 @@
 import { app, $, esc, store, toast, postJSON, showConfirm, showAlert, plural } from './common.js';
 import { t, getLanguage } from './i18n.js';
 import { quatOfItem } from '../editor/editor.js';
-import { Project, MOD_ID_RE, newModId, npcLimit, NPC_LIMIT_ENEMIES, NPC_LIMIT_GUARDS, NPC_LIMIT_NEUTRAL } from '../editor/project.js';
+import { Project, MOD_ID_RE, newModId, MENU_TEXT_MAX, npcLimit, NPC_LIMIT_ENEMIES, NPC_LIMIT_GUARDS, NPC_LIMIT_NEUTRAL } from '../editor/project.js';
 import { isText, isNoneTexture, keepsTexture, parseColor } from '../editor/materials.js';
 import { splitTxd, renameNative, recolorNative, buildTxd, listColBlocks, cloneColBlock } from '../formats/rwwrite.js';
 import { saveNow, listProjects } from './projects.js';
@@ -17,7 +17,7 @@ import { initCustomModels, customName } from './customModels.js';
 import { initDataDialog } from './dataDialog.js';
 import { startSpWords } from './spWords.js';
 import { actionName, gameText } from './spInspector.js';
-import { usesMenuOrAction, vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels, npcHealth, npcSkinOk, npcAnimOk, modSlots, giveVehicleOk } from '../formats/cleo.js';
+import { usesMenuOrAction, vehiclesScript, pickupsScript, actorsScript, moversScript, checkpointsScript, blipsScript, taskGuardScript, worldScript, chunkByVars, ACTORS_BUDGET, npcVars, npcTravels, npcHealth, npcSkinOk, npcAnimOk, modSlots, tagSlots, giveVehicleOk } from '../formats/cleo.js';
 import { gatesScript, GATE_VARS } from '../formats/cleoGates.js';
 import { isGate, gateOpenRot } from '../editor/gates.js';
 
@@ -125,9 +125,12 @@ export const usesCleo = (project) => project.vehicles.some(v => app.gd.models.ge
 // Any NPC needs it too: the script that watches the game for them (taskGuardScript) uses its events
 export const usesCleoPlus = (project) => project.pickups?.length > 0 || project.mapIcons?.length > 0 || project.checkpoints?.length > 0 || project.objects.some(isMover) || (project.actors || []).length > 0;
 
+// The version of what the editor writes into a mod: it goes up when the scripts or files made from the same project change, so the mods
+// installed by an older version show as out of date
+const MOD_FORMAT = 2;
 // A short fingerprint of what goes into the mod: the installed mod remembers it, to tell whether it is up to date
 export function projectHash(project) {
-  let text = JSON.stringify([project.objects, project.vehicles, project.removed, project.doors || [], project.actors, project.pickups, project.mapIcons, project.checkpoints, project.world, project.customModels, project.retex, project.handling, project.drawDist, project.weapons, project.spawns]);
+  let text = 'v' + MOD_FORMAT + JSON.stringify([project.objects, project.vehicles, project.removed, project.doors || [], project.actors, project.pickups, project.mapIcons, project.checkpoints, project.world, project.customModels, project.retex, project.handling, project.drawDist, project.weapons, project.spawns]);
   const items = [...(project.pickups || []), ...(project.checkpoints || [])];
   const menus = items.some(i => i.menu?.on);
   // the texts of the menus and the "not enough money" message are in the language of the editor
@@ -137,6 +140,9 @@ export function projectHash(project) {
   for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0') + '-' + text.length.toString(16);
 }
+// The hash an installed mod remembers carries, after a +, where its guards and enemies are in the shared lists (see slotsOf): only the part
+// before it is the fingerprint of the project
+const hashPart = (h) => String(h || '').split('+')[0];
 // The folder name the server gives to a mod (same rule as its safe_name)
 const modFolder = (name) => (String(name).replace(/[^\p{L}\p{N}_\-. ()]+/gu, '_').replace(/^[ .]+|[ .]+$/g, '').slice(0, 80) || 'sem_nome');
 
@@ -662,6 +668,31 @@ async function otherModsIds(project) {
   }
   return taken;
 }
+// Where the guards and the enemies of the other mods installed in the game are in the shared lists of the game (see modSlots): what each one
+// wrote after its hash when it was built (base.count of the guards, then of the enemies), or (built before that) the place of its tag
+async function otherModsSlots(project) {
+  const taken = { g: [], e: [] };
+  let mods = [];
+  try { mods = (await postJSON('/api/sp/list', {})).mods || []; } catch { return taken; }
+  const mine = new Set([modFolder(project.name), modFolder(project.installedAs || project.name)]);
+  for (const m of mods) {
+    if ((project.modId && m.id === project.modId) || (!m.id && mine.has(m.folder))) continue; // this project's own mod
+    const at = /\+(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(m.hash || '');
+    if (at) {
+      if (+at[2]) taken.g.push([+at[1], +at[2]]);
+      if (+at[4]) taken.e.push([+at[3], +at[4]]);
+      continue;
+    }
+    const g = Math.min(300, m.guards | 0), e = Math.min(300, m.enemies | 0);
+    if (!g && !e) continue;
+    const s = tagSlots(modTag({ modId: m.id, name: m.name }).num, g, e);
+    if (g) taken.g.push([s.gbase, g]);
+    if (e) taken.e.push([s.ebase, e]);
+  }
+  return taken;
+}
+// What this mod writes after its hash (see hashPart): where its guards and enemies are, for the mods built after it
+const slotsOf = (info) => (info?.slots && (info.slots.guards || info.slots.enemies) ? `+${info.slots.gbase}.${info.slots.guards}.${info.slots.ebase}.${info.slots.enemies}` : '');
 async function modModels(project) {
   const tag = modTag(project);
   const taken = await otherModsIds(project);
@@ -779,8 +810,8 @@ export async function buildFiles(project, say = () => {}) {
     const m = item.menu;
     if (!m || !m.on || !m.options?.length) return null;
     return {
-      title: m.title || gameText(t('Escolha')), titleKey: key(), hint,
-      options: m.options.slice(0, 12).map(o => ({ ...prep(o), key: key(), row: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type) + (o.price > 0 ? ` $${o.price}` : '') })),
+      title: (m.title || gameText(t('Escolha'))).slice(0, MENU_TEXT_MAX), titleKey: key(), hint,
+      options: m.options.slice(0, 12).map(o => ({ ...prep(o), key: key(), row: ((o.label || '').trim() || gameText(t(actionName(o.type))) || o.type).slice(0, MENU_TEXT_MAX) + (o.price > 0 ? ` $${o.price}` : '') })),
     };
   };
   putScripts('gates', gates.map(o => {
@@ -820,7 +851,9 @@ export async function buildFiles(project, say = () => {}) {
   for (const n of npcs) n.eid = n.role === 'enemy' && enemyCount < 300 ? enemyCount++ : -1;
   for (const n of npcs) n.enemyTotal = enemyCount;
   // where this mod's guards and enemies start in the shared lists of the game (see modSlots)
-  const slots = modSlots(modTag(project).num, guardCount, enemyCount);
+  // (away from the places the other mods installed in the game use)
+  const slots = modSlots(modTag(project).num, guardCount, enemyCount, guardCount || enemyCount ? await otherModsSlots(project) : {});
+  info.slots = { ...slots, guards: guardCount, enemies: enemyCount };
   for (const n of npcs) Object.assign(n, slots);
   putScripts('npcs', npcs.filter(n => !npcTravels(n)), npcVars, actorsScript, ACTORS_BUDGET);
   putScripts('followers', npcs.filter(npcTravels), npcVars, actorsScript, ACTORS_BUDGET);
@@ -926,7 +959,7 @@ function setupSingleplayer() {
         else {
           try { hash = projectHash(Project.fromJSON(await (await fetch('/api/projects/' + encodeURIComponent(proj.name) + '?mode=sp')).json())); } catch { /* unreadable project */ }
         }
-        state = m.hash && m.hash === hash ? 'ok' : 'old';
+        state = m.hash && hashPart(m.hash) === hash ? 'ok' : 'old';
       }
       const li = document.createElement('li');
       const nameEl = document.createElement('span');
@@ -967,7 +1000,7 @@ function setupSingleplayer() {
     if (!st?.ok) return say('Não consegui falar com o servidor.', 'bad');
     if (st.gameRunning) say('O jogo já está em execução. Feche-o antes de testar.', 'warn');
     else if (st.installed && st.renamed) say('Mod instalado com o nome antigo do projeto. Instale de novo para atualizar (a pasta antiga será removida).', 'warn');
-    else if (st.installed) say(st.installedHash && st.installedHash === projectHash(app.project) ? 'Mod instalado e atualizado.' : 'Mod instalado, mas desatualizado. Instale de novo para atualizar.', st.installedHash === projectHash(app.project) ? '' : 'warn');
+    else if (st.installed) say(st.installedHash && hashPart(st.installedHash) === projectHash(app.project) ? 'Mod instalado e atualizado.' : 'Mod instalado, mas desatualizado. Instale de novo para atualizar.', hashPart(st.installedHash) === projectHash(app.project) ? '' : 'warn');
     else say(st.built ? 'Mod gerado. Falta instalar no jogo.' : '');
   };
 
@@ -978,7 +1011,7 @@ function setupSingleplayer() {
     const { files, info } = await buildFiles(app.project, say);
     const payload = {};
     for (const [path, bytes] of files) payload[path] = toBase64(bytes);
-    const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project), id: app.project.modId, npcs: (app.project.actors || []).length, guards: (app.project.actors || []).filter(a => a.role === 'guard').length, enemies: (app.project.actors || []).filter(a => a.role === 'enemy').length } });
+    const r = await postJSON('/api/sp/build', { name: name(), files: payload, info, meta: { hash: projectHash(app.project) + slotsOf(info), id: app.project.modId, npcs: (app.project.actors || []).length, guards: (app.project.actors || []).filter(a => a.role === 'guard').length, enemies: (app.project.actors || []).filter(a => a.role === 'enemy').length } });
     if (!r.ok) throw new Error(r.error || 'erro');
     $('#spFiles').innerHTML = [...files].map(([p, b]) => `<li>${p.replace(/[<>&]/g, '')} · ${(b.length / 1024).toFixed(1)} KB</li>`).join('');
     // What the game could not take and was left out of the mod (each one brought the game down or stopped a script)

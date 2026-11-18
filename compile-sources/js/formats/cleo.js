@@ -47,7 +47,7 @@ export class Asm {
         } else if (a.s !== undefined) {
           if (a.s.length <= 7) { out[at++] = 9; for (let k = 0; k < 8; k++) out[at + k] = a.s.charCodeAt(k) & 0x7f || 0; at += 8; }
           else if (a.native) { if (a.s.length > 15) throw new Error('text'); out[at++] = 15; for (let k = 0; k < 16; k++) out[at + k] = a.s.charCodeAt(k) & 0x7f || 0; at += 16; }
-          else { out[at++] = 14; out[at++] = a.s.length; for (let k = 0; k < a.s.length; k++) out[at++] = a.s.charCodeAt(k) & 0x7f; }
+          else { if (a.s.length > TEXT_LIMIT) throw new Error('A text of the CLEO script has more than 255 letters: ' + a.s.slice(0, 40)); out[at++] = 14; out[at++] = a.s.length; for (let k = 0; k < a.s.length; k++) out[at++] = a.s.charCodeAt(k) & 0x7f; }
         } else if (a.t === 3) {
           out[at++] = 3; dv.setUint16(at, a.v, true); at += 2;
         } else if (a.t === 6) {
@@ -330,6 +330,19 @@ export const ascii = (s) => plainLetters(s).replace(/[^\x20-\x7e]/g, '?');
 // The codes of a message (~r~, ~n~...): a ~ that does not open a code the game knows brought the game down (an odd number of them, a ~1~
 // that waits for a number): only the colors, ~h~ and ~n~ stay, the other ~ go
 export const gameCodes = (s) => String(s).replace(/~([rgbypwlshn])~|~/gi, (m, c) => (c ? '~' + c.toLowerCase() + '~' : ''));
+// CLEO's own text (type 14) keeps its length in one byte: a longer one would break the whole script (Asm throws)
+const TEXT_LIMIT = 255;
+// The most letters a message of the game (help box, text on the screen) takes from a script: the box holds a few hundred, and the
+// letters are counted after they were made plain (a Cyrillic letter becomes up to three)
+export const MSG_MAX = 200;
+// Cuts a text to `max` letters without splitting a code of the game (~r~, ~k~~PED_SPRINT~): half of one brought the game down
+export function cutText(s, max = MSG_MAX) {
+  s = String(s);
+  if (s.length <= max) return s;
+  let out = '';
+  for (const p of s.match(/~k~~[^~]*~|~[^~]~|[^]/g)) { if (out.length + p.length > max) break; out += p; }
+  return out;
+}
 
 // Waits until the game has a player to talk about (before that its handle means nothing)
 function waitPlayer(a) {
@@ -513,7 +526,7 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
   a.label(u('end'));
   if (act.text) {
     // ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ ~s~ in the text change its color, as in SA-MP
-    const msg = gameCodes(ascii(act.text));
+    const msg = cutText(gameCodes(ascii(act.text)));
     if (act.msgStyle === 'box') a.op(0x0ACA, str(msg));
     else a.op(0x0ACD, str(msg), int(4000));
   }
@@ -521,7 +534,7 @@ function emitAction(a, act, x, y, z, id, dist = 3) {
   if (price > 0) {
     a.jump(u('paid'));
     a.label(u('poor'));
-    a.op(0x0ACD, str(gameCodes(ascii(act.poorText || 'Dinheiro insuficiente'))), int(3000));                // poorText: in the language of the editor
+    a.op(0x0ACD, str(cutText(gameCodes(ascii(act.poorText || 'Dinheiro insuficiente')))), int(3000));                // poorText: in the language of the editor
     a.op(0x0006, lv(T6), int(0));
     a.label(u('paid'));
   }
@@ -536,7 +549,9 @@ const MENU_VAR = 1010;                        // CLEO shared variable: the game'
 const MENU_LEAVES = new Set(['teleport', 'vehicle', 'save', 'jetpack']);
 function emitMenu(a, menu, x, y, z, id, dist) {
   const u = (n) => n + id;
-  const opts = menu.options.slice(0, 12);
+  // the texts as the game takes them (an older project or a long translation could pass what a script holds)
+  const opts = menu.options.slice(0, 12).map(o => ({ ...o, row: cutText(ascii(o.row)) }));
+  const title = cutText(ascii(menu.title)), hint = menu.hint ? cutText(ascii(menu.hint)) : '';
   if (!opts.length) return;
   a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(1)).op(0x004D, ref(u('ms')));                  // the player could not pay the action before it: no menu
   // One menu at a time (another script may have one open): the open one writes the game's time in MENU_VAR every frame, and a menu
@@ -548,9 +563,9 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   a.jump(u('ms'));
   a.label(u('mf'));
   beat();
-  a.op(0x0ADF, str(menu.titleKey), str(menu.title));
+  a.op(0x0ADF, str(menu.titleKey), str(title));
   opts.forEach(o => a.op(0x0ADF, str(o.key), str(o.row)));
-  const longest = Math.max(menu.title.length, ...opts.map(o => o.row.length));
+  const longest = Math.max(title.length, ...opts.map(o => o.row.length));
   a.op(0x01B4, int(0), int(0));                                                                // the player stands still while it is open
   // the keys may still be down (the player came running): it waits until they are up, before the panel exists, or walking
   // forward would move its selection up to the last row
@@ -564,19 +579,19 @@ function emitMenu(a, menu, x, y, z, id, dist) {
   while (keys.length < 12) keys.push('DUMMY');
   a.op(0x08DB, lv(MENU_H), int(0), str('DUMMY'), ...keys.map(k => str(k)));
   a.op(0x090E, lv(MENU_H), int(0));                                                             // the first option starts selected
-  if (menu.hint) a.op(0x0ACA, str(menu.hint));
+  if (hint) a.op(0x0ACA, str(hint));
   // the game takes the help box away when a pickup is taken: it is shown again half a second later, only when no help box is on the screen
   // (showing it again while it is there plays its sound once more). T1: done; 32@ is the timer of the script; the state of the box is at
   // 0xBAA474 (0: nothing shown)
   a.op(0x0006, lv(T1), int(0)).op(0x0006, lv(32), int(0));
   a.label(u('mw')).op(0x0001, int(0));
   beat();
-  if (menu.hint) {
+  if (hint) {
     a.op(0x00D6, int(1)).op(0x0039, lv(T1), int(0)).op(0x0019, lv(32), int(500)).op(0x004D, ref(u('mh')));
     a.op(0x0006, lv(T1), int(1));
     a.op(0x0A8D, int(0xBAA474), int(4), int(0), lv(T0));
     a.op(0x00D6, int(0)).op(0x0039, lv(T0), int(0)).op(0x004D, ref(u('mh')));
-    a.op(0x0ACA, str(menu.hint));
+    a.op(0x0ACA, str(hint));
     a.label(u('mh'));
   }
   a.op(0x00D6, int(0)).op(0x0256, int(0)).op(0x004D, ref(u('mx')));                          // the player died or was arrested
@@ -907,9 +922,24 @@ const PH_HEALTH = 1001, PH_ARMOUR = 1002, CHAOS_VAR = 1005, CHAOS_TIME = 1006; /
 const GUARD_VARS = 700; // the shared variables of CLEO (0 to 1023) where the guards leave their characters
 // The shared variables are the same for every mod in the game: each mod keeps its guards (and their targets) and its enemies from a place of its own
 // in those lists of 300, chosen by its tag (from the permanent id of the project), so the NPCs of two mods do not write over each other. A mod alone
-// works the same wherever its place is. `guards` and `enemies`: how many it numbers (up to 300 each)
+// works the same wherever its place is. `guards` and `enemies`: how many it numbers (up to 300 each). `taken`: the places the other mods installed
+// in the game use ({ g: [[base, count]...], e: [...] }): when the place of the tag falls on one of them, the next free one is taken (the place of
+// the tag stays when no place is free)
 const LIST_SLOTS = 300;
-export const modSlots = (tag, guards, enemies) => ({ gbase: (tag >>> 0) % (LIST_SLOTS - guards + 1), ebase: Math.floor((tag >>> 0) / 7) % (LIST_SLOTS - enemies + 1) });
+export const tagSlots = (tag, guards, enemies) => ({ gbase: (tag >>> 0) % (LIST_SLOTS - guards + 1), ebase: Math.floor((tag >>> 0) / 7) % (LIST_SLOTS - enemies + 1) });
+function freeSlot(first, count, taken) {
+  if (!count || !taken?.length) return first;
+  const last = LIST_SLOTS - count;
+  for (let k = 0; k <= last; k++) {
+    const b = (first + k) % (last + 1);
+    if (!taken.some(([tb, tn]) => tn > 0 && b < tb + tn && tb < b + count)) return b;
+  }
+  return first;
+}
+export function modSlots(tag, guards, enemies, taken = {}) {
+  const s = tagSlots(tag, guards, enemies);
+  return { gbase: freeSlot(s.gbase, guards, taken.g), ebase: freeSlot(s.ebase, enemies, taken.e) };
+}
 export const ACTORS_BUDGET = 20;
 const DM_EMPTY = 65542; // the empty decision maker template of the game (m_empty.ped): no response to any event
 // The health of a NPC: 100 by default, 1 the least. The game keeps it as a float, and the higher it is the bigger the damages lost in the
@@ -936,6 +966,9 @@ const TARGET_LIMIT = 8000; // a protector that has not hurt its target in this t
 const COVER_KEEP = 5000;   // how long (ms) a target that was not hurt but is not proof (behind cover) stays given up
 // The proofs of a character (02AB) in the flags of its physical part (dword at +0x40): against bullets and against melee
 const PROOF_BULLET = 0x40000, PROOF_MELEE = 0x200000;
+// The same flags of a vehicle that 02AC sets (bullets, fire, collisions, melee, explosions), and how the vehicle of an invulnerable NPC keeps them
+// beside its handle (a handle is below 2^24): shifted up by CV_SHIFT, above CV_HANDLE
+const CV_PROOFS = 0xBC0000, CV_SHIFT = 6, CV_HANDLE = 0xFFFFFF;
 // What a protector saw of its target meanwhile, kept above the health in the same variable (thp: the low 16 bits are the health it had):
 // this protector hurt it (it was the last one who hurt it at some check), and this protector shot
 const SEEN_HIT = 0x10000, SEEN_SHOT = 0x20000, SEEN_HP = 0xFFFF;
@@ -1036,14 +1069,26 @@ export function actorsScript(items) {
         a.label(L(tag));
       };
       const travel = e.role === 'guard' && !!e.follow;
-      // the vehicle an invulnerable NPC that follows or chases made invulnerable (see npcVars), and how it is made normal again (when it still exists)
+      // the vehicle an invulnerable NPC that follows or chases made invulnerable (see npcVars), and how it is given back as it was (when it still exists).
+      // The variable keeps its handle (CV_HANDLE) and, above it, the proofs it had before (CV_PROOFS shifted by CV_SHIFT): a vehicle that had none
+      // becomes normal again; one that already had some (a vehicle of the project made indestructible, one of a mission) gets exactly those back and
+      // stays undamageable, as it was. Uses T5..T7
       const cv = e.invulnerable && npcTravels(e) ? base + npcVars(e) - 1 : -1;
       const carBack = (tag) => {
         a.op(0x00D6, int(0)).op(0x8039, lv(cv), int(0)).op(0x004D, ref(L('cb' + tag)));
-        a.op(0x00D6, int(0)).op(0x056E, lv(cv)).op(0x004D, ref(L('cc' + tag)));
-        a.op(0x02AC, lv(cv), int(0), int(0), int(0), int(0), int(0));
-        a.op(0x03F5, lv(cv), int(1));
-        a.op(0x053F, lv(cv), int(1));
+        a.op(0x0B10, lv(cv), int(CV_HANDLE), lv(T7));
+        a.op(0x00D6, int(0)).op(0x056E, lv(T7)).op(0x004D, ref(L('cc' + tag)));
+        a.op(0x0B15, lv(cv), int(CV_SHIFT), lv(T6)).op(0x0B10, lv(T6), int(CV_PROOFS), lv(T6));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T6), int(0)).op(0x004D, ref(L('cp' + tag)));
+        a.op(0x02AC, lv(T7), int(0), int(0), int(0), int(0), int(0));
+        a.op(0x03F5, lv(T7), int(1));
+        a.op(0x053F, lv(T7), int(1));
+        a.jump(L('cc' + tag));
+        a.label(L('cp' + tag));
+        a.op(0x0A97, lv(T7), lv(T7)).op(0x0A8E, lv(T7), int(0x40), lv(T7));
+        a.op(0x0A8D, lv(T7), int(4), int(0), lv(T5));
+        a.op(0x0B10, lv(T5), int(~CV_PROOFS), lv(T5)).op(0x0B11, lv(T5), lv(T6), lv(T5));
+        a.op(0x0A8C, lv(T7), int(4), lv(T5), int(0));
         a.label(L('cc' + tag)).op(0x0006, lv(cv), int(0));
         a.label(L('cb' + tag));
       };
@@ -1467,11 +1512,15 @@ export function actorsScript(items) {
       if (e.invulnerable && cv >= 0) {
         a.op(0x00D6, int(0)).op(0x00DF, lv(h)).op(0x004D, ref(L('nj')));
         a.op(0x03C0, lv(h), lv(T0));
-        a.op(0x00D6, int(0)).op(0x0039, lv(cv), lv(T0)).op(0x004D, ref(L('nk')));
+        a.op(0x0B10, lv(cv), int(CV_HANDLE), lv(T7));
+        a.op(0x00D6, int(0)).op(0x0039, lv(T7), lv(T0)).op(0x004D, ref(L('nk')));
         a.jump(L('nm'));
         a.label(L('nk'));
         carBack('n1');                                                                            // it went into another one
-        a.op(0x0085, lv(cv), lv(T0));
+        // the proofs this one has now (before the NPC adds its own) go above its handle
+        a.op(0x0A97, lv(T0), lv(T6)).op(0x0A8E, lv(T6), int(0x40), lv(T6)).op(0x0A8D, lv(T6), int(4), int(0), lv(T6));
+        a.op(0x0B10, lv(T6), int(CV_PROOFS), lv(T6)).op(0x0B16, lv(T6), int(CV_SHIFT), lv(T6));
+        a.op(0x0B11, lv(T6), lv(T0), lv(cv));
         a.label(L('nm'));
         a.op(0x02AC, lv(T0), int(1), int(1), int(1), int(1), int(1));
         a.op(0x03F5, lv(T0), int(0));
