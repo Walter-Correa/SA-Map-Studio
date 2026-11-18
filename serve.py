@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MPL-2.0
 import sys
 import os
 
@@ -26,8 +27,10 @@ Folders (inside sa-map-studio):
 """
 import argparse
 import base64
+import hmac
 import json
 import re
+import secrets
 import shutil
 import socket
 import struct
@@ -169,6 +172,31 @@ IS_WINDOWS = os.name == "nt"
 
 
 LOG_FILE_PATH = os.path.join(LOGS_DIR, "sa-map-studio.log")
+LOG_MAX_BYTES = 5 * 1024 * 1024  # a bigger log is moved to sa-map-studio.log.1 (only one old copy is kept)
+_LOG_LOCK = threading.Lock()
+
+
+def rotate_log():
+    """Keeps the log small: when it passes LOG_MAX_BYTES it becomes the .1 copy and a new one starts."""
+    try:
+        if os.path.getsize(LOG_FILE_PATH) > LOG_MAX_BYTES:
+            os.replace(LOG_FILE_PATH, LOG_FILE_PATH + ".1")
+    except OSError:
+        pass  # missing, or held open by the windowed .exe (rotated again on the next start)
+
+
+def read_log_tail(lines=300, max_bytes=512 * 1024):
+    """The last lines of the log, reading only its end."""
+    with open(LOG_FILE_PATH, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        size = f.tell()
+        f.seek(max(0, size - max_bytes))
+        data = f.read()
+    text = data.decode("utf-8", errors="replace").splitlines()
+    if size > max_bytes and text:
+        text = text[1:]  # the first line was cut in the middle
+    return [line.rstrip() for line in text][-lines:]
+
 
 def append_to_log(message, prefix="LOG"):
     """Writes a timestamped line to the sa-map-studio.log file."""
@@ -176,8 +204,10 @@ def append_to_log(message, prefix="LOG"):
     line = f"{now_str} [{prefix}] {message}\n"
     try:
         os.makedirs(LOGS_DIR, exist_ok=True)
-        with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
-            f.write(line)
+        with _LOG_LOCK:
+            rotate_log()
+            with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
+                f.write(line)
     except Exception:
         pass
 
@@ -209,6 +239,7 @@ def setup_logging():
     if sys.stdout is None or sys.stderr is None:
         try:
             os.makedirs(LOGS_DIR, exist_ok=True)
+            rotate_log()  # before it is held open for the whole session
             _log = open(LOG_FILE_PATH, "a", encoding="utf-8", buffering=1)
         except OSError:
             _log = open(os.devnull, "w")
@@ -251,7 +282,7 @@ def resolve_ci(root, rel):
     parts = [p for p in re.split(r"[\\/]+", rel) if p and p != "."]
     cur = root
     for part in parts:
-        if part == "..":
+        if part == ".." or ":" in part or "\0" in part:  # no going up, no drive letter (C:) and no stream (file:x)
             return None
         cand = os.path.join(cur, part)
         if os.path.exists(cand):
@@ -268,7 +299,33 @@ def resolve_ci(root, rel):
     return cur
 
 
-GTA_EXES = ("gta_sa.exe", "gta-sa.exe", "gta.exe", "samp.exe")
+def safe_join(base, rel):
+    """base/rel only when it stays inside base (no "..", drive letter, UNC path or stream). None otherwise."""
+    parts = [p for p in re.split(r"[\\/]+", str(rel or "")) if p and p != "."]
+    if not parts or any(p == ".." or ":" in p or "\0" in p for p in parts):
+        return None
+    root = os.path.abspath(base)
+    full = os.path.normpath(os.path.join(root, *parts))
+    try:
+        if os.path.commonpath([os.path.normcase(root), os.path.normcase(full)]) != os.path.normcase(root):
+            return None
+    except ValueError:
+        return None
+    return full
+
+
+def replace_retry(src, dst, tries=40, delay=0.05):
+    """os.replace that waits a moment when Windows holds the target open (another request reading it)."""
+    for attempt in range(tries):
+        try:
+            return os.replace(src, dst)
+        except PermissionError:
+            if attempt == tries - 1:
+                raise
+            time.sleep(delay)
+
+
+GTA_EXES =("gta_sa.exe", "gta-sa.exe", "gta.exe", "samp.exe")
 
 
 def get_canonical_default_gta():
@@ -316,24 +373,32 @@ def is_gta_dir(path):
     return bool(resolve_ci(path, "models/gta3.img") or resolve_ci(path, "models/gta_int.img"))
 
 
+_CONFIG_LOCK = threading.RLock()  # requests at the start read and write config.json at the same time
+
+
 def load_config():
-    try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
+    with _CONFIG_LOCK:
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}
 
 
 def save_config(cfg):
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, indent=2, ensure_ascii=False)
+    with _CONFIG_LOCK:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        tmp = CONFIG_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        replace_retry(tmp, CONFIG_FILE)
 
 
 def update_config(**values):
-    cfg = load_config()
-    cfg.update(values)
-    save_config(cfg)
+    with _CONFIG_LOCK:
+        cfg = load_config()
+        cfg.update(values)
+        save_config(cfg)
 
 
 def gta_problem(path):
@@ -543,9 +608,15 @@ def migrate_projects():
             pass
 
 
+WINDOWS_RESERVED = {"con", "prn", "aux", "nul"} | {"com%d" % i for i in range(1, 10)} | {"lpt%d" % i for i in range(1, 10)}
+
+
 def safe_name(name):
     name = re.sub(r"[^\w\-. ()]+", "_", name, flags=re.UNICODE).strip(" .")
-    return name[:80] or "sem_nome"
+    name = name[:80] or "sem_nome"
+    if name.split(".", 1)[0].strip().lower() in WINDOWS_RESERVED:
+        name = "_" + name  # CON, NUL, COM1... are devices on Windows, not files
+    return name
 
 
 # ---------------------------------------------------------------------------
@@ -555,6 +626,10 @@ SP_ASSETS = os.path.join(SP_DIR, "assets")  # files a project imported (its own 
 SP_MAX_ASSET = 64 * 1024 * 1024
 SP_MARK = ".samapstudio-mod"
 SP_MAX_BYTES = 300 * 1024 * 1024
+SP_TEMP = ".~"  # prefix of the folders an install uses while it swaps a mod (never listed as mods)
+# The only kinds of file the editor puts in a mod (scripts, models, collisions, textures, IDE/IPL, vehicle and weapon data)
+SP_FILE_EXTS = (".cs", ".dff", ".txd", ".col", ".ide", ".ipl")
+SP_FILE_NAMES = ("handling.cfg", "weapon.dat", "readme.txt")
 
 
 def sp_build_dir(name):
@@ -600,7 +675,7 @@ def sp_mod_dirs():
         if base and os.path.isdir(base):
             for n in sorted(os.listdir(base), key=str.lower):
                 d = os.path.join(base, n)
-                if os.path.isfile(os.path.join(d, SP_MARK)):
+                if not n.startswith(SP_TEMP) and os.path.isfile(os.path.join(d, SP_MARK)):
                     out.append((d, sp_marker(d)))
     return out
 
@@ -686,8 +761,9 @@ def sp_tidy_group():
     g = sp_group_dir()
     if not g or not os.path.isdir(g):
         return
-    if any(os.path.isfile(os.path.join(g, n, SP_MARK)) for n in os.listdir(g)):
+    if any(not n.startswith(SP_TEMP) and os.path.isfile(os.path.join(g, n, SP_MARK)) for n in os.listdir(g)):
         return
+    sp_clear_temp(g)
     try:
         os.rmdir(g)  # only when nothing else is inside
     except OSError:
@@ -705,7 +781,7 @@ def sp_game_exe():
 def sp_game_running(exe):
     name = os.path.basename(exe).lower()
     try:
-        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq " + name, "/NH"], capture_output=True, text=True,
+        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq " + name, "/NH"], capture_output=True, text=True, errors="replace",
                              creationflags=0x08000000 if IS_WINDOWS else 0, timeout=10).stdout.lower()
         return name in out
     except Exception:
@@ -830,6 +906,9 @@ def sp_write_files(root, files, meta=None):
         parts = [x for x in str(rel).replace("\\", "/").split("/") if x]
         if not parts or any(x in (".", "..") or ":" in x for x in parts):
             raise ValueError("Caminho inválido: " + str(rel))
+        low = parts[-1].lower()
+        if not (low.endswith(SP_FILE_EXTS) or low in SP_FILE_NAMES):
+            raise ValueError("Caminho inválido: " + str(rel))
         data = base64.b64decode(b64 or "")
         total += len(data)
         if total > SP_MAX_BYTES:
@@ -894,6 +973,37 @@ def sp_zip(name):
     return out
 
 
+def sp_same_mod(folder, mod_id):
+    """The mod in folder may be replaced or removed by the project with this id: same id, or one of them has none (old mods)."""
+    other = sp_clean_id(sp_marker(folder).get("id"))
+    return not mod_id or not other or other == mod_id
+
+
+def sp_check_game_closed():
+    exe = sp_game_exe()
+    if exe and sp_game_running(exe):
+        raise ValueError("O jogo já está em execução. Feche-o antes de instalar ou desinstalar o mod.")
+
+
+def sp_remove_dir(folder):
+    """Removes a mod folder: it is first renamed to a temporary name (fails whole when the game holds a file),
+    so a mod is never left half deleted and without its marker."""
+    if not os.path.isdir(folder):
+        return
+    trash = os.path.join(os.path.dirname(folder), SP_TEMP + "old-" + os.path.basename(folder))
+    shutil.rmtree(trash, ignore_errors=True)
+    os.rename(folder, trash)
+    shutil.rmtree(trash, ignore_errors=True)
+
+
+def sp_clear_temp(group):
+    """Temporary folders an interrupted install left behind."""
+    if group and os.path.isdir(group):
+        for n in os.listdir(group):
+            if n.startswith(SP_TEMP):
+                shutil.rmtree(os.path.join(group, n), ignore_errors=True)
+
+
 def sp_install(name, was="", mod_id=""):
     src = sp_build_dir(name)
     dst = sp_install_dir(name)
@@ -901,29 +1011,49 @@ def sp_install(name, was="", mod_id=""):
         raise ValueError("Pasta do GTA não definida")
     if not os.path.isfile(os.path.join(src, SP_MARK)):
         raise ValueError("Gere o mod antes de instalar")
+    sp_check_game_closed()
+    mod_id = sp_clean_id(mod_id)
     cur = sp_installed_dir(name, mod_id)  # by id: a mod installed under an older name moves to this one
     if os.path.exists(dst) and not os.path.isfile(os.path.join(dst, SP_MARK)):
         raise ValueError("Já existe uma pasta do Modloader com esse nome que não foi criada por este programa")
-    if os.path.isdir(dst):
-        shutil.rmtree(dst)
+    if os.path.isdir(dst) and not sp_same_mod(dst, mod_id):
+        raise ValueError("Já existe um mod de outro projeto com esse nome no Modloader. Renomeie o projeto.")
+    group = os.path.dirname(dst)
+    os.makedirs(group, exist_ok=True)
+    sp_clear_temp(group)
+    # The new mod is copied beside the old one and only then swapped in, so a failure never leaves a broken mod
+    tmp = os.path.join(group, SP_TEMP + "new-" + os.path.basename(dst))
+    shutil.copytree(src, tmp)
+    trash = os.path.join(group, SP_TEMP + "old-" + os.path.basename(dst))
+    try:
+        if os.path.isdir(dst):
+            os.rename(dst, trash)
+        try:
+            os.rename(tmp, dst)
+        except OSError:
+            if os.path.isdir(trash) and not os.path.exists(dst):
+                os.rename(trash, dst)
+            raise
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(trash, ignore_errors=True)
     old = sp_legacy_dir(name)
-    if os.path.isfile(os.path.join(old, SP_MARK)):
-        shutil.rmtree(old)  # installed by an older version straight inside modloader: it moves to the editor's folder
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    shutil.copytree(src, dst)
+    if os.path.isfile(os.path.join(old, SP_MARK)) and sp_same_mod(old, mod_id):
+        sp_remove_dir(old)  # installed by an older version straight inside modloader: it moves to the editor's folder
     # The project was renamed: the mod installed with the old name goes away (found by id, or by the old name)
     old = cur if cur and os.path.isdir(cur) else (sp_installed_dir(was) if was and was != name else "")
-    if old and os.path.normcase(os.path.abspath(old)) != os.path.normcase(os.path.abspath(dst)):
-        shutil.rmtree(old)
+    if old and os.path.normcase(os.path.abspath(old)) != os.path.normcase(os.path.abspath(dst)) and sp_same_mod(old, mod_id):
+        sp_remove_dir(old)
     sp_tidy_group()
     return dst
 
 
-def sp_uninstall(name):
-    dst = sp_installed_dir(name)
+def sp_uninstall(name, mod_id=""):
+    dst = sp_installed_dir(name, mod_id)
     if not dst:
         raise ValueError("Esse mod não está instalado")
-    shutil.rmtree(dst)
+    sp_check_game_closed()
+    sp_remove_dir(dst)
     sp_tidy_group()
     return dst
 
@@ -1226,7 +1356,7 @@ def thumb_file(kind, key):
         return p
     if kind in ("tex", "textures"):
         parts = key.split("/", 1)
-        if len(parts) != 2 or not parts[0] or not parts[1]:
+        if len(parts) != 2 or not parts[0] or not parts[1] or parts[0] in (".", ".."):
             return None
         p = os.path.join(THUMBS_DIR, "textures", quote(parts[0], safe=""), quote(parts[1], safe="") + ".webp")
         if not os.path.isfile(p):
@@ -1487,6 +1617,10 @@ def samp_client():
     return samp_installed_client()
 
 
+_SAMP_REG = {"timer": None, "old": None}  # the user's own gta_sa_exe while the editor's change is waiting to be undone
+_SAMP_REG_LOCK = threading.Lock()
+
+
 def point_samp_to_game(client):
     """samp.exe starts the gta_sa.exe that the registry of SA-MP names (the value gta_sa_exe in HKCU Software SAMP), not the one that is beside it. So that the game that
     opens is the one of the same folder as the client we chose, the registry is pointed to it for a few seconds (the time the client takes to read it) and
@@ -1498,25 +1632,39 @@ def point_samp_to_game(client):
         return False
     try:
         import winreg
-        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, r"Software\SAMP", 0, winreg.KEY_READ | winreg.KEY_SET_VALUE) as k:
-            try:
-                old = winreg.QueryValueEx(k, "gta_sa_exe")[0]
-            except OSError:
-                old = None
-            if old and os.path.normcase(os.path.normpath(str(old))) == os.path.normcase(os.path.normpath(game)):
-                return False
-            winreg.SetValueEx(k, "gta_sa_exe", 0, winreg.REG_SZ, os.path.normpath(game))
+        with _SAMP_REG_LOCK:
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, r"Software\SAMP", 0, winreg.KEY_READ | winreg.KEY_SET_VALUE) as k:
+                try:
+                    cur = winreg.QueryValueEx(k, "gta_sa_exe")[0]
+                except OSError:
+                    cur = None
+                pending = _SAMP_REG["timer"] is not None
+                if not pending and cur and os.path.normcase(os.path.normpath(str(cur))) == os.path.normcase(os.path.normpath(game)):
+                    return False
+                # Two tests in a row: the value to put back is still the user's own one, not the one the first test wrote
+                if not pending:
+                    _SAMP_REG["old"] = cur
+                winreg.SetValueEx(k, "gta_sa_exe", 0, winreg.REG_SZ, os.path.normpath(game))
+            if pending:
+                _SAMP_REG["timer"].cancel()
 
-        def restore():
-            try:
-                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\SAMP", 0, winreg.KEY_SET_VALUE) as k2:
-                    if old is None:
-                        winreg.DeleteValue(k2, "gta_sa_exe")
-                    else:
-                        winreg.SetValueEx(k2, "gta_sa_exe", 0, winreg.REG_SZ, old)
-            except OSError:
-                pass
-        threading.Timer(12.0, restore).start()
+            def restore():
+                with _SAMP_REG_LOCK:
+                    if _SAMP_REG["timer"] is not timer:
+                        return
+                    _SAMP_REG["timer"] = None
+                    old = _SAMP_REG["old"]
+                    try:
+                        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\SAMP", 0, winreg.KEY_SET_VALUE) as k2:
+                            if old is None:
+                                winreg.DeleteValue(k2, "gta_sa_exe")
+                            else:
+                                winreg.SetValueEx(k2, "gta_sa_exe", 0, winreg.REG_SZ, old)
+                    except OSError:
+                        pass
+            timer = threading.Timer(12.0, restore)
+            _SAMP_REG["timer"] = timer
+            timer.start()
         return True
     except Exception:
         return False
@@ -1582,8 +1730,6 @@ def find_samapstudio_amx():
         os.path.join(TEST_DIR, "gamemodes", "samapstudio.amx"),
         os.path.join(APP_DIR, "samapstudio.amx"),
         os.path.join(BASE_DIR, "samapstudio.amx"),
-        os.path.join(BASE_DIR, "omp-server-source", "gamemodes", "samapstudio.amx"),
-        os.path.join(BASE_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server", "gamemodes", "samapstudio.amx"),
     ):
         if os.path.isfile(cand):
             return cand
@@ -1761,7 +1907,15 @@ def test_recordings():
     return out
 
 
+_TEST_LOCK = threading.Lock()  # one start or stop of the test server at a time (two quick clicks left one server running loose)
+
+
 def start_test(body):
+    with _TEST_LOCK:
+        return _start_test(body)
+
+
+def _start_test(body):
     info = test_info()
     exe = server_exe_in(info["serverPath"])
     if not exe:
@@ -1800,12 +1954,8 @@ def start_test(body):
                     copy_if_newer(full, os.path.join(TEST_DIR, "plugins", n))
     for d in ("gamemodes", "filterscripts", "scriptfiles/samapstudio", "plugins"):
         os.makedirs(os.path.join(TEST_DIR, d), exist_ok=True)
+    # Only the editor's own test-server folder is written: the server the user chose is just where the executable comes from
     target_dirs = {TEST_DIR}
-    if info.get("serverPath"):
-        target_dirs.add(info["serverPath"])
-    dist_root_st = os.path.join(ROOT_DIR, "compiled", "SA Map Studio", "sa-map-studio", "test-server") if not FROZEN else TEST_DIR
-    if os.path.isdir(dist_root_st):
-        target_dirs.add(dist_root_st)
 
     use_streamer = bool(body.get("streamer", False))
     streamer_src = None
@@ -2218,7 +2368,26 @@ def write_png(filename, width, height, rgb_data):
         f.write(iend)
 
 
+_RADAR_LOCK = threading.Lock()
+
+
 def ensure_radarmap(gta_path, out_png):
+    """Builds radarmap.png once (two requests at the same time wait for the same file), writing it whole or not at all."""
+    with _RADAR_LOCK:
+        if os.path.isfile(out_png):
+            return True
+        tmp = out_png + ".tmp"
+        if not _build_radarmap(gta_path, tmp):
+            return False
+        try:
+            replace_retry(tmp, out_png)
+            return True
+        except OSError as e:
+            print(f"Error in ensure_radarmap: {e}")
+            return False
+
+
+def _build_radarmap(gta_path, out_png):
     if not gta_path: return False
     gta3_img = os.path.join(gta_path, "models", "gta3.img")
     if not os.path.isfile(gta3_img): return False
@@ -2500,6 +2669,9 @@ _DEFAULT_UPDATE_API = "https://api.github.com/repos/Walter-Correa/SA-Map-Studio/
 # ---------------------------------------------------------------------------
 # HTTP server
 # ---------------------------------------------------------------------------
+SESSION_TOKEN = secrets.token_urlsafe(32)  # new on every start; the editor page receives it as a cookie
+
+
 class Handler(SimpleHTTPRequestHandler):
     server_version = "SAMapStudio/" + VERSION
     protocol_version = "HTTP/1.1"
@@ -2518,7 +2690,40 @@ class Handler(SimpleHTTPRequestHandler):
         res = super().parse_request()
         if res and hasattr(self, "command") and self.command:
             self.command = self.command.upper()
+        if res and not self.request_allowed():
+            self.send_error(HTTPStatus.FORBIDDEN)
+            return False
         return res
+
+    # ---------- who may talk to the server ----------
+    # Only the editor page itself: a site open in the browser must not reach this server. The Host must be this computer
+    # (no DNS rebinding), an Origin, when sent, must be this same address, and the API and every change need the session
+    # cookie, which only the editor page receives (SameSite=Strict: other sites never send it).
+    def cookie_name(self):
+        return "samapstudio_%d" % self.server.server_address[1]
+
+    def request_allowed(self):
+        port = self.server.server_address[1]
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host not in ("127.0.0.1:%d" % port, "localhost:%d" % port, "[::1]:%d" % port):
+            return False
+        origin = self.headers.get("Origin")
+        if origin is not None and origin.strip().lower() != "http://" + host:
+            return False
+        path = unquote(urlparse(self.path).path)
+        if self.command in ("GET", "HEAD") and not path.startswith("/api/"):
+            return True  # the editor's files (the page, scripts, game files, thumbnails)
+        if self.headers.get("Sec-Fetch-Site", "same-origin").strip().lower() not in ("same-origin", "none"):
+            return False
+        return self.has_session()
+
+    def has_session(self):
+        want = self.cookie_name() + "="
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            part = part.strip()
+            if part.startswith(want) and hmac.compare_digest(part[len(want):].encode(), SESSION_TOKEN.encode()):
+                return True
+        return False
 
     def do_HEAD(self):
         return self.do_GET()
@@ -2534,11 +2739,10 @@ class Handler(SimpleHTTPRequestHandler):
         super().send_error(code, message=message, explain=explain)
 
     def do_OPTIONS(self):
+        # No cross-origin access (CORS) is granted: the editor page is on this same address and never needs it
         self.close_connection = True
-        self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+        self.send_response(204)
+        self.send_header("Allow", "GET, POST, DELETE, OPTIONS, HEAD")
         self.send_header("Content-Length", "0")
         self.send_header("Connection", "close")
         self.end_headers()
@@ -2547,7 +2751,6 @@ class Handler(SimpleHTTPRequestHandler):
         self.close_connection = True
         data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Connection", "close")
@@ -2572,7 +2775,7 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception:
             return None
 
-    def send_file(self, path, cache="no-cache"):
+    def send_file(self, path, cache="no-cache", headers=None):
         try:
             size = os.path.getsize(path)
             f = open(path, "rb")
@@ -2607,6 +2810,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(length))
             self.send_header("Accept-Ranges", "bytes")
             self.send_header("Cache-Control", cache)
+            for k, v in (headers or {}).items():
+                self.send_header(k, v)
             if status == 206:
                 self.send_header("Content-Range", "bytes %d-%d/%d" % (start, end, size))
             self.end_headers()
@@ -2667,8 +2872,8 @@ class Handler(SimpleHTTPRequestHandler):
                 os.path.join(os.path.dirname(BASE_DIR), "Dados", "cache")
             )
             for cdir in all_cdirs:
-                full = os.path.join(cdir, rel_sub)
-                if os.path.isfile(full):
+                full = safe_join(cdir, sub)
+                if full and os.path.isfile(full):
                     return self.send_file(full, cache="public, max-age=86400")
             low_rel = rel_sub.lower()
             if "sprites" in low_rel:
@@ -2682,8 +2887,8 @@ class Handler(SimpleHTTPRequestHandler):
                     for cf in cand_folders:
                         if not cf:
                             continue
-                        alt_cand = os.path.join(cdir, "sprites", cf, base_name)
-                        if os.path.isfile(alt_cand):
+                        alt_cand = safe_join(cdir, "sprites/%s/%s" % (cf, base_name))
+                        if alt_cand and os.path.isfile(alt_cand):
                             return self.send_file(alt_cand, cache="public, max-age=86400")
             return self.send_error(404, "Arquivo de cache não encontrado")
         if path == "/api/ping":
@@ -2825,8 +3030,7 @@ class Handler(SimpleHTTPRequestHandler):
             lines = []
             if os.path.isfile(LOG_FILE_PATH):
                 try:
-                    with open(LOG_FILE_PATH, "r", encoding="utf-8", errors="replace") as f:
-                        lines = [line.rstrip() for line in f][-300:]
+                    lines = read_log_tail(300)
                 except Exception as e:
                     lines = [f"[ERRO AO LER LOG] {e}"]
             return self.send_json({
@@ -2972,7 +3176,8 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/test/start":
             return self.send_json(start_test(self.read_json() or {}))
         if path == "/api/test/stop":
-            stop_test()
+            with _TEST_LOCK:
+                stop_test()
             return self.send_json(test_info())
         if path == "/api/center_mouse":
             data = self.read_json()
@@ -3050,7 +3255,7 @@ class Handler(SimpleHTTPRequestHandler):
                     sp_install(name, str(body.get("was") or ""), body.get("id"))
                     return self.send_json(sp_status(name, "", body.get("id")))
                 if action == "uninstall":
-                    sp_uninstall(name)
+                    sp_uninstall(name, body.get("id"))
                     return self.send_json(sp_status(name))
                 if action == "launch":
                     exe = sp_game_exe()
@@ -3120,24 +3325,31 @@ class Handler(SimpleHTTPRequestHandler):
         if path in ("", "/"):
             path = "/index.html"
         rel = path.lstrip("/")
-        full = os.path.normpath(os.path.join(APP_DIR, rel))
-        if not os.path.isfile(full) and FROZEN:
+        # Only files inside the program folders: "..", drive letters (C:) and UNC paths never leave them
+        dirs = [APP_DIR]
+        if FROZEN:
             exe_folder = os.path.dirname(os.path.abspath(sys.executable))
-            for alt_dir in (exe_folder, os.path.join(exe_folder, "_internal")):
-                alt = os.path.normpath(os.path.join(alt_dir, rel))
-                if os.path.isfile(alt):
-                    full = alt
-                    break
-        if not os.path.isfile(full) and not FROZEN:
-            cand = os.path.normpath(os.path.join(COMPILE_SOURCES_DIR, rel))
-            if os.path.isfile(cand):
+            dirs += [exe_folder, os.path.join(exe_folder, "_internal")]
+        else:
+            dirs.append(COMPILE_SOURCES_DIR)
+        full = None
+        for d in dirs:
+            cand = safe_join(d, rel)
+            if cand and os.path.isfile(cand):
                 full = cand
-        if not os.path.isfile(full):
+                break
+        if not full:
             return self.send_error(HTTPStatus.NOT_FOUND)
         low = os.path.basename(full).lower()
-        if low in ("config.json", "serve.py") or full.startswith(DATA_DIR) or full.startswith(PROJECTS_DIR):
+        norm = os.path.normcase(full)
+        if low in ("config.json", "serve.py") or any(norm.startswith(os.path.normcase(os.path.abspath(d)) + os.sep)
+                                                     for d in (DATA_DIR, PROJECTS_DIR, SP_DIR, EXPORTS_DIR, TEST_DIR)):
             return self.send_error(HTTPStatus.FORBIDDEN)
-        self.send_file(full, cache="no-cache")
+        headers = None
+        if low == "index.html" and path == "/index.html":
+            # The editor page: it (and only it) receives the session cookie the API asks for
+            headers = {"Set-Cookie": "%s=%s; Path=/; HttpOnly; SameSite=Strict" % (self.cookie_name(), SESSION_TOKEN)}
+        self.send_file(full, cache="no-cache", headers=headers)
 
     def get_gta(self, rel):
         low_rel = rel.replace("\\", "/").lower()
@@ -3361,10 +3573,14 @@ class Handler(SimpleHTTPRequestHandler):
         os.makedirs(pdir, exist_ok=True)
         full = os.path.join(pdir, safe_name(name) + ".json")
         tmp = full + ".tmp"
-        with State.lock:
-            with open(tmp, "wb") as f:
-                f.write(body)
-            os.replace(tmp, full)
+        try:
+            with State.lock:
+                with open(tmp, "wb") as f:
+                    f.write(body)
+                # Another request may be reading the project right now: Windows refuses the swap for a moment
+                replace_retry(tmp, full)
+        except OSError as err:
+            return self.send_json({"ok": False, "error": str(err)}, 500)
         self.send_json({"ok": True, "path": full})
 
 
@@ -3374,6 +3590,17 @@ class StudioServer(ThreadingHTTPServer):
     daemon_threads = True
     block_on_close = False
     request_queue_size = 64
+    # On Windows SO_REUSEADDR lets a second editor take the same port as the first: the port is taken exclusively instead
+    allow_reuse_address = not IS_WINDOWS
+    allow_reuse_port = False
+
+    def server_bind(self):
+        if IS_WINDOWS and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            try:
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            except OSError:
+                pass
+        super().server_bind()
 
     def process_request(self, request, client_address):
         try:

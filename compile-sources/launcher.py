@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 """SA Map Studio - Launcher (single distribution executable).
 
 First run: unpacks the internal package into the 'sa-map-studio' folder next to the .exe.
@@ -74,7 +75,7 @@ def relaunch_as_admin():
 
 def get_base_paths():
     if getattr(sys, "frozen", False):
-        exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))  # argv[0] may be relative to another folder or a short name
         res_dir = getattr(sys, "_MEIPASS", exe_dir)
     else:
         exe_dir = os.path.dirname(os.path.abspath(__file__))
@@ -769,6 +770,7 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
     missing = [f for f in files + [MANIFEST_REL] if not os.path.isfile(_native(new_root, f))]
     if missing:
         raise RuntimeError(tr("incomplete", missing[0]))
+    _keep_user_files(target, new_root)
 
     # 2. Plan
     top = lambda rel: rel.split("/", 1)[0]
@@ -795,14 +797,32 @@ def install(bundle_zip, exe_dir, new_manifest, old_manifest, progress):
                 progress(80.0 + 20.0 * n / len(ops), tr("installing"))
         _write_journal(exe_dir, {"state": "done", "ops": ops})
     except BaseException:
+        undone = True
         for op, rel in reversed(ops):
             try:
                 _undo(op, rel, target, backup)
             except Exception:
-                pass
-        _cleanup(exe_dir)
+                undone = False
+        # Only when everything went back: otherwise the backup copy and the journal stay, and the next start
+        # (recover) puts back what is still missing instead of leaving a broken folder
+        if undone:
+            _cleanup(exe_dir)
         raise
     _cleanup(exe_dir, ops)
+
+
+def _keep_user_files(target, new_root):
+    """test-server is swapped whole on update: the recordings the user made in it (/gravar, scriptfiles/*.rec)
+    go along into the new folder."""
+    src = os.path.join(target, "test-server", "scriptfiles")
+    dst = os.path.join(new_root, "test-server", "scriptfiles")
+    if not os.path.isdir(src) or not os.path.isdir(os.path.join(new_root, "test-server")):
+        return
+    for n in os.listdir(src):
+        full = os.path.join(src, n)
+        if n.lower().endswith(".rec") and os.path.isfile(full) and not os.path.exists(os.path.join(dst, n)):
+            os.makedirs(dst, exist_ok=True)
+            shutil.copy2(full, os.path.join(dst, n))
 
 
 # ---------------------------------------------------------------------------- progress window

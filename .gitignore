@@ -36,6 +36,7 @@ omp-server.log
 
 # Editors and operating system
 .vscode/
+.claude/
 .idea/
 Thumbs.db
 desktop.ini

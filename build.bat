@@ -59,12 +59,13 @@ echo Creating the build environment with: %PY%
 if errorlevel 1 goto fail
 :venv_ready
 
-echo Updating pip, PyInstaller and pywebview to the latest versions...
-"%VPY%" -m pip install --upgrade --quiet pip
+rem Fixed versions, so every build packs the same tools (raise them here on purpose, after testing)
+echo Installing pip, PyInstaller and pywebview...
+"%VPY%" -m pip install --quiet pip==26.3
 if errorlevel 1 goto fail
-"%VPY%" -m pip install --upgrade --quiet pyinstaller
+"%VPY%" -m pip install --quiet pyinstaller==6.22.3 pyinstaller-hooks-contrib==2026.8
 if errorlevel 1 goto fail
-"%VPY%" -m pip install --upgrade --quiet pywebview
+"%VPY%" -m pip install --quiet pywebview==6.2.1
 if errorlevel 1 echo Warning: pywebview did not install. The program will open in the browser.
 
 echo Closing SA Map Studio, if it is open...
@@ -126,8 +127,19 @@ if not exist "%ST%\scriptfiles\samapstudio" mkdir "%ST%\scriptfiles\samapstudio"
 
 if exist "omp-server-source\pawno\pawncc.exe" (
     echo Compiling gamemode samapstudio.pwn...
-    rem Relative paths: the .amx comes out the same in any folder/PC
-    "omp-server-source\pawno\pawncc.exe" "compile-sources\samapstudio.pwn" -o"compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d3 -Z+ >nul
+    rem Relative paths: the .amx comes out the same in any folder/PC. -d1 keeps the run-time checks (array bounds)
+    rem without the symbolic debug info (nothing reads it: no crashdetect), which made the .amx about 12 MB
+    if exist "compile-sources\samapstudio.amx" del /q "compile-sources\samapstudio.amx"
+    "omp-server-source\pawno\pawncc.exe" "compile-sources\samapstudio.pwn" -o"compile-sources\samapstudio.amx" -i"omp-server-source\pawno\include" -d1 -Z+ > "build\pawncc.log" 2>&1
+    if errorlevel 1 (
+        type "build\pawncc.log"
+        echo ERROR: the gamemode samapstudio.pwn did not compile.
+        goto fail
+    )
+)
+if not exist "compile-sources\samapstudio.amx" (
+    echo ERROR: compile-sources\samapstudio.amx is missing ^(the test gamemode^).
+    goto fail
 )
 
 if exist "%SRC%compile-sources\samapstudio.amx" copy /y "%SRC%compile-sources\samapstudio.amx" "%ST%\gamemodes\samapstudio.amx" >nul
