@@ -1027,16 +1027,17 @@ def sp_install(name, was="", mod_id=""):
     trash = os.path.join(group, SP_TEMP + "old-" + os.path.basename(dst))
     try:
         if os.path.isdir(dst):
-            os.rename(dst, trash)
+            replace_retry(dst, trash)
         try:
-            os.rename(tmp, dst)
+            replace_retry(tmp, dst)
         except OSError:
             if os.path.isdir(trash) and not os.path.exists(dst):
-                os.rename(trash, dst)
+                replace_retry(trash, dst)
             raise
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-        shutil.rmtree(trash, ignore_errors=True)
+        if os.path.isdir(dst):  # the old copy goes only once a mod is in place again: never both lost
+            shutil.rmtree(trash, ignore_errors=True)
     old = sp_legacy_dir(name)
     if os.path.isfile(os.path.join(old, SP_MARK)) and sp_same_mod(old, mod_id):
         sp_remove_dir(old)  # installed by an older version straight inside modloader: it moves to the editor's folder
@@ -1818,10 +1819,18 @@ def tail_log(lines=30):
         full = os.path.join(TEST_DIR, name)
         if os.path.isfile(full):
             try:
-                with open(full, "r", encoding="utf-8", errors="replace") as f:
-                    return "".join(f.readlines()[-lines:])
+                with open(full, "rb") as f:
+                    raw = f.readlines()[-lines:]
             except OSError:
-                pass
+                continue
+            # The server writes UTF-8, the gamemode's own prints are ANSI (cp1252): each line in its encoding
+            out = []
+            for b in raw:
+                try:
+                    out.append(b.decode("utf-8"))
+                except UnicodeDecodeError:
+                    out.append(b.decode("cp1252", errors="replace"))
+            return "".join(out).replace("\r\n", "\n")
     return ""
 
 
@@ -3371,6 +3380,8 @@ class Handler(SimpleHTTPRequestHandler):
     def get_static(self, path):
         if path in ("", "/"):
             path = "/index.html"
+        elif path == "/favicon.ico":
+            path = "/favicon.svg"  # browsers ask for it on their own: the page's icon, not a 404 in the log
         rel = path.lstrip("/")
         # Only files inside the program folders: "..", drive letters (C:) and UNC paths never leave them
         dirs = [APP_DIR]
