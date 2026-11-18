@@ -2863,6 +2863,7 @@
  "{0} gravação(ões) do servidor de teste no projeto": "{0} felvétel a tesztszerverről a projektben",
  "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs.": "Nem találtam az open.mp fordítóját (pawno\\pawncc.exe) az NPC-k teszteléséhez.",
  "O código dos NPCs não compilou.": "Az NPC-k kódja nem fordult le.",
+ "O gamemode de teste (samapstudio.pwn) não compilou.": "A teszt gamemode (samapstudio.pwn) nem fordult le.",
  "A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.": "Az animáció csak akkor használatos, ha az NPC áll vagy őrködik: járás közben kimarad.",
  "Atira de até (m)": "Ennyiről lő (m)",
  "Como persegue": "Hogyan üldöz",

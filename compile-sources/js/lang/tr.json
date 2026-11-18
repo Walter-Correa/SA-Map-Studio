@@ -2863,6 +2863,7 @@
  "{0} gravação(ões) do servidor de teste no projeto": "Test sunucusundan {0} kayıt projeye eklendi",
  "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs.": "NPC'leri test etmek için open.mp derleyicisini (pawno\\pawncc.exe) bulamadım.",
  "O código dos NPCs não compilou.": "NPC'lerin kodu derlenmedi.",
+ "O gamemode de teste (samapstudio.pwn) não compilou.": "Test gamemode (samapstudio.pwn) derlenemedi.",
  "A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.": "Animasyon yalnızca NPC dururken veya bekçilik yaparken kullanılır: yürürken atlanır.",
  "Atira de até (m)": "Şu mesafeden ateş eder (m)",
  "Como persegue": "Nasıl kovalar",

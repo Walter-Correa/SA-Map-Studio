@@ -2863,6 +2863,7 @@
  "{0} gravação(ões) do servidor de teste no projeto": "{0} bản ghi từ máy chủ thử trong dự án",
  "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs.": "Không tìm thấy trình biên dịch open.mp (pawno\\pawncc.exe) để thử NPC.",
  "O código dos NPCs não compilou.": "Mã NPC không biên dịch được.",
+ "O gamemode de teste (samapstudio.pwn) não compilou.": "Gamemode thử nghiệm (samapstudio.pwn) không biên dịch được.",
  "A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.": "Hoạt ảnh chỉ dùng khi NPC đứng yên hoặc canh gác: khi đi, nó bị bỏ qua.",
  "Atira de até (m)": "Bắn từ khoảng cách tới (m)",
  "Como persegue": "Cách đuổi theo",

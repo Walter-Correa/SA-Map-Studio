@@ -386,6 +386,8 @@ py -3 serve.py --gta "D:\Games\GTA San Andreas"
 
 Other options: `--port 8777`, `--no-browser` and `--navegador` (opens in the browser even with pywebview installed).
 
+The test gamemode (`samapstudio.amx`) is not in the repository: `build.bat` compiles it, and when running from source the editor compiles it on the first "Test in game" (and again whenever `samapstudio.pwn` changes).
+
 ---
 
 ## Building the program

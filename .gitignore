@@ -6,6 +6,7 @@
 compiled/
 build/
 build-info.json
+/compile-sources/samapstudio.amx
 *.spec
 
 # Isolated Python virtual environment and bytecode

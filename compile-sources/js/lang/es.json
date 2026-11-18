@@ -2863,6 +2863,7 @@
  "{0} gravação(ões) do servidor de teste no projeto": "{0} grabación(es) del servidor de prueba en el proyecto",
  "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs.": "No encontré el compilador de open.mp (pawno\\pawncc.exe) para probar los NPCs.",
  "O código dos NPCs não compilou.": "El código de los NPCs no compiló.",
+ "O gamemode de teste (samapstudio.pwn) não compilou.": "El gamemode de prueba (samapstudio.pwn) no compiló.",
  "A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.": "La animación solo se usa cuando el NPC está quieto o de guardia: al caminar, se omite.",
  "Atira de até (m)": "Dispara desde hasta (m)",
  "Como persegue": "Cómo persigue",

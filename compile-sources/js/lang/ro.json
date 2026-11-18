@@ -2863,6 +2863,7 @@
  "{0} gravação(ões) do servidor de teste no projeto": "{0} înregistrări din serverul de test în proiect",
  "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs.": "Nu am găsit compilatorul open.mp (pawno\\pawncc.exe) pentru a testa NPC-urile.",
  "O código dos NPCs não compilou.": "Codul NPC-urilor nu s-a compilat.",
+ "O gamemode de teste (samapstudio.pwn) não compilou.": "Gamemode-ul de test (samapstudio.pwn) nu s-a compilat.",
  "A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.": "Animația se folosește doar când NPC-ul stă pe loc sau păzește: când merge, este omisă.",
  "Atira de até (m)": "Trage de la cel mult (m)",
  "Como persegue": "Cum urmărește",

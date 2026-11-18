@@ -2863,6 +2863,7 @@
  "{0} gravação(ões) do servidor de teste no projeto": "{0} rekaman dari server uji di proyek",
  "Não achei o compilador do open.mp (pawno\\pawncc.exe) para testar os NPCs.": "Tidak menemukan kompiler open.mp (pawno\\pawncc.exe) untuk menguji NPC.",
  "O código dos NPCs não compilou.": "Kode NPC gagal dikompilasi.",
+ "O gamemode de teste (samapstudio.pwn) não compilou.": "Gamemode uji (samapstudio.pwn) gagal dikompilasi.",
  "A animação só é usada quando o NPC está parado ou de guarda: andando, ela fica de fora.": "Animasi hanya dipakai saat NPC diam atau berjaga: saat berjalan, animasi diabaikan.",
  "Atira de até (m)": "Menembak dari jarak hingga (m)",
  "Como persegue": "Cara mengejar",

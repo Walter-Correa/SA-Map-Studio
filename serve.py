@@ -1736,6 +1736,51 @@ def find_samapstudio_amx():
     return ""
 
 
+_AMX_LOCK = threading.Lock()  # one on-demand compile of the test gamemode at a time
+
+
+def ensure_samapstudio_amx():
+    """Returns (amx path or "", error or None, compiler log). The repository does not carry the compiled test gamemode:
+    running from source, compile-sources/samapstudio.pwn is compiled when its .amx is missing or older than the .pwn,
+    with the compiler, flags and include folder of build.bat. Frozen builds use the packaged .amx."""
+    src = os.path.join(COMPILE_SOURCES_DIR, "samapstudio.pwn")
+    if FROZEN or not os.path.isfile(src):
+        return find_samapstudio_amx(), None, ""
+    amx = os.path.join(COMPILE_SOURCES_DIR, "samapstudio.amx")
+    with _AMX_LOCK:
+        try:
+            if os.path.isfile(amx) and os.path.getmtime(amx) >= os.path.getmtime(src):
+                return amx, None, ""
+        except OSError:
+            pass
+        pawncc = os.path.join(ROOT_DIR, "omp-server-source", "pawno", "pawncc.exe")
+        if not os.path.isfile(pawncc):
+            return find_samapstudio_amx(), None, ""
+        print("[SA Map Studio] Compiling the test gamemode samapstudio.pwn...")
+        try:
+            os.remove(amx)
+        except OSError:
+            pass
+        # Same relative paths and flags as build.bat, run from the repository folder (the .amx comes out the same)
+        args = [pawncc, os.path.join("compile-sources", "samapstudio.pwn"), "-o" + os.path.join("compile-sources", "samapstudio.amx"),
+                "-i" + os.path.join("omp-server-source", "pawno", "include"), "-d1", "-Z+"]
+        try:
+            r = subprocess.run(args, cwd=ROOT_DIR, capture_output=True, text=True, errors="replace", timeout=300,
+                               creationflags=0x08000000 if IS_WINDOWS else 0)
+            out = (r.stdout or "") + (r.stderr or "")
+            failed = r.returncode != 0 or not os.path.isfile(amx)
+        except Exception as err:
+            out, failed = str(err), True
+        if failed:
+            try:
+                os.remove(amx)  # never leaves a half-written gamemode behind
+            except OSError:
+                pass
+            errors = [l for l in out.splitlines() if " error " in l or "fatal error" in l]
+            return "", "O gamemode de teste (samapstudio.pwn) não compilou.", "\n".join(errors[:12]) or out[-1500:]
+        return amx, None, out
+
+
 def test_info():
     cfg = load_config()
     server = cfg.get("server_path") or ""
@@ -1920,7 +1965,9 @@ def _start_test(body):
     exe = server_exe_in(info["serverPath"])
     if not exe:
         return {"ok": False, "error": "Escolha a pasta de um servidor (onde fica o executável do servidor)."}
-    amx = find_samapstudio_amx()
+    amx, amx_error, amx_log = ensure_samapstudio_amx()
+    if amx_error:
+        return {"ok": False, "error": amx_error, "log": amx_log}
     if not amx or not os.path.isfile(amx):
         return {"ok": False, "error": "O gamemode de teste não foi encontrado na instalação do editor."}
     stop_test()
