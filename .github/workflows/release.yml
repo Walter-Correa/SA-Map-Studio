@@ -67,12 +67,8 @@ jobs:
           }
           $body = ($body -join "`n").Trim()
           if (-not $body) { throw "The section of version $v in readme.md is empty" }
-          # Up to 5000 characters the changelog shows open; a longer one goes inside a spoiler
-          if ($body.Length -gt 5000) {
-            $notes = "<details>`n<summary>Changelog of v$v</summary>`n`n$body`n`n</details>"
-          } else {
-            $notes = $body
-          }
+          # The changelog always shows open (a release body takes up to 125000 characters)
+          $notes = $body
           # Hashes of the zip and of the executable inside it, plus the VirusTotal report of the executable
           $hash = (Get-FileHash "compiled\SA Map Studio\SA Map Studio.exe" -Algorithm SHA256).Hash.ToLower()
           $zipHash = (Get-FileHash "compiled\SA Map Studio.zip" -Algorithm SHA256).Hash.ToLower()
