@@ -17,6 +17,7 @@ const KINDS = [
   ['CreateDynamicPickup', 'Fs_DynPickup', 'STREAMER_TAG_PICKUP:', 'DestroyDynamicPickup'],
   ['CreatePickup', 'Fs_Pickup', '', 'DestroyPickup'],
   ['GangZoneCreate', 'Fs_Zone', '', 'GangZoneDestroy'],
+  ['CreateDynamicMapIcon', 'Fs_DynIcon', 'STREAMER_TAG_MAP_ICON:', 'DestroyDynamicMapIcon'],
 ];
 const CREATE_RE = new RegExp(`^(\\s*)((?:[\\w\\[\\]]+ = )*)(${KINDS.map(k => k[0]).join('|')})\\(`);
 
@@ -66,6 +67,7 @@ const OMP_TAGS = {
 };
 // The open.mp names of the SA-MP functions it marks as deprecated (warning 234)
 const OMP_NAMES = { TextDrawSetPreviewVehCol: 'TextDrawSetPreviewVehicleColours', PlayerTextDrawSetPreviewVehCol: 'PlayerTextDrawSetPreviewVehicleColours' };
+for (const p of ['TextDraw', 'PlayerTextDraw']) for (const c of ['Color', 'BoxColor', 'BackgroundColor']) OMP_NAMES[p + c] = `${p}${c}`.replace(/Color$/, 'Colour');
 const OMP_RE = new RegExp(`(?<![\\w@])(${[...Object.keys(OMP_TAGS), ...Object.keys(OMP_NAMES)].join('|')})\\(`, 'g');
 export function ompArgs(l) {
   if (/^\s*\/\//.test(l) || !OMP_RE.test(l)) return l;
@@ -121,7 +123,7 @@ export function filterscriptPawn(ctx) {
   const npcs = npcActors.length > 0;
   const gameSafe = (s) => (ctx.chatText ? ctx.chatText(s) : (latin1(s) ? s : null));
   const chat = (key, ...args) => gameSafe(tr(key, ...args)) ?? fillArgs(tFallback(key), args);
-  const mapName = gameSafe(String(project.name)) ?? ctx.fileName;
+  const mapName = gameSafe(String(project.name)) ?? ctx.fileName.replace(/_fs$/, '');
 
   // Every creation call keeps its id in the array of its kind
   const count = new Map();
@@ -140,6 +142,8 @@ export function filterscriptPawn(ctx) {
     return l.replace(/\bactorid\b/g, actorVar);
   });
   const labelLines = track(ctx.labelLines), pickupLines = track(ctx.pickupLines);
+  // Past 100 map icons the Streamer creates them all once (it gives each player the slots); otherwise each player gets them
+  const iconDynLines = track(ctx.mapIconDynLines || []);
   // The gang zones are shown to each player when they connect (ShowForAll only reaches who is already online)
   const zoneColors = [];
   const zoneLines = track(ctx.gangZoneLines).filter(l => {
@@ -198,6 +202,7 @@ export function filterscriptPawn(ctx) {
   for (const x of playerTds) L.push(`new PlayerText:${x.v}[MAX_PLAYERS];`);
   for (const x of bars) L.push(`new ${x.v}[MAX_PLAYERS];`);
   if (tds.length) L.push('new bool:Fs_TdHidden[MAX_PLAYERS];');
+  if (npcs) L.push('new Fs_NpcTimer; // the timer that brings the NPCs back after /fsnpc');
   for (const [k, list] of goto) {
     if (live.has(k)) continue;
     L.push(`stock const Float:Fs_Go_${k}[${list.length}][3] = {`);
@@ -224,6 +229,7 @@ export function filterscriptPawn(ctx) {
   section(tr('Textos 3D'), labelLines);
   section('Pickups', pickupLines);
   section('GangZones', zoneLines);
+  section('MapIcons', iconDynLines);
   section('TextDraws', globalTdLines);
   if (npcMod.load) section(tr('NPCs do open.mp:'), [npcMod.load]);
   init.push('', `// ${tr('Jogadores que já estão no servidor')}`, 'for(new i = 0; i < MAX_PLAYERS; i++)', '{', '    if(IsPlayerConnected(i) && !IsPlayerNPC(i)) Fs_PlayerLoad(i);', '}');
@@ -335,13 +341,14 @@ export function filterscriptPawn(ctx) {
   if (npcs) {
     const P = npcMod.load.replace(/_Load\(\);$/, '');
     // The names of the NPCs only get free a moment after they leave: they come back by a timer
-    cmd.push('if(!strcmp(name, "/fsnpc", true))', '{', `    ${P}_Unload();`, '    SetTimer("Fs_NpcReload", 1000, false);', `    SendClientMessage(playerid, FS_COLOR_OK, ${q(chat('NPCs recriados.'))});`, '    return 1;', '}');
+    // A second /fsnpc before they come back only restarts the wait (two timers would create them twice)
+    cmd.push('if(!strcmp(name, "/fsnpc", true))', '{', `    ${P}_Unload();`, '    if(Fs_NpcTimer) KillTimer(Fs_NpcTimer);', '    Fs_NpcTimer = SetTimer("Fs_NpcReload", 1000, false);', `    SendClientMessage(playerid, FS_COLOR_OK, ${q(chat('NPCs recriados.'))});`, '    return 1;', '}');
   }
   cmd.push('return 0;');
   block(L, 'public OnPlayerCommandText(playerid, cmdtext[])', cmd);
   if (npcs) {
     L.push('forward Fs_NpcReload();');
-    block(L, 'public Fs_NpcReload()', [`${npcMod.load}`, 'return 1;']);
+    block(L, 'public Fs_NpcReload()', ['Fs_NpcTimer = 0;', `${npcMod.load}`, 'return 1;']);
   }
 
   // Next word of the command (no plugin needed)

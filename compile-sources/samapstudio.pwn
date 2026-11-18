@@ -644,11 +644,6 @@ stock SAMSP_CarregarMapa()
                     gMapIcons[gTotalMapIcons][mi_type] = SAMSP_Int(linha, 5);
                     gMapIcons[gTotalMapIcons][mi_color] = SAMSP_HexOrInt(linha, 6);
                     gMapIcons[gTotalMapIcons][mi_style] = SAMSP_Int(linha, 7);
-                    if (gUseStreamer && gTotalMapIcons >= 100)
-                    {
-                        CreateDynamicMapIcon(gMapIcons[gTotalMapIcons][mi_x], gMapIcons[gTotalMapIcons][mi_y], gMapIcons[gTotalMapIcons][mi_z],
-                            gMapIcons[gTotalMapIcons][mi_type], gMapIcons[gTotalMapIcons][mi_color], -1, -1, -1, 200.0, gMapIcons[gTotalMapIcons][mi_style]);
-                    }
                     sumX += gMapIcons[gTotalMapIcons][mi_x];
                     sumY += gMapIcons[gTotalMapIcons][mi_y];
                     sumZ += gMapIcons[gTotalMapIcons][mi_z];
@@ -1050,8 +1045,16 @@ stock SAMSP_CarregarMapa()
     }
     fclose(arquivo);
 
-    // Map icons past the 100 slots only appear with the streamer
-    if (!gUseStreamer && gTotalMapIcons > 100) gIgnorados += gTotalMapIcons - 100;
+    // Past 100 map icons the streamer creates them all (it shares out the slots itself, like the Pawn export);
+    // without it the ones past the 100 slots are left out
+    if (gUseStreamer && gTotalMapIcons > 100)
+    {
+        for (new i = 0; i < gTotalMapIcons; i++)
+        {
+            CreateDynamicMapIcon(gMapIcons[i][mi_x], gMapIcons[i][mi_y], gMapIcons[i][mi_z], gMapIcons[i][mi_type], gMapIcons[i][mi_color], -1, -1, -1, 200.0, gMapIcons[i][mi_style]);
+        }
+    }
+    else if (gTotalMapIcons > 100) gIgnorados += gTotalMapIcons - 100;
     if (gIgnorados > 0) printf("[SA Map Studio] Aviso: %d itens passaram dos limites do servidor de teste (ou não foram criados) e não aparecem no jogo.", gIgnorados);
 
     if (!gHasMapCenter && countCoords > 0)
@@ -1368,6 +1371,7 @@ public OnActorStreamIn(actorid, forplayerid)
 
 stock SAMSP_ShowMapIcons(playerid)
 {
+    if (gUseStreamer && gTotalMapIcons > 100) return; // the streamer shows them
     for (new i = 0; i < gTotalMapIcons && i < 100; i++)
     {
         new slot = gMapIcons[i][mi_iconid];

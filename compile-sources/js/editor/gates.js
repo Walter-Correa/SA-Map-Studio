@@ -73,12 +73,15 @@ export const gateVar = (id, k) => `${gateIdent(id)}_Obj[${k}]`;
 
 // The gate system for the export: settings, state and the functions that open and close.
 // gates: the gate objects in export order; id: the map name for the identifiers; dynamic: streamer objects;
-// center: subtracted from positions (relative export); fmt: number formatting.
-export function gatePawn(gates, { id, dynamic, center, fmt, tr }) {
+// center: subtracted from positions (relative export); fmt: number formatting; server: for each gate, true when it is a server
+// object even with the Streamer (a NPC surfs on it).
+export function gatePawn(gates, { id, dynamic, server = [], center, fmt, tr }) {
   if (!gates.length) return { decl: '', code: '', usage: [] };
   const G = gateIdent(id), n = gates.length;
-  const move = dynamic ? 'MoveDynamicObject' : 'MoveObject';
-  const getPos = dynamic ? 'GetDynamicObjectPos' : 'GetObjectPos';
+  const mixed = dynamic && gates.some((o, k) => server[k]);
+  // Streamer and server gates together: each one moves with the functions of its kind
+  const srvObj = mixed ? `_:${G}_Obj[gate]` : `${G}_Obj[gate]`;
+  const byKind = (srv, dyn) => (mixed ? [`if (${G}_Srv[gate]) ${srv}`, `else ${dyn}`] : [dynamic ? dyn : srv]);
   const L = [];
   L.push('// ================================================================');
   L.push(`// ${tr('Portões e portas: abrem com uma tecla ou com a buzina perto deles e fecham sozinhos.')}`);
@@ -112,6 +115,7 @@ export function gatePawn(gates, { id, dynamic, center, fmt, tr }) {
   L.push('};');
   L.push(`stock ${dynamic ? 'STREAMER_TAG_OBJECT:' : ''}${G}_Obj[${n}];`);
   L.push(`stock ${G}_State[${n}]; // 0 closed, 1 opening, 2 open, 3 closing`);
+  if (mixed) L.push(`stock const bool:${G}_Srv[${n}] = {${gates.map((o, k) => (server[k] ? 'true' : 'false')).join(', ')}}; // true: server object (a NPC surfs on it)`);
   const decl = L.splice(0).join('\n');
   L.push(`stock ${G}_Key(playerid, {KEY, _}:newkeys, {KEY, _}:oldkeys)`);
   L.push('{');
@@ -132,7 +136,8 @@ export function gatePawn(gates, { id, dynamic, center, fmt, tr }) {
   L.push('    new p = open ? 6 : 0;');
   L.push(`    if (${G}_Cfg[gate][4]) ${G}_Sound(gate, 1153);`);
   L.push(`    ${G}_State[gate] = open ? 1 : 3;`);
-  L.push(`    ${move}(${G}_Obj[gate], ${G}_Pos[gate][p], ${G}_Pos[gate][p + 1], ${G}_Pos[gate][p + 2], ${G}_Pos[gate][12], ${G}_Pos[gate][p + 3], ${G}_Pos[gate][p + 4], ${G}_Pos[gate][p + 5]);`);
+  const to = `${G}_Pos[gate][p], ${G}_Pos[gate][p + 1], ${G}_Pos[gate][p + 2], ${G}_Pos[gate][12], ${G}_Pos[gate][p + 3], ${G}_Pos[gate][p + 4], ${G}_Pos[gate][p + 5]`;
+  for (const l of byKind(`MoveObject(${srvObj}, ${to});`, `MoveDynamicObject(${G}_Obj[gate], ${to});`)) L.push(`    ${l}`);
   L.push(`    SetTimerEx("${G}_Arrive", ${G}_Cfg[gate][2], false, "i", gate);`);
   L.push('    return 1;');
   L.push('}');
@@ -141,7 +146,7 @@ export function gatePawn(gates, { id, dynamic, center, fmt, tr }) {
   L.push(`stock ${G}_Sound(gate, soundid)`);
   L.push('{');
   L.push('    new Float:x, Float:y, Float:z;');
-  L.push(`    ${getPos}(${G}_Obj[gate], x, y, z);`);
+  for (const l of byKind(`GetObjectPos(${srvObj}, x, y, z);`, `GetDynamicObjectPos(${G}_Obj[gate], x, y, z);`)) L.push(`    ${l}`);
   L.push('    for (new p = 0; p < MAX_PLAYERS; p++)');
   L.push('    {');
   L.push('        if (IsPlayerConnected(p)) PlayerPlaySound(p, soundid, x, y, z);');

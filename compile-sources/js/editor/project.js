@@ -795,9 +795,15 @@ export function makeCheckpoint(data) {
 
 // Map icon slots (SetPlayerMapIcon takes 0 to 99 per player, and an icon in a used slot replaces the other one): each icon
 // gets its own. keep: the icons whose slot stays as it is (those already in the project); without it, the first icon of each
-// slot keeps it. The others keep theirs when it is free, or take the first free one. Past 100 icons the slots repeat.
+// slot keeps it. The others keep theirs when it is free, or take the first free one. Past 100 icons the slots repeat
+// (mapIconOverflow says which icons those are).
 export function mapIconSlots(icons, keep = null) {
-  const used = new Set(), out = new Array(icons.length);
+  return iconSlotPlan(icons, keep).out;
+}
+// The indices of the icons past the 100 slots: their slot repeats one already taken, so SetPlayerMapIcon would replace that icon
+export const mapIconOverflow = (icons) => iconSlotPlan(icons).extra;
+function iconSlotPlan(icons, keep) {
+  const used = new Set(), out = new Array(icons.length), extra = new Set();
   const valid = (s) => Number.isInteger(s) && s >= 0 && s < 100;
   icons.forEach((m, i) => {
     const s = m.iconid;
@@ -808,10 +814,11 @@ export function mapIconSlots(icons, keep = null) {
     if (out[i] !== undefined) return;
     if (valid(m.iconid) && !used.has(m.iconid)) { out[i] = m.iconid; used.add(m.iconid); return; }
     while (next < 100 && used.has(next)) next++;
-    out[i] = next < 100 ? next : i % 100;
+    if (next < 100) out[i] = next;
+    else { out[i] = i % 100; extra.add(i); }
     used.add(out[i]);
   });
-  return out;
+  return { out, extra };
 }
 export function fixMapIconSlots(icons, keep = null) {
   const slots = mapIconSlots(icons, keep);

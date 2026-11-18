@@ -3,7 +3,7 @@
 // Compatible with what Map Construction, Texture Studio and similar editors export.
 import { normalizeMaterial, materialCall, parseColor, toInt, decodePawnString, encodePawnString } from './materials.js';
 import { VEHICLE_COMPONENTS } from '../world/vehicleMods.js';
-import { mapIconSlots, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, textDrawPawn, PB_INCLUDE, PB_LABEL_ORIENTS } from './project.js';
+import { mapIconSlots, mapIconOverflow, textDrawNative, progressBarPawn, progressBarVar, textDrawVar, PB_DIRECTIONS, PB_LIMITS, PB_STYLE_NAMES, clampPbStyle, clampPbSegments, clampPbSegmentScale, clampPbAutoFillMax, fitPbBorder, clampPbBlinkInterval, clampPbBlinkDuration, textDrawPawn, PB_INCLUDE, PB_LABEL_ORIENTS } from './project.js';
 import { TDFX_FUNCTIONS, TDFX_INCLUDE, tdfxActive, tdfxFromCall } from './tdfx.js';
 import { gatePawn, gateVar, importGates } from './gates.js';
 import { npcPawn, npcIdent, projectNpcs, importNpcs } from './ompNpc.js';
@@ -118,7 +118,7 @@ const unquote = (s) => (s || '').trim().replace(/^"|"$/g, '');
 // A wrapped function name also counts: the known name must be a whole word inside the identifier, with an optional
 // prefix ending in "_" (new_CreatePlayerTextDraw) and an optional suffix starting with "Ex" or "_" (CreatePlayerTextDrawEx).
 // The lookbehind keeps TextDrawFont from matching inside PlayerTextDrawFont; group 3 is the suffix.
-const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?(?<![\w@])(?:[\w@]*_)?(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColor|TextDrawBoxColor|TextDrawBackgroundColor|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawSetPreviewVehicleColou?rs|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColor|PlayerTextDrawBoxColor|PlayerTextDrawBackgroundColor|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawSetPreviewVehicleColou?rs|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)((?:Ex(?![a-z])|_)[\w@]*)?\s*\(`, 'g');
+const FN_RE = new RegExp(String.raw`(?:([A-Za-z_@][\w@]*(?:\s*\[[^\]=;]*\])*)\s*=\s*)?(?<![\w@])(?:[\w@]*_)?(CreateDynamicObjectEx|CreateDynamicObject|CreateObject|CreatePlayerObject|RemoveBuildingForPlayer|RemoveBuilding|AddStaticVehicleEx|AddStaticVehicle|CreateVehicle|ChangeVehicleColor|ChangeVehiclePaintjob|AddVehicleComponent|CreateActor|ApplyActorAnimation|SetActorVirtualWorld|SetActorInvulnerable|SetActorHealth|SetActorFacingAngle|SetActorPos|Create3DTextLabel|CreateDynamic3DTextLabel|CreatePickup|CreateDynamicPickup|GangZoneCreate|GangZoneShowForPlayer|GangZoneShowForAll|SetPlayerCheckpoint|CreateDynamicCP|SetPlayerRaceCheckpoint|CreateDynamicRaceCP|SetPlayerMapIcon|CreateDynamicMapIcon|TextDrawCreate|CreatePlayerTextDraw|TextDrawFont|TextDrawColou?r|TextDrawBoxColou?r|TextDrawBackgroundColou?r|TextDrawLetterSize|TextDrawTextSize|TextDrawSetOutline|TextDrawSetShadow|TextDrawAlignment|TextDrawSetSelectable|TextDrawSetProportional|TextDrawSetPreviewModel|TextDrawSetPreviewRot|TextDrawSetPreviewVehCol|TextDrawSetPreviewVehicleColou?rs|TextDrawUseBox|PlayerTextDrawFont|PlayerTextDrawColou?r|PlayerTextDrawBoxColou?r|PlayerTextDrawBackgroundColou?r|PlayerTextDrawLetterSize|PlayerTextDrawTextSize|PlayerTextDrawSetOutline|PlayerTextDrawSetShadow|PlayerTextDrawAlignment|PlayerTextDrawSetSelectable|PlayerTextDrawSetProportional|PlayerTextDrawSetPreviewModel|PlayerTextDrawSetPreviewRot|PlayerTextDrawSetPreviewVehCol|PlayerTextDrawSetPreviewVehicleColou?rs|PlayerTextDrawUseBox|CreatePlayerProgressBar|SetPlayerProgressBarValue|BlinkPlayerProgressBar|AutoFillPlayerProgressBar|SetPlayerProgressBarMinValue|SetPlayerProgressBarRange|SetPlayerProgressBarGradient|SetPlayerProgressBarLabel|InterpolatePlayerProgressBarValue|${TDFX_FUNCTIONS.join('|')}|MoveDynamicObject|MoveObject|AttachDynamicObjectToObject|AttachObjectToObject|AttachDynamicObjectToVehicle|AttachObjectToVehicle|SetDynamicObjectMaterialText|SetDynamicObjectMaterial|SetPlayerObjectMaterialText|SetPlayerObjectMaterial|SetObjectMaterialText|SetObjectMaterial|SetPlayerCameraPos|SetPlayerCameraLookAt|InterpolateCameraPos|InterpolateCameraLookAt|SetPlayerPos|SetPlayerInterior)((?:Ex(?![a-z])|_)[\w@]*)?\s*\(`, 'g');
 // Streamer functions whose Ex version has its own parameter order (streamer.inc): parameter names of the base
 // function and of the Ex one. The Ex call is rewritten in the base order; worlds/interiors/players lists keep
 // only their first value, areas and priority are dropped.
@@ -508,8 +508,8 @@ export function parsePwn(source) {
     const inner = masked.slice(re.lastIndex, i - 1);
     re.lastIndex = i;
     const stmtEnd = i;
-    // The open.mp names (TextDrawSetPreviewVehicleColours) are read as the SA-MP ones
-    let fn = m[2].replace(/VehicleColou?rs$/, 'VehCol');
+    // The open.mp names (TextDrawSetPreviewVehicleColours, TextDrawColour) are read as the SA-MP ones
+    let fn = m[2].replace(/VehicleColou?rs$/, 'VehCol').replace(/Colour$/, 'Color');
     // CreateDynamicObjectEx is in the list on its own; the other streamer Ex functions come as base name + "Ex" suffix
     const exBase = fn === 'CreateDynamicObjectEx' ? 'CreateDynamicObject'
       : (m[3] && /^Ex/.test(m[3]) && STREAMER_EX.has(fn) ? fn : null);
@@ -1350,8 +1350,6 @@ export function exportPawn(project, options = {}) {
   }
 
   const moveFn = dyn ? 'MoveDynamicObject' : 'MoveObject';
-  const attFn = dyn ? 'AttachDynamicObjectToObject' : 'AttachObjectToObject';
-  const attVehFn = dyn ? 'AttachDynamicObjectToVehicle' : 'AttachObjectToVehicle';
   const fc = (v) => formatCoord(v, null);
   const preLines = (item, out, indent = '') => {
     if (!item.preComment) return;
@@ -1380,23 +1378,36 @@ export function exportPawn(project, options = {}) {
   }
   const npcP = npcIdent(gateId);
   const npcMod = npcPawn(npcActors, { id: gateId, fmt: (v) => f(v, d), center, vehIdx: npcVehIdx, objIdx: npcObjIdx, tr });
+  // Server objects: all of them without the Streamer; with it, the ones a NPC surfs on. An attachment only joins two objects of
+  // the same kind (the test server does the same): the others stay loose, with a warning
+  const isSrv = (o) => !dyn || npcObjIdx.has(o.uid);
+  const attachKindOk = (o) => isVehAttach(o) || isSrv(o) === isSrv(objByUid.get(o.attach.to));
+  const looseAttach = objs.filter(o => attachOk(o) && !attachKindOk(o)).length;
+  const attachLines = (o, v, out) => {
+    if (!attachOk(o) || !attachKindOk(o)) return;
+    const srv = isSrv(o), attCmt = o.attach.comment ? ` // ${o.attach.comment}` : '';
+    const off = `${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)}`;
+    if (isVehAttach(o)) out.push(`${srv ? 'AttachObjectToVehicle' : 'AttachDynamicObjectToVehicle'}(${v}, vehicleid, ${off});${attCmt}`);
+    else out.push(`${srv ? 'AttachObjectToObject' : 'AttachDynamicObjectToObject'}(${v}, ${parentVar(o.attach.to)}, ${off}, ${o.attach.syncRot ?? 1});${attCmt}`);
+  };
   const emitObjectBlock = (targetArr, o) => {
     const isParent = parentIdx.has(o.uid);
     const varName = isParent ? parentVar(o.uid) : 'objectid';
-    const hasExtras = (o.materials && o.materials.length) || o.move || attachOk(o) || isParent || gateIdx.has(o.uid);
+    const hasExtras = (o.materials && o.materials.length) || o.move || (attachOk(o) && attachKindOk(o)) || isParent || gateIdx.has(o.uid);
     const cmt = commentSuffix(o);
+    // The other names of the object go in the same line (attachtoid[k] = Gate_X_Obj[i] = ...), which the import reads back
+    const parentAs = isParent ? `${varName} = ` : '';
+    const gv = gateIdx.has(o.uid) ? gateVar(gateId, gateIdx.get(o.uid)) : null;
     if (npcObjIdx.has(o.uid)) {
       // An object a NPC surfs on: NPC_SetSurfingObject needs a server object
       const ov = `${npcP}_Obj[${npcObjIdx.get(o.uid)}]`, so = { ...opt, objectFn: 'CreateObject' };
-      targetArr.push(`${ov} = ${objectLine(o, so, center)};${cmt}`);
+      targetArr.push(`${parentAs}${gv ? `${gv} = ` : ''}${ov} = ${objectLine(o, so, center)};${cmt}`);
       if (o.materials?.length) targetArr.push(...materialLines(o, so, ov));
-      if (o.move) targetArr.push(`MoveObject(${ov}, ${f(o.move.targetX - center.x, d)}, ${f(o.move.targetY - center.y, d)}, ${f(o.move.targetZ - center.z, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});`);
-      if (isParent) targetArr.push(`${varName} = ${ov};`);
-    } else if (gateIdx.has(o.uid)) {
-      const gv = gateVar(gateId, gateIdx.get(o.uid));
-      targetArr.push(`${gv} = ${objectLine(o, opt, center)};${cmt}`);
+      if (o.move && !gv) targetArr.push(`MoveObject(${ov}, ${f(o.move.targetX - center.x, d)}, ${f(o.move.targetY - center.y, d)}, ${f(o.move.targetZ - center.z, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});`);
+      attachLines(o, ov, targetArr);
+    } else if (gv) {
+      targetArr.push(`${parentAs}${gv} = ${objectLine(o, opt, center)};${cmt}`);
       if (o.materials?.length) targetArr.push(...materialLines(o, opt, gv));
-      if (isParent) targetArr.push(`${varName} = ${gv};`);
     } else if (hasExtras) {
       targetArr.push(`${varName} = ${objectLine(o, opt, center)};${cmt}`);
       if (o.materials?.length) targetArr.push(...materialLines(o, opt, varName));
@@ -1405,14 +1416,7 @@ export function exportPawn(project, options = {}) {
         const moveCmt = o.move.comment ? ` // ${o.move.comment}` : '';
         targetArr.push(`${moveFn}(${varName}, ${f(mx, d)}, ${f(my, d)}, ${f(mz, d)}, ${f(o.move.speed, 2)}, ${f(o.move.targetRx, 2)}, ${f(o.move.targetRy, 2)}, ${f(o.move.targetRz, 2)});${moveCmt}`);
       }
-      if (attachOk(o)) {
-        const attCmt = o.attach.comment ? ` // ${o.attach.comment}` : '';
-        if (isVehAttach(o)) {
-          targetArr.push(`${attVehFn}(${varName}, vehicleid, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)});${attCmt}`);
-        } else {
-          targetArr.push(`${attFn}(${varName}, ${parentVar(o.attach.to)}, ${f(o.attach.ox, 4)}, ${f(o.attach.oy, 4)}, ${f(o.attach.oz, 4)}, ${f(o.attach.rx, 2)}, ${f(o.attach.ry, 2)}, ${f(o.attach.rz, 2)}, ${o.attach.syncRot ?? 1});${attCmt}`);
-        }
-      }
+      attachLines(o, varName, targetArr);
     } else {
       targetArr.push(objectLine(o, opt, center) + ';' + cmt);
     }
@@ -1550,15 +1554,21 @@ export function exportPawn(project, options = {}) {
   const firstCp = cpCalls.findIndex(l => l.startsWith('SetPlayerCheckpoint('));
   const firstRace = cpCalls.findIndex(l => l.startsWith('SetPlayerRaceCheckpoint('));
 
-  // Map icons: each one in its own slot (0 to 99), or the last one replaces the others
-  const mapIconLines = [];
+  // Map icons: each one in its own slot (0 to 99), or the last one replaces the others. Past 100 icons the streamer creates
+  // them all (it shares out the slots itself); without it the ones past the slots are left out
+  const mapIconLines = [], mapIconDynLines = [];
   const mapIcons = project.mapIcons || [];
   const iconSlots = mapIconSlots(mapIcons);
+  const dynIcons = dyn && mapIcons.length > 100;
+  const iconExtra = dynIcons ? new Set() : mapIconOverflow(mapIcons);
   for (let idx = 0; idx < mapIcons.length; idx++) {
+    if (iconExtra.has(idx)) continue;
     const mi = mapIcons[idx];
-    preLines(mi, mapIconLines);
+    const out = dynIcons ? mapIconDynLines : mapIconLines;
+    preLines(mi, out);
     const mx = mi.x - center.x, my = mi.y - center.y, mz = mi.z - center.z;
-    mapIconLines.push(`SetPlayerMapIcon(playerid, ${iconSlots[idx]}, ${formatCoord(mx)}, ${formatCoord(my)}, ${formatCoord(mz)}, ${mi.type ?? 0}, ${hex8(mi.color ?? 0xFF0000FF)}, ${mi.style ?? 0});${commentSuffix(mi)}`);
+    if (dynIcons) out.push(`CreateDynamicMapIcon(${formatCoord(mx)}, ${formatCoord(my)}, ${formatCoord(mz)}, ${mi.type ?? 0}, ${hex8(mi.color ?? 0xFF0000FF)}, -1, -1, -1, 200.0, ${mi.style ?? 0});${commentSuffix(mi)}`);
+    else out.push(`SetPlayerMapIcon(playerid, ${iconSlots[idx]}, ${formatCoord(mx)}, ${formatCoord(my)}, ${formatCoord(mz)}, ${mi.type ?? 0}, ${hex8(mi.color ?? 0xFF0000FF)}, ${mi.style ?? 0});${commentSuffix(mi)}`);
   }
 
   const textDrawLines = [];
@@ -1576,7 +1586,7 @@ export function exportPawn(project, options = {}) {
   }
 
   const cams = opt.includeCameras ? cameraFunctions(project.cameras, { id, center }) : { code: '', usage: [] };
-  const gates = gatePawn(gateObjs, { id: gateId, dynamic: dyn, center, fmt: (v) => f(v, d), tr });
+  const gates = gatePawn(gateObjs, { id: gateId, dynamic: dyn, server: gateObjs.map(o => npcObjIdx.has(o.uid)), center, fmt: (v) => f(v, d), tr });
 
   // Limits of the game: what goes past them does not appear (the streamer has no limit for its own items)
   const warnLines = [];
@@ -1586,7 +1596,8 @@ export function exportPawn(project, options = {}) {
   warn(actors.length - npcActors.length, 'CreateActor', 1000);
   if (!dyn) { warn(labels.length, 'Create3DTextLabel', 1024); warn(pickups.length, 'CreatePickup', 4096); }
   warn(gangZones.length, 'GangZoneCreate', 1024);
-  warn(mapIcons.length, 'SetPlayerMapIcon', 100);
+  if (looseAttach) warnLines.push(`// ${tr('Aviso: {0} objetos ficam soltos: um objeto do streamer não se prende a um objeto do servidor (onde um NPC anda), nem o contrário.', looseAttach)}`);
+  if (iconExtra.size) warnLines.push(`// ${tr('Aviso: {0} ícones do mapa, mais que os {1} lugares de SetPlayerMapIcon: os {2} a mais ficaram fora do código (com o streamer, saem todos).', mapIcons.length, 100, iconExtra.size)}`);
   warn(textDraws.filter(t => t.type !== 'progress' && !t.isPlayer).length, 'TextDrawCreate', 2048);
   warn(textDraws.filter(t => t.type !== 'progress' && t.isPlayer).length, 'CreatePlayerTextDraw', 256);
   warn(textDraws.filter(t => t.type === 'progress').length, 'CreatePlayerProgressBar', 85);
@@ -1637,9 +1648,9 @@ export function exportPawn(project, options = {}) {
   if (textDraws.some(tdfxActive)) incs.push(TDFX_INCLUDE);
 
   if (opt.layout === 'filterscript') {
-    const fs = filterscriptPawn({ project, fc: (v) => f(v, d), fileName: sanitizeIdent(project.name).toLowerCase(), gateId, gateObjs, gates, npcMod, npcActors,
+    const fs = filterscriptPawn({ project, fc: (v) => f(v, d), fileName: sanitizeIdent(project.name).toLowerCase() + '_fs', gateId, gateObjs, gates, npcMod, npcActors,
       actors: actors.filter(a => !npcSet.has(a)), vehs, cams, objLines, vehLines, actorLines, remLines, labelLines, pickupLines, gangZoneLines,
-      checkpointLines, mapIconLines, needObjId, attachDecl, needVehId, warnLines, chatText: opt.chatText });
+      checkpointLines, mapIconLines, mapIconDynLines, needObjId, attachDecl, needVehId, warnLines, chatText: opt.chatText });
     return withIncludes(fs.lines, fs.incAt, incs, omp);
   }
 
@@ -1672,7 +1683,7 @@ export function exportPawn(project, options = {}) {
         lines.push(...checkpointLines);
       }
     }
-    if (mapIconLines.length) lines.push('', '// MapIcons:', ...mapIconLines);
+    if (mapIconLines.length || mapIconDynLines.length) lines.push('', '// MapIcons:', ...mapIconLines, ...mapIconDynLines);
     if (textDrawLines.length) lines.push('', '// TextDraws:', ...textDrawLines);
     if (npcMod.load) lines.push('', `// ${tr('NPCs do open.mp: chame depois de criar os veículos:')}`, npcMod.load);
     if (remLines.length) lines.push('', '// Removed objects (put in OnPlayerConnect):', ...remLines);
@@ -1750,6 +1761,7 @@ export function exportPawn(project, options = {}) {
   if (actorLines.length) { lines.push(''); for (const l of actorLines) lines.push(indent(l)); }
   if (labelLines.length) { lines.push('', '    // 3D Texts:'); for (const l of labelLines) lines.push(indent(l)); }
   if (pickupLines.length) { lines.push('', '    // Pickups:'); for (const l of pickupLines) lines.push(indent(l)); }
+  if (mapIconDynLines.length) { lines.push('', '    // MapIcons:'); for (const l of mapIconDynLines) lines.push(indent(l)); }
   if (zones.length) {
     lines.push('', '    // GangZones:');
     zones.forEach((z, k) => { if (z.blank && k > 0) lines.push(''); lines.push(...z.pre.map(indent), indent(`${zoneVar(k)} = ${z.create};${z.cmt}`)); });
@@ -1760,7 +1772,7 @@ export function exportPawn(project, options = {}) {
   lines.push('    return 1;');
   lines.push('}');
   if (playerLines.length) {
-    lines.push('', `stock Map_${id}_Player(playerid)`, '{');
+    lines.push('', `stock Map_${id}_Player(playerid)`, '{', '    if (IsPlayerNPC(playerid)) return 1; // the NPCs need none of it');
     for (const l of playerLines) lines.push(indent(l));
     lines.push('    return 1;', '}');
   }
@@ -1773,6 +1785,7 @@ export function exportPawn(project, options = {}) {
     lines.push('');
     lines.push(`stock Map_${id}_Remove(playerid)`);
     lines.push('{');
+    lines.push('    if (IsPlayerNPC(playerid)) return 1;');
     for (const l of remLines) lines.push(indent(l));
     lines.push('    return 1;');
     lines.push('}');
