@@ -811,7 +811,9 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`    if (${P}_St[k][4]) { KillTimer(${P}_St[k][4]); ${P}_St[k][4] = 0; }`);
     C.push('    if (NPC_IsPlayingNode(npcid)) NPC_PausePlayingNode(npcid);');
     C.push('    if (NPC_IsPlayingPlayback(npcid)) NPC_PausePlayback(npcid, true);');
-    C.push('    if (NPC_IsMoving(npcid)) NPC_StopMove(npcid);');
+    C.push('    // Always: a NPC that follows a player and stands next to it is not moving, but open.mp still keeps it following and');
+    C.push('    // would turn the next move (fleeing, fighting) back towards that player');
+    C.push('    NPC_StopMove(npcid);');
     C.push('    return 1;', '}', '');
     C.push('// One step of the fight (every 200 ms). A move order is given only when it changes: giving it again and again would start');
     C.push('// and stop the walk (jerks).');
@@ -903,7 +905,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     if (anyWander && anyGraph) C.push(`        case 2: { ${P}_St[k][5] = 0; if (${P}_Ai[k][22] > 0) { ${P}_St[k][6] = -1; ${P}_GWalk(k); } else { ${wanderResume} } }`);
     else if (anyWander) C.push(`        case 2: { ${P}_St[k][5] = 0; ${wanderResume} }`);
     else if (anyGraph) C.push(`        case 2: { ${P}_St[k][5] = 0; ${P}_St[k][6] = -1; ${P}_GWalk(k); }`);
-    C.push(`        case 4: ${P}_St[k][5] = 0;`);
+    C.push(`        case 4: { ${P}_St[k][10] = ${P}_St[k][5] == 2 ? 50 : 0; ${P}_St[k][5] = 0; } // after fleeing it waits 10 s before following again`);
     if (anyPlayback) C.push(`        case 5: { ${P}_St[k][5] = 0; if (NPC_IsPlaybackPaused(npcid)) NPC_PausePlayback(npcid, false); else ${P}_Start(k); }`);
     C.push('        default:', '        {');
     C.push(`            ${P}_St[k][5] = 3;`);
@@ -970,8 +972,13 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`                if (p != INVALID_PLAYER_ID) ${P}_Fight(k, p);`);
     C.push('            }');
     C.push('            case 4:', '            {');
-    C.push(`                new p = ${P}_Closest(npcid, ${P}_AiF[k][5]);`);
-    C.push(`                if (p != INVALID_PLAYER_ID && NPC_GetPlayerMovingTo(npcid) != p) NPC_MoveToPlayer(npcid, p, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], ${P}_AiF[k][1], ${P}_Ai[k][23], true);`);
+    C.push('                // Follows without the restart of open.mp (it starts again as soon as the player is a few centimetres past the');
+    C.push('                // distance, so it stops and goes all the time): it catches up once the player is 1.5 m past it, then stops');
+    C.push(`                if (${P}_St[k][10] > 0) ${P}_St[k][10]--;`);
+    C.push('                else', '                {');
+    C.push(`                    new p = ${P}_Closest(npcid, ${P}_AiF[k][5]);`);
+    C.push(`                    if (p != INVALID_PLAYER_ID && NPC_GetPlayerMovingTo(npcid) != p && !${P}_Near(npcid, p, ${P}_AiF[k][1] + 1.5)) NPC_MoveToPlayer(npcid, p, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], ${P}_AiF[k][1], ${P}_Ai[k][23], false);`);
+    C.push('                }');
     C.push('            }');
     C.push('            default:', '            {');
     C.push(`                if (!${P}_Ai[k][9]) continue;`);
