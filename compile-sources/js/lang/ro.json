@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "Un text al scriptului CLEO are mai mult de 255 de caractere:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio a fost repornit și această pagină a pierdut conexiunea cu el. Reîncarcă pagina pentru a continua: modificările nesalvate au fost păstrate în browser și vor fi recuperate.",
  "Recarregar a página": "Reîncarcă pagina",
- "Agora não": "Nu acum"
+ "Agora não": "Nu acum",
+ "Fica em fuga por (s)": "Rămâne în fugă (s)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "După fugă rămâne în alertă atâta timp: dacă agresorul se apropie, fuge din nou (0 = nu rămâne)",
+ "Espera antes de voltar (s)": "Așteaptă înainte de a reveni (s)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Timp cât stă pe loc după fugă înainte de a reveni la ce făcea",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Pe jos fuge pe trotuare, iar la volan pe drumuri, mereu departe de agresor; fără trotuar sau drum în apropiere, fuge în linie dreaptă."
 }

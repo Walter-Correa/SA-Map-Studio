@@ -130,7 +130,12 @@ export function ompNpcSection(a) {
     }
   }
   const flees = n.onDamage === 'flee' && n.mode !== 'guard';
-  if (flees || (ranged && n.noAmmo === 'flee' && fights)) f += pair(num('Foge até (m)', 'fleeDist', 3, 300, 1), sel('Como foge', 'fleeMove', MOVES3));
+  if (flees || (ranged && n.noAmmo === 'flee' && fights)) {
+    f += pair(num('Foge até (m)', 'fleeDist', 3, 300, 1), sel('Como foge', 'fleeMove', MOVES3))
+      + pair(num('Fica em fuga por (s)', 'fleeAlert', 0, 600, 1, 'Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)'),
+        num('Espera antes de voltar (s)', 'fleeWait', 0, 600, 1, 'Tempo parado depois da fuga antes de voltar ao que fazia'))
+      + note('A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.');
+  }
   if (fights && ['idle', 'guard'].includes(n.mode)) f += pair(sel('Volta ao lugar', 'returnMove', MOVES3));
   // In a vehicle: to fight it gets out (and gets back in after); to flee, a driver drives away
   if (n.vehicle && n.onDamage === 'fight') f += note('No veículo, ele desce para lutar e depois volta para o veículo e segue dali.');

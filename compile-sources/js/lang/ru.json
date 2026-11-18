@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "Текст скрипта CLEO длиннее 255 символов:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio был перезапущен, и эта страница потеряла с ним связь. Перезагрузите страницу, чтобы продолжить: несохранённые изменения остались в браузере и будут восстановлены.",
  "Recarregar a página": "Перезагрузить страницу",
- "Agora não": "Не сейчас"
+ "Agora não": "Не сейчас",
+ "Fica em fuga por (s)": "Остаётся в бегстве (с)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "После бегства остаётся настороже это время: если нападающий приблизится, снова убегает (0 = нет)",
+ "Espera antes de voltar (s)": "Ждёт перед возвратом (с)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Время, которое он стоит после бегства, прежде чем вернуться к своему делу",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Пешком убегает по тротуарам, а за рулём — по дорогам, всегда удаляясь от нападающего; если рядом нет тротуара или дороги, убегает по прямой."
 }

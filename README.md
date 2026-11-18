@@ -148,7 +148,8 @@ never changed and removing the mod is deleting its folder.
 - Fights: how it chases (walking, running, sprinting) and when it gives up, hand to hand strikes (normal, the special one
   of the fighting style or both in turns, time between strikes, reach), with a gun the shooting range, stopping to shoot or
   shooting while walking, where it aims (body, head, legs), time between shots and what it does out of ammo (puts the gun
-  away and fights hand to hand, flees or keeps aiming), how it flees and how it goes back to its place. A NPC in a vehicle
+  away and fights hand to hand, flees or keeps aiming), how it flees (along the sidewalks on foot, the roads driving, how far,
+  how long on the alert and how long it waits before going back) and how it goes back to its place. A NPC in a vehicle
   gets out to fight, then walks back to its vehicle, gets in and drives on.
 - Seen by the players: colour and radar icon, and a chat bubble (the game shows no name tag over a NPC).
 - Behaviours: standing (with animation, looking at the player who comes close), **path drawn on the 3D map** (patrol or
@@ -572,6 +573,7 @@ Tools (in `compile-sources/`, run with Python 3):
 
 ### 4.3.0 — 17/11/2026
 - open.mp NPCs: in a Multiplayer project for open.mp, any actor can become a NPC controlled by the server with the official NPC component (NPC_* natives, no plugins). It has every property (name, skin, health, armour, invulnerable, interior, world, fighting style, special action, animation, weapon with ammunition, clip, accuracy, shoot and reload times and skill, respawn, damage taken and the reaction to damage: nothing, fight back or flee), how it fights hand to hand and with a gun, colour, radar icon and chat bubble. SA-MP projects show the option locked.
+- open.mp NPCs that flee: on foot they flee along the sidewalks and driving along the roads, always away from the attacker and up to the flee distance (straight away only with no sidewalk or road near). They can stay on the alert for a while, fleeing again if the attacker comes closer, and wait before going back to what they did (a follower waits 10 s by default).
 - open.mp NPC behaviours: standing, a path drawn on the 3D map (patrol or driver, in a loop, there and back or once), a route through the streets or sidewalks to a clicked point worked out over the official open.mp street nodes, wandering the streets on foot or driving (free or inside a radius or an area), guard, follow the player and .rec recordings. Each point of a path can have actions on arrival (38 kinds), NPCs can drive or ride the vehicles of the map, get out to fight and drive on, and surf on a vehicle or an object.
 - open.mp NPCs: preview in the editor and a real test in the open.mp test server, which compiles and runs exactly the exported code with the server's own compiler. In game /gravar records a path that the editor imports and /weapon gives a weapon, and the test window chooses whether everyone walks like CJ or each skin with its own walk. The Pawn export has the settings tables and a ready routine with the OnNPC* callbacks, and the import reads them back as well as NPCs written by hand.
 - Export as filterscript: a complete script (loadfs) that creates every item of the project in OnFilterScriptInit and destroys it in OnFilterScriptExit, handles each player on connect (removed buildings, textdraws, progress bars, map icons, gang zones, checkpoints), runs the gates and the open.mp NPCs and has test commands (/fs lists them).

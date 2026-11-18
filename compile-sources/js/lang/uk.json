@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "Текст скрипту CLEO довший за 255 символів:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio було перезапущено, і ця сторінка втратила з ним зв'язок. Перезавантажте сторінку, щоб продовжити: незбережені зміни залишилися в браузері й будуть відновлені.",
  "Recarregar a página": "Перезавантажити сторінку",
- "Agora não": "Не зараз"
+ "Agora não": "Не зараз",
+ "Fica em fuga por (s)": "Залишається у втечі (с)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Після втечі лишається насторожі цей час: якщо нападник наблизиться, тікає знову (0 = ні)",
+ "Espera antes de voltar (s)": "Чекає перед поверненням (с)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Час, який він стоїть після втечі, перш ніж повернутися до своєї справи",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Пішки тікає тротуарами, а за кермом — дорогами, завжди віддаляючись від нападника; якщо поруч немає тротуару чи дороги, тікає по прямій."
 }

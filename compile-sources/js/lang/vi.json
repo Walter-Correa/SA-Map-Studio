@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "Một văn bản của script CLEO dài hơn 255 ký tự:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio đã được khởi động lại và trang này đã mất kết nối với nó. Hãy tải lại trang để tiếp tục: các thay đổi chưa lưu vẫn được giữ trong trình duyệt và sẽ được khôi phục.",
  "Recarregar a página": "Tải lại trang",
- "Agora não": "Để sau"
+ "Agora não": "Để sau",
+ "Fica em fuga por (s)": "Tiếp tục bỏ chạy trong (giây)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Sau khi bỏ chạy, nó cảnh giác trong thời gian này: nếu kẻ tấn công lại gần, nó chạy tiếp (0 = không)",
+ "Espera antes de voltar (s)": "Chờ trước khi quay lại (giây)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Thời gian đứng yên sau khi bỏ chạy trước khi quay lại việc đang làm",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Đi bộ thì chạy theo vỉa hè, lái xe thì theo đường phố, luôn tránh xa kẻ tấn công; nếu không có vỉa hè hay đường gần đó, nó chạy thẳng."
 }
