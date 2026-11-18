@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "A CLEO szkript egyik szövege 255 karakternél hosszabb:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "Az SA Map Studio újraindult, és ez az oldal elvesztette vele a kapcsolatot. Töltsd újra az oldalt a folytatáshoz: a nem mentett változtatások a böngészőben maradtak, és visszaállnak.",
  "Recarregar a página": "Oldal újratöltése",
- "Agora não": "Most nem"
+ "Agora não": "Most nem",
+ "Fica em fuga por (s)": "Menekülésben marad (s)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Menekülés után ennyi ideig éber marad: ha a támadó közel jön, újra menekül (0 = nem marad)",
+ "Espera antes de voltar (s)": "Vár, mielőtt visszatér (s)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Ennyi ideig áll a menekülés után, mielőtt visszatér ahhoz, amit csinált",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Gyalog a járdákon, vezetve az utakon menekül, mindig távolodva a támadótól; ha nincs járda vagy út a közelben, egyenesen menekül."
 }

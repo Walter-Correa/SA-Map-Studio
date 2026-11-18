@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "Tekst skryptu CLEO ma więcej niż 255 znaków:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio zostało uruchomione ponownie i ta strona straciła z nim połączenie. Odśwież stronę, aby kontynuować: niezapisane zmiany zostały zachowane w przeglądarce i zostaną przywrócone.",
  "Recarregar a página": "Odśwież stronę",
- "Agora não": "Nie teraz"
+ "Agora não": "Nie teraz",
+ "Fica em fuga por (s)": "Ucieka przez (s)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Po ucieczce pozostaje czujny przez ten czas: jeśli napastnik się zbliży, ucieka znowu (0 = nie)",
+ "Espera antes de voltar (s)": "Czeka przed powrotem (s)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Czas stania po ucieczce przed powrotem do tego, co robił",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Pieszo ucieka chodnikami, a jadąc — drogami, zawsze oddalając się od napastnika; bez chodnika lub drogi w pobliżu ucieka w linii prostej."
 }

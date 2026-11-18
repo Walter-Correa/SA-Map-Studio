@@ -109,7 +109,7 @@ export const NPC_DEFAULTS = {
   accuracy: -1, reloadTime: -1, shootTime: -1, clipSize: -1, fightStyle: 4, special: 0,
   mode: 'idle', moveType: 'auto', speed: 0, loop: 'loop', look: false, range: 20, chase: true, followDist: 2,
   onDamage: 'none', respawn: 10,
-  giveUp: 0, fleeDist: 25, shootDist: 8, followRange: 150, chaseMove: 'jog', returnMove: 'walk', dmgMult: 1,
+  giveUp: 0, fleeDist: 25, fleeAlert: 0, shootDist: 8, followRange: 150, chaseMove: 'jog', returnMove: 'walk', dmgMult: 1,
   fleeMove: 'sprint', wanderRadius: 0, lane: 2.5, color: 0xFFFFFFFF, marker: false, bubble: '', bubbleColor: 0xFFFFFFFF, bubbleDist: 20,
   wanderLimit: 'free', startWhen: 'seen', aimMove: 'stop', noAmmo: 'melee', meleeKind: 'mix', meleeTime: -1, meleeReach: 1.3,
   chaseUpdate: 500, shootDelay: -1, aimAt: 'body', smooth: 0,
@@ -165,6 +165,10 @@ export function normalizeNpc(n) {
     // from how far it shoots, how far it looks for the player to follow, and how it moves when it chases and when it goes back
     giveUp: clamp(fin(n.giveUp, d.giveUp), 0, 1000),
     fleeDist: clamp(fin(n.fleeDist, d.fleeDist), 3, 300),
+    // After fleeing: on the alert for this long (s; the attacker coming closer makes it flee again), then it waits this long (s)
+    // before going back to what it did (a follower waits 10 s by default, the others go back at once)
+    fleeAlert: clamp(fin(n.fleeAlert, d.fleeAlert), 0, 600),
+    fleeWait: clamp(fin(n.fleeWait, n.mode === 'follow' ? 10 : 0), 0, 600),
     shootDist: clamp(fin(n.shootDist, d.shootDist), 1, 100),
     followRange: clamp(fin(n.followRange, d.followRange), 5, 1000),
     chaseMove: ['walk', 'jog', 'sprint'].includes(n.chaseMove) ? n.chaseMove : d.chaseMove,
@@ -258,7 +262,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   const gn = [], gnE = [], ge = []; // street graphs: points, (first way, ways), ways (to, lane offset x, y)
   const bubbleIdx = (n) => (n.bubble ? strIdx(n.bubble) : -1);
   const usedActs = new Set();
-  let anyRadius = false, anyBubble = false, anyMult = false, anyWander = false, anyThink = false, anyPreload = false, anyPlayback = false, anyPath = false, anyCar = false;
+  let anyRadius = false, anyBubble = false, anyMult = false, anyWander = false, anyThink = false, anyPreload = false, anyPlayback = false, anyPath = false, anyCar = false, anyFlee = false;
   let anyGraph = false;
   const vref = (uid) => (vehIdx.has(uid) ? vehIdx.get(uid) : -1);
   const actRow = (a, n) => {
@@ -305,6 +309,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     // Looking at the players is for a NPC that stands (one that walks would turn to the player while it goes)
     const looks = n.look && n.mode === 'idle';
     if (['guard', 'follow'].includes(n.mode) || looks || n.onDamage !== 'none') anyThink = true;
+    if ((n.onDamage === 'flee' && n.mode !== 'guard') || (n.weapon > 15 && n.noAmmo === 'flee' && (n.onDamage === 'fight' || n.mode === 'guard'))) anyFlee = true; // flees by the streets
     if (n.vehicle?.uid && vehIdx.has(n.vehicle.uid) && (n.onDamage === 'fight' || n.mode === 'guard')) anyCar = true; // gets out to fight
     if (n.dmgMult !== 1) anyMult = true;
     if (n.mode === 'playback' && n.rec) { anyPlayback = true; if (n.recPreload) anyPreload = true; }
@@ -317,7 +322,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       n.startWhen === 'seen' ? 1 : 0, n.aimMove === 'walk' ? 1 : 0, { stay: 0, melee: 1, flee: 2 }[n.noAmmo], { normal: 0, special: 1, mix: 2 }[n.meleeKind], n.meleeTime,
       g0, gc, n.chaseUpdate, n.shootDelay]);
     aiF.push([n.speed > 0 ? F(n.speed / 10) : '-1.0', F(n.mode === 'follow' ? n.followDist : n.range), F(n.giveUp), F(n.fleeDist), F(n.shootDist), F(n.followRange), F(n.dmgMult), F(n.wanderLimit === 'radius' ? n.wanderRadius : 0), F(n.bubbleDist),
-      F(n.smooth), F(AIM_Z[n.aimAt]), F(n.meleeReach), F(n.lane)]);
+      F(n.smooth), F(AIM_Z[n.aimAt]), F(n.meleeReach), F(n.lane), F(n.fleeAlert), F(n.fleeWait)]);
     look.push([(n.color & 0xFFFFFF00) | (n.marker ? 0xFF : 0) >>> 0, n.bubbleColor >>> 0]);
     if (n.mode === 'wander' && n.wanderLimit === 'radius' && n.wanderRadius > 0 && !st) anyRadius = true;
     if (n.bubble) anyBubble = true;
@@ -374,8 +379,9 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   L.push('};');
   L.push('// Speed (-1.0 = of the move type), range (guard, look) or distance (follow), gives up the chase at (0.0 = automatic),');
   L.push('// flees how far, shoots from, looks for the player to follow up to, damage taken x, streets radius (0.0 = free), bubble distance,');
-  L.push('// rounded corners (m), aim height (Z offset), reach of the strikes (m), lane of a driver on the streets (m, read back by the editor)');
-  L.push(...table(`stock const Float:${P}_AiF[${N}][13]`, aiF, 1));
+  L.push('// rounded corners (m), aim height (Z offset), reach of the strikes (m), lane of a driver on the streets (m, read back by the editor),');
+  L.push('// after fleeing: on the alert for (s), waits before going back (s)');
+  L.push(...table(`stock const Float:${P}_AiF[${N}][15]`, aiF, 1));
   L.push('// Seen by the players: colour (0xRRGGBBAA, alpha FF = marker on the radar), chat bubble colour');
   const hx = (v) => '0x' + (v >>> 0).toString(16).toUpperCase().padStart(8, '0');
   L.push(...table(`stock const ${P}_Look[${N}][2]`, look.map(r => [hx(r[0]), hx(r[1])]), 6));
@@ -407,11 +413,14 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   L.push(...flat(`stock ${P}_Rec[${N}]`, Array(N).fill('INVALID_RECORD_ID')));
   if (anyGraph) L.push(...flat(`stock ${P}_WPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of the next streets of each NPC'));
   L.push(`stock Float:${P}_HomeP[${N}][3]; // where each NPC was placed (its vehicle, for a driver)`);
-  L.push(`// leg, direction, action, target, timer, busy (1 fighting, 2 fleeing, 3 going back, 4 going to the street, 5 waiting to be seen, 6 back to its vehicle),`);
+  L.push(`// leg, direction, action, target, timer, busy (1 fighting, 2 fleeing, 3 going back, 4 going to the street, 5 waiting to be seen, 6 back to its vehicle,`);
+  L.push(`// 7 on the alert after fleeing, 8 waiting before going back, 9 back to where its recording stopped),`);
   L.push(`// street point (or area of the map), previous street point (or point of the area), chase step (0 none, 1 walking and aiming, 2 running, 3 hand to hand, 4 getting out of its vehicle), strike kind, strike count,`);
   L.push(`// stunned by blows (steps of 200 ms without shooting)`);
   L.push(`stock ${P}_St[${N}][12];`);
   L.push(`stock bool:${P}_Node[NPC_MAX_NODES], ${P}_Timer, ${P}_BubbleTimer;`);
+  if (anyPlayback) L.push(`stock Float:${P}_PbAt[${N}][3]; // where each recording was stopped by a fight or a flee`);
+  if (anyFlee) L.push(...flat(`stock ${P}_FPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of each NPC when it flees by the streets'));
   if (anyThink) L.push(`stock ${P}_Pl[MAX_PLAYERS], ${P}_PlN; // the players (not the NPCs) at each step of the Think`);
   const decl = L.splice(0).join('\n');
 
@@ -475,7 +484,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push('    }');
   C.push(`    printf("NPC %s was not created: the server is full (max_bots of config.json) or the name is taken.", ${P}_Name[k]);`);
   C.push('    return INVALID_NPC_ID;', '}', '');
-  if (anyWander) {
+  if (anyWander || anyFlee) {
     C.push('// Streets of an area of the map: an area serves the NPCs of every script; the server counts the scripts that use it and the last');
     C.push('// one to leave closes it (only when one of them opened it)');
     C.push(`stock ${P}_Hold(a)`, '{');
@@ -507,12 +516,13 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push(`        if (NPC_IsValidRecord(${P}_Rec[k])) NPC_UnloadRecord(${P}_Rec[k]);`);
   C.push(`        ${P}_Rec[k] = INVALID_RECORD_ID;`);
   if (anyGraph) C.push(`        if (${P}_WPath[k] != INVALID_PATH_ID && NPC_IsValidPath(${P}_WPath[k])) NPC_DestroyPath(${P}_WPath[k]);`, `        ${P}_WPath[k] = INVALID_PATH_ID;`);
+  if (anyFlee) C.push(`        if (${P}_FPath[k] != INVALID_PATH_ID && NPC_IsValidPath(${P}_FPath[k])) NPC_DestroyPath(${P}_FPath[k]);`, `        ${P}_FPath[k] = INVALID_PATH_ID;`);
   C.push('    }');
   C.push(`    for (new l = 0; l < sizeof(${P}_Path); l++)`, '    {');
   C.push(`        if (${P}_Path[l] != INVALID_PATH_ID && NPC_IsValidPath(${P}_Path[l])) NPC_DestroyPath(${P}_Path[l]);`);
   C.push(`        ${P}_Path[l] = INVALID_PATH_ID;`);
   C.push('    }');
-  if (anyWander) {
+  if (anyWander || anyFlee) {
     C.push('    // The areas of streets: closed by the last script that uses them');
     C.push('    new key[16];');
     C.push('    for (new a = 0; a < NPC_MAX_NODES; a++)', '    {');
@@ -889,7 +899,8 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`    new npcid = ${P}_Id[k];`);
     C.push(`    if (${P}_St[k][4]) { KillTimer(${P}_St[k][4]); ${P}_St[k][4] = 0; }`);
     C.push('    if (NPC_IsPlayingNode(npcid)) NPC_PausePlayingNode(npcid);');
-    C.push('    if (NPC_IsPlayingPlayback(npcid)) NPC_PausePlayback(npcid, true);');
+    if (anyPlayback) C.push(`    if (NPC_IsPlayingPlayback(npcid) && !NPC_IsPlaybackPaused(npcid)) { NPC_GetPos(npcid, ${P}_PbAt[k][0], ${P}_PbAt[k][1], ${P}_PbAt[k][2]); NPC_PausePlayback(npcid, true); }`);
+    else C.push('    if (NPC_IsPlayingPlayback(npcid)) NPC_PausePlayback(npcid, true);');
     C.push('    // Always: a NPC that follows a player and stands next to it is not moving, but open.mp still keeps it following and');
     C.push('    // would turn the next move (fleeing, fighting) back towards that player');
     C.push('    NPC_StopMove(npcid);');
@@ -953,10 +964,86 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`    ${P}_St[k][5] = 2; ${P}_St[k][3] = playerid; ${P}_St[k][8] = 0;`);
     C.push('    NPC_GetPos(npcid, x, y, z);');
     C.push('    GetPlayerPos(playerid, px, py, pz);');
+    if (anyFlee) C.push(`    if (${P}_FleeRoute(k, x, y, z, px, py)) return 1;`, '    // No sidewalk (on foot) or road (driving) near: straight away from the attacker');
     C.push('    new Float:d = floatsqroot((x - px) * (x - px) + (y - py) * (y - py));');
     C.push('    if (d < 0.1) d = 0.1;');
     C.push(`    NPC_Move(npcid, x + (x - px) / d * ${P}_AiF[k][3], y + (y - py) / d * ${P}_AiF[k][3], z, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][14]), NPC_MOVE_SPEED_AUTO, 1.0);`);
     C.push('    return 1;', '}', '');
+    if (anyFlee) {
+      C.push('// The way it flees: from street point to street point of its area of the map (sidewalks on foot, roads driving), each one');
+      C.push('// farther from the attacker and ahead of the way it goes, until it is the flee distance away from where it started.');
+      C.push('// open.mp gives the points but not the links between them: the next point is a near one (15 m on foot, 40 m driving), so it');
+      C.push('// keeps to the sidewalk or road instead of cutting through the blocks');
+      C.push(`#define ${P}_FLEE_PTS 512`);
+      C.push(`stock ${P}_FleeRoute(k, Float:x, Float:y, Float:z, Float:ax, Float:ay)`, '{');
+      C.push(`    static Float:qx[${P}_FLEE_PTS], Float:qy[${P}_FLEE_PTS], Float:qz[${P}_FLEE_PTS], bool:used[${P}_FLEE_PTS];`);
+      C.push(`    new npcid = ${P}_Id[k], bool:car = NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID, Float:step = car ? 40.0 : 15.0;`);
+      C.push('    new col = floatround((x + 3000.0) / 750.0, floatround_floor), row = floatround((y + 3000.0) / 750.0, floatround_floor);');
+      C.push('    if (col < 0) col = 0; else if (col > 7) col = 7;');
+      C.push('    if (row < 0) row = 0; else if (row > 7) row = 7;');
+      C.push('    new node = row * 8 + col;');
+      C.push(`    if (!${P}_Hold(node)) return 0;`);
+      C.push('    new veh, ped, navi, from, to, n = 0, Float:px, Float:py, Float:pz;');
+      C.push('    NPC_GetNodeInfo(node, veh, ped, navi);');
+      C.push('    #pragma unused navi');
+      C.push('    if (car) { from = 0; to = veh; } else { from = veh; to = veh + ped; }');
+      C.push('    if (to > NPC_GetNodePointCount(node)) to = NPC_GetNodePointCount(node);');
+      C.push('    // The points it may pass: up to the flee distance and a step more from it');
+      C.push(`    new Float:reach = ${P}_AiF[k][3] + step + 20.0;`);
+      C.push(`    for (new p = from; p < to && n < ${P}_FLEE_PTS; p++)`, '    {');
+      C.push('        NPC_SetNodePoint(node, p);');
+      C.push('        NPC_GetNodePointPosition(node, px, py, pz);');
+      C.push('        if (VectorSize(px - x, py - y, 0.0) > reach || floatabs(pz - z) > 10.0) continue;');
+      C.push('        qx[n] = px; qy[n] = py; qz[n] = pz; used[n] = false; n++;');
+      C.push('    }');
+      C.push('    if (n == 0) return 0;');
+      C.push('    // Away from the attacker');
+      C.push('    new Float:ux = x - ax, Float:uy = y - ay, Float:l = VectorSize(ux, uy, 0.0);');
+      C.push('    if (l < 0.1) { ux = 1.0; uy = 0.0; } else { ux /= l; uy /= l; }');
+      C.push(`    if (${P}_FPath[k] == INVALID_PATH_ID || !NPC_IsValidPath(${P}_FPath[k])) ${P}_FPath[k] = NPC_CreatePath();`);
+      C.push(`    else NPC_ClearPath(${P}_FPath[k]);`);
+      C.push(`    new path = ${P}_FPath[k], count = 0, Float:sx = x, Float:sy = y;`);
+      C.push('    for (new s = 0; s < 60; s++)', '    {');
+      C.push('        // The next point: near, farther from the attacker than where it is and ahead; straight on and near beats far. The first');
+      C.push('        // one is the nearest sidewalk or road point that is not towards the attacker: it goes there first, then along the street');
+      C.push('        new best = -1, Float:bs = -1.0e9, Float:far = VectorSize(sx - ax, sy - ay, 0.0), Float:lim = count == 0 ? 30.0 : step;');
+      C.push('        for (new i = 0; i < n; i++)', '        {');
+      C.push('            if (used[i]) continue;');
+      C.push('            new Float:dx = qx[i] - sx, Float:dy = qy[i] - sy, Float:dd = VectorSize(dx, dy, 0.0);');
+      C.push('            if (dd < 1.5 || dd > lim || VectorSize(qx[i] - ax, qy[i] - ay, 0.0) < far + 0.5) continue;');
+      C.push('            new Float:c = (dx * ux + dy * uy) / dd;');
+      C.push('            // Ahead or to a side (a sidewalk can run across the way it flees); never back, as every point is farther from the attacker');
+      C.push('            if (c < -0.4) continue;');
+      C.push('            new Float:sc = count == 0 ? -dd : c - dd / lim;');
+      C.push('            if (sc > bs) { bs = sc; best = i; }');
+      C.push('        }');
+      C.push('        if (best < 0) break;');
+      C.push('        used[best] = true;');
+      C.push('        NPC_AddPointToPath(path, qx[best], qy[best], qz[best], car ? 2.0 : 0.5);');
+      C.push('        count++;');
+      C.push('        // The way it goes now: away from the attacker once on the street, then along the street, bent away from the attacker');
+      C.push('        new Float:vx = qx[best] - sx, Float:vy = qy[best] - sy, Float:vl = VectorSize(vx, vy, 0.0);');
+      C.push('        new Float:wx = qx[best] - ax, Float:wy = qy[best] - ay, Float:wl = VectorSize(wx, wy, 0.0);');
+      C.push('        if (count == 1 && wl > 0.1) { ux = wx / wl; uy = wy / wl; }');
+      C.push('        else if (vl > 0.1 && wl > 0.1)', '        {');
+      C.push('            ux = vx / vl * 0.6 + wx / wl * 0.4; uy = vy / vl * 0.6 + wy / wl * 0.4;');
+      C.push('            l = VectorSize(ux, uy, 0.0);');
+      C.push('            if (l > 0.1) { ux /= l; uy /= l; }');
+      C.push('        }');
+      C.push('        sx = qx[best]; sy = qy[best];');
+      C.push(`        if (VectorSize(sx - x, sy - y, 0.0) >= ${P}_AiF[k][3]) break;`);
+      C.push('    }');
+      C.push('    if (count == 0) return 0;');
+      C.push(`    return NPC_MoveByPath(npcid, path, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][14]), NPC_MOVE_SPEED_AUTO) ? 1 : 0;`, '}', '');
+    }
+    C.push('// It reached the flee distance: on the alert for a while (the attacker coming closer makes it flee again), then it waits,');
+    C.push('// then back to what it did');
+    C.push(`stock ${P}_FleeEnd(k)`, '{');
+    C.push(`    if (${P}_AiF[k][13] > 0.0) { ${P}_St[k][5] = 7; ${P}_St[k][10] = floatround(${P}_AiF[k][13] * 5.0); return 1; }`);
+    C.push(`    return ${P}_FleeWait(k);`, '}', '');
+    C.push(`stock ${P}_FleeWait(k)`, '{');
+    C.push(`    if (${P}_AiF[k][14] > 0.0) { ${P}_St[k][5] = 8; ${P}_St[k][10] = floatround(${P}_AiF[k][14] * 5.0); return 1; }`);
+    C.push(`    return ${P}_Resume(k);`, '}', '');
 
     C.push('// The fight is over: back to what it was doing, from where it is (the guard and the NPC that stands walk back to their place)');
     C.push(`stock ${P}_Resume(k)`, '{');
@@ -984,8 +1071,20 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     if (anyWander && anyGraph) C.push(`        case 2: { ${P}_St[k][5] = 0; if (${P}_Ai[k][22] > 0) { ${P}_St[k][6] = -1; ${P}_GWalk(k); } else { ${wanderResume} } }`);
     else if (anyWander) C.push(`        case 2: { ${P}_St[k][5] = 0; ${wanderResume} }`);
     else if (anyGraph) C.push(`        case 2: { ${P}_St[k][5] = 0; ${P}_St[k][6] = -1; ${P}_GWalk(k); }`);
-    C.push(`        case 4: { ${P}_St[k][10] = ${P}_St[k][5] == 2 ? 50 : 0; ${P}_St[k][5] = 0; } // after fleeing it waits 10 s before following again`);
-    if (anyPlayback) C.push(`        case 5: { ${P}_St[k][5] = 0; if (NPC_IsPlaybackPaused(npcid)) NPC_PausePlayback(npcid, false); else ${P}_Start(k); }`);
+    C.push(`        case 4: { ${P}_St[k][10] = 0; ${P}_St[k][5] = 0; }`);
+    if (anyPlayback) {
+      C.push('        // A recording goes on from where it stopped: it walks or drives back there first (no jump)');
+      C.push('        case 5:', '        {');
+      C.push(`            ${P}_St[k][5] = 0;`);
+      C.push(`            if (!NPC_IsPlaybackPaused(npcid)) ${P}_Start(k);`);
+      C.push('            else', '            {');
+      C.push('                new Float:x, Float:y, Float:z;');
+      C.push('                NPC_GetPos(npcid, x, y, z);');
+      C.push(`                if (VectorSize(${P}_PbAt[k][0] - x, ${P}_PbAt[k][1] - y, 0.0) < 1.5) NPC_PausePlayback(npcid, false);`);
+      C.push(`                else { ${P}_St[k][5] = 9; NPC_Move(npcid, ${P}_PbAt[k][0], ${P}_PbAt[k][1], ${P}_PbAt[k][2], ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][13]), NPC_MOVE_SPEED_AUTO, 1.0); }`);
+      C.push('            }');
+      C.push('        }');
+    }
     C.push('        default:', '        {');
     C.push(`            ${P}_St[k][5] = 3;`);
     C.push(`            NPC_Move(npcid, ${P}_Home(k, 0), ${P}_Home(k, 1), ${P}_Home(k, 2), ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][13]), NPC_MOVE_SPEED_AUTO, 0.3);`);
@@ -1014,7 +1113,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('// A player hurt the NPC: it fights back or flees (a guard always fights back). Not for the damage of another NPC (a stray');
     C.push('// bullet would make two NPCs fight to the death)');
     C.push(`stock ${P}_Hurt(k, issuerid)`, '{');
-    C.push(`    if (k < 0 || issuerid == INVALID_PLAYER_ID || issuerid == ${P}_Id[k] || ${P}_St[k][3] == issuerid || IsPlayerNPC(issuerid)) return 0;`);
+    C.push(`    if (k < 0 || issuerid == INVALID_PLAYER_ID || issuerid == ${P}_Id[k] || (${P}_St[k][3] == issuerid && (${P}_St[k][5] == 1 || ${P}_St[k][5] == 2)) || IsPlayerNPC(issuerid)) return 0;`);
     C.push(`    if (${P}_Ai[k][5] == 1 || ${P}_Ai[k][0] == 3) ${P}_Fight(k, issuerid);`);
     C.push(`    else if (${P}_Ai[k][5] == 2) ${P}_Flee(k, issuerid);`);
     C.push('    return 1;', '}', '');
@@ -1025,7 +1124,16 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`    for (new i = 0; i < all; i++) if (!IsPlayerNPC(${P}_Pl[i])) ${P}_Pl[${P}_PlN++] = ${P}_Pl[i];`);
     C.push(`    for (new k = 0; k < ${N}; k++)`, '    {');
     C.push(`        new npcid = ${P}_Id[k];`);
-    C.push('        if (npcid == INVALID_NPC_ID || !NPC_IsSpawned(npcid) || NPC_IsDead(npcid) || !NPC_IsAnyStreamedIn(npcid)) continue;');
+    C.push('        if (npcid == INVALID_NPC_ID || !NPC_IsSpawned(npcid) || NPC_IsDead(npcid)) continue;');
+    C.push('        // After fleeing (also with no one near): on the alert, it flees again from the attacker coming closer than half the flee');
+    C.push('        // distance; then it waits; then back to what it did');
+    C.push(`        if (${P}_St[k][5] == 7)`, '        {');
+    C.push(`            if (${P}_Near(npcid, ${P}_St[k][3], ${P}_AiF[k][3] * 0.5)) ${P}_Flee(k, ${P}_St[k][3]);`);
+    C.push(`            else if (--${P}_St[k][10] <= 0) ${P}_FleeWait(k);`);
+    C.push('            continue;');
+    C.push('        }');
+    C.push(`        if (${P}_St[k][5] == 8) { if (--${P}_St[k][10] <= 0) ${P}_Resume(k); continue; }`);
+    C.push('        if (!NPC_IsAnyStreamedIn(npcid)) continue;');
     C.push(`        new busy = ${P}_St[k][5], t = ${P}_St[k][3];`);
     C.push('        if (busy == 1)', '        {');
     C.push(`            if (!${P}_Near(npcid, t, ${P}_AiF[k][2] > 0.0 ? ${P}_AiF[k][2] : (${P}_Ai[k][0] == 3 ? ${P}_AiF[k][1] * 1.5 : 60.0))) { ${P}_Resume(k); continue; }`);
@@ -1057,11 +1165,8 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('            case 4:', '            {');
     C.push('                // Follows without the restart of open.mp (it starts again as soon as the player is a few centimetres past the');
     C.push('                // distance, so it stops and goes all the time): it catches up once the player is 1.5 m past it, then stops');
-    C.push(`                if (${P}_St[k][10] > 0) ${P}_St[k][10]--;`);
-    C.push('                else', '                {');
-    C.push(`                    new p = ${P}_Closest(npcid, ${P}_AiF[k][5]);`);
-    C.push(`                    if (p != INVALID_PLAYER_ID && NPC_GetPlayerMovingTo(npcid) != p && !${P}_Near(npcid, p, ${P}_AiF[k][1] + 1.5)) NPC_MoveToPlayer(npcid, p, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], ${P}_AiF[k][1], ${P}_Ai[k][23], false);`);
-    C.push('                }');
+    C.push(`                new p = ${P}_Closest(npcid, ${P}_AiF[k][5]);`);
+    C.push(`                if (p != INVALID_PLAYER_ID && NPC_GetPlayerMovingTo(npcid) != p && !${P}_Near(npcid, p, ${P}_AiF[k][1] + 1.5)) NPC_MoveToPlayer(npcid, p, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], ${P}_AiF[k][1], ${P}_Ai[k][23], false);`);
     C.push('            }');
     C.push('            default:', '            {');
     C.push(`                if (!${P}_Ai[k][9]) continue;`);
@@ -1101,9 +1206,10 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   if (anyThink || anyRadius || anyWander) {
     hook('OnNPCFinishMove', 'npcid', [
       `new k = ${P}_Index(npcid);`,
-      anyThink ? `if (k >= 0 && ${P}_St[k][5] == 2) ${P}_Resume(k);` : '',
+      anyThink ? `if (k >= 0 && ${P}_St[k][5] == 2) ${P}_FleeEnd(k);` : '',
       `${anyThink ? 'else ' : ''}if (k >= 0 && ${P}_St[k][5] == 3) { ${P}_St[k][5] = 0; ${P}_Start(k); NPC_ClearAnimations(npcid); SetTimerEx("${P}_PoseLater", 400, false, "i", k); }`,
-      anyWander ? `else if (k >= 0 && ${P}_St[k][5] == 4) { ${P}_St[k][5] = 0; ${P}_PlayNode(k); } // reached the street` : ''], 'npcid');
+      anyWander ? `else if (k >= 0 && ${P}_St[k][5] == 4) { ${P}_St[k][5] = 0; ${P}_PlayNode(k); } // reached the street` : '',
+      anyPlayback ? `else if (k >= 0 && ${P}_St[k][5] == 9) { ${P}_St[k][5] = 0; NPC_PausePlayback(npcid, false); } // back where its recording stopped` : ''], 'npcid');
   }
   if (anyThink) {
     // An invulnerable NPC never gets OnNPCTakeDamage (open.mp drops the damage first): the attack comes from the player's side
@@ -1117,7 +1223,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       `for (new k = 0; k < ${N}; k++)`, '{',
       `    new npcid = ${P}_Id[k];`,
       '    if (npcid == INVALID_NPC_ID || npcid == playerid || !NPC_IsValid(npcid) || NPC_IsDead(npcid)) continue;',
-      `    if (${P}_St[k][3] == playerid && (${P}_St[k][5] == 1 || ${P}_St[k][5] == 2)) ${P}_Resume(k);`,
+      `    if (${P}_St[k][3] == playerid && (${P}_St[k][5] == 1 || ${P}_St[k][5] == 2 || ${P}_St[k][5] == 7)) ${P}_Resume(k);`,
       '    else if (NPC_GetPlayerMovingTo(npcid) == playerid) NPC_StopMove(npcid);',
       '}'], 'playerid, reason');
   }
@@ -1305,7 +1411,7 @@ export function importNpcs(masked, vehicles = [], vars = new Map()) {
         bubbleColor: Number.isFinite(lk[1]) ? lk[1] >>> 0 : undefined, lane: f[12],
         chaseMove: MOVE_BY[r[12]], returnMove: MOVE_BY[r[13]], giveUp: f[2], fleeDist: f[3], shootDist: f[4], followRange: f[5], dmgMult: f[6], wanderRadius: f[7], bubbleDist: f[8], fleeMove: MOVE_BY[r[14]], bubble: r[15] >= 0 ? strs[r[15]] || '' : '',
         startWhen: r[16] === 0 ? 'create' : 'seen', aimMove: r[17] === 1 ? 'walk' : 'stop', noAmmo: ['stay', 'melee', 'flee'][r[18]], meleeKind: ['normal', 'special', 'mix'][r[19]],
-        meleeTime: r[20], chaseUpdate: r[23], shootDelay: r[24],
+        meleeTime: r[20], chaseUpdate: r[23], shootDelay: r[24], fleeAlert: f[13], fleeWait: f[14],
         wanderLimit: f[7] > 0 ? 'radius' : r[22] > 0 ? 'area' : 'free', area: r[22] > 0 ? gnBox(r[21], r[22]) : null, smooth: f[9], meleeReach: f[11],
         aimAt: f[10] === undefined ? undefined : (f[10] > 0.3 ? 'head' : f[10] < -0.3 ? 'legs' : 'body'),
       };

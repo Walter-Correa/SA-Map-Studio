@@ -3076,5 +3076,10 @@
  "A text of the CLEO script has more than 255 letters:": "Sebuah teks skrip CLEO memiliki lebih dari 255 karakter:",
  "O SA Map Studio foi reiniciado e esta página perdeu a conexão com ele. Recarregue a página para continuar: as alterações que não foram salvas ficaram guardadas no navegador e serão recuperadas.": "SA Map Studio dimulai ulang dan halaman ini kehilangan koneksi dengannya. Muat ulang halaman untuk melanjutkan: perubahan yang belum disimpan tetap tersimpan di browser dan akan dipulihkan.",
  "Recarregar a página": "Muat ulang halaman",
- "Agora não": "Nanti saja"
+ "Agora não": "Nanti saja",
+ "Fica em fuga por (s)": "Tetap kabur selama (s)",
+ "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Setelah kabur, tetap waspada selama ini: jika penyerang mendekat, ia kabur lagi (0 = tidak)",
+ "Espera antes de voltar (s)": "Menunggu sebelum kembali (s)",
+ "Tempo parado depois da fuga antes de voltar ao que fazia": "Waktu diam setelah kabur sebelum kembali ke kegiatannya",
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Jalan kaki ia kabur lewat trotoar dan, saat mengemudi, lewat jalan raya, selalu menjauhi penyerang; tanpa trotoar atau jalan di dekatnya, ia kabur lurus."
 }
