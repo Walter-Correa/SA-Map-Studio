@@ -2814,7 +2814,6 @@
  "Repetição": "Repetition",
  "Persegue o alvo": "Chases the target",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Attacks the player who comes within range (with the weapon or bare-handed) and goes back to its place when the player leaves or dies.",
- "Distância do jogador (m)": "Distance from the player (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Follows the nearest player. With \"Fight back\" in \"When hurt\", it defends itself from whoever shoots it.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Real test: Test button on the map. The open.mp test server runs exactly the exported code.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Another NPC has this name: in the export it gets a number at the end.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "After fleeing it stays on the alert this long: if the attacker comes close, it flees again (0 = it does not)",
  "Espera antes de voltar (s)": "Waits before going back (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Time it stands still after fleeing before going back to what it did",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "On foot it flees along the sidewalks and, driving, along the roads, always away from the attacker; with no sidewalk or road near, it flees in a straight line."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "On foot it flees along the sidewalks and, driving, along the roads, always away from the attacker; with no sidewalk or road near, it flees in a straight line.",
+ "Distância do jogador a pé (m)": "Distance from the player on foot (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "It reaches the player along the sidewalks (on foot) or the roads (in a vehicle). On foot it stays at the distance above; in a vehicle it stays 5 m from the player, always on the road and on the right side."
 }

@@ -2814,7 +2814,6 @@
  "Repetição": "Powtarzanie",
  "Persegue o alvo": "Ściga cel",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Atakuje gracza, który wejdzie w zasięg (bronią lub gołymi rękami), i wraca na swoje miejsce, gdy gracz odejdzie lub zginie.",
- "Distância do jogador (m)": "Odległość od gracza (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Podąża za najbliższym graczem. Z \"Odpowiedz\" w \"Gdy dostaje obrażenia\" broni się przed każdym, kto do niego strzela.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Prawdziwy test: przycisk Testuj na mapie. Serwer testowy open.mp uruchamia dokładnie wyeksportowany kod.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Inny NPC ma tę nazwę: przy eksporcie dostaje numer na końcu.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Po ucieczce pozostaje czujny przez ten czas: jeśli napastnik się zbliży, ucieka znowu (0 = nie)",
  "Espera antes de voltar (s)": "Czeka przed powrotem (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Czas stania po ucieczce przed powrotem do tego, co robił",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Pieszo ucieka chodnikami, a jadąc — drogami, zawsze oddalając się od napastnika; bez chodnika lub drogi w pobliżu ucieka w linii prostej."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Pieszo ucieka chodnikami, a jadąc — drogami, zawsze oddalając się od napastnika; bez chodnika lub drogi w pobliżu ucieka w linii prostej.",
+ "Distância do jogador a pé (m)": "Odległość od gracza pieszo (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Dociera do gracza chodnikami (pieszo) lub drogami (w pojeździe). Pieszo trzyma odległość podaną wyżej; w pojeździe zostaje 5 m od gracza, zawsze na drodze i po właściwej stronie."
 }

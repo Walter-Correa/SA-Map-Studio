@@ -2814,7 +2814,6 @@
  "Repetição": "Repetición",
  "Persegue o alvo": "Persigue al objetivo",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Ataca al jugador que entre en su alcance (con el arma o a mano) y vuelve a su sitio cuando el jugador se va o muere.",
- "Distância do jogador (m)": "Distancia al jugador (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Sigue al jugador más cercano. Con \"Contraatacar\" en \"Al recibir daño\", se defiende de quien le dispare.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Prueba real: botón Probar en el mapa. El servidor de prueba de open.mp ejecuta exactamente el código exportado.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Otro NPC tiene este nombre: al exportar recibe un número al final.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Tras huir, se queda alerta este tiempo: si el agresor se acerca, huye de nuevo (0 = no se queda)",
  "Espera antes de voltar (s)": "Espera antes de volver (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Tiempo quieto tras la huida antes de volver a lo que hacía",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "A pie huye por las aceras y, conduciendo, por las calles, siempre alejándose del agresor; sin acera ni calle cerca, huye en línea recta."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "A pie huye por las aceras y, conduciendo, por las calles, siempre alejándose del agresor; sin acera ni calle cerca, huye en línea recta.",
+ "Distância do jogador a pé (m)": "Distancia del jugador a pie (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Llega al jugador por las aceras (a pie) o por las calles (en vehículo). A pie se queda a la distancia de arriba; en vehículo se queda a 5 m de él, siempre en la calle y en el carril correcto."
 }

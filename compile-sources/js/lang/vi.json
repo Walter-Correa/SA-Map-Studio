@@ -2814,7 +2814,6 @@
  "Repetição": "Lặp lại",
  "Persegue o alvo": "Đuổi theo mục tiêu",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Tấn công người chơi vào tầm (bằng vũ khí hoặc tay không) và quay về chỗ cũ khi người chơi rời đi hoặc chết.",
- "Distância do jogador (m)": "Khoảng cách tới người chơi (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Đi theo người chơi gần nhất. Với \"Phản đòn\" ở \"Khi bị thương\", nó tự vệ trước kẻ bắn nó.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Thử thật: nút Thử trên bản đồ. Máy chủ thử open.mp chạy đúng mã đã xuất.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Một NPC khác có tên này: khi xuất nó được thêm số ở cuối.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Sau khi bỏ chạy, nó cảnh giác trong thời gian này: nếu kẻ tấn công lại gần, nó chạy tiếp (0 = không)",
  "Espera antes de voltar (s)": "Chờ trước khi quay lại (giây)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Thời gian đứng yên sau khi bỏ chạy trước khi quay lại việc đang làm",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Đi bộ thì chạy theo vỉa hè, lái xe thì theo đường phố, luôn tránh xa kẻ tấn công; nếu không có vỉa hè hay đường gần đó, nó chạy thẳng."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Đi bộ thì chạy theo vỉa hè, lái xe thì theo đường phố, luôn tránh xa kẻ tấn công; nếu không có vỉa hè hay đường gần đó, nó chạy thẳng.",
+ "Distância do jogador a pé (m)": "Khoảng cách tới người chơi khi đi bộ (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Nó đến chỗ người chơi theo vỉa hè (đi bộ) hoặc theo đường phố (trên xe). Khi đi bộ nó giữ khoảng cách ở trên; trên xe nó đứng cách người chơi 5 m, luôn trên đường và đúng làn."
 }

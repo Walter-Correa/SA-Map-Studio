@@ -426,3 +426,6 @@ modloader/SA Map Studio/
 Color
 Colour
 ux = vx / vl * 0.6 + wx / wl * 0.4; uy = vy / vl * 0.6 + wy / wl * 0.4;
+pick[c++] = best;
++ dz
+pick[count++] = best;

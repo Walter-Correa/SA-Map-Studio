@@ -262,7 +262,8 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   const gn = [], gnE = [], ge = []; // street graphs: points, (first way, ways), ways (to, lane offset x, y)
   const bubbleIdx = (n) => (n.bubble ? strIdx(n.bubble) : -1);
   const usedActs = new Set();
-  let anyRadius = false, anyBubble = false, anyMult = false, anyWander = false, anyThink = false, anyPreload = false, anyPlayback = false, anyPath = false, anyCar = false, anyFlee = false;
+  let anyRadius = false, anyBubble = false, anyMult = false, anyWander = false, anyThink = false, anyPreload = false, anyPlayback = false, anyPath = false, anyCar = false, anyFlee = false, anyFollow = false, anyDrvLeg = false;
+  const carV = [];
   let anyGraph = false;
   const vref = (uid) => (vehIdx.has(uid) ? vehIdx.get(uid) : -1);
   const actRow = (a, n) => {
@@ -309,6 +310,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     // Looking at the players is for a NPC that stands (one that walks would turn to the player while it goes)
     const looks = n.look && n.mode === 'idle';
     if (['guard', 'follow'].includes(n.mode) || looks || n.onDamage !== 'none') anyThink = true;
+    if (n.mode === 'follow') anyFollow = true; // reaches the player by the streets
     if ((n.onDamage === 'flee' && n.mode !== 'guard') || (n.weapon > 15 && n.noAmmo === 'flee' && (n.onDamage === 'fight' || n.mode === 'guard'))) anyFlee = true; // flees by the streets
     if (n.vehicle?.uid && vehIdx.has(n.vehicle.uid) && (n.onDamage === 'fight' || n.mode === 'guard')) anyCar = true; // gets out to fight
     if (n.dmgMult !== 1) anyMult = true;
@@ -317,6 +319,9 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     // A path of one point repeated would start again at once, over and over (it is already there): it goes there once, unless its
     // actions wait (then they repeat)
     const onePoint = seq.length === 1 && !n.points[0].acts.some(x => x.t === 'wait' && x.ms > 0);
+    const drv = n.vehicle && n.vehicle.seat === 0 ? vref(n.vehicle.uid) : -1;
+    carV.push(drv);
+    if (drv >= 0 && lg.length) anyDrvLeg = true; // its drawn path is driven: heights of a vehicle
     ai.push([MODE_CODE[n.mode], MOVE_CONST[n.moveType], onePoint ? LOOP_CODE.once : LOOP_CODE[n.loop], lg.length ? first : -1, lg.length, DMG_CODE[n.onDamage],
       n.respawn * 1000, recS, (n.recFromNpc ? 1 : 0) | (n.recLoop ? 2 : 0) | (n.recPreload ? 4 : 0), looks ? 1 : 0, n.chase ? 1 : 0, loopStart, MOVE_CONST[n.chaseMove], MOVE_CONST[n.returnMove], MOVE_CONST[n.fleeMove], bubbleIdx(n),
       n.startWhen === 'seen' ? 1 : 0, n.aimMove === 'walk' ? 1 : 0, { stay: 0, melee: 1, flee: 2 }[n.noAmmo], { normal: 0, special: 1, mix: 2 }[n.meleeKind], n.meleeTime,
@@ -419,7 +424,13 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   L.push(`// stunned by blows (steps of 200 ms without shooting)`);
   L.push(`stock ${P}_St[${N}][12];`);
   L.push(`stock bool:${P}_Node[NPC_MAX_NODES], ${P}_Timer, ${P}_BubbleTimer;`);
+  L.push(`forward Float:${P}_CarZ(model); // used before it is written`);
   if (anyPlayback) L.push(`stock Float:${P}_PbAt[${N}][3]; // where each recording was stopped by a fight or a flee`);
+  if (anyDrvLeg) L.push(`stock const ${P}_CarV[${N}] = {${carV.join(', ')}}; // vehicle of each driver (index in ${P}_Veh, -1 = none)`);
+  if (anyFollow) {
+    L.push(...flat(`stock ${P}_LPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of each follower to the player by the streets'));
+    L.push(`stock Float:${P}_LAt[${N}][3]; // where the player was when the follower took its way to it`);
+  }
   if (anyFlee) L.push(...flat(`stock ${P}_FPath[${N}]`, Array(N).fill('INVALID_PATH_ID'), ' // path of each NPC when it flees by the streets'));
   if (anyThink) L.push(`stock ${P}_Pl[MAX_PLAYERS], ${P}_PlN; // the players (not the NPCs) at each step of the Think`);
   const decl = L.splice(0).join('\n');
@@ -431,12 +442,13 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`    for (new l = 0; l < ${legs.length}; l++)`, '    {');
     C.push(`        new s = ${P}_Leg[l][0], e = ${P}_Leg[l][1];`);
     C.push(`        ${P}_Path[l] = NPC_CreatePath();`);
+    if (anyDrvLeg) C.push(`        new dk = ${P}_Leg[l][2], dv = ${P}_CarV[dk] >= 0 ? ${P}_Veh[${P}_CarV[dk]] : INVALID_VEHICLE_ID, Float:dz = dv != INVALID_VEHICLE_ID && GetVehicleModel(dv) ? ${P}_CarZ(GetVehicleModel(dv)) - 1.0 : 0.0;`);
     C.push('        for (new p = s; p <= e; p++)', '        {');
     if (anyCorner) {
       C.push(`            new k = ${P}_Leg[l][2];`);
-      C.push(`            if (${P}_AiF[k][9] > 0.0 && p > s && p < e) ${P}_Corner(${P}_Path[l], ${P}_Pt[p - 1][0], ${P}_Pt[p - 1][1], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2], ${P}_Pt[p + 1][0], ${P}_Pt[p + 1][1], ${P}_AiF[k][9], ${P}_Pt[p][3]);`);
-      C.push(`            else NPC_AddPointToPath(${P}_Path[l], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2], ${P}_Pt[p][3]);`);
-    } else C.push(`            NPC_AddPointToPath(${P}_Path[l], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2], ${P}_Pt[p][3]);`);
+      C.push(`            if (${P}_AiF[k][9] > 0.0 && p > s && p < e) ${P}_Corner(${P}_Path[l], ${P}_Pt[p - 1][0], ${P}_Pt[p - 1][1], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2]${anyDrvLeg ? ' + dz' : ''}, ${P}_Pt[p + 1][0], ${P}_Pt[p + 1][1], ${P}_AiF[k][9], ${P}_Pt[p][3]);`);
+      C.push(`            else NPC_AddPointToPath(${P}_Path[l], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2]${anyDrvLeg ? ' + dz' : ''}, ${P}_Pt[p][3]);`);
+    } else C.push(`            NPC_AddPointToPath(${P}_Path[l], ${P}_Pt[p][0], ${P}_Pt[p][1], ${P}_Pt[p][2]${anyDrvLeg ? ' + dz' : ''}, ${P}_Pt[p][3]);`);
     C.push('        }', '    }');
   }
   if (anyWander) C.push(`    for (new a = 0; a < NPC_MAX_NODES; a++) ${P}_Hold(a);`);
@@ -484,7 +496,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push('    }');
   C.push(`    printf("NPC %s was not created: the server is full (max_bots of config.json) or the name is taken.", ${P}_Name[k]);`);
   C.push('    return INVALID_NPC_ID;', '}', '');
-  if (anyWander || anyFlee) {
+  if (anyWander || anyFlee || anyFollow) {
     C.push('// Streets of an area of the map: an area serves the NPCs of every script; the server counts the scripts that use it and the last');
     C.push('// one to leave closes it (only when one of them opened it)');
     C.push(`stock ${P}_Hold(a)`, '{');
@@ -517,12 +529,13 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push(`        ${P}_Rec[k] = INVALID_RECORD_ID;`);
   if (anyGraph) C.push(`        if (${P}_WPath[k] != INVALID_PATH_ID && NPC_IsValidPath(${P}_WPath[k])) NPC_DestroyPath(${P}_WPath[k]);`, `        ${P}_WPath[k] = INVALID_PATH_ID;`);
   if (anyFlee) C.push(`        if (${P}_FPath[k] != INVALID_PATH_ID && NPC_IsValidPath(${P}_FPath[k])) NPC_DestroyPath(${P}_FPath[k]);`, `        ${P}_FPath[k] = INVALID_PATH_ID;`);
+  if (anyFollow) C.push(`        if (${P}_LPath[k] != INVALID_PATH_ID && NPC_IsValidPath(${P}_LPath[k])) NPC_DestroyPath(${P}_LPath[k]);`, `        ${P}_LPath[k] = INVALID_PATH_ID;`);
   C.push('    }');
   C.push(`    for (new l = 0; l < sizeof(${P}_Path); l++)`, '    {');
   C.push(`        if (${P}_Path[l] != INVALID_PATH_ID && NPC_IsValidPath(${P}_Path[l])) NPC_DestroyPath(${P}_Path[l]);`);
   C.push(`        ${P}_Path[l] = INVALID_PATH_ID;`);
   C.push('    }');
-  if (anyWander || anyFlee) {
+  if (anyWander || anyFlee || anyFollow) {
     C.push('    // The areas of streets: closed by the last script that uses them');
     C.push('    new key[16];');
     C.push('    for (new a = 0; a < NPC_MAX_NODES; a++)', '    {');
@@ -622,6 +635,14 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
   C.push(`    if (NPC_IsValid(${P}_Id[k]) && ${P}_St[k][5] == 0 && !NPC_IsMoving(${P}_Id[k])) ${P}_Pose(k);`);
   C.push('    return 1;', '}', '');
 
+  C.push('// Height of the centre of a vehicle above the road: the points of the streets and of a drawn path are at the height of a');
+  C.push('// person (the open.mp street points 1.2 m above the ground, the points of the editor 1 m), which leaves a vehicle in the air.');
+  C.push('// open.mp gives where the front wheels are on the model; their radius is 0.35 m on most vehicles, 0.5 m on the big ones');
+  C.push(`stock Float:${P}_CarZ(model)`, '{');
+  C.push('    new Float:x, Float:y, Float:z, Float:sx, Float:sy, Float:sz;');
+  C.push('    if (!GetVehicleModelInfo(model, VEHICLE_MODEL_INFO_WHEELSFRONT, x, y, z)) return 1.0;');
+  C.push('    GetVehicleModelInfo(model, VEHICLE_MODEL_INFO_SIZE, sx, sy, sz);');
+  C.push('    return -z + (sz > 3.0 ? 0.5 : 0.35);', '}', '');
   C.push(`stock ${P}_Start(k)`, '{');
   C.push(`    if (${P}_St[k][4]) KillTimer(${P}_St[k][4]);`);
   C.push(`    new npcid = ${P}_Id[k];`);
@@ -722,9 +743,10 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('    if (c == 0) return 0;');
     C.push('    NPC_ClearPath(path);');
     C.push('    new Float:stop = NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID ? 2.0 : 0.5, Float:ax = x, Float:ay = y;');
+    C.push(`    new Float:dz = NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID ? ${P}_CarZ(GetVehicleModel(NPC_GetVehicle(npcid))) - 1.0 : 0.0; // a vehicle on the road`);
     C.push('    for (new i = 0; i < c; i++)', '    {');
-    C.push(`        if (${P}_AiF[k][9] > 0.0 && i < c - 1) ${P}_Corner(path, ax, ay, qx[i], qy[i], qz[i], qx[i + 1], qy[i + 1], ${P}_AiF[k][9], stop);`);
-    C.push('        else NPC_AddPointToPath(path, qx[i], qy[i], qz[i], stop);');
+    C.push(`        if (${P}_AiF[k][9] > 0.0 && i < c - 1) ${P}_Corner(path, ax, ay, qx[i], qy[i], qz[i] + dz, qx[i + 1], qy[i + 1], ${P}_AiF[k][9], stop);`);
+    C.push('        else NPC_AddPointToPath(path, qx[i], qy[i], qz[i] + dz, stop);');
     C.push('        ax = qx[i]; ay = qy[i];');
     C.push('    }');
     C.push(`    NPC_MoveByPath(npcid, path, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], false);`);
@@ -833,6 +855,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push('    NPC_GetNodePointPosition(node, px, py, pz);');
     C.push('    if (VectorSize(px - x, py - y, 0.0) > 3.0)', '    {');
     C.push(`        ${P}_St[k][5] = 4;`);
+    C.push(`        if (NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID) pz += ${P}_CarZ(GetVehicleModel(NPC_GetVehicle(npcid))) - 1.2; // a vehicle on the road`);
     C.push(`        NPC_Move(npcid, px, py, pz, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], 1.0);`);
     C.push('        return 1;');
     C.push('    }');
@@ -976,7 +999,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       C.push('// keeps to the sidewalk or road instead of cutting through the blocks');
       C.push(`#define ${P}_FLEE_PTS 512`);
       C.push(`stock ${P}_FleeRoute(k, Float:x, Float:y, Float:z, Float:ax, Float:ay)`, '{');
-      C.push(`    static Float:qx[${P}_FLEE_PTS], Float:qy[${P}_FLEE_PTS], Float:qz[${P}_FLEE_PTS], bool:used[${P}_FLEE_PTS];`);
+      C.push(`    static Float:qx[${P}_FLEE_PTS], Float:qy[${P}_FLEE_PTS], Float:qz[${P}_FLEE_PTS], bool:used[${P}_FLEE_PTS], pick[61];`);
       C.push(`    new npcid = ${P}_Id[k], bool:car = NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID, Float:step = car ? 40.0 : 15.0;`);
       C.push('    new col = floatround((x + 3000.0) / 750.0, floatround_floor), row = floatround((y + 3000.0) / 750.0, floatround_floor);');
       C.push('    if (col < 0) col = 0; else if (col > 7) col = 7;');
@@ -1019,8 +1042,7 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       C.push('        }');
       C.push('        if (best < 0) break;');
       C.push('        used[best] = true;');
-      C.push('        NPC_AddPointToPath(path, qx[best], qy[best], qz[best], car ? 2.0 : 0.5);');
-      C.push('        count++;');
+      C.push('        pick[count++] = best;');
       C.push('        // The way it goes now: away from the attacker once on the street, then along the street, bent away from the attacker');
       C.push('        new Float:vx = qx[best] - sx, Float:vy = qy[best] - sy, Float:vl = VectorSize(vx, vy, 0.0);');
       C.push('        new Float:wx = qx[best] - ax, Float:wy = qy[best] - ay, Float:wl = VectorSize(wx, wy, 0.0);');
@@ -1034,7 +1056,127 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
       C.push(`        if (VectorSize(sx - x, sy - y, 0.0) >= ${P}_AiF[k][3]) break;`);
       C.push('    }');
       C.push('    if (count == 0) return 0;');
+      C.push('    // Driving: on the right lane (the street points run along the middle of the road) and at the height of its vehicle');
+      C.push(`    new Float:lane = car ? ${P}_AiF[k][12] : 0.0, Float:dz = car ? ${P}_CarZ(GetVehicleModel(NPC_GetVehicle(npcid))) - 1.2 : 0.0, Float:ox = x, Float:oy = y;`);
+      C.push('    for (new i = 0; i < count; i++)', '    {');
+      C.push('        new q = pick[i], Float:nx = i < count - 1 ? qx[pick[i + 1]] : qx[q] + (qx[q] - ox), Float:ny = i < count - 1 ? qy[pick[i + 1]] : qy[q] + (qy[q] - oy);');
+      C.push('        new Float:dx = nx - ox, Float:dy = ny - oy, Float:dl = VectorSize(dx, dy, 0.0);');
+      C.push('        if (dl < 0.1) { dx = 0.0; dy = 0.0; } else { dx /= dl; dy /= dl; }');
+      C.push('        NPC_AddPointToPath(path, qx[q] + dy * lane, qy[q] - dx * lane, qz[q] + dz, car ? 2.0 : 0.5);');
+      C.push('        ox = qx[q]; oy = qy[q];');
+      C.push('    }');
       C.push(`    return NPC_MoveByPath(npcid, path, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][14]), NPC_MOVE_SPEED_AUTO) ? 1 : 0;`, '}', '');
+    }
+    if (anyFollow) {
+      C.push('// A follower goes to the player by the streets: from street point to street point of its area of the map (sidewalks on foot,');
+      C.push('// roads driving), each one nearer the street point nearest the player. On foot it then walks to the player; driving it stays on');
+      C.push('// that street point, on the right lane, 5 m from the player (open.mp gives the points but not their links: the next point is a');
+      C.push('// near one, 15 m on foot and 40 m driving). Returns 1 on its way, 2 already at the street point nearest the player, 0 no street');
+      C.push(`#define ${P}_FOLLOW_PTS 512`);
+      C.push(`stock ${P}_FollowRoute(k, playerid)`, '{');
+      C.push(`    static Float:qx[${P}_FOLLOW_PTS], Float:qy[${P}_FOLLOW_PTS], Float:qz[${P}_FOLLOW_PTS], bool:used[${P}_FOLLOW_PTS], pick[61];`);
+      C.push(`    new npcid = ${P}_Id[k], bool:car = NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID, Float:step = car ? 40.0 : 15.0;`);
+      C.push('    new Float:x, Float:y, Float:z, Float:tx, Float:ty, Float:tz;');
+      C.push('    NPC_GetPos(npcid, x, y, z);');
+      C.push('    GetPlayerPos(playerid, tx, ty, tz);');
+      C.push('    new col = floatround((x + 3000.0) / 750.0, floatround_floor), row = floatround((y + 3000.0) / 750.0, floatround_floor);');
+      C.push('    if (col < 0) col = 0; else if (col > 7) col = 7;');
+      C.push('    if (row < 0) row = 0; else if (row > 7) row = 7;');
+      C.push('    new node = row * 8 + col;');
+      C.push(`    if (!${P}_Hold(node)) return 0;`);
+      C.push('    new veh, ped, navi, from, to, n = 0, Float:px, Float:py, Float:pz;');
+      C.push('    NPC_GetNodeInfo(node, veh, ped, navi);');
+      C.push('    #pragma unused navi');
+      C.push('    if (car) { from = 0; to = veh; } else { from = veh; to = veh + ped; }');
+      C.push('    if (to > NPC_GetNodePointCount(node)) to = NPC_GetNodePointCount(node);');
+      C.push('    // The points between it and the player (and a margin around them)');
+      C.push('    new Float:mx = (x + tx) / 2.0, Float:my = (y + ty) / 2.0, Float:reach = VectorSize(tx - x, ty - y, 0.0) / 2.0 + 60.0;');
+      C.push(`    for (new p = from; p < to && n < ${P}_FOLLOW_PTS; p++)`, '    {');
+      C.push('        NPC_SetNodePoint(node, p);');
+      C.push('        NPC_GetNodePointPosition(node, px, py, pz);');
+      C.push('        if (VectorSize(px - mx, py - my, 0.0) > reach) continue;');
+      C.push('        qx[n] = px; qy[n] = py; qz[n] = pz; used[n] = false; n++;');
+      C.push('    }');
+      C.push('    if (n == 0) return 0;');
+      C.push('    // The street point nearest the player');
+      C.push('    new goal = -1, Float:gd = 1.0e12;');
+      C.push('    for (new i = 0; i < n; i++)', '    {');
+      C.push('        new Float:d = VectorSize(qx[i] - tx, qy[i] - ty, (qz[i] - tz) * 2.0);');
+      C.push('        if (d < gd) { gd = d; goal = i; }');
+      C.push('    }');
+      C.push('    if (VectorSize(qx[goal] - x, qy[goal] - y, 0.0) < (car ? 8.0 : 3.0)) return 2;');
+      C.push('    if (!car && VectorSize(tx - x, ty - y, 0.0) <= gd + 3.0) return 2; // on foot already as near the player as the street point');
+      C.push('    // From the nearest street point to it, each next one near and nearer the goal');
+      C.push('    new c = 0, Float:sx = x, Float:sy = y;');
+      C.push('    while (c < 60)', '    {');
+      C.push('        new best = -1, Float:bs = -1.0e9, Float:left = VectorSize(qx[goal] - sx, qy[goal] - sy, 0.0), Float:lim = c == 0 ? 30.0 : step;');
+      C.push('        for (new i = 0; i < n; i++)', '        {');
+      C.push('            if (used[i]) continue;');
+      C.push('            new Float:dx = qx[i] - sx, Float:dy = qy[i] - sy, Float:dd = VectorSize(dx, dy, 0.0);');
+      C.push('            if (dd < 1.0 || dd > lim) continue;');
+      C.push('            new Float:after = VectorSize(qx[goal] - qx[i], qy[goal] - qy[i], 0.0);');
+      C.push('            // The first one: the nearest street point that does not take it away from the goal; then: nearer the goal, straight on');
+      C.push('            if (c == 0)', '            {');
+      C.push('                if (after > left + 1.0) continue;');
+      C.push('                if (-dd > bs) { bs = -dd; best = i; }');
+      C.push('                continue;');
+      C.push('            }');
+      C.push('            if (after > left - 0.5) continue;');
+      C.push('            new Float:sc = (left - after) / dd - dd / lim;');
+      C.push('            if (sc > bs) { bs = sc; best = i; }');
+      C.push('        }');
+      C.push('        if (best < 0) break;');
+      C.push('        used[best] = true;');
+      C.push('        pick[c++] = best;');
+      C.push('        sx = qx[best]; sy = qy[best];');
+      C.push('        if (best == goal) break;');
+      C.push('    }');
+      C.push('    if (c == 0) return 0;');
+      C.push(`    if (${P}_LPath[k] == INVALID_PATH_ID || !NPC_IsValidPath(${P}_LPath[k])) ${P}_LPath[k] = NPC_CreatePath();`);
+      C.push(`    else NPC_ClearPath(${P}_LPath[k]);`);
+      C.push('    // Driving: each point moved to the right of the way it goes by the lane (the street points run along the middle of the road);');
+      C.push('    // the last one 5 m from a player on the road, or on the road point nearest a player out of the road');
+      C.push(`    new Float:lane = car ? ${P}_AiF[k][12] : 0.0, Float:dz = car ? ${P}_CarZ(GetVehicleModel(NPC_GetVehicle(npcid))) - 1.2 : 0.0, Float:ox = x, Float:oy = y;`);
+      C.push('    for (new i = 0; i < c; i++)', '    {');
+      C.push('        new q = pick[i], Float:nx = i < c - 1 ? qx[pick[i + 1]] : qx[q] + (qx[q] - ox), Float:ny = i < c - 1 ? qy[pick[i + 1]] : qy[q] + (qy[q] - oy);');
+      C.push('        new Float:dx = nx - ox, Float:dy = ny - oy, Float:dl = VectorSize(dx, dy, 0.0), Float:ex = qx[q], Float:ey = qy[q];');
+      C.push('        if (dl < 0.1) { dx = 0.0; dy = 0.0; } else { dx /= dl; dy /= dl; }');
+      C.push('        // Driving to a player on the road: the way ends where it comes 5 m from the player (4.5 m and the stop before it; the road point may be right next to it)');
+      C.push('        new bool:last = i == c - 1;');
+      C.push('        // (the first place of the stretch that comes that near, so it never drives past the player)');
+      C.push('        if (car && gd < 8.0)', '        {');
+      C.push('            for (new t = 1; t <= 40; t++)', '            {');
+      C.push('                new Float:hx = ox + (qx[q] - ox) * float(t) / 40.0, Float:hy = oy + (qy[q] - oy) * float(t) / 40.0;');
+      C.push('                if (VectorSize(hx + dy * lane - tx, hy - dx * lane - ty, 0.0) >= 4.5) continue; // where it drives: on its lane');
+      C.push('                ex = ox + (qx[q] - ox) * float(t - 1) / 40.0; ey = oy + (qy[q] - oy) * float(t - 1) / 40.0;');
+      C.push('                last = true;');
+      C.push('                break;');
+      C.push('            }');
+      C.push('        }');
+      C.push(`        NPC_AddPointToPath(${P}_LPath[k], ex + dy * lane, ey - dx * lane, qz[q] + dz, car ? (last ? 0.5 : 2.0) : 0.5);`);
+      C.push('        if (last) break;');
+      C.push('        ox = qx[q]; oy = qy[q];');
+      C.push('    }');
+      C.push(`    ${P}_LAt[k][0] = tx; ${P}_LAt[k][1] = ty; ${P}_LAt[k][2] = tz;`);
+      C.push(`    return NPC_MoveByPath(npcid, ${P}_LPath[k], ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0]) ? 1 : 0;`, '}', '');
+      C.push('// One step of a follower: by the streets while the player is away, then (on foot) straight to the distance; a new way only when');
+      C.push('// the player moved far from where it was (no stop and go)');
+      C.push(`stock ${P}_Follow(k, p)`, '{');
+      C.push(`    new npcid = ${P}_Id[k], bool:car = NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID, Float:tx, Float:ty, Float:tz;`);
+      C.push('    GetPlayerPos(p, tx, ty, tz);');
+      C.push(`    new Float:near = car ? 6.5 : ${P}_AiF[k][1] + 1.5;`);
+      C.push('    // Near enough: on foot it stops its way to the player; driving, its way already ends 5 m from the player');
+      C.push(`    if (${P}_Near(npcid, p, near)) { if (!car && NPC_IsMoving(npcid) && NPC_GetPlayerMovingTo(npcid) != p) NPC_StopMove(npcid); return 1; }`);
+      C.push('    if (NPC_IsMoving(npcid))', '    {');
+      C.push(`        if (NPC_GetPlayerMovingTo(npcid) == p || VectorSize(tx - ${P}_LAt[k][0], ty - ${P}_LAt[k][1], 0.0) < (car ? 25.0 : 12.0)) return 1;`);
+      C.push('    }');
+      C.push(`    new r = ${P}_FollowRoute(k, p);`);
+      C.push('    if (r == 1) return 1;');
+      C.push('    if (r == 2 && car) { if (NPC_IsMoving(npcid)) NPC_StopMove(npcid); return 1; } // driving: it stays on the street');
+      C.push('    // On foot at the street point nearest the player, or no street near: straight to it');
+      C.push(`    if (NPC_GetPlayerMovingTo(npcid) != p) NPC_MoveToPlayer(npcid, p, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], car ? 5.0 : ${P}_AiF[k][1], ${P}_Ai[k][23], false);`);
+      C.push(`    ${P}_LAt[k][0] = tx; ${P}_LAt[k][1] = ty; ${P}_LAt[k][2] = tz;`);
+      C.push('    return 1;', '}', '');
     }
     C.push('// It reached the flee distance: on the alert for a while (the attacker coming closer makes it flee again), then it waits,');
     C.push('// then back to what it did');
@@ -1162,12 +1304,12 @@ export function npcPawn(npcs, { id, fmt, center = { x: 0, y: 0, z: 0 }, vehIdx =
     C.push(`                new p = ${P}_Closest(npcid, ${P}_AiF[k][1]);`);
     C.push(`                if (p != INVALID_PLAYER_ID) ${P}_Fight(k, p);`);
     C.push('            }');
-    C.push('            case 4:', '            {');
-    C.push('                // Follows without the restart of open.mp (it starts again as soon as the player is a few centimetres past the');
-    C.push('                // distance, so it stops and goes all the time): it catches up once the player is 1.5 m past it, then stops');
-    C.push(`                new p = ${P}_Closest(npcid, ${P}_AiF[k][5]);`);
-    C.push(`                if (p != INVALID_PLAYER_ID && NPC_GetPlayerMovingTo(npcid) != p && !${P}_Near(npcid, p, ${P}_AiF[k][1] + 1.5)) NPC_MoveToPlayer(npcid, p, ${P}_Mt(npcid, NPC_MOVE_TYPE:${P}_Ai[k][1]), ${P}_AiF[k][0], ${P}_AiF[k][1], ${P}_Ai[k][23], false);`);
-    C.push('            }');
+    if (anyFollow) {
+      C.push('            case 4:', '            {');
+      C.push(`                new p = ${P}_Closest(npcid, ${P}_AiF[k][5]);`);
+      C.push(`                if (p != INVALID_PLAYER_ID) ${P}_Follow(k, p);`);
+      C.push('            }');
+    }
     C.push('            default:', '            {');
     C.push(`                if (!${P}_Ai[k][9]) continue;`);
     C.push(`                new p = ${P}_Closest(npcid, ${P}_AiF[k][1]);`);

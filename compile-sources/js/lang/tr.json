@@ -2814,7 +2814,6 @@
  "Repetição": "Tekrar",
  "Persegue o alvo": "Hedefi kovalar",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Menzile giren oyuncuya saldırır (silahla veya çıplak elle) ve oyuncu gidince ya da ölünce yerine döner.",
- "Distância do jogador (m)": "Oyuncuya uzaklık (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "En yakın oyuncuyu takip eder. \"Hasar alınca\" ayarında \"Karşılık ver\" seçiliyse, ona ateş edenden kendini korur.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Gerçek test: haritadaki Test düğmesi. open.mp test sunucusu dışa aktarılan kodun aynısını çalıştırır.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Başka bir NPC'nin adı da bu: dışa aktarımda sonuna bir sayı eklenir.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Kaçtıktan sonra bu süre tetikte kalır: saldırgan yaklaşırsa yeniden kaçar (0 = kalmaz)",
  "Espera antes de voltar (s)": "Dönmeden önce bekler (sn)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Kaçıştan sonra yaptığı işe dönmeden önce bekleme süresi",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Yayayken kaldırımlardan, araç sürerken yollardan kaçar, hep saldırgandan uzaklaşarak; yakında kaldırım veya yol yoksa düz kaçar."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Yayayken kaldırımlardan, araç sürerken yollardan kaçar, hep saldırgandan uzaklaşarak; yakında kaldırım veya yol yoksa düz kaçar.",
+ "Distância do jogador a pé (m)": "Yayayken oyuncuya uzaklık (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Oyuncuya kaldırımlardan (yaya) veya yollardan (araçla) ulaşır. Yayayken yukarıdaki mesafede durur; araçla oyuncudan 5 m uzakta, her zaman yolda ve doğru şeritte kalır."
 }

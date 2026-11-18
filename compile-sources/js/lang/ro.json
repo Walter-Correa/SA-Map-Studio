@@ -2814,7 +2814,6 @@
  "Repetição": "Repetare",
  "Persegue o alvo": "Urmărește ținta",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Atacă jucătorul care intră în rază (cu arma sau cu mâinile goale) și revine la locul lui când jucătorul pleacă sau moare.",
- "Distância do jogador (m)": "Distanța față de jucător (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Urmează cel mai apropiat jucător. Cu \"Ripostează\" la \"Când este rănit\", se apără de cine trage în el.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Test real: butonul Testează de pe hartă. Serverul de test open.mp rulează exact codul exportat.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Alt NPC are acest nume: la export primește un număr la sfârșit.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "După fugă rămâne în alertă atâta timp: dacă agresorul se apropie, fuge din nou (0 = nu rămâne)",
  "Espera antes de voltar (s)": "Așteaptă înainte de a reveni (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Timp cât stă pe loc după fugă înainte de a reveni la ce făcea",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Pe jos fuge pe trotuare, iar la volan pe drumuri, mereu departe de agresor; fără trotuar sau drum în apropiere, fuge în linie dreaptă."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Pe jos fuge pe trotuare, iar la volan pe drumuri, mereu departe de agresor; fără trotuar sau drum în apropiere, fuge în linie dreaptă.",
+ "Distância do jogador a pé (m)": "Distanța față de jucător pe jos (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Ajunge la jucător pe trotuare (pe jos) sau pe drumuri (în vehicul). Pe jos rămâne la distanța de mai sus; în vehicul rămâne la 5 m de el, mereu pe drum și pe sensul corect."
 }

@@ -2814,7 +2814,6 @@
  "Repetição": "Répétition",
  "Persegue o alvo": "Poursuit la cible",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Attaque le joueur qui entre à portée (avec l'arme ou à mains nues) et revient à sa place quand le joueur part ou meurt.",
- "Distância do jogador (m)": "Distance du joueur (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Suit le joueur le plus proche. Avec « Riposter » dans « Quand il est blessé », il se défend contre qui lui tire dessus.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Test réel : bouton Tester sur la carte. Le serveur de test open.mp exécute exactement le code exporté.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Un autre PNJ porte ce nom : à l'export il reçoit un numéro à la fin.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Après la fuite, il reste en alerte ce temps : si l'agresseur s'approche, il fuit à nouveau (0 = non)",
  "Espera antes de voltar (s)": "Attend avant de revenir (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Temps immobile après la fuite avant de reprendre ce qu'il faisait",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "À pied il fuit par les trottoirs et, en conduisant, par les rues, toujours en s'éloignant de l'agresseur ; sans trottoir ni rue à proximité, il fuit en ligne droite."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "À pied il fuit par les trottoirs et, en conduisant, par les rues, toujours en s'éloignant de l'agresseur ; sans trottoir ni rue à proximité, il fuit en ligne droite.",
+ "Distância do jogador a pé (m)": "Distance du joueur à pied (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Il rejoint le joueur par les trottoirs (à pied) ou par les rues (en véhicule). À pied, il reste à la distance ci-dessus ; en véhicule, il reste à 5 m de lui, toujours sur la route et du bon côté."
 }

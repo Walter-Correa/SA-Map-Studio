@@ -91,9 +91,10 @@ export function ompNpcSection(a) {
     b += pair(num('Alcance (m)', 'range', 1, 300, 1)) + `<div style="margin-top:6px;">${chk('Persegue o alvo', 'chase')}</div>`
       + note('Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.');
   } else if (n.mode === 'follow') {
-    b += moveRow + pair(num('Distância do jogador (m)', 'followDist', 0.5, 50, 0.5), num('Procura o jogador até (m)', 'followRange', 5, 1000, 5))
+    b += moveRow + pair(num('Distância do jogador a pé (m)', 'followDist', 0.5, 50, 0.5), num('Procura o jogador até (m)', 'followRange', 5, 1000, 5))
       + pair(num('Atualiza o destino a cada (ms)', 'chaseUpdate', 100, 5000, 50, 'NPC_MoveToPlayer: de quanto em quanto tempo ele confere onde o jogador está'))
-      + note('Segue o jogador mais perto. Com "Revidar" em "Ao levar dano", defende-se de quem atirar nele.');
+      + note('Segue o jogador mais perto. Com "Revidar" em "Ao levar dano", defende-se de quem atirar nele.')
+      + note('Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.');
   } else if (n.mode === 'playback') {
     b += recEditor(a);
   }

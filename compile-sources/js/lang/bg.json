@@ -2814,7 +2814,6 @@
  "Repetição": "Повторение",
  "Persegue o alvo": "Преследва целта",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Напада играча, който влезе в обсега (с оръжие или с голи ръце), и се връща на мястото си, когато играчът си тръгне или умре.",
- "Distância do jogador (m)": "Разстояние до играча (м)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Следва най-близкия играч. С „Отвърни“ в „При поражение“ се защитава от този, който стреля по него.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Истински тест: бутонът „Тест“ на картата. Тестовият сървър на open.mp изпълнява точно експортирания код.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Друг NPC има това име: при експорта получава номер в края.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "След бягството остава нащрек толкова време: ако нападателят се приближи, бяга отново (0 = не остава)",
  "Espera antes de voltar (s)": "Чака преди да се върне (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Време, през което стои след бягството, преди да се върне към това, което правеше",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Пеша бяга по тротоарите, а с превозно средство — по пътищата, винаги далеч от нападателя; без тротоар или път наблизо бяга по права линия."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Пеша бяга по тротоарите, а с превозно средство — по пътищата, винаги далеч от нападателя; без тротоар или път наблизо бяга по права линия.",
+ "Distância do jogador a pé (m)": "Разстояние от играча пеша (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Стига до играча по тротоарите (пеша) или по пътищата (с превозно средство). Пеша стои на разстоянието отгоре; с превозно средство стои на 5 m от него, винаги на пътя и в правилната лента."
 }

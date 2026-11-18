@@ -2814,7 +2814,6 @@
  "Repetição": "Pengulangan",
  "Persegue o alvo": "Mengejar sasaran",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Menyerang pemain yang masuk jangkauan (dengan senjata atau tangan kosong) dan kembali ke tempatnya saat pemain pergi atau mati.",
- "Distância do jogador (m)": "Jarak dari pemain (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "Mengikuti pemain terdekat. Dengan \"Membalas\" di \"Saat terluka\", ia membela diri dari siapa pun yang menembaknya.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Uji nyata: tombol Uji di peta. Server uji open.mp menjalankan kode yang diekspor persis sama.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "NPC lain memakai nama ini: saat ekspor ia diberi angka di akhir.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Setelah kabur, tetap waspada selama ini: jika penyerang mendekat, ia kabur lagi (0 = tidak)",
  "Espera antes de voltar (s)": "Menunggu sebelum kembali (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Waktu diam setelah kabur sebelum kembali ke kegiatannya",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Jalan kaki ia kabur lewat trotoar dan, saat mengemudi, lewat jalan raya, selalu menjauhi penyerang; tanpa trotoar atau jalan di dekatnya, ia kabur lurus."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Jalan kaki ia kabur lewat trotoar dan, saat mengemudi, lewat jalan raya, selalu menjauhi penyerang; tanpa trotoar atau jalan di dekatnya, ia kabur lurus.",
+ "Distância do jogador a pé (m)": "Jarak dari pemain saat jalan kaki (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "Ia mendatangi pemain lewat trotoar (jalan kaki) atau jalan raya (di kendaraan). Saat jalan kaki ia tetap di jarak di atas; di kendaraan ia tetap 5 m darinya, selalu di jalan dan di lajur yang benar."
 }

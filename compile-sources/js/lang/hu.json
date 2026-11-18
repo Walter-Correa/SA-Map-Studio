@@ -2814,7 +2814,6 @@
  "Repetição": "Ismétlés",
  "Persegue o alvo": "Üldözi a célpontot",
  "Ataca o jogador que entrar no alcance (com a arma ou na mão) e volta ao lugar quando ele sai ou morre.": "Megtámadja a hatótávba érő játékost (fegyverrel vagy puszta kézzel), és visszamegy a helyére, ha a játékos elmegy vagy meghal.",
- "Distância do jogador (m)": "Távolság a játékostól (m)",
  "Segue o jogador mais perto. Com \"Revidar\" em \"Ao levar dano\", defende-se de quem atirar nele.": "A legközelebbi játékost követi. Ha a \"Ha sérül\" beállítás \"Visszavág\", megvédi magát attól, aki rálő.",
  "Teste de verdade: botão Testar no mapa. O servidor de teste do open.mp roda exatamente o código exportado.": "Valódi teszt: a térkép Teszt gombja. Az open.mp tesztszerver pontosan az exportált kódot futtatja.",
  "Outro NPC tem esse nome: na exportação ele ganha um número no fim.": "Egy másik NPC-nek is ez a neve: exportáláskor egy számot kap a végére.",
@@ -3081,5 +3080,7 @@
  "Depois de fugir, fica atento por esse tempo: se o agressor chegar perto, foge de novo (0 = não fica)": "Menekülés után ennyi ideig éber marad: ha a támadó közel jön, újra menekül (0 = nem marad)",
  "Espera antes de voltar (s)": "Vár, mielőtt visszatér (s)",
  "Tempo parado depois da fuga antes de voltar ao que fazia": "Ennyi ideig áll a menekülés után, mielőtt visszatér ahhoz, amit csinált",
- "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Gyalog a járdákon, vezetve az utakon menekül, mindig távolodva a támadótól; ha nincs járda vagy út a közelben, egyenesen menekül."
+ "A pé ele foge pelas calçadas e, dirigindo, pelas ruas, sempre se afastando do agressor; sem calçada ou rua por perto, foge em linha reta.": "Gyalog a járdákon, vezetve az utakon menekül, mindig távolodva a támadótól; ha nincs járda vagy út a közelben, egyenesen menekül.",
+ "Distância do jogador a pé (m)": "Távolság a játékostól gyalog (m)",
+ "Vai até o jogador pelas calçadas (a pé) ou pelas ruas (no veículo). A pé, fica à distância acima; no veículo, fica a 5 m dele, sempre na rua e na mão certa.": "A járdákon (gyalog) vagy az utakon (járművel) jut el a játékoshoz. Gyalog a fenti távolságra marad; járművel 5 m-re marad tőle, mindig az úton és a helyes oldalon."
 }
