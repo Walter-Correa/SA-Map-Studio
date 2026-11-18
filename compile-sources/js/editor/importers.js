@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Universal import: detects the file format on its own (any extension)
 // and returns the objects, texture/text swaps, vehicles, removed buildings and cameras.
 //
@@ -154,7 +155,7 @@ function fromMta(text, out) {
     else if (kind === 'ped') out.actors.push({ skin: +a.model | 0, ...p, rz: +a.rotz || +a.rotation || 0, world, interior });
     else if (kind === 'pickup') {
       const t = String(a.type || '').toLowerCase();
-      out.pickups.push({ model: PICKUP_MODELS[t] || (+a.model | 0) || 1239, type: 2, ...p, world });
+      out.pickups.push({ model: PICKUP_MODELS[t] || (+a.model | 0) || 1239, type: 2, ...p, world, interior });
     } else if (kind === 'marker') out.checkpoints.push({ ...p, size: +a.size || 2, world, interior });
     else if (kind === 'blip') out.mapIcons.push({ ...p, markertype: +a.icon | 0, color: 0, style: 0, world, interior });
     else if (kind === 'radararea') {

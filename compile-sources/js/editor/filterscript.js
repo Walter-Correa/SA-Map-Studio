@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MPL-2.0
 // Export as a filterscript: the same lines of the Pawn export (pwn.js), put in a complete script that creates everything when it
 // loads, destroys everything when it unloads and has commands to test the items in the game.
 import { textDrawPawn, progressBarPawn, textDrawVar, progressBarVar } from './project.js';
 import { gateIdent } from './gates.js';
-import { t as tr, uiLocale } from '../ui/i18n.js';
+import { t as tr, tFallback, uiLocale } from '../ui/i18n.js';
 
 // What each creation call goes into, and how it is destroyed
 const KINDS = [
@@ -29,7 +30,7 @@ const BOOL_ARGS = {
   SetObjectMaterialText: [6], AttachObjectToObject: [8],
 };
 const CALL_RE = new RegExp(`^(\\s*(?:[\\w\\[\\]]+ = )*)(${Object.keys(BOOL_ARGS).join('|')})\\(`);
-function boolArgs(l) {
+export function boolArgs(l) {
   const m = CALL_RE.exec(l);
   if (!m) return l;
   // The arguments up to the closing parenthesis, outside strings
@@ -51,11 +52,39 @@ function boolArgs(l) {
 const spaced = (l) => l.replace(/^(\s*)(if|else if|switch|for|while)\(/, '$1$2 (');
 const block = (L, head, body) => { L.push(head, '{', ...body.map(l => (l ? '    ' + l : '')), '}', ''); };
 
+// The TextDraws in Pawn: the global ones (created once), the ones of a player and the bars (created for each player, in arrays
+// [MAX_PLAYERS], so their lines use name[playerid]). varOf(td, all): the variable of each one; comment(td): its end-of-line comment.
+export function tdParts(tds, fc, { varOf, comment, preComments = false } = {}) {
+  const vOf = varOf || ((td, all) => (td.type === 'progress' ? progressBarVar(td, all) : textDrawVar(td, all)));
+  const cmt = comment || ((td) => (td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : ''));
+  const refVar = (uid) => { const o = tds.find(t => t.uid === uid && t.type !== 'progress'); return o ? vOf(o, tds) : null; };
+  const pre = (td) => (preComments && td.preComment ? td.preComment.split('\n').map(l => l.trim()).filter(Boolean).map(l => (l.startsWith('//') || l.startsWith('/*') ? l : `// ${l}`)) : []);
+  const globalTds = [], playerTds = [], bars = [];
+  for (const td of tds) {
+    const v = vOf(td, tds);
+    if (td.type === 'progress') bars.push({ v, lines: [...pre(td), ...progressBarPawn(td, v, fc)] });
+    else (td.isPlayer ? playerTds : globalTds).push({ v, lines: [...pre(td), ...textDrawPawn(td, v, fc, undefined, cmt(td), refVar)] });
+  }
+  const perPlayer = [...playerTds, ...bars].map(x => x.v);
+  const perPlayerRe = perPlayer.length ? new RegExp(`\\b(${perPlayer.join('|')})\\b(?!\\[)`, 'g') : null;
+  const playerTdLines = [...playerTds, ...bars].flatMap(x => x.lines).map(l => l.replace(/^new (PlayerText:)?/, '').replace(perPlayerRe, '$1[playerid]'));
+  const globalTdLines = globalTds.flatMap(x => x.lines).map(l => l.replace(/^new Text:/, ''));
+  return { globalTds, playerTds, bars, playerTdLines, globalTdLines };
+}
+
+// The chat of SA-MP only shows Windows-1252: chatText(text) (gameText of the editor) gives the text the game can show, or null;
+// then the message goes in English. Without chatText, a text with letters outside Latin-1 goes in English.
+const latin1 = (s) => /^[\x00-\xff]*$/.test(String(s));
+const fillArgs = (s, args) => String(s).replace(/\{(\d+)\}/g, (m, i) => (args[i] !== undefined ? String(args[i]) : m));
+
 // ctx: what exportPawn has already built (the lines of each kind, the gate and NPC systems, the cameras) and the
 // project's lists. Returns the lines of the script and where the includes go.
 export function filterscriptPawn(ctx) {
   const { project, fc, gateId, gateObjs, npcMod, npcActors, actors, vehs, cams } = ctx;
   const npcs = npcActors.length > 0;
+  const gameSafe = (s) => (ctx.chatText ? ctx.chatText(s) : (latin1(s) ? s : null));
+  const chat = (key, ...args) => gameSafe(tr(key, ...args)) ?? fillArgs(tFallback(key), args);
+  const mapName = gameSafe(String(project.name)) ?? ctx.fileName;
 
   // Every creation call keeps its id in the array of its kind
   const count = new Map();
@@ -84,16 +113,7 @@ export function filterscriptPawn(ctx) {
 
   // TextDraws: the global ones are created when the script loads, the ones of a player and the bars when each player connects
   const tds = project.textDraws || [];
-  const globalTds = [], playerTds = [], bars = [];
-  const refVar = (uid) => { const o = tds.find(t => t.uid === uid && t.type !== 'progress'); return o ? textDrawVar(o, tds) : null; };
-  for (const td of tds) {
-    if (td.type === 'progress') bars.push({ v: progressBarVar(td, tds), lines: progressBarPawn(td, progressBarVar(td, tds), fc) });
-    else (td.isPlayer ? playerTds : globalTds).push({ v: textDrawVar(td, tds), lines: textDrawPawn(td, textDrawVar(td, tds), fc, undefined, td.name ? ` // ${String(td.name).replace(/[\r\n]+/g, ' ').trim()}` : '', refVar) });
-  }
-  const perPlayer = [...playerTds, ...bars].map(x => x.v);
-  const perPlayerRe = perPlayer.length ? new RegExp(`\\b(${perPlayer.join('|')})\\b(?!\\[)`, 'g') : null;
-  const playerTdLines = [...playerTds, ...bars].flatMap(x => x.lines).map(l => l.replace(/^new (PlayerText:)?/, '').replace(perPlayerRe, '$1[playerid]'));
-  const globalTdLines = globalTds.flatMap(x => x.lines).map(l => l.replace(/^new Text:/, ''));
+  const { globalTds, playerTds, bars, playerTdLines, globalTdLines } = tdParts(tds, fc);
 
   // Checkpoints: one of each kind at a time, chosen with /fscp
   const cpCalls = ctx.checkpointLines.filter(l => /^SetPlayer(Race)?Checkpoint\(/.test(l));
@@ -124,6 +144,7 @@ export function filterscriptPawn(ctx) {
     `// ${tr('Mapa: {0}', project.name)}`,
     `// ${tr('Filterscript gerado pelo SA Map Studio em {0}', date)}`,
     `// ${tr('Carregue com: loadfs {0}. Comandos no jogo: /fs', ctx.fileName)}`,
+    ...(ctx.warnLines || []),
     '// ================================================================',
     '',
     '#define FILTERSCRIPT', `#define SAMP_COMPAT // ${tr('aceita os nomes de funções do SA-MP')}`, '', project.server === 'samp' ? '#include <a_samp>' : '#include <open.mp>'];
@@ -157,7 +178,7 @@ export function filterscriptPawn(ctx) {
   // ---------------------------------------------------------------- create and destroy
   const init = [];
   if (ctx.needObjId) init.push('new objectid;');
-  if (ctx.needAttachToId) init.push('new attachtoid;');
+  if (ctx.attachDecl) init.push(ctx.attachDecl);
   if (ctx.needVehId) init.push('new vehicleid;');
   const section = (title, lines) => { if (lines.length) init.push('', `// ${title}`, ...lines); };
   section(tr('Objetos'), objLines);
@@ -169,7 +190,7 @@ export function filterscriptPawn(ctx) {
   section('TextDraws', globalTdLines);
   if (npcMod.load) section(tr('NPCs do open.mp:'), [npcMod.load]);
   init.push('', `// ${tr('Jogadores que já estão no servidor')}`, 'for(new i = 0; i < MAX_PLAYERS; i++)', '{', '    if(IsPlayerConnected(i) && !IsPlayerNPC(i)) Fs_PlayerLoad(i);', '}');
-  init.push(`print(${JSON.stringify('[SA Map Studio] ' + tr('Mapa {0} carregado.', project.name))});`, 'return 1;');
+  init.push(`print(${JSON.stringify('[SA Map Studio] ' + chat('Mapa {0} carregado.', mapName))});`, 'return 1;');
   block(L, 'public OnFilterScriptInit()', init);
 
   const exit = ['for(new i = 0; i < MAX_PLAYERS; i++)', '{', '    if(IsPlayerConnected(i) && !IsPlayerNPC(i)) Fs_PlayerUnload(i);', '}'];
@@ -190,6 +211,7 @@ export function filterscriptPawn(ctx) {
   if (tds.length) load.push('Fs_TdHidden[playerid] = false;');
   if (firstCp >= 0) load.push(`Fs_Checkpoint(playerid, ${firstCp});`);
   if (firstRace >= 0) load.push(`Fs_Checkpoint(playerid, ${firstRace});`);
+  if (!load.length) load.push('#pragma unused playerid'); // nothing per player: no warning 203
   load.push('return 1;');
   block(L, 'stock Fs_PlayerLoad(playerid)', load);
 
@@ -199,6 +221,7 @@ export function filterscriptPawn(ctx) {
   for (const x of bars) unload.push(`DestroyPlayerProgressBar(playerid, ${x.v}[playerid]);`);
   if (firstCp >= 0) unload.push('DisablePlayerCheckpoint(playerid);');
   if (firstRace >= 0) unload.push('DisablePlayerRaceCheckpoint(playerid);');
+  if (!unload.length) unload.push('#pragma unused playerid');
   unload.push('return 1;');
   block(L, 'stock Fs_PlayerUnload(playerid)', unload);
 
@@ -247,20 +270,20 @@ export function filterscriptPawn(ctx) {
 
   // ---------------------------------------------------------------- commands
   // [command and its arguments, what it does]
-  const help = [[['/fs'], tr('esta lista')]];
-  if (goto.length) help.push([['/fsgo', `<${goto.map(g => g[0]).join('|')}>`, '<0..>'], tr('vai até um item do mapa')]);
-  if (tds.length) help.push([['/fstd'], tr('mostra ou esconde os textdraws')]);
-  if (cpCalls.length) help.push([['/fscp', `<0..${cpCalls.length - 1}>`], tr('mostra um checkpoint')]);
-  if (camCalls.length) help.push([['/fscam', `<0..${camCalls.length - 1}>`], tr('roda uma câmera')]);
-  if (gateObjs.length) help.push([['/fsgate'], tr('abre os portões perto de você')]);
-  if (npcs) help.push([['/fsnpc'], tr('recria os NPCs')]);
+  const help = [[['/fs'], chat('esta lista')]];
+  if (goto.length) help.push([['/fsgo', `<${goto.map(g => g[0]).join('|')}>`, '<0..>'], chat('vai até um item do mapa')]);
+  if (tds.length) help.push([['/fstd'], chat('mostra ou esconde os textdraws')]);
+  if (cpCalls.length) help.push([['/fscp', `<0..${cpCalls.length - 1}>`], chat('mostra um checkpoint')]);
+  if (camCalls.length) help.push([['/fscam', `<0..${camCalls.length - 1}>`], chat('roda uma câmera')]);
+  if (gateObjs.length) help.push([['/fsgate'], chat('abre os portões perto de você')]);
+  if (npcs) help.push([['/fsnpc'], chat('recria os NPCs')]);
   const q = (s) => JSON.stringify(s);
   const cmd = ['new idx = 0, name[16];', 'Fs_Token(cmdtext, idx, name, sizeof(name));'];
-  cmd.push('if(!strcmp(name, "/fs", true))', '{', `    SendClientMessage(playerid, FS_COLOR_INFO, ${q(tr('Comandos do mapa {0}:', project.name))});`);
+  cmd.push('if(!strcmp(name, "/fs", true))', '{', `    SendClientMessage(playerid, FS_COLOR_INFO, ${q(chat('Comandos do mapa {0}:', mapName))});`);
   for (const [c, what] of help) cmd.push(`    SendClientMessage(playerid, -1, ${q(c.join(' ') + ': ' + what)});`);
   cmd.push('    return 1;', '}');
   const arg = ['new param[16];', 'Fs_Token(cmdtext, idx, param, sizeof(param));'];
-  const notFound = `SendClientMessage(playerid, FS_COLOR_INFO, ${q(tr('Não existe esse item. Veja /fs.'))});`;
+  const notFound = `SendClientMessage(playerid, FS_COLOR_INFO, ${q(chat('Não existe esse item. Veja /fs.'))});`;
   if (goto.length) {
     cmd.push('if(!strcmp(name, "/fsgo", true))', '{', '    new type[16], param[16];', '    Fs_Token(cmdtext, idx, type, sizeof(type));', '    Fs_Token(cmdtext, idx, param, sizeof(param));');
     cmd.push(`    if(!Fs_Goto(playerid, type, param[0] ? strval(param) : 0)) ${notFound}`, '    return 1;', '}');
@@ -274,10 +297,15 @@ export function filterscriptPawn(ctx) {
   }
   if (npcs) {
     const P = npcMod.load.replace(/_Load\(\);$/, '');
-    cmd.push('if(!strcmp(name, "/fsnpc", true))', '{', `    ${P}_Unload();`, `    ${P}_Load();`, `    SendClientMessage(playerid, FS_COLOR_OK, ${q(tr('NPCs recriados.'))});`, '    return 1;', '}');
+    // The names of the NPCs only get free a moment after they leave: they come back by a timer
+    cmd.push('if(!strcmp(name, "/fsnpc", true))', '{', `    ${P}_Unload();`, '    SetTimer("Fs_NpcReload", 1000, false);', `    SendClientMessage(playerid, FS_COLOR_OK, ${q(chat('NPCs recriados.'))});`, '    return 1;', '}');
   }
   cmd.push('return 0;');
   block(L, 'public OnPlayerCommandText(playerid, cmdtext[])', cmd);
+  if (npcs) {
+    L.push('forward Fs_NpcReload();');
+    block(L, 'public Fs_NpcReload()', [`${npcMod.load}`, 'return 1;']);
+  }
 
   // Next word of the command (no plugin needed)
   block(L, 'stock Fs_Token(const text[], &idx, dest[], size)', [

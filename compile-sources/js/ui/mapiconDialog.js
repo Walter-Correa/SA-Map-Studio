@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: MPL-2.0
 // 2D visual MapIcon editor (similar to the GangZone one) + Visual MapIcon List Window (IDs 0 to 63)
 import { MAP_ICONS, MAPICON_STYLES, getMapIconInfo, getMapIconUrl, getNextMapIconName } from '../world/mapicons.js';
-import { makeMapIcon } from '../editor/project.js';
+import { makeMapIcon, nextMapIconSlot } from '../editor/project.js';
 import { app, $, $$, esc, toast, copyText, arrowStep, themeVar } from './common.js';
+import { t } from './i18n.js';
 
 let dialogEl = null;
 let canvasEl = null;
@@ -181,9 +183,30 @@ export function initMapIconDialog() {
     setupCanvasEvents();
   }
 
+  addSlotField();
   setupDialogEvents();
   setupPickerModalEvents();
   app.on?.('project-closing', resetMapIconHistory);
+}
+
+// The slot of the icon (SetPlayerMapIcon 0 to 99): a field under the style one, and a warning above the list past 100 icons
+function addSlotField() {
+  const stylePair = dialogEl.querySelector('#miFieldStyle')?.closest('.pair');
+  if (stylePair && !dialogEl.querySelector('#miFieldSlot')) {
+    const pair = document.createElement('div');
+    pair.className = 'pair';
+    pair.style.marginTop = '6px';
+    pair.innerHTML = `<label>${esc(t('Slot (0 a 99)'))} <input type="number" id="miFieldSlot" min="0" max="99" step="1"></label>`;
+    stylePair.after(pair);
+  }
+  const list = dialogEl.querySelector('#miList');
+  if (list && !dialogEl.querySelector('#miSlotWarn')) {
+    const warn = document.createElement('div');
+    warn.id = 'miSlotWarn';
+    warn.hidden = true;
+    warn.style.cssText = 'color:var(--warn, #e0a030); font-size:12px; padding:6px 8px;';
+    list.before(warn);
+  }
 }
 
 function getSelectedMapIcon() {
@@ -233,6 +256,7 @@ function setupDialogEvents() {
       }
       miPushUndo();
       const item = makeMapIcon({
+        iconid: nextMapIconSlot(app.project.mapIcons || []),
         type: defaultMarkerType,
         x: Math.round(pos.x * 100) / 100,
         y: Math.round(pos.y * 100) / 100,
@@ -411,6 +435,26 @@ function setupDialogEvents() {
   bindField('#miFieldStyle', 'style', true);
   bindField('#miFieldColor', 'color');
 
+  // Changing the slot to one in use swaps the two icons' slots, so each one keeps its own
+  const slotEl = dialogEl.querySelector('#miFieldSlot');
+  if (slotEl) {
+    slotEl.onchange = () => {
+      const m = getSelectedMapIcon();
+      const v = Math.trunc(parseFloat(slotEl.value));
+      if (!m || !Number.isFinite(v)) { updateSidebarFields(); return; }
+      const slot = Math.max(0, Math.min(99, v));
+      if (slot !== m.iconid) {
+        miPushUndo();
+        const other = (app.project.mapIcons || []).find(x => x !== m && x.iconid === slot);
+        if (other) other.iconid = m.iconid;
+        m.iconid = slot;
+        app.project.modified = true;
+      }
+      updateSidebarList();
+      updateSidebarFields();
+    };
+  }
+
   const btnFocus3D = dialogEl.querySelector('#miBtnFocus3D');
   if (btnFocus3D) {
     btnFocus3D.onclick = () => {
@@ -488,6 +532,7 @@ function duplicateSelectedMapIcon() {
 
   miPushUndo();
   const item = makeMapIcon({
+    iconid: nextMapIconSlot(app.project.mapIcons || []),
     type: m.type ?? 0,
     x: bestPos.x,
     y: bestPos.y,
@@ -581,6 +626,7 @@ function setupCanvasEvents() {
       }
       miPushUndo();
       const item = makeMapIcon({
+        iconid: nextMapIconSlot(app.project.mapIcons || []),
         type: defaultMarkerType,
         x: Math.round(w.x * 100) / 100,
         y: Math.round(w.y * 100) / 100,
@@ -778,6 +824,11 @@ function updateSidebarList() {
   listEl.innerHTML = '';
 
   const list = app.project?.mapIcons || [];
+  const warnEl = dialogEl?.querySelector('#miSlotWarn');
+  if (warnEl) {
+    warnEl.hidden = list.length <= 100;
+    warnEl.textContent = list.length > 100 ? t('{0} MapIcons: o jogador vê no máximo 100 (slots 0 a 99), os outros repetem slots e somem.', list.length) : '';
+  }
   if (!list.length) {
     listEl.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px; text-align:center;">Nenhum MapIcon criado.<br>Clique em qualquer ponto do mapa ao lado para posicionar.</div>';
     return;
@@ -791,7 +842,7 @@ function updateSidebarList() {
       <img src="${getMapIconUrl(m.type ?? 0)}" width="24" height="24" style="image-rendering:pixelated; flex-shrink:0;">
       <div class="gz-info">
         <span class="gz-title">#${m.type ?? 0} · ${esc(m.comment || info.label)}</span>
-        <span class="gz-sub">Slot ${idx} · (${m.x.toFixed(1)}, ${m.y.toFixed(1)}, ${m.z.toFixed(1)})</span>
+        <span class="gz-sub">Slot ${m.iconid ?? idx} · (${m.x.toFixed(1)}, ${m.y.toFixed(1)}, ${m.z.toFixed(1)})</span>
       </div>
     `;
     item.onclick = (e) => {
@@ -860,6 +911,7 @@ function updateSidebarFields() {
   setVal('#miFieldZ', m.z);
   setVal('#miFieldType', m.type ?? 0);
   setVal('#miFieldStyle', m.style ?? 0);
+  setVal('#miFieldSlot', m.iconid ?? 0);
   setVal('#miFieldColor', '0x' + ((m.color ?? 0xFF0000FF) >>> 0).toString(16).toUpperCase().padStart(8, '0'));
 }
 
@@ -873,7 +925,7 @@ function copyAllMapIconsPawn() {
   list.forEach((m, i) => {
     const cHex = '0x' + ((m.color ?? 0) >>> 0).toString(16).toUpperCase().padStart(8, '0');
     const comm = m.comment ? ` // ${m.comment}` : '';
-    lines.push(`SetPlayerMapIcon(playerid, ${i % 100}, ${m.x.toFixed(4)}, ${m.y.toFixed(4)}, ${m.z.toFixed(4)}, ${m.type ?? 0}, ${cHex}, ${m.style ?? 0});${comm}`);
+    lines.push(`SetPlayerMapIcon(playerid, ${m.iconid ?? i % 100}, ${m.x.toFixed(4)}, ${m.y.toFixed(4)}, ${m.z.toFixed(4)}, ${m.type ?? 0}, ${cHex}, ${m.style ?? 0});${comm}`);
   });
   copyText(lines.join('\n'));
   toast(`${list.length} MapIcon(s) copiado(s) em formato Pawn!`, 'ok');

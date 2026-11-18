@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: MPL-2.0
 // Project: created objects, vehicles and removed buildings, with undo/redo.
 import { isVehicleModel } from './pwn.js';
-import { normalizeMaterial } from './materials.js';
+import { normalizeMaterial, encodePawnString } from './materials.js';
 import { updateRaceCheckpointsChain } from '../world/checkpoints.js';
 import { t as tr } from '../ui/i18n.js';
 import { makeFx, tdfxPawn } from './tdfx.js';
@@ -228,6 +229,7 @@ export function makeLabel(data) {
     drawDist: data.drawDist !== undefined ? +data.drawDist : 40.0,
     scale: data.scale !== undefined ? +data.scale : 1.0,
     world: data.world !== undefined ? (data.world | 0) : 0,
+    interior: data.interior !== undefined ? (data.interior | 0) : -1,
     testLOS: data.testLOS ? 1 : 0,
     comment: data.comment ? String(data.comment) : '',
     preComment: data.preComment ? String(data.preComment) : '',
@@ -288,7 +290,7 @@ export function makeAction(data) {
     weapon: n(d.weapon, 22) | 0, ammo: Math.max(1, Math.min(99999, n(d.ammo, 200) | 0)),
     stars: Math.max(0, Math.min(6, n(d.stars, 0) | 0)),
     x: n(d.x, 0), y: n(d.y, 0), z: n(d.z, 0), rot: n(d.rot, 0),
-    model: n(d.model, 411) | 0,
+    model: Math.max(400, Math.min(611, n(d.model, 411) | 0)), // only vehicle models (400 to 611): any other one crashes the game
     // its own field (the vehicle one is 400 to 611); the actions saved before took the vehicle's
     skin: ((v) => (v >= 0 && v <= 311 ? v : 0))(n(d.skin !== undefined ? d.skin : (d.type === 'skin' ? d.model : 0), 0) | 0),
     weather: Math.max(0, Math.min(45, n(d.weather, 0) | 0)),
@@ -304,6 +306,7 @@ export function makePickup(data) {
     type: data.type !== undefined ? (data.type | 0) : 1,
     x: +data.x || 0, y: +data.y || 0, z: +data.z || 0,
     world: data.world !== undefined ? (data.world | 0) : 0,
+    interior: data.interior !== undefined ? (data.interior | 0) : -1,
     action: data.action ? makeAction(data.action) : null,
     menu: data.menu ? makeMenu(data.menu) : null,
     comment: data.comment ? String(data.comment) : '',
@@ -597,7 +600,7 @@ export function progressBarPawn(td, varName, fmt) {
   }
   if (td.pbLabel) {
     const auto = !(+td.pbLabelScaleX > 0 && +td.pbLabelScaleY > 0);
-    lines.push(`SetPlayerProgressBarLabel(playerid, ${varName}, true, ${JSON.stringify(clampPbLabelText(td.pbLabelText) || PB_LABEL_DEFAULT)}, ${hexOf(td.pbLabelColor ?? 0xFFFFFFFF)}, ${[1, 2, 3].includes(td.pbLabelAlign | 0) ? td.pbLabelAlign | 0 : 2}, ${Math.max(0, Math.min(3, td.pbLabelFont ?? 1))}, ${auto ? '0.0' : f(td.pbLabelScaleX)}, ${auto ? '0.0' : f(td.pbLabelScaleY)}, ${f(td.pbLabelOffX || 0)}, ${f(td.pbLabelOffY || 0)}, ${td.pbLabelFollow ? 'true' : 'false'}, ${PB_LABEL_ORIENTS[td.pbLabelOrient | 0] || PB_LABEL_ORIENTS[0]});`);
+    lines.push(`SetPlayerProgressBarLabel(playerid, ${varName}, true, ${encodePawnString(clampPbLabelText(td.pbLabelText) || PB_LABEL_DEFAULT)}, ${hexOf(td.pbLabelColor ?? 0xFFFFFFFF)}, ${[1, 2, 3].includes(td.pbLabelAlign | 0) ? td.pbLabelAlign | 0 : 2}, ${Math.max(0, Math.min(3, td.pbLabelFont ?? 1))}, ${auto ? '0.0' : f(td.pbLabelScaleX)}, ${auto ? '0.0' : f(td.pbLabelScaleY)}, ${f(td.pbLabelOffX || 0)}, ${f(td.pbLabelOffY || 0)}, ${td.pbLabelFollow ? 'true' : 'false'}, ${PB_LABEL_ORIENTS[td.pbLabelOrient | 0] || PB_LABEL_ORIENTS[0]});`);
   }
   // The smooth change starts from pbLerpFrom; the auto fill would stop it, so it is only written without the auto fill
   const lerp = td.pbLerp && !td.pbAutoFill;
@@ -652,7 +655,7 @@ export function textDrawPawn(td, varName, fmt, createText, comment = '', refVar 
   const player = Boolean(td.isPlayer);
   const prefix = player ? 'PlayerText:' : 'Text:';
   const call = (name, ...args) => `${player ? 'PlayerTextDraw' : 'TextDraw'}${name[0].toUpperCase()}${name.slice(1)}(${player ? 'playerid, ' : ''}${varName}${args.length ? ', ' + args.join(', ') : ''});`;
-  const lines = [`new ${prefix}${varName} = ${player ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${fmt(td.x)}, ${fmt(td.y)}, ${JSON.stringify(createText ?? n.text)});${comment}`];
+  const lines = [`new ${prefix}${varName} = ${player ? 'CreatePlayerTextDraw(playerid, ' : 'TextDrawCreate('}${fmt(td.x)}, ${fmt(td.y)}, ${encodePawnString(createText ?? n.text)});${comment}`];
   lines.push(call('font', n.font));
   lines.push(call('letterSize', fmt(n.letterSizeX), fmt(n.letterSizeY)));
   lines.push(call('alignment', n.align));
@@ -790,6 +793,33 @@ export function makeCheckpoint(data) {
   };
 }
 
+// Map icon slots (SetPlayerMapIcon takes 0 to 99 per player, and an icon in a used slot replaces the other one): each icon
+// gets its own. keep: the icons whose slot stays as it is (those already in the project); without it, the first icon of each
+// slot keeps it. The others keep theirs when it is free, or take the first free one. Past 100 icons the slots repeat.
+export function mapIconSlots(icons, keep = null) {
+  const used = new Set(), out = new Array(icons.length);
+  const valid = (s) => Number.isInteger(s) && s >= 0 && s < 100;
+  icons.forEach((m, i) => {
+    const s = m.iconid;
+    if (keep ? keep.has(m) : valid(s) && !used.has(s)) { out[i] = valid(s) ? s : 0; used.add(out[i]); }
+  });
+  let next = 0;
+  icons.forEach((m, i) => {
+    if (out[i] !== undefined) return;
+    if (valid(m.iconid) && !used.has(m.iconid)) { out[i] = m.iconid; used.add(m.iconid); return; }
+    while (next < 100 && used.has(next)) next++;
+    out[i] = next < 100 ? next : i % 100;
+    used.add(out[i]);
+  });
+  return out;
+}
+export function fixMapIconSlots(icons, keep = null) {
+  const slots = mapIconSlots(icons, keep);
+  icons.forEach((m, i) => { m.iconid = slots[i]; });
+}
+// The first free slot for a new icon
+export const nextMapIconSlot = (icons) => mapIconSlots([...icons, {}], new Set(icons)).pop();
+
 export function makeMapIcon(data) {
   const mtype = data.markertype !== undefined ? (data.markertype | 0) : (data.type !== undefined ? (data.type | 0) : 0);
   return {
@@ -893,6 +923,7 @@ export class Project {
     for (const [k, v] of Object.entries(data.drawDist || {})) if (Number.isFinite(+v) && +v >= 20) p.drawDist[k] = +v;
     for (const k of KINDS) p[k] = (data[k] || []).map(MAKERS[k]);
     repairAttachments(p.objects, p.vehicles);
+    fixMapIconSlots(p.mapIcons); // old projects: every icon was in slot 0
     // The spawn point used to be a setting of the world
     const old = data.world && (data.world.spawn || data.world.start);
     if (old && Number.isFinite(+old.x) && !p.spawns.length) p.spawns.push(makeSpawn({ x: old.x, y: old.y, z: old.z, rz: old.rot || 0 }));
@@ -1052,12 +1083,14 @@ export class Project {
     const uids = [];
     this.transact(label, removeUids, () => {
       if (removeUids.length) { const rm = new Set(removeUids); for (const k of KINDS) this[k] = this[k].filter(o => !rm.has(o.uid)); }
+      const icons = new Set(this.mapIcons);
       for (const it of items) {
         const k = MAKERS[it.kind] ? it.kind : 'objects';
         const obj = MAKERS[k](it);
         this[k].push(obj);
         uids.push(obj.uid);
       }
+      fixMapIconSlots(this.mapIcons, icons);
       meta?.(this);
       return uids;
     });
@@ -1126,7 +1159,9 @@ export class Project {
       const maker = MAKERS[kind] || makeObject;
       created = maker(data || {});
       if (!this[kind]) this[kind] = [];
+      const icons = new Set(this.mapIcons);
       this[kind].push(created);
+      if (kind === 'mapIcons') fixMapIconSlots(this.mapIcons, icons);
       return [created.uid];
     });
     return created;
@@ -1152,6 +1187,7 @@ export class Project {
     if (!items.length) return [];
     const uids = [];
     this.transact(label, [], () => {
+      const icons = new Set(this.mapIcons);
       for (const it of items) {
         if (!it) continue;
         const k = it.kind || kind;
@@ -1170,6 +1206,7 @@ export class Project {
           const o = makeObject(it); this.objects.push(o); uids.push(o.uid);
         }
       }
+      fixMapIconSlots(this.mapIcons, icons);
       return uids;
     });
     return uids;
