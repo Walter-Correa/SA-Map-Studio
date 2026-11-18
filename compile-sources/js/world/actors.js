@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Actors support: skins, animations and presets
 // Documentation:
 //               

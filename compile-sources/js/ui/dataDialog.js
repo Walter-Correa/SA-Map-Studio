@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer game data of the mod: vehicle handling (merged into handling.cfg by the modloader), the view distance of single models
 // and the textures replaced in the whole map. The mod only carries what was changed.
 import { app, $, esc, toast } from './common.js';

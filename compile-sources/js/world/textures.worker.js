@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Texture worker (background, without freezing the editor).
 //  - "index": reads all the TXDs, lists each one's textures and already generates and saves to disk
 //    the thumbnail of those that do not have one yet (so the Textures tab opens fast afterwards)

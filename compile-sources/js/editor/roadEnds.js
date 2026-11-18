@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // The ends of a piece (roads, ramps, pipes...) read from its model: where another piece can join it. An end is a flat face at the extreme of the model (a
 // plane that has all the model behind it); the place of the end, the way out of it and its size come from the points of the model on that plane.
 // Two kinds:

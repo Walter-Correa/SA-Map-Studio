@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Material swaps, in the same format as the game functions:
 //
 //   SetObjectMaterial(objectid, materialindex, modelid, txdname[], texturename[], materialcolor = 0)

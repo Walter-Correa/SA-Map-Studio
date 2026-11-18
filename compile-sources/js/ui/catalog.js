@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Objects tab: catalog with categories (Furniture, Beach, Buildings...), origin (SA-MP, Los Santos...),
 // favorites, recents and thumbnails stored on disk.
 import { attachHoverPreview } from './hoverPreview.js';

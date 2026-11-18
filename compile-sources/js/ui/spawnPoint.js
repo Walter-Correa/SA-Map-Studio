@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // The project's spawn point (Singleplayer) is an item like the others (kind "spawns", at most one): it is selected, moved, turned,
 // copied into the undo history and deleted with the editor's own tools. This only creates it and takes the camera to it.
 import * as THREE from 'three';

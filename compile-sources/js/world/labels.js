@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Suporte completo a 3D Text Labels (Create3DTextLabel e CreateDynamic3DTextLabel)
 // As specified:
 import * as THREE from 'three';

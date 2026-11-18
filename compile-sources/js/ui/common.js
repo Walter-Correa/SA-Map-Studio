@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 import { uiLocale, t } from './i18n.js';
 // Utilities shared by the interface and the "app" object with the main pieces.
 export const $ = (s, r = document) => r.querySelector(s);

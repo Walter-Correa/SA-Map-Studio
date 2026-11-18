@@ -114,7 +114,7 @@ never changed and removing the mod is deleting its folder.
   list opens a big picture in the middle of the screen; it closes when the mouse leaves or on click.
 - Place by clicking on the map (`R` / `X` rotate 15° / 90° before dropping, `Shift` + click keeps placing), gizmo to move
   and rotate (world or object axes), movement and rotation speeds from 0.001x to 10x, **grid snapping**, **magnetic
-  snapping** to the edges of nearby objects and the **automatic snap of tracks, ramps and roads** (category *Pistas, rampas e estradas*: the tubes of SA-MP and ramps of the game join by their edges) and **Auto Create**, which builds tracks (roads, tubes, pipes), furnished interiors (up to 4 floors) and mazes in front of the camera.
+  snapping** to the edges of nearby objects and the **automatic snap of tracks, ramps and roads** (category *Tracks, ramps and roads*: the tubes of SA-MP and ramps of the game join by their edges) and **Auto Create**, which builds tracks (roads, tubes, pipes), furnished interiors (up to 4 floors) and mazes in front of the camera.
 - Multiple selection with joint movement and rotation around the common center; `Ctrl+A` selects everything.
 - **Duplicate** (`Ctrl+D`) and **Place another one** create the copy in the same spot, already with the move gizmo;
   `End` drops the selection on the surface, `X` rotates 90°, `Page Up` / `Page Down` raise and lower.
@@ -208,7 +208,7 @@ never changed and removing the mod is deleting its folder.
 - Texts and boxes (`TextDrawCreate` / `CreatePlayerTextDraw`).
 - Fonts 0 to 5, text and box colors with transparency, alignment (left, center, right), letter and box size, `outline`
   and `shadow`; layers (creation order) with buttons to move an element forward or back.
-- **Sprites** (Font 4) from a gallery of 567 game sprites, with the Pawn line of each one.
+- **Sprites** (Font 4) from a gallery of 548 game sprites, with the Pawn line of each one.
 - **3D model preview (Font 5)**: vehicles, skins and objects in the TextDraw with rotation (RX, RY, RZ) and zoom, drawn
   as the SA-MP client does.
 - **Progress bars** (Progress Bar Plus, `ProgressBar.inc`, https://github.com/Walter-Correa/Progress-Bar-Plus, included in
@@ -252,7 +252,7 @@ never changed and removing the mod is deleting its folder.
   a big preview of the texture when the mouse is over it.
 
 ### Sounds
-- Catalog of 525 sounds for `PlayerPlaySound` with **real audio preview** extracted from the game, search by ID, name
+- Catalog of 2620 sounds for `PlayerPlaySound` with **real audio preview** extracted from the game, search by ID, name
   or description, categories and a button to copy the code.
 
 ### Colors
@@ -318,7 +318,7 @@ never changed and removing the mod is deleting its folder.
 - Side menus collapse independently from the buttons on their inner edges (or with `F10`) and can collapse by themselves
   while the camera moves.
 - **Update History** button: the version history and the build date and time, always in English and never translated.
-- **New release notice**: on opening, the editor checks the latest release of the project on GitHub (at most once every 6 hours, in the background, never delaying the editor). If it is newer than the running version, a box offers *Baixar agora* / *Baixar depois*; either answer is saved and the box does not appear again for that version, while the Update History button keeps a "!" alert and the top of the history shows the new version with a Download button. Offline or private repository: nothing is shown. To test without a release, start the program with `SAMAP_UPDATE_API` set to the address of a JSON like the GitHub release (it also accepts `file:///` paths) and clear `update_ack` in `data/config.json` to see the box again.
+- **New release notice**: on opening, the editor checks the latest release of the project on GitHub (at most once every 6 hours, in the background, never delaying the editor). If it is newer than the running version, a box offers *Download now* / *Download later*; either answer is saved and the box does not appear again for that version, while the Update History button keeps a "!" alert and the top of the history shows the new version with a Download button. Offline or private repository: nothing is shown. To test without a release, start the program with `SAMAP_UPDATE_API` set to the address of a JSON like the GitHub release (it also accepts `file:///` paths) and clear `update_ack` in `data/config.json` to see the box again.
 - **Diagnostics and logs** window with the errors found, a button to copy the report and another to open the log folder.
 - Shortcuts window (`?`).
 
@@ -335,7 +335,7 @@ never changed and removing the mod is deleting its folder.
 | Built-in browser | Microsoft Edge WebView2 Runtime (already in Windows 11 and in an updated Windows 10). Without it, the editor opens in the default browser. |
 | Graphics card | WebGL 2 compatible, with an updated driver. |
 | Memory | 4 GB of RAM or more (8 GB recommended for large maps). |
-| Disk | About 250 MB free: 98 MB for `SA Map Studio.exe` + 125 MB for the `sa-map-studio` folder created on the first run (the built-in browser cache grows a little with use). |
+| Disk | About 170 MB free: about 37 MB for `SA Map Studio.exe` + 125 MB for the `sa-map-studio` folder created on the first run (the built-in browser cache grows a little with use). |
 | Screen | At least 1050 x 650. |
 | Game | Original GTA San Andreas for PC (the same version as SA-MP), with `gta_sa.exe`, `data\gta.dat` and `models\gta3.img`. The Definitive Edition is not compatible. The editor only reads the game files. |
 | Singleplayer mods | The Modloader in the GTA folder (and CLEO plus an ASI loader when the mod uses scripts: NPCs, pickups or checkpoints with actions, moving objects, tuned vehicles; plus the CLEO+ plugin, CLEO+.cleo (or CLEOPlus.cleo) in the cleo folder, next to the other .cleo plugins (or in cleo/cleo_plugins, depending on the CLEO version), when the mod has moving objects, pickups, checkpoints or radar icons, so the saved games stay free of the mod). The editor warns when something is missing and links to where to get it. |
@@ -471,6 +471,9 @@ settings). A newer `.exe` updates an existing folder and keeps the user data.
 serve.py                       local server (Python, standard library only) + own window (pywebview)
 index.html, favicon.svg        main interface page
 icon.ico                       executable icon
+LICENSE                        license of the project (MPL-2.0); the third-party licenses are listed in "License" below
+ia-rules.md                    rules for the work sessions on the project (build, tests, commits)
+.github/workflows/             GitHub Actions: build.yml (checks the translations and builds) and release.yml (publishes a release)
 compile-sources/
 ├── css/                       interface styles
 ├── js/app.js                  startup
@@ -486,6 +489,8 @@ compile-sources/
 ├── launcher.py                single executable: extracts or updates the program
 ├── launcher_frames/           frames of the launcher's animated icon
 ├── package_bundle.py          packs the program into the launcher zip
+├── sync_version.py            copies the editor version (VERSION of serve.py) to version_info.txt before each build
+├── example-map.json           example project opened on the first launch
 ├── i18n_check.py, i18n_same.txt, i18n_extra.txt  translation check used by the build
 ├── i18n_tool.py               batch translation, plural forms and key rename for the language files
 ├── samapstudio.pwn / .amx     test server gamemode (uses ProgressBar.inc and TextDrawFX.inc)
@@ -523,7 +528,7 @@ The files are in `compile-sources/js/lang/` and are always included in the build
 - Game and SA-MP names, keys and the exported Pawn code are not translated (list in `compile-sources/i18n_same.txt`). For
   a part of the interface that must not be translated, use `translate="no"` in the HTML.
 - Text inside `<code>` is not translated; to translate a command argument such as `[clima]`, use `<code class="i18n-code">`.
-  A lone word between tags (`e`, `(voar),`) that the check cannot detect goes in `compile-sources/i18n_extra.txt`.
+  A lone word between tags (such as `(voar)`) that the check cannot detect goes in `compile-sources/i18n_extra.txt`.
 - Text that does not go through the page (canvas, textarea content, code generated for the game) uses `t('text')` from
   `js/ui/i18n.js`.
 - The installer (`compile-sources/launcher.py`) keeps its texts in the `TEXTS` table (one block per language), because it
@@ -543,7 +548,8 @@ Tools (in `compile-sources/`, run with Python 3):
   `samapstudio.pwn`). Any of these makes it exit with an error, and `build.bat` stops. It also prints quality warnings that do
   not stop the build (empty or untranslated texts, wrong script, Portuguese accents, different final punctuation) and, for an
   orphan key that looks like a changed text, the `i18n_tool.py rename` command to run. `--missing en` lists the texts missing in
-  English, `--orphans` lists the orphan keys and `--prune` deletes them from every file.
+  English, `--orphans` lists the orphan keys and the lines of `i18n_same.txt` that match no text of the code, and `--prune`
+  deletes both. Spanish and Italian skip the "same as Portuguese" warning, since many of their texts are rightly identical.
 - `python compile-sources/i18n_tool.py export [folder] [--lang ru uk] [--size 200]` writes what is missing (default
   folder `testing/i18n/`): `keys.json` (id → Portuguese key) and batches `<code>-01.txt` with one `id<TAB>English text`
   line per key. Replace the English text with the translation.
@@ -572,6 +578,7 @@ Tools (in `compile-sources/`, run with Python 3):
 - Singleplayer What happens: the skin action has its own field (0 to 311, 0 by default) and skips the skins that crashed the game (story characters, the special slots 290 to 299 and the SA-MP-only skins 300 to 311), changes only on foot and builds CJ's body and clothes again. Healing fills up to the player's current max health.
 - Singleplayer protectors: they never attack the player, his friends, the blue mission allies or the mod's own NPCs, recruited gang members leave them alone, and they get into the player's vehicle only after a horn in it (another horn, or the player getting out, makes them get out). The mod's enemies are in another gang so protectors can hurt them.
 - Singleplayer protectors no longer stand still beside enemies: a target is given up only when its health does not go down, enemies behind cover are blocked for 5 s instead of 30 s, a dead target's kill order is dropped, and enemies off the screen (as in the mission Green Sabre) take the damage of their shots.
+- Full audit fixes: the local server only answers the editor page (other websites can no longer call it) and never reads files outside its folders; projects are never lost when a save fails or when they are renamed or opened from outside; singleplayer mods skip skins, vehicles, animations and pickups the game cannot load, clean broken ~ codes, respect the 16 checkpoint spheres and no longer clash with other installed mods; Pawn exports compile in every layout (per-player function, attached objects, map icon slots, gang zones, checkpoints, camera ends, limit warnings) and import back unchanged; open.mp NPCs compile with any number of NPCs, retry names in use, keep their looks on import and no longer fight each other; the filterscript chat falls back to English when the language has letters the SA-MP chat cannot show; undo, memory, translations and the test server got many smaller fixes.
 
 ### 4.2.0 — 14/11/2026
 - Gates and doors: any object can become a gate or a door with a closed and an open position. A key or the vehicle horn (KEY_HORN) opens it, only when it is fully closed, and it closes again on its own after a set time (5000 ms by default), with the gate sounds 1153 and 1154. It goes into the Pawn export and import, the test server and the singleplayer mods, where the sound follows the object.
@@ -1065,11 +1072,22 @@ Tools (in `compile-sources/`, run with Python 3):
 
 ### License
 
-The editor is licensed under the **Mozilla Public License 2.0** (see `LICENSE`). Third-party parts keep their own licenses:
-three.js and TransformControls (MIT, `compile-sources/js/vendor`), the Barlow font (SIL Open Font License 1.1,
-`compile-sources/fonts/OFL.txt`), the open.mp server, its components and the `omp_*` includes (MPL 2.0, source at
-https://github.com/openmultiplayer/open.mp), the streamer plugin and `streamer.inc` (Apache License 2.0), `ProgressBar.inc` (Progress Bar Plus, MPL 2.0, https://github.com/Walter-Correa/Progress-Bar-Plus), `TextDrawFX.inc` (TextDrawFX, MPL 2.0, https://github.com/Walter-Correa/TextDrawFX) and the Pawn compiler
-with its basic includes (license of the Pawn project).
+The editor is licensed under the **Mozilla Public License 2.0** (see `LICENSE`); each source file of the project starts with
+`SPDX-License-Identifier: MPL-2.0`. Third-party parts shipped with it keep their own licenses (follow the links for the
+full texts):
+
+| Part | Where | License | Source |
+|---|---|---|---|
+| three.js r186 and TransformControls | `compile-sources/js/vendor` | MIT | https://github.com/mrdoob/three.js |
+| Barlow font | `compile-sources/fonts` | SIL Open Font License 1.1 (`OFL.txt`) | https://github.com/jpt/barlow |
+| open.mp server, its components and the `open.mp`/`omp_*` includes | `omp-server-source` (test server) | MPL 2.0 | https://github.com/openmultiplayer/open.mp |
+| Streamer plugin (`streamer.dll`) and `streamer.inc` | `omp-server-source/plugins`, `pawno/include` | Apache License 2.0 | https://github.com/samp-incognito/samp-streamer-plugin |
+| Pawn compiler (`pawncc.exe`, `pawnc.dll`) and its basic includes (`core.inc`, `float.inc`, `string.inc`...) | `omp-server-source/pawno` | zlib-style license of the Pawn compiler (ITB CompuPhase) | https://github.com/openmultiplayer/compiler |
+| `ProgressBar.inc` (Progress Bar Plus) | `pawno/include` | MPL 2.0 | https://github.com/Walter-Correa/Progress-Bar-Plus |
+| `TextDrawFX.inc` (TextDrawFX) | `pawno/include` | MPL 2.0 | https://github.com/Walter-Correa/TextDrawFX |
+| pywebview (built-in window) | inside `SA Map Studio.exe` | BSD 3-Clause | https://github.com/r0x0r/pywebview |
+| Python runtime | inside `SA Map Studio.exe` | Python Software Foundation License | https://www.python.org/ |
+| PyInstaller bootloader | inside `SA Map Studio.exe` | GPL 2.0 with the bootloader exception | https://github.com/pyinstaller/pyinstaller |
 
 The material of the game is not covered by this license: Grand Theft Auto: San Andreas belongs to Rockstar Games / Take-Two
 Interactive. The editor draws what it shows (thumbnails, skins, sprites, map icons, radar and CJ) from the GTA folder of the

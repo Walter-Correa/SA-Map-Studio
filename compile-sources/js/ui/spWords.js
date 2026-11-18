@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer wording: what the multiplayer editor calls an "actor" is a "NPC" here. The words are replaced in the page as it changes
 // (only when the language is Portuguese; the other languages have their own translations).
 import { getLanguage } from './i18n.js';

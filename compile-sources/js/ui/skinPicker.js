@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Skin Picker Modal for Actors with Visual Preview and Categories
 // Supports all 312 game skins (IDs 0 to 311)
 import { app, $, $$, esc, plural, toast } from './common.js';

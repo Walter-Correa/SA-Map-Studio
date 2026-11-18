@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Friendly categories for objects and textures.
 // The game does not store categories: they are deduced from the model/texture name,
 // the source IDE file and some known SA-MP ID ranges.

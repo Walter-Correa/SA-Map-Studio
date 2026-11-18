@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Automatic snap of tracks, ramps and roads: a piece of the category "Pistas, rampas e estradas" that is moved near the edge of another one goes to
 // the place where the two join, exactly (position and rotation).
 //

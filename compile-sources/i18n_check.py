@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 """Editor languages: finds the interface texts in the code (index.html and js/) and checks the
 language files in js/lang/.
 
@@ -15,7 +16,8 @@ Usage:
   python i18n_check.py --dump F     writes to F the list of keys found in the code (JSON)
   python i18n_check.py --missing L  shows the keys missing in language L (e.g. en)
   python i18n_check.py --orphans    shows the keys of the language files that the code no longer uses
-  python i18n_check.py --prune      deletes those orphan keys from all language files
+  python i18n_check.py --prune      deletes those orphan keys from all language files and the lines of
+                                    i18n_same.txt that no longer match a text of the code
 
 To translate in batches, rename keys and import plural forms, use i18n_tool.py.
 """
@@ -68,7 +70,7 @@ buzina curta longa disparo morte voz escola pequena urbana autoescolas academias
 
 def is_portuguese(key):
     """In the catalogs: is the text in Portuguese (not an original line or name in English)?"""
-    head = re.sub(r"(['\"]).*", " ", key)  # outside the original lines in quotes
+    head = re.sub(r"(['\"]).*\1", " ", key)  # outside the original lines in quotes
     if re.search(r"[ãõçâêôáéíóúà]", head, re.I) or set(re.findall(r"[a-zà-ÿ]+", head.lower())) & PT_WORDS:
         return True
     text = re.sub(r"\{\d+\}", " ", key)
@@ -229,7 +231,8 @@ CODEISH = re.compile(r"=>|===|!==|\(\)\s*[;{]|\bfunction\b|\breturn\b|\bconst\b|
 
 
 # Generated Pawn code and file signatures (not interface texts)
-PAWN_LIKE = re.compile(r"^(//(?! Ex)|# |#[A-Za-z]|new |stock |forward |public |case |for \(|[a-z]\w*\s*=\s*[A-Z]\w+\()|playerid|\);\s*($|//)|^\{\d+\}\(")
+PAWN_LIKE = re.compile(r"^(//(?! Ex)|# |#[A-Za-z]|new |stock |forward |public |case |for \(|[a-z]\w*\s*=\s*[A-Z]\w+\()|playerid|\);\s*(\{\d+\})?\s*($|//)|^\{\d+\}\(|"
+                       r"^(\{\d+\})?(else\s+)?(if|switch|while|for)\s*\(|\bsizeof\(|^[\w{}\[\].]+\s*=\s*[^;=]+;\s*(\{\d+\})?$")
 
 
 CSS_LIKE = re.compile(r"^[.#\[][\w-]|[\w\]]\[[\w-]+(=|\])|\b\d*px\b.*\b(sans-serif|monospace|serif|Arial)\b|^bold\b")
@@ -260,7 +263,7 @@ def is_ui_text(key):
         return bool(re.fullmatch(r"[A-ZÀ-Þ][a-zß-ÿ]{1,}", w))
     # Several words: cannot be a list of classes, selectors or code names
     # List of CSS classes or code names: lowercase with hyphen or underscore
-    if re.fullmatch(r"[a-z0-9 _\-]+", letters.strip()) and re.search(r"[_\-]|[a-z]+\d", letters):
+    if re.fullmatch(r"[a-z0-9 _\-]+", letters.strip()) and re.search(r"[_\-]|\b[a-z]+\d", letters):
         return False
     if all(re.fullmatch(r"[A-Z0-9_]+", w) for w in words) and ("_" in letters or not any(len(w) >= 4 for w in words)):
         return False
@@ -272,12 +275,13 @@ def generalize(key):
     k = re.sub(r'"[^"]+"', '"\u0001"', key)
     # Original line in single quotes after "Label: " (e.g. Cassino: 'You win!')
     k = re.sub(r"^([^:']+: )'.+'$", "\\1'\u0001'", k)
+    # The variable parts first: a number inside {0} would become {{0}}
+    k = re.sub(r"\{\d+\}", "\u0001", k)
     k = re.sub(r"(?<![A-Za-z])\d+(?![A-Za-z])", "\u0001", k)
     n = [0]
 
     def num(_m):
         r = "{%d}" % n[0]; n[0] += 1; return r
-    k = re.sub(r"\{\d+\}", "\u0001", k)
     return re.sub("\u0001", num, k)
 
 
@@ -324,6 +328,8 @@ def keys_from_source():
             rel = os.path.relpath(path, HERE).replace(os.sep, "/")
             with open(path, "r", encoding="utf-8") as f:
                 src = f.read()
+            # The first text of console.log/warn/error(...) only goes to the console
+            src = re.sub(r"""\bconsole\.\w+\(\s*(['"`])(?:\\.|(?!\1).)*?\1""", "console.log(''", src)
             if name == "about.js":
                 # The version history stays in English only and is never translated
                 src = re.sub(r"const CHANGELOG = \[.*?\n\];", "", src, flags=re.S)
@@ -351,21 +357,47 @@ def keys_from_source():
     return found
 
 
+LETTER = re.compile(r"[A-Za-zÀ-ÿ]")
+# Code name, key or abbreviation (SAMP, F1, X, my_var, #12): stays the same in every language
+IDENT = re.compile(r"[#$@]?(?:[A-Z0-9_]+|\w*\d\w*|\w*_\w*)[%.]?")
+
+
 def covered(key, data, patterns):
+    """Exact key, or the template lookup() in js/ui/i18n.js picks for the text (the first one that matches,
+    the longest fixed part first) when its {n} parts take only what really varies: numbers, punctuation,
+    {n} and code names. A template does not cover a fixed text by taking words: "{0} veículo" would turn
+    "Entrar no veículo" into "Entrar no vehicle", so that text needs its own translation."""
     if key in data:
         return True
-    return any(p.match(key) for p in patterns)
+    for p in patterns:
+        m = p.match(key)
+        if m:
+            return all(variable_part(g) for g in m.groups())
+    return False
 
 
-def lang_patterns(data):
+def variable_part(part):
+    """Is this piece taken by a template's {n} something that stays the same in every language?"""
+    rest = re.sub(r"\{\d+\}", " ", part)
+    words = [w for w in re.findall(r"[^\s,;:()\[\]/+\-]+", rest) if LETTER.search(w)]
+    return all(IDENT.fullmatch(w) for w in words)
+
+
+def lang_patterns(data, runtime=True):
     pats = []
     for k in data:
         if k.startswith("_") or not re.search(r"\{\d+\}", k):
             continue
-        src = "".join("(.+?)" if re.fullmatch(r"\{\d+\}", piece) else re.escape(piece)
-                      for piece in re.split(r"(\{\d+\})", k))
-        pats.append(re.compile("^" + src + "$"))
-    return pats
+        pieces = re.split(r"(\{\d+\})", k)
+        fixed = [p for p in pieces if not re.fullmatch(r"\{\d+\}", p)]
+        # Like compile() in i18n.js: the longest fixed piece needs letters, or the template matches anything
+        if runtime and not LETTER.search(max(fixed, key=len, default="")):
+            continue
+        src = "".join("(.+?)" if re.fullmatch(r"\{\d+\}", piece) else re.escape(piece) for piece in pieces)
+        pats.append((len("".join(fixed)), re.compile("^" + src + "$")))
+    # Same order as i18n.js: the template with more fixed text is tried first (stable sort)
+    pats.sort(key=lambda w: -w[0])
+    return [p for _w, p in pats]
 
 
 # ---------------------------------------------------------------------------- languages
@@ -384,6 +416,7 @@ def load_lang(code):
 
 
 PLURAL_FORMS = ("zero", "one", "two", "few", "many", "other")
+CLOSE_TO_PT = ("es", "it")
 VARS = re.compile(r"\{\d+\}|%[-+0#]*\d*(?:\.\d+)?[dsfi](?![A-Za-z])")
 
 
@@ -396,7 +429,7 @@ def forms_problem(key, value):
     if is_forms(value):
         extra = set(value) - set(PLURAL_FORMS) - {"count"}
         if extra:
-            return "forma de plural desconhecida: " + ", ".join(sorted(extra))
+            return "unknown plural form: " + ", ".join(sorted(extra))
         count = value.get("count", 0)
         if not isinstance(count, int) or "{%d}" % count not in key:
             return "count %r is not a variable part of the key" % (count,)
@@ -422,7 +455,7 @@ def orphans(data, source_keys):
     for k in data:
         if k.startswith("_") or k in source_keys:
             continue
-        pats = lang_patterns({k: None})
+        pats = lang_patterns({k: None}, runtime=False)
         if not pats or not any(pats[0].match(sk) for sk in source_keys):
             out.append(k)
     return out
@@ -448,7 +481,7 @@ def launcher_problems(langs):
             found[node.targets[0].id] = ast.literal_eval(node.value)
     texts, wins = found.get("TEXTS", {}), found.get("WINDOWS_LANGS", {})
     codes = [lang["code"] for lang in langs]
-    out = ['TEXTS sem o bloco "%s"' % c for c in codes if c not in texts]
+    out = ['TEXTS without the block "%s"' % c for c in codes if c not in texts]
     out += ['TEXTS has "%s", which is not in languages.json' % c for c in texts if c not in codes]
     base = set(texts.get("en", {}))
     for code, block in texts.items():
@@ -457,7 +490,7 @@ def launcher_problems(langs):
     want = {int(lang["windows"], 16): lang["code"] for lang in langs if lang.get("windows")}
     if wins != want:
         diff = sorted(set(wins.items()) ^ set(want.items()))
-        out.append("WINDOWS_LANGS diferente do languages.json: " + ", ".join("0x%02X=%s" % d for d in diff))
+        out.append("WINDOWS_LANGS different from languages.json: " + ", ".join("0x%02X=%s" % d for d in diff))
     return out
 
 
@@ -480,10 +513,10 @@ def test_message_problems():
     if size and int(size.group(1)) != len(pwn_texts):
         out.append("SAMSP_MAX_MSGS is %s, but gMsg has %d texts" % (size.group(1), len(pwn_texts)))
     if len(js_texts) != len(pwn_texts):
-        out.append("TEST_MESSAGES tem %d textos e gMsg tem %d" % (len(js_texts), len(pwn_texts)))
+        out.append("TEST_MESSAGES has %d texts and gMsg has %d" % (len(js_texts), len(pwn_texts)))
     for i, (a, b) in enumerate(zip(js_texts, pwn_texts)):
         if a != b:
-            out.append("mensagem %d diferente: dialogs.js %r / samapstudio.pwn %r" % (i, a[:40], b[:40]))
+            out.append("message %d differs: dialogs.js %r / samapstudio.pwn %r" % (i, a[:40], b[:40]))
     return out
 
 
@@ -493,6 +526,8 @@ def quality_warnings(lang, data):
     cyr = re.compile("[Ѐ-ӿ]")
     ender = re.compile(r"(\.\.\.|…|[:?!.;])$")
     latin_only = lang["code"] in ("en", "de", "hu", "id")
+    # Spanish and Italian share so many words with Portuguese that the same text is usually right
+    close_to_pt = lang["code"] in CLOSE_TO_PT
     out = {}
     for key, value in data.items():
         if key.startswith("_"):
@@ -504,7 +539,7 @@ def quality_warnings(lang, data):
             out.setdefault("empty translation", []).append(key)
             continue
         text = texts[-1]
-        if key not in same and is_portuguese(key) and key in texts and len(key) > 3:
+        if not close_to_pt and key not in same and is_portuguese(key) and key in texts and len(key) > 3:
             out.setdefault("same as Portuguese", []).append(key)
         has_cyr = any(cyr.search(t) for t in texts)
         if lang.get("script") == "cyrillic" and not has_cyr and is_portuguese(key) and key not in same:
@@ -531,11 +566,28 @@ def rename_hints(data, source_keys):
     return hints
 
 
+def stale_same(source):
+    """Lines of i18n_same.txt that match no text of the code."""
+    return sorted(k for k in same_keys() if k not in source)
+
+
+def prune_same(source):
+    gone = set(stale_same(source))
+    if not gone:
+        return 0
+    with open(SAME_FILE, "r", encoding="utf-8", newline="") as f:
+        lines = f.read().splitlines(keepends=True)
+    with open(SAME_FILE, "w", encoding="utf-8", newline="") as f:
+        f.writelines(line for line in lines if line.rstrip("\r\n") not in gone)
+    return len(gone)
+
+
 def check():
     same = same_keys()
-    keys = {k: v for k, v in keys_from_source().items() if k not in same}
+    found = keys_from_source()
+    keys = {k: v for k, v in found.items() if k not in same}
     langs = languages()
-    source = set(keys_from_source())
+    source = set(found)
     print("Languages: %d interface texts in the code" % len(keys))
     problems = 0
     hints_done = False
@@ -564,6 +616,10 @@ def check():
             for old, new in rename_hints(data, source):
                 print('      text changed? python i18n_tool.py rename %s %s' % (json.dumps(old, ensure_ascii=False), json.dumps(new, ensure_ascii=False)))
         problems += bool(missing or bad or orphan)
+    stale = stale_same(source)
+    if stale:
+        print("  i18n_same.txt: warning: %d lines match no text of the code (python i18n_check.py --prune deletes them; e.g. %s)"
+              % (len(stale), "; ".join(repr(k[:30]) for k in stale[:3])))
     for msg in launcher_problems(langs):
         print("  launcher.py: " + msg)
         problems += 1
@@ -574,6 +630,11 @@ def check():
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     if "--dump" in sys.argv:
         out = sys.argv[sys.argv.index("--dump") + 1]
         keys = keys_from_source()
@@ -604,6 +665,11 @@ def main():
             if gone and "--prune" in sys.argv:
                 save_lang(lang["code"], {k: v for k, v in data.items() if k not in gone})
         print("%d orphan keys%s" % (total, " deleted" if "--prune" in sys.argv else ""))
+        if "--prune" in sys.argv:
+            print("%d lines deleted from i18n_same.txt" % prune_same(source))
+        else:
+            for k in stale_same(source):
+                print("i18n_same.txt\t%s" % k)
         return
     sys.exit(1 if check() else 0)
 

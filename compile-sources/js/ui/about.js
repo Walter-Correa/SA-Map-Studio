@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // "Novidades e documentação": version history, all the editor's features,
 // date and time of the last build and the license.
 import { app, $, esc } from './common.js';
@@ -18,6 +19,7 @@ const CHANGELOG = [
       'Singleplayer What happens: the skin action has its own field (0 to 311, 0 by default) and skips the skins that crashed the game (story characters, the special slots 290 to 299 and the SA-MP-only skins 300 to 311), changes only on foot and builds CJ\'s body and clothes again. Healing fills up to the player\'s current max health.',
       'Singleplayer protectors: they never attack the player, his friends, the blue mission allies or the mod\'s own NPCs, recruited gang members leave them alone, and they get into the player\'s vehicle only after a horn in it (another horn, or the player getting out, makes them get out). The mod\'s enemies are in another gang so protectors can hurt them.',
       'Singleplayer protectors no longer stand still beside enemies: a target is given up only when its health does not go down, enemies behind cover are blocked for 5 s instead of 30 s, a dead target\'s kill order is dropped, and enemies off the screen (as in the mission Green Sabre) take the damage of their shots.',
+      'Full audit fixes: the local server only answers the editor page (other websites can no longer call it) and never reads files outside its folders; projects are never lost when a save fails or when they are renamed or opened from outside; singleplayer mods skip skins, vehicles, animations and pickups the game cannot load, clean broken ~ codes, respect the 16 checkpoint spheres and no longer clash with other installed mods; Pawn exports compile in every layout (per-player function, attached objects, map icon slots, gang zones, checkpoints, camera ends, limit warnings) and import back unchanged; open.mp NPCs compile with any number of NPCs, retry names in use, keep their looks on import and no longer fight each other; the filterscript chat falls back to English when the language has letters the SA-MP chat cannot show; undo, memory, translations and the test server got many smaller fixes.',
     ],
   },
   {
@@ -613,8 +615,7 @@ export function setupAbout() {
 function render() {
   const cfg = app.cfg || {};
   const build = cfg.build || {};
-  const compileTime = build.builtAt || '14/10/2026 09:30:00';
-  if (CHANGELOG[0]) CHANGELOG[0].date = compileTime;
+  const compileTime = build.builtAt || '14/10/2026 09:30:00';   // (only the line under the title: each version keeps its own release date)
   const when = `Built on <b>${esc(compileTime)}</b>`;
   const year = new Date().getFullYear();
   $('#aboutBody').innerHTML = `

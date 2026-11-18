@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // The objects of the category "Pistas, rampas e estradas": the pieces that join each other by their edges (automatic snap, see editor/roadSnap.js).
 // - The tubes of SA-MP 0.3.7 (ids 19646 to 19689): the ones the tool TBR (Adr1 Tube Connector) joins, with its supports and light. They only exist when
 //   SA-MP is installed (Singleplayer then takes them as mod objects).

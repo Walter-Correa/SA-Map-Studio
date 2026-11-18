@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 import { t, uiLocale } from './i18n.js';
 import { attachHoverPreview } from './hoverPreview.js';
 // Textures tab: all the game's textures by category, with thumbnails on disk.

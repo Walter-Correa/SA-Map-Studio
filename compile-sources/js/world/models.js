@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Converts DFF + TXD into Three.js objects, with a cache of models, textures and materials.
 // File reading runs in a worker group (loader.worker.js); here only
 // mesh assembly and sending textures to the graphics card remain.

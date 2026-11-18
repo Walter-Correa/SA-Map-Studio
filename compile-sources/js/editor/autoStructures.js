@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Auto Criar: structures made of the panels of the kit of SA-MP: mazes and maps (a round one and a square one, with walls, a floor and a ceiling). Like the other
 // generators they work in a frame (a point and a direction) and a seed makes the result repeatable. The walls and the floors use the same functions as the interiors
 // (autoInterior.js): the biggest panel that fits, panels that meet in clean corners, and no panel over another one (what is left over goes outside).

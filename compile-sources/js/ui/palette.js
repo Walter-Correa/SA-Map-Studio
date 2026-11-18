@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // ARGB color panel (0xAARRGGBB), in the format SA-MP uses in
 // SetObjectMaterial (materialcolor) e SetObjectMaterialText (fontcolor / backcolor).
 import { argbParts, makeArgb, parseColor, formatColor, cssColor, hexRgb } from '../editor/materials.js';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Data of the stunt roads of SA-MP (MRoad, objects 18788 to 18801): where each piece joins the next one and where its lights go.
 // Worked out from the table of the tool Road Construction 1.0 (adri1), which says, for every pair of pieces, where the second goes when it is put after
 // the first. Each piece has two ends; the table is the end of the first one meeting the start of the second, so the ends below rebuild every place of the

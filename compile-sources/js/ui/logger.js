@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Logging, error tracking and diagnostics system for SA Map Studio
 import { $, $$, esc, toast, copyText } from './common.js';
 import { t } from './i18n.js';

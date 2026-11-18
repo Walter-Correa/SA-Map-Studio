@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Notice of a newer release: asked once per version, then only the alert on the version history button remains
 import { $ } from './common.js';
 import { t } from './i18n.js';

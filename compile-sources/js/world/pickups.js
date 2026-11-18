@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Suporte completo a Pickups (CreatePickup e CreateDynamicPickup)
 // As specified:
 // and official list of pickup IDs:

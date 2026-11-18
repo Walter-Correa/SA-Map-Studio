@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Interface languages.
 // The code is written in Portuguese. Each js/lang/<code>.json file holds the translation of each text: the
 // key is the Portuguese text (without the edge spaces) and the variable parts are {0}, {1}, ...

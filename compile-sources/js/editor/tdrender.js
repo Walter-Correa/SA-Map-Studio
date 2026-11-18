@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // TextDraw rendering identical to GTA SA / SA-MP: reads data/fonts.dat and models/fonts.txd from the game folder
 // and reproduces CFont's calculations (letter width, line wrapping, alignment and box).
 // Everything is computed in pixels of a reference screen and also returned in SA-MP 640x448 units.

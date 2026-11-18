@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Images made from the game files, on the first run.
 // The sprites of the TextDraw editor and the radar icons are not shipped with the editor: when the GTA folder is set and
 // they are missing, they are drawn from the game's own TXDs in a Worker (world/textures.worker.js) and saved to the

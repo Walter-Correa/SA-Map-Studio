@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // The game's weapons: id, name, the model that has to be loaded for the game to hand it over, and whether it is a melee one.
 export const WEAPONS = [
   { id: 1, name: 'Soco inglês', model: 331, melee: true },

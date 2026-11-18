@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Full support for GangZones (GangZoneCreate)
 // As specified:
 

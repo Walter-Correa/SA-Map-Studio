@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Models of the project's own: a .dff (and, if it has them, a .txd and a .col) imported from files. Each one gets an id of the game's
 // model range that nothing uses and becomes an ordinary object that can be placed, moved and textured. The files live on the server
 // (one folder per asset) and go into the mod when an object uses the model.

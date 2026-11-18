@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Binary IPL ("bnry") used in the *_streamN.ipl files inside gta3.img.
 // Each instance is 40 bytes: position (3 floats), quaternion (4 floats), id, interior, lod.
 import { BinaryReader } from './binary.js';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Thumbnails of the catalog objects.
 // - First looks in the disk cache (Dados/cache/miniaturas): they appear right away.
 // - What is missing is drawn in batches (several objects per graphics card read)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // TextDraw effects of the TextDrawFX include: the table of its functions with their parameters, the Pawn call,
 // the import of a call back into the project, the line of the test server map file and the preview in the editor.
 // Every effect works the same way as in the include (same timings, curves and limits), so the preview shows what the game shows.

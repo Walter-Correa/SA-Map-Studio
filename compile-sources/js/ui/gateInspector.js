@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Inspector part of gates and doors: any object can become one (see editor/gates.js)
 import { app, $, $$, esc, fmt, toast } from './common.js';
 import { GATE_MP_KEYS, GATE_SP_KEYS, newGate } from '../editor/gates.js';

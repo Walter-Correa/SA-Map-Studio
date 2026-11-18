@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // ===========================================================================
 // SA Map Studio - Places and Interiors for teleport
 // Destinations organized into 'Locais no mundo' and 'Interiores' with coordinates

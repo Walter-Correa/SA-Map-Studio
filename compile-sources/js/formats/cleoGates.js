@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer gates and doors (see editor/gates.js): a CLEO script made with the editor's assembler.
 // A closed gate opens when the player near it presses its key (CLEO 0AB0) or the horn of the car the player is in;
 // it waits its delay and closes. Position and rotation are interpolated every frame, so it can slide and turn at once.

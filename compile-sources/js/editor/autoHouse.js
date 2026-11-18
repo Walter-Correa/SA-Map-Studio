@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Auto Criar: houses with more than one floor. Every floor has the same outline (a rectangle of rooms, each floor with its own rooms, walls and furniture) and,
 // along one side, a stair hall with two lanes of stairs side by side (3.5 m each, the width of a step). Each floor has its own flight of stairs, which goes from
 // that floor to the next one: the flights of the even floors are in the first lane, the ones of the odd floors in the second lane, and they go in opposite

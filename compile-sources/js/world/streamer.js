@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Map streaming: decides which instances appear according to the camera,
 // loads models on demand (closest first) and toggles LOD <-> detailed.
 import * as THREE from 'three';

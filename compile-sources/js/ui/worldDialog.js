@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer world settings: the spawn point of the player, fixed weather and fixed time of the day.
 import { app, $ } from './common.js';
 import { makeWorld } from '../editor/project.js';

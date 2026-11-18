@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Modal Animation Picker with Split View (Video Preview Panel and Offline Cache)
 import { $, $$, esc, toast } from './common.js';
 import { POPULAR_ANIMATIONS, ALL_ANIMATIONS, ANIM_CATEGORIES, classifyAnim } from '../world/actors.js';

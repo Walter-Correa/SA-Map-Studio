@@ -56,7 +56,6 @@ InterpolateCameraPos + LookAt
 SAFE ZONE ({0} × {1})
 Model #{0}
 Box
-[Player]
 | Font: {0}
 Preview
 Icon {0}
@@ -64,7 +63,6 @@ Files
 Promise
 Stack: {0}
 Unhandled Promise Rejection: {0}
-[GangZones] Não foi possível carregar /api/radarmap
 Arial
 Arial Black
 Calibri
@@ -86,18 +84,9 @@ Text:
 SQLite format 3
 Rar!
 Português
-) por causa das barras de progresso.
-{0} [INFO] Registros reiniciados pelo usuário.
 SA Map Studio - servidor local
-não abre navegador nem janela
-abre no navegador em vez da janela própria
 vehicleid = {0}{1}
 AddVehicleComponent(vehicleid, {0}){1}
-Create3DTextLabel({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});{8}
-CreateDynamic3DTextLabel({0}, {1}, {2}, {3}, {4}, {5}, INVALID_PLAYER_ID, INVALID_VEHICLE_ID, {6}, {7}, {8});{9}
-CreatePickup({0}, {1}, {2}, {3}, {4}, {5});{6}
-CreateDynamicPickup({0}, {1}, {2}, {3}, {4}, {5});{6}
-switch (step)
 Tierra Robada
 Cesar Vialpando
 Snakehead (Da Nang)
@@ -111,7 +100,6 @@ btn danger
 btn primary
 da nang
 312 skins
-567 sprites
 # Original game names (MapIcons, pickups, weapons and tuning parts, in English)
 Los Santos
 San Fierro
@@ -373,7 +361,6 @@ Savanna
 Broadway
 Remington
 Slamvan
-script, style, textarea, code, pre, svg
 {0}: HTTP {1}
 SetPlayerColor, SendClientMessage, TextDrawColor
 SetObjectMaterial, SetObjectMaterialText
@@ -403,33 +390,14 @@ Num 8
 Num 2
 Num 4
 Num 6
-if (!(_:newkeys & key) || (_:oldkeys & key)) continue;
-attachtoid = {0};
 
 # open.mp NPCs (generated Pawn code and table names)
 Kung fu
 Skin
-switch (k)
 Setup
 Pose
-while (a < end)
-switch (I(0))
-if (node < 0) node = 0; else if (node >= NPC_MAX_NODES) node = NPC_MAX_NODES - 1;
-if (NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID) { from = 0; to = veh; } else { from = veh; to = veh + ped; }
-if (d < bd) { bd = d; best = p; }
-if (fromNpc) { x = {0}_Home(k, 0); y = {1}_Home(k, 1); z = {2}_Home(k, 2); }
-if (!IsPlayerConnected(p) || IsPlayerNPC(p) || !NPC_IsStreamedIn(npcid, p)) continue;
-if (GetPlayerState(p) == PLAYER_STATE_WASTED || GetPlayerState(p) == PLAYER_STATE_SPECTATING) continue;
-if (GetPlayerVirtualWorld(p) != NPC_GetVirtualWorld(npcid) || GetPlayerInterior(p) != NPC_GetInterior(npcid)) continue;
-if (d < 0.1) d = 0.1;
-if (npcid == INVALID_NPC_ID || !NPC_IsSpawned(npcid) || NPC_IsDead(npcid) || !NPC_IsAnyStreamedIn(npcid)) continue;
-if (busy == 1)
-if (_:NPC_GetWeapon(npcid) <= 15 && !NPC_IsMeleeAttacking(npcid) &&
-if (busy) continue;
 npcid, killerid, WEAPON:reason
-if (k >= 0)
 npcid, killerid, reason
-npcid, newState, oldState
 npcid, pathid
 npcid, issuerid, Float:amount, WEAPON:weaponid, bodypart
 npcid, issuerid, amount, weaponid, bodypart
@@ -442,36 +410,16 @@ Leg
 Act
 Str
 Test
-SAMSP_NpcStarted = true;
 print("[SA Map Studio] NPCs:
-{0}_Veh[{1}] = vehicleid;
 data-npc-ac="{0}" data-npc-acf="{1}"
-if (_:NPC_GetWeapon(npcid) <= 15)
-if ({0}_Near(npcid, t, 1.3))
-if (armour > 0.0)
-if (dmg <= armour) { NPC_SetArmour(npcid, armour - dmg); dmg = 0.0; }
 else { NPC_SetArmour(npcid, 0.0); dmg -= armour; }
 health -= dmg;
-if (health <= 0.0) { NPC_SetHealth(npcid, 0.0); NPC_Kill(npcid, issuerid, weaponid); }
 npcid, nodeid, pointid
 ux /= lu; uy /= lu; vx /= lv; vy /= lv;
-if (r > lu / 2.0) r = lu / 2.0;
-if (r > lv / 2.0) r = lv / 2.0;
-if (cur < 0)
-if (d < bd) { bd = d; cur = i; }
-prev = -1;
-while (c < 9)
 for (new e = f; e < f + cnt; e++)
-if (random(seen) == 0) pick = e;
-if (pick < 0) break;
 prev = cur; cur = to;
-if (VectorSize(px - x, py - y, 0.0) > 3.0)
-if (NPC_GetVehicle(npcid) != INVALID_VEHICLE_ID)
-if (_:w > 15 && !NPC_IsInfiniteAmmoEnabled(npcid) && NPC_GetAmmo(npcid) <= 0 && !NPC_IsReloading(npcid))
-if (_:w <= 15)
-if (!IsPlayerConnected(p) || IsPlayerNPC(p) || GetPlayerState(p) != PLAYER_STATE_DRIVER) continue;
-if (speed < 0.1) continue;
-if (dx * dx + dy * dy > 20.0 || floatabs(z - pz) > 3.0 || dx * vx + dy * vy <= 0.0) continue;
-if (ar > 0)
 Gn
-if (busy == 6)
+NODES{0}.DAT: HTTP {1}
+NODES{0}.DAT: unreadable
+Look
+modloader/SA Map Studio/

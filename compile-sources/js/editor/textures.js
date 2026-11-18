@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Texture library: index of all the game textures (built in the background
 // by a Web Worker and cached on disk), categories and thumbnails.
 import { textureCategory } from '../world/categories.js';

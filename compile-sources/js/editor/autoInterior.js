@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Auto Criar: interiors. The rooms are drawn on a grid (the panels of the kit of SA-MP, walls of 3.21 and 1.61 m, tiles of 3.21 x 3.5 m, 3.5 m high), they
 // are joined by doorways, and each one gets the furniture of its kind (bedroom, living room, kitchen, bathroom, office) against the walls, with the back
 // of each piece to the wall. Everything is placed in a frame (a corner and a direction), so the interior goes wherever the camera looks.

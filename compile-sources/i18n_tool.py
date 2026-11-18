@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 """Maintenance of the language files (js/lang/*.json): batch translation, plural forms and key renaming.
 
 The key is the Portuguese text of the code (see i18n_check.py). This tool does not touch the code: when

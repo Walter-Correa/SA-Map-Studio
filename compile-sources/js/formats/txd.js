@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // GTA SA TXD (RenderWare Texture Dictionary) reader (PC, D3D8/D3D9).
 // Keeps DXT compressed when possible; converts the other formats to RGBA.
 import { BinaryReader } from './binary.js';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Auto Criar: the furniture and the decoration of the rooms of an interior. The pools are the models of the game by kind of piece; every kind of room has a plan of
 // what goes in it and how (against a wall, in a corner, in the middle, hung on a wall, in the middle of the ceiling, as a rug, or over another piece).
 import * as THREE from 'three';

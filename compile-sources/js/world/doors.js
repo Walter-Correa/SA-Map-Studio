@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Markers of the Singleplayer doors (enex): yellow outside, blue inside, with an arrow where the player stands after going through.
 import * as THREE from 'three';
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Sprite Picker Modal for TextDraws with Complete Visual Gallery
 import { $, $$, esc, plural, toast } from './common.js';
 import { TEXTDRAW_SPRITES } from '../data/sprites.js';

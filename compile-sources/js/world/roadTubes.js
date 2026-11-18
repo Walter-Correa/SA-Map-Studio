@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Data of the connection of tubes (SA-MP 0.3.7 objects 19646 to 19689). Generated from the table of the tool TBR (Adr1 Tube Connector 1.10).
 // TUBE_TYPES: the types of each model (one per direction it can be joined by); TUBE_REL[x][y]: the place of a tube of type y joined after one of type x,
 // relative to it: offset x, y, z and the rotation of the new one (SA euler, degrees) when the first has none.

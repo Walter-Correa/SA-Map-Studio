@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Hover preview: a big picture in the middle of the screen while the mouse is over an item of a list.
 // It closes when the mouse leaves the item, on click, on scroll and when the list is rebuilt.
 // describe(el) -> { src, title, sub, large } where large() may return a Promise of a bigger picture (an object URL).

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // GTA SA text formats: gta.dat / default.dat, IDE and IPL (text).
 
 function cleanLines(text) {

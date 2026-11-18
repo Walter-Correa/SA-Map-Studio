@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 """Writes to version_info.txt (the .exe metadata) the same editor version (VERSION of serve.py).
 Runs on every build, before PyInstaller, so the file version is never out of date."""
 import os

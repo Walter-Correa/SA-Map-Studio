@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Custom color picker for all <input type="color"> in the editor.
 // WebView2 (the editor window) does not open the browser's native picker, so the click on the field is
 // intercepted and opens this panel: saturation/brightness square, hue bar, hexadecimal code and

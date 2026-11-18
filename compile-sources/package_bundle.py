@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# SPDX-License-Identifier: MPL-2.0
 """Packer of the sa-map-studio.zip bundle for the single-executable distribution."""
 
 import os

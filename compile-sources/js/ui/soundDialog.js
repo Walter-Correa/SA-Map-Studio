@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
 // Sound catalog (PlayerPlaySound) with real GTA SA audio preview
-import { SOUND_CATALOG, SOUND_CATEGORIES, getSoundInfo } from '../world/sounds.js';
+import { SOUND_CATALOG, SOUND_CATEGORIES } from '../world/sounds.js';
 import { app, $, $$, esc, toast, copyText } from './common.js';
 
 let dialogEl = null;

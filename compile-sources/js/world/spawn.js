@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // The 3D marker of the spawn point (Singleplayer): a green tube on the ground and an arrow for the way the player faces (0 degrees = north).
 import * as THREE from 'three';
 

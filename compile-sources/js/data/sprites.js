@@ -1,4 +1,5 @@
-// Complete catalog of 567 sprites for GTA San Andreas / SA-MP TextDraws
+// SPDX-License-Identifier: MPL-2.0
+// Complete catalog of 548 sprites for GTA San Andreas / SA-MP TextDraws
 
 export const TEXTDRAW_SPRITES = [
   {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Complete catalog of the 64 official MapIcons (SetPlayerMapIcon / CreateDynamicMapIcon)
 // and marker rendering on the 3D map.
 import * as THREE from 'three';

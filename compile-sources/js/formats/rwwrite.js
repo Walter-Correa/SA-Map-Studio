@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Small writers for the Singleplayer mod: they cut pieces out of the game's own TXD and COL files (copied byte by byte,
 // so the textures stay in their original DXT format) and put them together again under another name.
 

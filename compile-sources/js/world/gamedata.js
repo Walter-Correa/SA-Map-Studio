@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Loads the game data through the local server's /gta/ route:
 // gta.dat/default.dat -> IDEs (models) -> IMG indices -> IPLs (map instances).
 import { decodeText } from '../formats/binary.js';

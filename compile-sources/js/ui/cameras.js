@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Cameras tab: fixed points (SetPlayerCameraPos + SetPlayerCameraLookAt) and movements
 // (InterpolateCameraPos + InterpolateCameraLookAt) with an editor preview and ready Pawn code.
 import * as THREE from 'three';

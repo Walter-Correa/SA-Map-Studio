@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Singleplayer doors (enex): each one has an outside marker and an inside marker, joined by the same name.
 // Entering one puts the player at the other's "exit point", which is a little in front of that marker.
 import * as THREE from 'three';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // 3D model preview of TextDraws (TEXT_DRAW_FONT_MODEL_PREVIEW) drawn like the SA-MP client:
 // - the model is drawn on a square 256 x 256 image, then stretched to the box (TextSize);
 // - camera at (0, 0, 50) looking toward -Y (Z up), field of view of 53.13° (window 0.5),

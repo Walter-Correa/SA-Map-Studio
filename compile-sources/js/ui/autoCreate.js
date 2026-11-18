@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Auto Criar: the editor builds a map by itself, in front of the camera: interiors and houses (rooms with walls, floors, doorways and furniture), mazes and
 // round or square maps. The settings are chosen here; a seed makes the result repeatable, and Create again makes another one.
 import * as THREE from 'three';

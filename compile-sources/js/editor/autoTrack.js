@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Auto Criar: the random numbers with a seed that all the generators use (the same seed gives the same result).
 export function makeRng(seed) {
   let a = (seed >>> 0) || 1;

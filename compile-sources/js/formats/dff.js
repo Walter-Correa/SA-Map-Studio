@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // GTA SA DFF (RenderWare Clump) reader.
 // Extracts frames (hierarchy + names), geometries (vertices, normals, UVs,
 // pre-lit colors, triangles per material) and atomics; for pedestrians, the bones (HAnim) and the skin.

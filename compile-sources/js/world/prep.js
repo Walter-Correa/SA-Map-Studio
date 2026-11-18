@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Preparation of model and texture data (used by the worker and, without a worker, on the main thread).
 import { parseDff, geometryGroups } from '../formats/dff.js';
 import { parseTxd, decodeToRGBA, textureHasAlpha } from '../formats/txd.js';

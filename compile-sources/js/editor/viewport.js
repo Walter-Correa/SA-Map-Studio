@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // 3D viewport: renderer, scene, sky, water and editor-style free camera.
 import * as THREE from 'three';
 

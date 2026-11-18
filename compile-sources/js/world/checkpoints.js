@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Full support for Checkpoints (SetPlayerCheckpoint / CreateDynamicCP)
 // e Race Checkpoints tipos 0 a 4 (SetPlayerRaceCheckpoint / CreateDynamicRaceCP).
 import * as THREE from 'three';

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Color picker and converter: pick a color and copy its code in the formats SA-MP and open.mp use.
 // Like the sounds dialog it only shows codes to copy right away: nothing is saved, exported or imported.
 import { $, esc, toast, copyText } from './common.js';

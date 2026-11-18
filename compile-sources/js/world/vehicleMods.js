@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Full vehicle support: carcols.dat colors, paintjobs and tuning (AddVehicleComponent)
 // As per the specification:
 // and the server's official compatibility rules.

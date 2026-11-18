@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Gates and doors: any object can open (to a second position and rotation) when the player presses a key or the
 // vehicle horn near it, and close again on its own after a while. The closed position is the object's own one.
 // Shared by the editor (inspector and test), the Pawn export and import, the test server and the singleplayer mod.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Loading worker: reads DFF and TXD from the IMG files and does all the heavy work
 // (binary reading, triangles per material, precomputed light, texture decoding)
 // off the main thread, so the camera does not stutter while the map loads.

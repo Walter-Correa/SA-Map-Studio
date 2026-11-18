@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // IMG file version 2 (GTA SA): "VER2" header, number of entries and
 // directory with 32 bytes per entry (offset and size in 2048-byte sectors).
 import { BinaryReader } from './binary.js';

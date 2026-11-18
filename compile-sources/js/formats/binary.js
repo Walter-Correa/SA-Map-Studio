@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // Little-endian binary reader used by all GTA SA formats.
 export class BinaryReader {
   constructor(buffer, offset = 0, length) {

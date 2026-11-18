@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MPL-2.0
 // GTA San Andreas weapon models /  (IDs 321 to 372).
 // Official reference:
 
